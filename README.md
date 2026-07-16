@@ -1,2 +1,2 @@
 # lukart-ros
-LukArt Research Operating System
+Projekt Artur 2.0 - System bazowy
