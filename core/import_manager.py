@@ -23,9 +23,30 @@ class ImportManager:
 
         return original
 
+    def _unique_target(self, target: Path) -> Path:
+        """
+        Returns a unique filename if the destination already exists.
+        """
+
+        if not target.exists():
+            return target
+
+        counter = 1
+
+        while True:
+            candidate = target.with_name(
+                f"{target.stem}_{counter}{target.suffix}"
+            )
+
+            if not candidate.exists():
+                return candidate
+
+            counter += 1
+
     def import_directory(self, case_id: str, source_directory: str) -> tuple[int, int]:
         """
         Import all files and folders into CASE/original.
+
         Returns:
             (files_count, folders_count)
         """
@@ -35,10 +56,14 @@ class ImportManager:
         source = Path(source_directory)
 
         if not source.exists():
-            raise FileNotFoundError(f"Source directory '{source}' does not exist.")
+            raise FileNotFoundError(
+                f"Source directory '{source}' does not exist."
+            )
 
         if not source.is_dir():
-            raise NotADirectoryError(f"'{source}' is not a directory.")
+            raise NotADirectoryError(
+                f"'{source}' is not a directory."
+            )
 
         files_count = 0
         folders_count = 0
@@ -49,12 +74,18 @@ class ImportManager:
             target = destination / relative
 
             if item.is_dir():
+
                 target.mkdir(parents=True, exist_ok=True)
                 folders_count += 1
 
             else:
+
                 target.parent.mkdir(parents=True, exist_ok=True)
+
+                target = self._unique_target(target)
+
                 shutil.copy2(item, target)
+
                 files_count += 1
 
         return files_count, folders_count

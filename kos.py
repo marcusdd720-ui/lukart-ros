@@ -38,7 +38,7 @@ def main():
 
         if len(sys.argv) != 4:
             print("Usage:")
-            print('python kos.py import CASE-0001 "C:\\Documents"')
+            print('python Kos.py import CASE-0001 "C:\\Documents"')
             return
 
         case_id = sys.argv[2]
@@ -63,7 +63,7 @@ def main():
 
         if len(sys.argv) != 3:
             print("Usage:")
-            print("python kos.py classify file.pdf")
+            print("python Kos.py classify file.pdf")
             return
 
         classifier = DocumentClassifier()
@@ -76,7 +76,7 @@ def main():
 
         if len(sys.argv) != 3:
             print("Usage:")
-            print("python kos.py scan <DIRECTORY>")
+            print("python Kos.py scan <DIRECTORY>")
             return
 
         scanner = DocumentScanner()
@@ -87,8 +87,8 @@ def main():
         print("Scan results")
         print("------------------------------")
 
-        for document, document_type in documents:
-            print(f"{document:<50} {document_type}")
+        for document in documents:
+            print(f"{document.path:<50} {document.document_type}")
 
         print("------------------------------")
         print(f"Total documents: {len(documents)}")
@@ -97,7 +97,7 @@ def main():
 
         if len(sys.argv) != 3:
             print("Usage:")
-            print("python kos.py process <DIRECTORY>")
+            print("python Kos.py process <DIRECTORY>")
             return
 
         scanner = DocumentScanner()
@@ -109,9 +109,14 @@ def main():
         print("Processing documents")
         print("------------------------------")
 
-        for document, document_type in documents:
-            processor = pipeline.process(document, document_type)
-            print(f"{document:<50} -> {processor}")
+        for document in documents:
+
+            processor = pipeline.process(
+                document,
+                document.document_type
+            )
+
+            print(f"{document.path:<50} -> {processor}")
 
         print("------------------------------")
         print(f"Processed documents: {len(documents)}")
