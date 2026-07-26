@@ -2,7 +2,7 @@
 Knowledge Operating System (KOS)
 
 File: knowledge/graph.py
-Version: 5.0
+Version: 5.1
 Sprint: GRAPH-016
 
 High-performance directed Knowledge Graph – pełna zgodność z testami.
@@ -123,10 +123,8 @@ class KnowledgeGraph:
     # ------------------------------------------------------------------
 
     def add_edge(self, edge: KnowledgeEdge) -> None:
-        """Add edge to graph."""
         if edge.source not in self.nodes:
             raise KeyError(edge.source)
-
         if edge.target not in self.nodes:
             raise KeyError(edge.target)
 
@@ -161,10 +159,11 @@ class KnowledgeGraph:
         return None
 
     # ------------------------------------------------------------------
-    # Navigation, Traversal, Dijkstra, Cycle
+    # Navigation
     # ------------------------------------------------------------------
 
     def neighbors(self, node_id: EntityId) -> List[KnowledgeNode]:
+        """Return outgoing neighbour nodes."""
         return self.successors(node_id)
 
     def successors(self, node_id: EntityId) -> List[KnowledgeNode]:
@@ -176,6 +175,10 @@ class KnowledgeGraph:
         if node_id not in self.nodes:
             raise NodeNotFound(f"Unknown node: {node_id}")
         return [self.get_node(s) for s in self.reverse_adjacency.get(node_id, []) if self.get_node(s)]
+
+    # ------------------------------------------------------------------
+    # Traversal
+    # ------------------------------------------------------------------
 
     def bfs(self, start: EntityId) -> List[KnowledgeNode]:
         if start not in self.nodes:
@@ -273,21 +276,20 @@ class KnowledgeGraph:
     # ------------------------------------------------------------------
 
     def degree(self, node_id: EntityId) -> int:
+        """Return total node degree (in + out)."""
         if node_id not in self.nodes:
             raise NodeNotFound(f"Unknown node: {node_id}")
-        inc = sum(1 for e in self.edges if e.target == node_id)
-        out = sum(1 for e in self.edges if e.source == node_id)
-        return inc + out
+        return self.in_degree(node_id) + self.out_degree(node_id)
 
     def in_degree(self, node_id: EntityId) -> int:
         if node_id not in self.nodes:
             raise NodeNotFound(f"Unknown node: {node_id}")
-        return sum(1 for e in self.edges if e.target == node_id)
+        return len(self.reverse_adjacency.get(node_id, []))
 
     def out_degree(self, node_id: EntityId) -> int:
         if node_id not in self.nodes:
             raise NodeNotFound(f"Unknown node: {node_id}")
-        return sum(1 for e in self.edges if e.source == node_id)
+        return len(self.adjacency.get(node_id, []))
 
     def node_count(self) -> int:
         return len(self.nodes)
@@ -328,7 +330,7 @@ class KnowledgeGraph:
             nodes=dict(self.nodes),
             edges=list(self.edges),
             adjacency={k: list(v) for k, v in self.adjacency.items()},
-            reverse_adjacency={k: list(v) for k, v in self.reverse_adjacency.items()}
+            reverse_adjacency={k: list(v) for k, v in self.reverse_adjacency.items()},
         )
 
     def subgraph(self, node_ids: set[EntityId]) -> "KnowledgeGraph":

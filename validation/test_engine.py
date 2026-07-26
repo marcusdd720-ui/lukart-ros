@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from validation.consistency_checker import ConsistencyChecker
+from validation.test_consistency_checker import ConsistencyChecker
 
 
 class ValidationEngine:
