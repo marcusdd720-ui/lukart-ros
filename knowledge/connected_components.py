@@ -33,7 +33,6 @@ class ConnectedComponents:
         components: list[list[str]] = []
 
         for node_id in self._graph.nodes:
-
             if node_id in visited:
                 continue
 

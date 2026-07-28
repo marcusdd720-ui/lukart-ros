@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from factory.rqm.model import Decision, Report, Severity
+from factory.rqm.model import Report, Severity
 
 
 class ReportGenerator:

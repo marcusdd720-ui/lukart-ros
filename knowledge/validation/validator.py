@@ -12,7 +12,6 @@ from knowledge.validation.result import ValidationResult
 
 
 class ValidationEngine:
-
     def __init__(self) -> None:
 
         self._checks = list(DEFAULT_VALIDATION_CHECKS)

@@ -1,7 +1,6 @@
 from knowledge.edge import KnowledgeEdge
 from knowledge.graph import KnowledgeGraph
 from knowledge.node import KnowledgeNode
-
 from knowledge.serialization.serializer import GraphSerializer
 
 
@@ -38,13 +37,9 @@ def test_single_edge():
 
     graph = KnowledgeGraph()
 
-    graph.add_node(
-        KnowledgeNode(id="A", name="A")
-    )
+    graph.add_node(KnowledgeNode(id="A", name="A"))
 
-    graph.add_node(
-        KnowledgeNode(id="B", name="B")
-    )
+    graph.add_node(KnowledgeNode(id="B", name="B"))
 
     graph.add_edge(
         KnowledgeEdge(
@@ -67,7 +62,6 @@ def test_node_and_edge_count():
     graph = KnowledgeGraph()
 
     for node in ["A", "B", "C"]:
-
         graph.add_node(
             KnowledgeNode(
                 id=node,

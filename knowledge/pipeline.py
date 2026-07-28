@@ -13,7 +13,6 @@ from knowledge.validator import GraphValidator
 
 
 class KnowledgePipeline:
-
     def __init__(self, root="."):
 
         self.builder = GraphBuilder(root)
@@ -35,42 +34,32 @@ class KnowledgePipeline:
 
         graph = self.builder.build()
 
-        print(
-            f"      Nodes : {graph.node_count()}"
-        )
+        print(f"      Nodes : {graph.node_count()}")
 
         print("[2/4] Building Relations...")
 
         self.relations.run(graph)
 
-        print(
-            f"      Edges : {graph.edge_count()}"
-        )
+        print(f"      Edges : {graph.edge_count()}")
 
         print("[3/4] Validation...")
 
         errors = self.validator.validate(graph)
 
         if errors:
-
-            print(
-                f"      FAILED ({len(errors)})"
-            )
+            print(f"      FAILED ({len(errors)})")
 
             for error in errors:
                 print("      -", error)
 
         else:
-
             print("      PASSED")
 
         print("[4/4] Report")
 
         print()
 
-        print(
-            self.report.generate(graph)
-        )
+        print(self.report.generate(graph))
 
         return graph
 

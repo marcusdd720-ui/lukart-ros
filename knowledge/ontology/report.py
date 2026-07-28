@@ -41,10 +41,7 @@ class ValidationReport:
 
     @property
     def is_valid(self) -> bool:
-        return not any(
-            m.severity == ValidationSeverity.ERROR
-            for m in self.messages
-        )
+        return not any(m.severity == ValidationSeverity.ERROR for m in self.messages)
 
     def add_info(
         self,
@@ -96,7 +93,7 @@ class ValidationReport:
 
     def extend(
         self,
-        report: "ValidationReport",
+        report: ValidationReport,
     ) -> None:
         self.messages.extend(report.messages)
 

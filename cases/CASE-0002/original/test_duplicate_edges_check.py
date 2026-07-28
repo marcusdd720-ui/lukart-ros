@@ -6,12 +6,11 @@ Sprint GRAPH-010B
 Tests for DuplicateEdgesCheck.
 """
 
+from knowledge.edge import KnowledgeEdge
 from knowledge.graph import KnowledgeGraph
 from knowledge.node import KnowledgeNode
-from knowledge.edge import KnowledgeEdge
-
-from knowledge.validation.result import ValidationResult
 from knowledge.validation.checks.duplicate_edges import DuplicateEdgesCheck
+from knowledge.validation.result import ValidationResult
 
 
 def test_unique_edges() -> None:

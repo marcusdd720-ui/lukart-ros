@@ -32,7 +32,6 @@ class MetadataParser:
             return metadata
 
         for line in lines[1:]:
-
             line = line.strip()
 
             if line == "---":

@@ -74,19 +74,25 @@ def test_shortest_path() -> None:
 def test_unknown_source() -> None:
     bfs = BreadthFirstSearch(create_graph())
 
-    assert bfs.shortest_path(
-        "X",
-        "D",
-    ) == []
+    assert (
+        bfs.shortest_path(
+            "X",
+            "D",
+        )
+        == []
+    )
 
 
 def test_unknown_target() -> None:
     bfs = BreadthFirstSearch(create_graph())
 
-    assert bfs.shortest_path(
-        "A",
-        "X",
-    ) == []
+    assert (
+        bfs.shortest_path(
+            "A",
+            "X",
+        )
+        == []
+    )
 
 
 def test_unreachable_node() -> None:
@@ -102,7 +108,10 @@ def test_unreachable_node() -> None:
 
     bfs = BreadthFirstSearch(graph)
 
-    assert bfs.shortest_path(
-        "A",
-        "Z",
-    ) == []
+    assert (
+        bfs.shortest_path(
+            "A",
+            "Z",
+        )
+        == []
+    )

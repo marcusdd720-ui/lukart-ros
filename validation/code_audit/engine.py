@@ -1,24 +1,24 @@
 from __future__ import annotations
+
 import ast
 from pathlib import Path
-from typing import List
 
 from validation.code_audit.models import AuditReport, Finding, Severity
 from validation.code_audit.rules.base import BaseRule
+from validation.code_audit.rules.python_complexity import ComplexityRule
 from validation.code_audit.rules.python_dead_code import DeadCodeRule
 from validation.code_audit.rules.python_structure import StructureRule
-from validation.code_audit.rules.python_complexity import ComplexityRule
 
 
 class CodeAuditEngine:
     def __init__(self):
-        self.rules: List[BaseRule] = [
+        self.rules: list[BaseRule] = [
             DeadCodeRule(),
             StructureRule(),
             ComplexityRule(),
         ]
 
-    def audit_file(self, file_path: Path) -> List[Finding]:
+    def audit_file(self, file_path: Path) -> list[Finding]:
         try:
             source = file_path.read_text(encoding="utf-8")
             tree = ast.parse(source, filename=str(file_path))
@@ -33,7 +33,7 @@ class CodeAuditEngine:
                 )
             ]
 
-        findings: List[Finding] = []
+        findings: list[Finding] = []
         for rule in self.rules:
             findings.extend(rule.check(tree, file_path))
         return findings

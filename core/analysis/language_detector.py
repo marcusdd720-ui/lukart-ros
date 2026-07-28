@@ -1,14 +1,12 @@
 from __future__ import annotations
 
 import logging
-from typing import Optional, Set
 
 from langdetect import DetectorFactory, detect
 from langdetect.lang_detect_exception import LangDetectException
 
 from core.analysis.analysis_handler import AnalysisHandler
 from core.plugin_manager import Plugin
-
 
 # Powtarzalne wyniki testów
 DetectorFactory.seed = 0
@@ -39,7 +37,7 @@ class LanguageDetector(AnalysisHandler, Plugin):
 
     def __init__(
         self,
-        supported_languages: Optional[Set[str]] = None,
+        supported_languages: set[str] | None = None,
     ) -> None:
         super().__init__()
 
@@ -57,21 +55,16 @@ class LanguageDetector(AnalysisHandler, Plugin):
         """
 
         if not text:
-            self._logger.debug(
-                "Language detection skipped: empty text."
-            )
+            self._logger.debug("Language detection skipped: empty text.")
             return self.FALLBACK_LANGUAGE
 
         text = text.strip()
 
         if len(text) < 10:
-            self._logger.debug(
-                "Language detection skipped: text too short."
-            )
+            self._logger.debug("Language detection skipped: text too short.")
             return self.FALLBACK_LANGUAGE
 
         try:
-
             language = detect(text)
 
             if language in self._supported:
@@ -80,7 +73,6 @@ class LanguageDetector(AnalysisHandler, Plugin):
             return self.OTHER_LANGUAGE
 
         except LangDetectException as exc:
-
             self._logger.debug(
                 "Language detection failed: %s",
                 exc,
@@ -89,10 +81,7 @@ class LanguageDetector(AnalysisHandler, Plugin):
             return self.FALLBACK_LANGUAGE
 
         except Exception:
-
-            self._logger.exception(
-                "Unexpected language detection error."
-            )
+            self._logger.exception("Unexpected language detection error.")
 
             return self.FALLBACK_LANGUAGE
 

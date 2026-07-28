@@ -23,7 +23,6 @@ class MissingNodesCheck:
     ) -> None:
 
         for edge in graph.edges:
-
             if not graph.has_node(edge.source):
                 result.add(
                     "UNKNOWN_SOURCE",

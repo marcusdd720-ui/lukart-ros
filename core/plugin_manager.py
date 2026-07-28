@@ -1,8 +1,8 @@
-from dataclasses import dataclass
-from typing import Any, Dict, List, Optional, Type
 import importlib
 import logging
 import pkgutil
+from dataclasses import dataclass
+from typing import Any
 
 
 @dataclass
@@ -11,39 +11,36 @@ class PluginInfo:
     version: str = "1.0"
     author: str = ""
     description: str = ""
-    class_ref: Optional[Type] = None
+    class_ref: type | None = None
 
 
 class Plugin:
     """Bazowa klasa wszystkich pluginów."""
+
     __plugin__ = True
 
 
 class PluginManager:
     def __init__(self):
-        self._plugins: Dict[str, PluginInfo] = {}
-        self._instances: Dict[str, Any] = {}
+        self._plugins: dict[str, PluginInfo] = {}
+        self._instances: dict[str, Any] = {}
         self._logger = logging.getLogger(__name__)
 
     def register(
         self,
-        plugin_class: Type,
-        name: Optional[str] = None,
-        info: Optional[dict] = None,
+        plugin_class: type,
+        name: str | None = None,
+        info: dict | None = None,
     ):
         """Rejestruje plugin."""
 
         if not issubclass(plugin_class, Plugin):
-            raise TypeError(
-                f"{plugin_class.__name__} must inherit from Plugin"
-            )
+            raise TypeError(f"{plugin_class.__name__} must inherit from Plugin")
 
         plugin_name = name or plugin_class.__name__
 
         if plugin_name in self._plugins:
-            raise ValueError(
-                f"Plugin '{plugin_name}' already registered"
-            )
+            raise ValueError(f"Plugin '{plugin_name}' already registered")
 
         info = info or {}
 
@@ -98,7 +95,7 @@ class PluginManager:
     def plugin_count(self) -> int:
         return len(self._plugins)
 
-    def list_plugins(self) -> List[str]:
+    def list_plugins(self) -> list[str]:
         return sorted(self._plugins.keys())
 
     def get_info(self, name: str) -> PluginInfo:
@@ -111,15 +108,11 @@ class PluginManager:
         package = importlib.import_module(package_name)
 
         if not hasattr(package, "__path__"):
-            raise ValueError(
-                f"'{package_name}' is not a package"
-            )
+            raise ValueError(f"'{package_name}' is not a package")
 
         for _, module_name, _ in pkgutil.iter_modules(package.__path__):
             try:
-                module = importlib.import_module(
-                    f"{package_name}.{module_name}"
-                )
+                module = importlib.import_module(f"{package_name}.{module_name}")
 
                 for attribute_name in dir(module):
                     obj = getattr(module, attribute_name)

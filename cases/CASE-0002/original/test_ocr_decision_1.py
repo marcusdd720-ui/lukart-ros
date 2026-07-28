@@ -2,7 +2,6 @@ from core.analysis.ocr_decision import OCRDecision
 
 
 class Document:
-
     def __init__(self):
         self.is_pdf = False
         self.text = None

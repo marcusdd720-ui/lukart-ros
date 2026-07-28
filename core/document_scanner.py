@@ -17,19 +17,14 @@ class DocumentScanner:
         source = Path(directory)
 
         if not source.exists():
-            raise FileNotFoundError(
-                f"Directory '{source}' does not exist."
-            )
+            raise FileNotFoundError(f"Directory '{source}' does not exist.")
 
         if not source.is_dir():
-            raise NotADirectoryError(
-                f"'{source}' is not a directory."
-            )
+            raise NotADirectoryError(f"'{source}' is not a directory.")
 
         documents: list[Document] = []
 
         for file in source.rglob("*"):
-
             if not file.is_file():
                 continue
 
@@ -38,7 +33,7 @@ class DocumentScanner:
                     path=str(file.relative_to(source)),
                     document_type=self.classifier.classify(str(file)),
                     extension=file.suffix.lower(),
-                    size=file.stat().st_size
+                    size=file.stat().st_size,
                 )
             )
 

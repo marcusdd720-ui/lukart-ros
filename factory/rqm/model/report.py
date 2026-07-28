@@ -33,11 +33,7 @@ class Report:
         """
         Return a flattened list of findings from all provider results.
         """
-        return [
-            finding
-            for result in self.results
-            for finding in result.findings
-        ]
+        return [finding for result in self.results for finding in result.findings]
 
     @property
     def passed(self) -> bool:

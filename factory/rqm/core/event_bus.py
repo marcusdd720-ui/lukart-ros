@@ -2,7 +2,8 @@ from __future__ import annotations
 
 import logging
 from collections import defaultdict
-from typing import Any, Callable, DefaultDict, Type, TypeVar
+from collections.abc import Callable
+from typing import Any, TypeVar
 
 logger = logging.getLogger(__name__)
 
@@ -19,14 +20,13 @@ class EventBus:
     """
 
     def __init__(self) -> None:
-        self._subscribers: DefaultDict[
-            Type[Any],
-            list[Callable[[Any], None]]
-        ] = defaultdict(list)
+        self._subscribers: defaultdict[type[Any], list[Callable[[Any], None]]] = (
+            defaultdict(list)
+        )
 
     def subscribe(
         self,
-        event_type: Type[T],
+        event_type: type[T],
         handler: Callable[[T], None],
     ) -> None:
         """Register handler for event type."""
@@ -34,7 +34,7 @@ class EventBus:
 
     def unsubscribe(
         self,
-        event_type: Type[T],
+        event_type: type[T],
         handler: Callable[[T], None],
     ) -> None:
         """Remove handler if registered."""
@@ -57,7 +57,7 @@ class EventBus:
         """Remove all subscriptions."""
         self._subscribers.clear()
 
-    def has_subscribers(self, event_type: Type[Any]) -> bool:
+    def has_subscribers(self, event_type: type[Any]) -> bool:
         """Return True if any handler is registered."""
         return bool(self._subscribers.get(event_type))
 

@@ -1,11 +1,10 @@
-from core.analysis.mime_detector import MimeDetector
 from core.analysis.metadata_detector import MetadataDetector
-from core.analysis.pdf_detector import PDFDetector
+from core.analysis.mime_detector import MimeDetector
 from core.analysis.ocr_decision import OCRDecision
+from core.analysis.pdf_detector import PDFDetector
 
 
 class Document:
-
     def __init__(self, path):
         self.path = str(path)
 

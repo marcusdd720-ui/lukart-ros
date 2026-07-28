@@ -1,8 +1,5 @@
 from __future__ import annotations
 
-from pathlib import Path
-from typing import Type
-
 from factory.rqm.audit.rule import AuditRule
 
 
@@ -14,22 +11,20 @@ class AuditRegistry:
     """
 
     def __init__(self) -> None:
-        self._rules: list[Type[AuditRule]] = []
+        self._rules: list[type[AuditRule]] = []
 
-    def register(self, rule_cls: Type[AuditRule]) -> None:
+    def register(self, rule_cls: type[AuditRule]) -> None:
         """
         Register a new audit rule.
         """
 
         if not issubclass(rule_cls, AuditRule):
-            raise TypeError(
-                f"{rule_cls!r} is not a subclass of AuditRule"
-            )
+            raise TypeError(f"{rule_cls!r} is not a subclass of AuditRule")
 
         if rule_cls not in self._rules:
             self._rules.append(rule_cls)
 
-    def unregister(self, rule_cls: Type[AuditRule]) -> None:
+    def unregister(self, rule_cls: type[AuditRule]) -> None:
         """
         Remove a rule from the registry.
         """

@@ -10,8 +10,8 @@ Purpose:
 Builds the first Knowledge Graph from Markdown documents.
 """
 
-from knowledge.loader import DocumentLoader
 from knowledge.graph import KnowledgeGraph
+from knowledge.loader import DocumentLoader
 from knowledge.node import KnowledgeNode
 from knowledge.types import NodeType
 

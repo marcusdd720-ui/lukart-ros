@@ -3,20 +3,19 @@ Tests for RQM Audit Rules (Sprint P1.1)
 """
 
 from pathlib import Path
-import pytest
 
 from factory.rqm.audit.rules import (
     ALL_RULES,
-    ReadmeRule,
-    LicenseRule,
-    GitignoreRule,
-    WorkflowRule,
-    PyprojectRule,
-    InitRule,
-    EmptyDirectoryRule,
-    TodoRule,
-    LargeFileRule,
     DuplicateFileRule,
+    EmptyDirectoryRule,
+    GitignoreRule,
+    InitRule,
+    LargeFileRule,
+    LicenseRule,
+    PyprojectRule,
+    ReadmeRule,
+    TodoRule,
+    WorkflowRule,
 )
 
 

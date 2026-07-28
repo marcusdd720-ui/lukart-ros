@@ -35,11 +35,7 @@ class ReleaseQualityManager:
 
         self.state.save_snapshot(report)
 
-        report_path = (
-            self.root
-            / "reports"
-            / "quality_report.md"
-        )
+        report_path = self.root / "reports" / "quality_report.md"
 
         self.report_generator.save_markdown(
             report,

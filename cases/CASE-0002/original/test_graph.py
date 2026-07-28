@@ -60,9 +60,7 @@ def test_add_edge() -> None:
     graph.add_node(create_node("A"))
     graph.add_node(create_node("B"))
 
-    graph.add_edge(
-        create_edge("A", "B")
-    )
+    graph.add_edge(create_edge("A", "B"))
 
     assert graph.edge_count() == 1
     assert graph.contains_edge("A", "B")
@@ -74,9 +72,7 @@ def test_add_edge_unknown_source() -> None:
     graph.add_node(create_node("B"))
 
     try:
-        graph.add_edge(
-            create_edge("A", "B")
-        )
+        graph.add_edge(create_edge("A", "B"))
     except KeyError:
         pass
     else:
@@ -89,9 +85,7 @@ def test_add_edge_unknown_target() -> None:
     graph.add_node(create_node("A"))
 
     try:
-        graph.add_edge(
-            create_edge("A", "B")
-        )
+        graph.add_edge(create_edge("A", "B"))
     except KeyError:
         pass
     else:
@@ -104,9 +98,7 @@ def test_remove_edge() -> None:
     graph.add_node(create_node("A"))
     graph.add_node(create_node("B"))
 
-    graph.add_edge(
-        create_edge("A", "B")
-    )
+    graph.add_edge(create_edge("A", "B"))
 
     assert graph.remove_edge("A", "B")
     assert graph.edge_count() == 0
@@ -120,8 +112,9 @@ def test_remove_missing_edge() -> None:
 
     assert graph.remove_edge("A", "B") is False
 
+
 def test_neighbors() -> None:
-    
+
     graph = KnowledgeGraph()
     node_a = create_node("A")
     node_b = create_node("B")
@@ -217,6 +210,7 @@ def test_has_path_missing() -> None:
     graph.add_node(create_node("B"))
 
     assert graph.has_path("A", "A")
+
 
 def test_validate_integrity() -> None:
     graph = KnowledgeGraph()

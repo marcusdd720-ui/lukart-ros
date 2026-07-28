@@ -38,7 +38,7 @@ class ReleaseDecision(str, Enum):
         return mapping[self]
 
     @classmethod
-    def from_decision(cls, decision: Decision) -> "ReleaseDecision":
+    def from_decision(cls, decision: Decision) -> ReleaseDecision:
         """
         Convert Decision to the legacy ReleaseDecision enum.
         """

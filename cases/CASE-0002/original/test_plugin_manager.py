@@ -1,6 +1,6 @@
 import pytest
 
-from core.plugin_manager import PluginManager, Plugin
+from core.plugin_manager import Plugin, PluginManager
 
 
 class TestPlugin(Plugin):

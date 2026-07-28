@@ -41,31 +41,19 @@ class Result:
 
     @property
     def warning_count(self) -> int:
-        return sum(
-            finding.severity == Severity.WARNING
-            for finding in self.findings
-        )
+        return sum(finding.severity == Severity.WARNING for finding in self.findings)
 
     @property
     def error_count(self) -> int:
-        return sum(
-            finding.severity == Severity.ERROR
-            for finding in self.findings
-        )
+        return sum(finding.severity == Severity.ERROR for finding in self.findings)
 
     @property
     def critical_count(self) -> int:
-        return sum(
-            finding.severity == Severity.CRITICAL
-            for finding in self.findings
-        )
+        return sum(finding.severity == Severity.CRITICAL for finding in self.findings)
 
     @property
     def info_count(self) -> int:
-        return sum(
-            finding.severity == Severity.INFO
-            for finding in self.findings
-        )
+        return sum(finding.severity == Severity.INFO for finding in self.findings)
 
     @property
     def finding_count(self) -> int:
@@ -76,10 +64,7 @@ class Result:
         Return True if the result contains at least one finding
         with the given severity.
         """
-        return any(
-            finding.severity == severity
-            for finding in self.findings
-        )
+        return any(finding.severity == severity for finding in self.findings)
 
     def add_finding(self, finding: Finding) -> None:
         """Append a finding to the result."""

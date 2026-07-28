@@ -10,13 +10,11 @@ KnowledgeGraph validation rules.
 from __future__ import annotations
 
 from core.validation.models import (
+    Severity,
     ValidationContext,
     ValidationIssue,
-    Severity,
 )
-
 from core.validation.rules.base import BaseValidationRule
-
 from knowledge.graph import KnowledgeGraph
 
 
@@ -42,7 +40,6 @@ class GraphIntegrityRule(BaseValidationRule):
         issues: list[ValidationIssue] = []
 
         for error in target.validate_integrity():
-
             issues.append(
                 ValidationIssue(
                     code=self.rule_id,

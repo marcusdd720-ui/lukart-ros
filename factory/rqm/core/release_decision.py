@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from factory.rqm.model.provider_result import ProviderResult
+
 from factory.rqm.model.release_decision import ReleaseDecision
 
 

@@ -28,14 +28,14 @@ ALL_RULES = [
 
 __all__ = [
     "ALL_RULES",
-    "ReadmeRule",
-    "LicenseRule",
-    "GitignoreRule",
-    "WorkflowRule",
-    "PyprojectRule",
-    "InitRule",
-    "EmptyDirectoryRule",
-    "TodoRule",
-    "LargeFileRule",
     "DuplicateFileRule",
+    "EmptyDirectoryRule",
+    "GitignoreRule",
+    "InitRule",
+    "LargeFileRule",
+    "LicenseRule",
+    "PyprojectRule",
+    "ReadmeRule",
+    "TodoRule",
+    "WorkflowRule",
 ]

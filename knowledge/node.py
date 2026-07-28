@@ -28,8 +28,4 @@ class KnowledgeNode:
     description: str = ""
 
     def __str__(self) -> str:
-        return (
-            f"[{self.type}] "
-            f"{self.name} "
-            f"({self.id})"
-        )
+        return f"[{self.type}] {self.name} ({self.id})"

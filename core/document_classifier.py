@@ -27,7 +27,4 @@ class DocumentClassifier:
 
         extension = Path(file_path).suffix.lower()
 
-        return self.DOCUMENT_TYPES.get(
-            extension,
-            "UNKNOWN"
-        )
+        return self.DOCUMENT_TYPES.get(extension, "UNKNOWN")

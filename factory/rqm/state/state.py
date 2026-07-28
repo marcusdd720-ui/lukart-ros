@@ -24,9 +24,7 @@ class StateManager:
             return []
 
         try:
-            return json.loads(
-                self.path.read_text(encoding="utf-8")
-            )
+            return json.loads(self.path.read_text(encoding="utf-8"))
         except Exception:
             return []
 

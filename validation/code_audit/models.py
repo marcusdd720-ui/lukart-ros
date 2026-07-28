@@ -1,7 +1,7 @@
 from __future__ import annotations
+
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import List, Optional
 
 
 class Severity(str, Enum):
@@ -16,25 +16,25 @@ class Finding:
     severity: Severity
     message: str
     file: str
-    line: Optional[int] = None
-    column: Optional[int] = None
-    symbol: Optional[str] = None
+    line: int | None = None
+    column: int | None = None
+    symbol: str | None = None
 
 
 @dataclass
 class AuditReport:
-    findings: List[Finding] = field(default_factory=list)
+    findings: list[Finding] = field(default_factory=list)
 
     @property
-    def errors(self) -> List[Finding]:
+    def errors(self) -> list[Finding]:
         return [f for f in self.findings if f.severity == Severity.ERROR]
 
     @property
-    def warnings(self) -> List[Finding]:
+    def warnings(self) -> list[Finding]:
         return [f for f in self.findings if f.severity == Severity.WARNING]
 
     @property
-    def infos(self) -> List[Finding]:
+    def infos(self) -> list[Finding]:
         return [f for f in self.findings if f.severity == Severity.INFO]
 
     def add(self, finding: Finding) -> None:

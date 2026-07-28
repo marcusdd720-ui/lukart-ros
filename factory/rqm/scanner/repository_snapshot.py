@@ -1,17 +1,25 @@
+from __future__ import annotations
+
 from dataclasses import dataclass
 from datetime import datetime
-from typing import List
 
 from factory.rqm.scanner.file_info import FileInfo
-   
+
+
 @dataclass(frozen=True)
 class RepositorySnapshot:
-    """Kompletny obraz repozytorium po skanowaniu."""
+    """
+    Complete immutable snapshot of the repository after scanning.
+    """
 
-    files: List[FileInfo]
-    statistics: Dict
+    files: list[FileInfo]
+
+    statistics: dict
+
     scan_time: float
+
     ignored_count: int
+
     repository_hash: str
-    timestamp: datetime       n 
-    
+
+    timestamp: datetime

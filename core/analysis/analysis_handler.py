@@ -13,7 +13,7 @@ class AnalysisHandler(ABC):
     def __init__(self):
         self._next = None
 
-    def set_next(self, handler: "AnalysisHandler") -> "AnalysisHandler":
+    def set_next(self, handler: AnalysisHandler) -> AnalysisHandler:
         """
         Łączy kolejny element pipeline.
         """

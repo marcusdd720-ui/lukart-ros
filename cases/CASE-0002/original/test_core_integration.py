@@ -1,8 +1,8 @@
 from core.configuration import Configuration
-from core.registry import Registry
-from core.plugin_manager import PluginManager
-from core.event_bus import EventBus
 from core.container import Container
+from core.event_bus import EventBus
+from core.plugin_manager import PluginManager
+from core.registry import Registry
 
 
 def test_core_integration():

@@ -1,5 +1,6 @@
 from collections import defaultdict
-from typing import Any, Callable, DefaultDict, List
+from collections.abc import Callable
+from typing import Any
 
 
 class EventBus:
@@ -8,7 +9,7 @@ class EventBus:
     """
 
     def __init__(self):
-        self._subscribers: DefaultDict[str, List[Callable]] = defaultdict(list)
+        self._subscribers: defaultdict[str, list[Callable]] = defaultdict(list)
 
     def subscribe(self, event: str, handler: Callable):
         """Rejestruje handler dla zdarzenia."""
@@ -19,8 +20,7 @@ class EventBus:
         """Usuwa handler."""
         if event in self._subscribers:
             self._subscribers[event] = [
-                h for h in self._subscribers[event]
-                if h != handler
+                h for h in self._subscribers[event] if h != handler
             ]
 
             if not self._subscribers[event]:

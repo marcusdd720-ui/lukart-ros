@@ -5,18 +5,9 @@ def main():
 
     engine = AnalysisEngine()
 
-    files = [
-
-        "tests/test_document_analyzer.py",
-
-        "README.md",
-
-        "nie_istnieje.pdf"
-
-    ]
+    files = ["tests/test_document_analyzer.py", "README.md", "nie_istnieje.pdf"]
 
     for file in files:
-
         profile = engine.analyze(file)
 
         print("=" * 60)

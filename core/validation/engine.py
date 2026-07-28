@@ -13,10 +13,8 @@ from typing import Any
 
 from core.validation.models import (
     ValidationContext,
-    ValidationIssue,
     ValidationReport,
 )
-
 from core.validation.rules.base import BaseValidationRule
 
 
@@ -74,7 +72,6 @@ class ValidationEngine:
         report = ValidationReport()
 
         for rule in self._rules:
-
             issues = rule.validate(
                 target=target,
                 context=context,
@@ -91,7 +88,4 @@ class ValidationEngine:
         return iter(self._rules)
 
     def __repr__(self) -> str:
-        return (
-            f"ValidationEngine("
-            f"rules={len(self._rules)})"
-        )
+        return f"ValidationEngine(rules={len(self._rules)})"

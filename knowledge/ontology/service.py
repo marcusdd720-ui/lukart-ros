@@ -4,8 +4,8 @@ Ontology Application Service.
 
 from __future__ import annotations
 
-from .factory import OntologyFactory
 from .concept import OntologyConcept
+from .factory import OntologyFactory
 from .relation import Relation
 from .report import ValidationReport
 from .repository import OntologyRepository

@@ -6,7 +6,6 @@ from datetime import datetime
 from factory.rqm.model.decision import Decision
 from factory.rqm.model.report import Report
 from factory.rqm.model.result import Result
-from factory.rqm.model.score import Score
 
 
 @dataclass(frozen=True, slots=True)
@@ -54,16 +53,10 @@ class QualityReport:
         return self.report.metadata
 
     def provider_map(self) -> dict[str, Result]:
-        return {
-            result.name: result
-            for result in self.report.results
-        }
+        return {result.name: result for result in self.report.results}
 
     def has_critical_findings(self) -> bool:
-        return any(
-            result.failed
-            for result in self.report.results
-        )
+        return any(result.failed for result in self.report.results)
 
     def to_report(self) -> Report:
         """
@@ -72,7 +65,7 @@ class QualityReport:
         return self.report
 
     @classmethod
-    def from_report(cls, report: Report) -> "QualityReport":
+    def from_report(cls, report: Report) -> QualityReport:
         """
         Create a compatibility wrapper from a Common Domain Model report.
         """

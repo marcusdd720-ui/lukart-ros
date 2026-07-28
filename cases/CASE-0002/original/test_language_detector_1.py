@@ -26,9 +26,7 @@ def test_detect_polish(detector):
 
 def test_detect_english(detector):
     doc = Document()
-    doc.text = (
-        "This is a simple English sentence used for language detection."
-    )
+    doc.text = "This is a simple English sentence used for language detection."
 
     detector.handle(doc)
 

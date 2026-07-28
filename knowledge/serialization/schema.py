@@ -27,23 +27,15 @@ class GraphSchemaValidator:
     ) -> None:
 
         if not isinstance(data, dict):
-            raise SchemaValidationError(
-                "Serialized graph must be a dictionary."
-            )
+            raise SchemaValidationError("Serialized graph must be a dictionary.")
 
         missing = self.REQUIRED_ROOT_KEYS - set(data.keys())
 
         if missing:
-            raise SchemaValidationError(
-                f"Missing keys: {sorted(missing)}"
-            )
+            raise SchemaValidationError(f"Missing keys: {sorted(missing)}")
 
         if not isinstance(data["nodes"], list):
-            raise SchemaValidationError(
-                "'nodes' must be a list."
-            )
+            raise SchemaValidationError("'nodes' must be a list.")
 
         if not isinstance(data["edges"], list):
-            raise SchemaValidationError(
-                "'edges' must be a list."
-            )
+            raise SchemaValidationError("'edges' must be a list.")

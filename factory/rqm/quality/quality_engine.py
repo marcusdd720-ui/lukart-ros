@@ -2,10 +2,11 @@ from __future__ import annotations
 
 from pathlib import Path
 
+from factory.rqm.provider.provider_registry import ProviderRegistry
+
 from factory.rqm.model import Report, Result
-from factory.rqm.providers.provider_registry import ProviderRegistry
-from factory.rqm.quality.score_engine import ScoreEngine
 from factory.rqm.quality.decision_policy import DecisionPolicy
+from factory.rqm.quality.score_engine import ScoreEngine
 
 
 class QualityEngine:
@@ -38,7 +39,6 @@ class QualityEngine:
         results: list[Result] = []
 
         for provider in self.registry.create_all(self.root):
-
             provider_result = provider.run()
 
             if hasattr(provider_result, "to_result"):

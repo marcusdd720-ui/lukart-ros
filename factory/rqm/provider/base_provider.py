@@ -54,7 +54,4 @@ class BaseProvider(ABC):
         return self.name
 
     def __repr__(self) -> str:
-        return (
-            f"{self.__class__.__name__}"
-            f"(name={self.name!r}, root={str(self.root)!r})"
-        )
+        return f"{self.__class__.__name__}(name={self.name!r}, root={str(self.root)!r})"

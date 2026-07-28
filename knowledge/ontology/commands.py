@@ -6,7 +6,7 @@ Commands represent requests that modify ontology state.
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 
 from core.models.ids import EntityId
 from core.models.shared.metadata import Metadata

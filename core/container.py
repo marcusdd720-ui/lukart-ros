@@ -1,4 +1,5 @@
-from typing import Any, Callable, Dict
+from collections.abc import Callable
+from typing import Any
 
 
 class Container:
@@ -7,8 +8,8 @@ class Container:
     """
 
     def __init__(self):
-        self._factories: Dict[str, Callable[[], Any]] = {}
-        self._instances: Dict[str, Any] = {}
+        self._factories: dict[str, Callable[[], Any]] = {}
+        self._instances: dict[str, Any] = {}
 
     def register(self, name: str, factory: Callable[[], Any]):
         """

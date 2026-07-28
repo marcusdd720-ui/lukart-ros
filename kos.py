@@ -1,10 +1,10 @@
 import sys
 
 from core.case_manager import CaseManager
-from core.import_manager import ImportManager
 from core.document_classifier import DocumentClassifier
-from core.document_scanner import DocumentScanner
 from core.document_pipeline import DocumentPipeline
+from core.document_scanner import DocumentScanner
+from core.import_manager import ImportManager
 
 
 def print_help():
@@ -27,7 +27,6 @@ def main():
     command = sys.argv[1]
 
     if command == "new-case":
-
         manager = CaseManager()
         case_path = manager.create_case()
 
@@ -35,7 +34,6 @@ def main():
         print(f"Location: {case_path}")
 
     elif command == "import":
-
         if len(sys.argv) != 4:
             print("Usage:")
             print('python Kos.py import CASE-0001 "C:\\Documents"')
@@ -46,10 +44,7 @@ def main():
 
         manager = ImportManager()
 
-        files, folders = manager.import_directory(
-            case_id,
-            source_directory
-        )
+        files, folders = manager.import_directory(case_id, source_directory)
 
         print()
         print("Import completed")
@@ -60,7 +55,6 @@ def main():
         print(f"Destination : cases/{case_id}/original")
 
     elif command == "classify":
-
         if len(sys.argv) != 3:
             print("Usage:")
             print("python Kos.py classify file.pdf")
@@ -73,7 +67,6 @@ def main():
         print(f"Document type : {document_type}")
 
     elif command == "scan":
-
         if len(sys.argv) != 3:
             print("Usage:")
             print("python Kos.py scan <DIRECTORY>")
@@ -94,7 +87,6 @@ def main():
         print(f"Total documents: {len(documents)}")
 
     elif command == "process":
-
         if len(sys.argv) != 3:
             print("Usage:")
             print("python Kos.py process <DIRECTORY>")
@@ -110,11 +102,7 @@ def main():
         print("------------------------------")
 
         for document in documents:
-
-            processor = pipeline.process(
-                document,
-                document.document_type
-            )
+            processor = pipeline.process(document, document.document_type)
 
             print(f"{document.path:<50} -> {processor}")
 
@@ -122,7 +110,6 @@ def main():
         print(f"Processed documents: {len(documents)}")
 
     else:
-
         print(f"Unknown command: {command}")
         print()
 

@@ -86,7 +86,6 @@ class DepthFirstSearch:
         visited.add(current)
 
         for neighbor in self._graph.neighbors(current):
-
             if neighbor.id in visited:
                 continue
 

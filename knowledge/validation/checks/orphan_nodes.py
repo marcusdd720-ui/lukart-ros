@@ -30,10 +30,5 @@ class OrphanNodesCheck:
             connected.add(edge.target)
 
         for node_id in graph.nodes:
-
             if node_id not in connected:
-
-                result.add(
-                    "ORPHAN_NODE",
-                    f"Node '{node_id}' is orphan."
-                )
+                result.add("ORPHAN_NODE", f"Node '{node_id}' is orphan.")

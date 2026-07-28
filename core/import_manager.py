@@ -1,5 +1,5 @@
-from pathlib import Path
 import shutil
+from pathlib import Path
 
 
 class ImportManager:
@@ -34,9 +34,7 @@ class ImportManager:
         counter = 1
 
         while True:
-            candidate = target.with_name(
-                f"{target.stem}_{counter}{target.suffix}"
-            )
+            candidate = target.with_name(f"{target.stem}_{counter}{target.suffix}")
 
             if not candidate.exists():
                 return candidate
@@ -56,30 +54,23 @@ class ImportManager:
         source = Path(source_directory)
 
         if not source.exists():
-            raise FileNotFoundError(
-                f"Source directory '{source}' does not exist."
-            )
+            raise FileNotFoundError(f"Source directory '{source}' does not exist.")
 
         if not source.is_dir():
-            raise NotADirectoryError(
-                f"'{source}' is not a directory."
-            )
+            raise NotADirectoryError(f"'{source}' is not a directory.")
 
         files_count = 0
         folders_count = 0
 
         for item in source.rglob("*"):
-
             relative = item.relative_to(source)
             target = destination / relative
 
             if item.is_dir():
-
                 target.mkdir(parents=True, exist_ok=True)
                 folders_count += 1
 
             else:
-
                 target.parent.mkdir(parents=True, exist_ok=True)
 
                 target = self._unique_target(target)

@@ -26,30 +26,20 @@ class GraphValidator:
         node_ids = set()
 
         for node in graph.nodes.values():
-
             if node.id in node_ids:
-                errors.append(
-                    f"Duplicate node id: {node.id}"
-                )
+                errors.append(f"Duplicate node id: {node.id}")
 
             node_ids.add(node.id)
 
             if not node.name:
-                errors.append(
-                    f"Node {node.id} has no name."
-                )
+                errors.append(f"Node {node.id} has no name.")
 
         for edge in graph.edges:
-
             if edge.source not in graph.nodes:
-                errors.append(
-                    f"Missing source node: {edge.source}"
-                )
+                errors.append(f"Missing source node: {edge.source}")
 
             if edge.target not in graph.nodes:
-                errors.append(
-                    f"Missing target node: {edge.target}"
-                )
+                errors.append(f"Missing target node: {edge.target}")
 
         return errors
 

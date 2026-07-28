@@ -2,7 +2,6 @@ from core.analysis.mime_detector import MimeDetector
 
 
 class Document:
-
     def __init__(self, path):
         self.path = path
         self.mime_type = None

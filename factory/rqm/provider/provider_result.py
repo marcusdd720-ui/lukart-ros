@@ -1,7 +1,8 @@
 from __future__ import annotations
 
+from collections.abc import Iterator
 from dataclasses import dataclass, field
-from typing import Any, Iterator
+from typing import Any
 
 from factory.rqm.model import Finding, Result
 
@@ -35,7 +36,7 @@ class ProviderResult:
         )
 
     @classmethod
-    def from_result(cls, result: Result) -> "ProviderResult":
+    def from_result(cls, result: Result) -> ProviderResult:
         """
         Create a ProviderResult from the Common Domain Model.
         """

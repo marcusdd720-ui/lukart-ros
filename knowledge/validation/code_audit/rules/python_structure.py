@@ -1,7 +1,7 @@
 from __future__ import annotations
+
 import ast
 from pathlib import Path
-from typing import List, Dict
 
 from validation.code_audit.models import Finding, Severity
 from validation.code_audit.rules.base import BaseRule
@@ -11,10 +11,10 @@ class StructureRule(BaseRule):
     rule_id = "STRUCT001"
     description = "Wykrywa zduplikowane definicje funkcji i klas"
 
-    def check(self, tree: ast.AST, file_path: Path) -> List[Finding]:
-        findings: List[Finding] = []
-        seen_functions: Dict[str, int] = {}
-        seen_classes: Dict[str, int] = {}
+    def check(self, tree: ast.AST, file_path: Path) -> list[Finding]:
+        findings: list[Finding] = []
+        seen_functions: dict[str, int] = {}
+        seen_classes: dict[str, int] = {}
 
         for node in ast.walk(tree):
             if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):

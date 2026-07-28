@@ -25,20 +25,15 @@ class DuplicateEdgesCheck:
         seen: set[tuple[str, str]] = set()
 
         for edge in graph.edges:
-
             key = (
                 edge.source,
                 edge.target,
             )
 
             if key in seen:
-
                 result.add(
                     "DUPLICATE_EDGE",
-                    (
-                        f"Duplicate edge "
-                        f"{edge.source} -> {edge.target}"
-                    ),
+                    (f"Duplicate edge {edge.source} -> {edge.target}"),
                 )
 
             else:

@@ -31,7 +31,6 @@ class AuditEngine:
         findings: list[Finding] = []
 
         for rule in self.registry.create_all():
-
             try:
                 result = rule.check(self.root)
 
@@ -59,7 +58,4 @@ class AuditEngine:
         return len(self.registry)
 
     def __repr__(self) -> str:
-        return (
-            f"{self.__class__.__name__}"
-            f"(rules={self.rule_count})"
-        )
+        return f"{self.__class__.__name__}(rules={self.rule_count})"

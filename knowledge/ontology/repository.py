@@ -26,83 +26,69 @@ class OntologyRepository(ABC):
     # ------------------------------------------------------------------
 
     @abstractmethod
-    def add_concept(self, concept: OntologyConcept) -> None:
-        ...
+    def add_concept(self, concept: OntologyConcept) -> None: ...
 
     @abstractmethod
-    def update_concept(self, concept: OntologyConcept) -> None:
-        ...
+    def update_concept(self, concept: OntologyConcept) -> None: ...
 
     @abstractmethod
-    def remove_concept(self, concept_id: EntityId) -> None:
-        ...
+    def remove_concept(self, concept_id: EntityId) -> None: ...
 
     @abstractmethod
     def get_concept(
         self,
         concept_id: EntityId,
-    ) -> OntologyConcept | None:
-        ...
+    ) -> OntologyConcept | None: ...
 
     @abstractmethod
     def find_by_name(
         self,
         name: str,
-    ) -> OntologyConcept | None:
-        ...
+    ) -> OntologyConcept | None: ...
 
     @abstractmethod
-    def list_concepts(self) -> Iterable[OntologyConcept]:
-        ...
+    def list_concepts(self) -> Iterable[OntologyConcept]: ...
 
     # ------------------------------------------------------------------
     # Relations
     # ------------------------------------------------------------------
 
     @abstractmethod
-    def add_relation(self, relation: Relation) -> None:
-        ...
+    def add_relation(self, relation: Relation) -> None: ...
 
     @abstractmethod
     def remove_relation(
         self,
         relation_id: EntityId,
-    ) -> None:
-        ...
+    ) -> None: ...
 
     @abstractmethod
     def get_relation(
         self,
         relation_id: EntityId,
-    ) -> Relation | None:
-        ...
+    ) -> Relation | None: ...
 
     @abstractmethod
-    def list_relations(self) -> Iterable[Relation]:
-        ...
+    def list_relations(self) -> Iterable[Relation]: ...
 
     @abstractmethod
     def outgoing(
         self,
         source: EntityId,
-    ) -> Iterable[Relation]:
-        ...
+    ) -> Iterable[Relation]: ...
 
     @abstractmethod
     def incoming(
         self,
         target: EntityId,
-    ) -> Iterable[Relation]:
-        ...
+    ) -> Iterable[Relation]: ...
 
     # ------------------------------------------------------------------
     # General
     # ------------------------------------------------------------------
 
     @abstractmethod
-    def clear(self) -> None:
-        ...
+    def clear(self) -> None: ...
 
     @abstractmethod
-    def size(self) -> int:
-        ...
+    def size(self) -> int: ...

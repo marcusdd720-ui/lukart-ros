@@ -8,7 +8,6 @@ from factory.rqm.model.finding import Finding
 
 
 class DuplicateFileRule(AuditRule):
-
     rule_id = "DUP001"
     name = "No duplicate files"
     description = "Detect exact duplicate files in repository"

@@ -26,9 +26,7 @@ class ProjectStateLoader:
     def load(self) -> ProjectState:
 
         if not self.path.exists():
-            raise FileNotFoundError(
-                f"Project state file not found: {self.path}"
-            )
+            raise FileNotFoundError(f"Project state file not found: {self.path}")
 
         with open(self.path, encoding="utf-8") as file:
             data = yaml.safe_load(file)

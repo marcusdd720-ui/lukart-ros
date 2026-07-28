@@ -17,13 +17,11 @@ class FileDetector:
         profile.is_file = path.is_file()
 
         if profile.exists and profile.is_file:
-
             profile.size = path.stat().st_size
 
             profile.is_empty = profile.size == 0
 
         else:
-
             profile.size = 0
 
             profile.is_empty = True

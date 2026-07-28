@@ -11,21 +11,14 @@ High-performance directed Knowledge Graph.
 from __future__ import annotations
 
 from collections import deque
+from collections.abc import Iterable, Iterator
 from copy import deepcopy
 from dataclasses import dataclass, field
 from typing import Any
-from typing import Dict
-from typing import Iterable
-from typing import Iterator
-from typing import List
-from typing import Optional
-from typing import Set
 
 from core.models.ids import EntityId
-
 from knowledge.edge import KnowledgeEdge
 from knowledge.node import KnowledgeNode
-
 
 # ============================================================
 # Exceptions
@@ -61,9 +54,9 @@ class GraphValidationError(GraphError):
 # ============================================================
 
 
-NodeDict = Dict[EntityId, KnowledgeNode]
-EdgeList = List[KnowledgeEdge]
-NeighborSet = Set[EntityId]
+NodeDict = dict[EntityId, KnowledgeNode]
+EdgeList = list[KnowledgeEdge]
+NeighborSet = set[EntityId]
 
 
 # ============================================================
@@ -81,13 +74,9 @@ class KnowledgeGraph:
 
     edges: EdgeList = field(default_factory=list)
 
-    adjacency: Dict[EntityId, NeighborSet] = field(
-        default_factory=dict
-    )
+    adjacency: dict[EntityId, NeighborSet] = field(default_factory=dict)
 
-    reverse_adjacency: Dict[EntityId, NeighborSet] = field(
-        default_factory=dict
-    )
+    reverse_adjacency: dict[EntityId, NeighborSet] = field(default_factory=dict)
 
     # --------------------------------------------------------
     # Construction
@@ -108,7 +97,7 @@ class KnowledgeGraph:
         """Return True if graph has no nodes."""
         return not self.nodes
 
-    def copy(self) -> "KnowledgeGraph":
+    def copy(self) -> KnowledgeGraph:
         """Deep copy."""
         return deepcopy(self)
 
@@ -125,11 +114,7 @@ class KnowledgeGraph:
         return node_id in self.nodes
 
     def __repr__(self) -> str:
-        return (
-            "KnowledgeGraph("
-            f"nodes={len(self.nodes)}, "
-            f"edges={len(self.edges)})"
-        )
+        return f"KnowledgeGraph(nodes={len(self.nodes)}, edges={len(self.edges)})"
 
     # --------------------------------------------------------
     # Internal index management
@@ -145,9 +130,7 @@ class KnowledgeGraph:
             self.reverse_adjacency.setdefault(node_id, set())
 
         for edge in self.edges:
-            self.adjacency.setdefault(edge.source, set()).add(
-                edge.target
-            )
+            self.adjacency.setdefault(edge.source, set()).add(edge.target)
             self.reverse_adjacency.setdefault(
                 edge.target,
                 set(),
@@ -163,9 +146,7 @@ class KnowledgeGraph:
     ) -> None:
         """Add a node to the graph."""
         if node.id in self.nodes:
-            raise NodeAlreadyExists(
-                f"Node '{node.id}' already exists."
-            )
+            raise NodeAlreadyExists(f"Node '{node.id}' already exists.")
 
         self.nodes[node.id] = node
         self.adjacency.setdefault(node.id, set())
@@ -182,7 +163,7 @@ class KnowledgeGraph:
     def get_node(
         self,
         node_id: EntityId,
-    ) -> Optional[KnowledgeNode]:
+    ) -> KnowledgeNode | None:
         """Return node or None."""
         return self.nodes.get(node_id)
 
@@ -206,17 +187,14 @@ class KnowledgeGraph:
     ) -> None:
         """Remove node together with all connected edges."""
         if node_id not in self.nodes:
-            raise NodeNotFound(
-                f"Unknown node '{node_id}'."
-            )
+            raise NodeNotFound(f"Unknown node '{node_id}'.")
 
         del self.nodes[node_id]
 
         self.edges = [
             edge
             for edge in self.edges
-            if edge.source != node_id
-            and edge.target != node_id
+            if edge.source != node_id and edge.target != node_id
         ]
 
         self._rebuild_indexes()
@@ -239,22 +217,17 @@ class KnowledgeGraph:
     ) -> None:
         """Add edge to graph."""
         if edge.source not in self.nodes:
-            raise NodeNotFound(
-                f"Unknown source node '{edge.source}'."
-            )
+            raise NodeNotFound(f"Unknown source node '{edge.source}'.")
 
         if edge.target not in self.nodes:
-            raise NodeNotFound(
-                f"Unknown target node '{edge.target}'."
-            )
+            raise NodeNotFound(f"Unknown target node '{edge.target}'.")
 
         if self.contains_edge(
             edge.source,
             edge.target,
         ):
             raise EdgeAlreadyExists(
-                f"Edge '{edge.source}' -> "
-                f"'{edge.target}' already exists."
+                f"Edge '{edge.source}' -> '{edge.target}' already exists."
             )
 
         self.edges.append(edge)
@@ -281,13 +254,10 @@ class KnowledgeGraph:
         self,
         source: EntityId,
         target: EntityId,
-    ) -> Optional[KnowledgeEdge]:
+    ) -> KnowledgeEdge | None:
         """Return edge or None."""
         for edge in self.edges:
-            if (
-                edge.source == source
-                and edge.target == target
-            ):
+            if edge.source == source and edge.target == target:
                 return edge
 
         return None
@@ -345,9 +315,9 @@ class KnowledgeGraph:
     def successors(
         self,
         node_id: EntityId,
-    ) -> List[KnowledgeNode]:
+    ) -> list[KnowledgeNode]:
         """Return successor nodes."""
-        result: List[KnowledgeNode] = []
+        result: list[KnowledgeNode] = []
 
         for successor_id in self.adjacency.get(
             node_id,
@@ -363,9 +333,9 @@ class KnowledgeGraph:
     def predecessors(
         self,
         node_id: EntityId,
-    ) -> List[KnowledgeNode]:
+    ) -> list[KnowledgeNode]:
         """Return predecessor nodes."""
-        result: List[KnowledgeNode] = []
+        result: list[KnowledgeNode] = []
 
         for predecessor_id in self.reverse_adjacency.get(
             node_id,
@@ -381,7 +351,7 @@ class KnowledgeGraph:
     def neighbors(
         self,
         node_id: EntityId,
-    ) -> List[KnowledgeNode]:
+    ) -> list[KnowledgeNode]:
         """Alias for successors()."""
         return self.successors(node_id)
 
@@ -414,10 +384,7 @@ class KnowledgeGraph:
         node_id: EntityId,
     ) -> int:
         """Return total degree."""
-        return (
-            self.in_degree(node_id)
-            + self.out_degree(node_id)
-        )
+        return self.in_degree(node_id) + self.out_degree(node_id)
 
     # --------------------------------------------------------
     # Graph Traversal
@@ -426,16 +393,14 @@ class KnowledgeGraph:
     def bfs(
         self,
         start: EntityId,
-    ) -> List[KnowledgeNode]:
+    ) -> list[KnowledgeNode]:
         """Breadth-first traversal."""
         if start not in self.nodes:
-            raise NodeNotFound(
-                f"Unknown node '{start}'."
-            )
+            raise NodeNotFound(f"Unknown node '{start}'.")
 
-        visited: Set[EntityId] = set()
+        visited: set[EntityId] = set()
         queue: deque[EntityId] = deque([start])
-        result: List[KnowledgeNode] = []
+        result: list[KnowledgeNode] = []
 
         while queue:
             current = queue.popleft()
@@ -461,16 +426,14 @@ class KnowledgeGraph:
     def dfs(
         self,
         start: EntityId,
-    ) -> List[KnowledgeNode]:
+    ) -> list[KnowledgeNode]:
         """Depth-first traversal."""
         if start not in self.nodes:
-            raise NodeNotFound(
-                f"Unknown node '{start}'."
-            )
+            raise NodeNotFound(f"Unknown node '{start}'.")
 
-        visited: Set[EntityId] = set()
-        stack: List[EntityId] = [start]
-        result: List[KnowledgeNode] = []
+        visited: set[EntityId] = set()
+        stack: list[EntityId] = [start]
+        result: list[KnowledgeNode] = []
 
         while stack:
             current = stack.pop()
@@ -505,7 +468,7 @@ class KnowledgeGraph:
         if source == target:
             return source in self.nodes
 
-        visited: Set[EntityId] = set()
+        visited: set[EntityId] = set()
         queue: deque[EntityId] = deque([source])
 
         while queue:
@@ -532,24 +495,20 @@ class KnowledgeGraph:
         self,
         source: EntityId,
         target: EntityId,
-    ) -> List[KnowledgeNode]:
+    ) -> list[KnowledgeNode]:
         """Return shortest path using BFS."""
         if source not in self.nodes:
-            raise NodeNotFound(
-                f"Unknown node '{source}'."
-            )
+            raise NodeNotFound(f"Unknown node '{source}'.")
 
         if target not in self.nodes:
-            raise NodeNotFound(
-                f"Unknown node '{target}'."
-            )
+            raise NodeNotFound(f"Unknown node '{target}'.")
 
         if source == target:
             return [self.nodes[source]]
 
         queue: deque[EntityId] = deque([source])
-        visited: Set[EntityId] = {source}
-        previous: Dict[EntityId, EntityId] = {}
+        visited: set[EntityId] = {source}
+        previous: dict[EntityId, EntityId] = {}
 
         while queue:
             current = queue.popleft()
@@ -573,17 +532,14 @@ class KnowledgeGraph:
         if target not in previous:
             return []
 
-        path: List[EntityId] = [target]
+        path: list[EntityId] = [target]
 
         while path[-1] != source:
             path.append(previous[path[-1]])
 
         path.reverse()
 
-        return [
-            self.nodes[node_id]
-            for node_id in path
-        ]
+        return [self.nodes[node_id] for node_id in path]
 
     # --------------------------------------------------------
     # Iterators
@@ -624,74 +580,48 @@ class KnowledgeGraph:
         errors = self._validate_graph()
 
         if errors:
-            raise GraphValidationError(
-                "\n".join(errors)
-            )
+            raise GraphValidationError("\n".join(errors))
 
-    def _validate_graph(self) -> List[str]:
+    def _validate_graph(self) -> list[str]:
         """Internal graph validation."""
-        errors: List[str] = []
+        errors: list[str] = []
 
         for edge in self.edges:
             if edge.source not in self.nodes:
-                errors.append(
-                    f"Missing source node: {edge.source}"
-                )
+                errors.append(f"Missing source node: {edge.source}")
 
             if edge.target not in self.nodes:
-                errors.append(
-                    f"Missing target node: {edge.target}"
-                )
+                errors.append(f"Missing target node: {edge.target}")
 
         for source, targets in self.adjacency.items():
             if source not in self.nodes:
-                errors.append(
-                    f"Adjacency references "
-                    f"unknown node: {source}"
-                )
+                errors.append(f"Adjacency references unknown node: {source}")
 
             for target in targets:
                 if target not in self.nodes:
-                    errors.append(
-                        f"Adjacency contains "
-                        f"unknown target: {target}"
-                    )
+                    errors.append(f"Adjacency contains unknown target: {target}")
 
                 if not self.contains_edge(
                     source,
                     target,
                 ):
-                    errors.append(
-                        f"Missing edge "
-                        f"{source} -> {target}"
-                    )
+                    errors.append(f"Missing edge {source} -> {target}")
 
-        for target, sources in (
-            self.reverse_adjacency.items()
-        ):
+        for target, sources in self.reverse_adjacency.items():
             if target not in self.nodes:
-                errors.append(
-                    f"Reverse adjacency "
-                    f"references unknown node: "
-                    f"{target}"
-                )
+                errors.append(f"Reverse adjacency references unknown node: {target}")
 
             for source in sources:
                 if source not in self.nodes:
                     errors.append(
-                        f"Reverse adjacency "
-                        f"contains unknown source: "
-                        f"{source}"
+                        f"Reverse adjacency contains unknown source: {source}"
                     )
 
                 if not self.contains_edge(
                     source,
                     target,
                 ):
-                    errors.append(
-                        f"Missing reverse edge "
-                        f"{source} -> {target}"
-                    )
+                    errors.append(f"Missing reverse edge {source} -> {target}")
 
         return errors
 
@@ -699,7 +629,7 @@ class KnowledgeGraph:
     # Serialization
     # --------------------------------------------------------
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Serialize graph."""
         return {
             "nodes": list(self.nodes.values()),
@@ -709,18 +639,14 @@ class KnowledgeGraph:
     @classmethod
     def from_dict(
         cls,
-        data: Dict[str, Any],
-    ) -> "KnowledgeGraph":
+        data: dict[str, Any],
+    ) -> KnowledgeGraph:
         """Create graph from dictionary."""
         graph = cls()
 
-        graph.add_nodes(
-            data.get("nodes", [])
-        )
+        graph.add_nodes(data.get("nodes", []))
 
-        graph.add_edges(
-            data.get("edges", [])
-        )
+        graph.add_edges(data.get("edges", []))
 
         return graph
 
@@ -731,7 +657,7 @@ class KnowledgeGraph:
     def subgraph(
         self,
         node_ids: Iterable[EntityId],
-    ) -> "KnowledgeGraph":
+    ) -> KnowledgeGraph:
         """Create subgraph."""
         graph = KnowledgeGraph()
 
@@ -741,94 +667,65 @@ class KnowledgeGraph:
             node = self.nodes.get(node_id)
 
             if node is not None:
-                graph.add_node(
-                    deepcopy(node)
-                )
+                graph.add_node(deepcopy(node))
 
         for edge in self.edges:
-            if (
-                edge.source in selected
-                and edge.target in selected
-            ):
-                graph.add_edge(
-                    deepcopy(edge)
-                )
+            if edge.source in selected and edge.target in selected:
+                graph.add_edge(deepcopy(edge))
 
         return graph
 
     def merge(
         self,
-        other: "KnowledgeGraph",
+        other: KnowledgeGraph,
     ) -> None:
         """Merge another graph."""
         for node in other.nodes.values():
             if not self.contains_node(node.id):
-                self.add_node(
-                    deepcopy(node)
-                )
+                self.add_node(deepcopy(node))
 
         for edge in other.edges:
             if not self.contains_edge(
                 edge.source,
                 edge.target,
             ):
-                self.add_edge(
-                    deepcopy(edge)
-                )
+                self.add_edge(deepcopy(edge))
 
     def to_adjacency_dict(
         self,
-    ) -> Dict[
+    ) -> dict[
         EntityId,
-        List[EntityId],
+        list[EntityId],
     ]:
         """Return adjacency dictionary."""
-        return {
-            node: sorted(targets)
-            for node, targets
-            in self.adjacency.items()
-        }
+        return {node: sorted(targets) for node, targets in self.adjacency.items()}
 
-    def leaves(self) -> List[KnowledgeNode]:
+    def leaves(self) -> list[KnowledgeNode]:
         """Return leaf nodes."""
-        return [
-            node
-            for node in self.nodes.values()
-            if self.out_degree(node.id) == 0
-        ]
+        return [node for node in self.nodes.values() if self.out_degree(node.id) == 0]
 
-    def roots(self) -> List[KnowledgeNode]:
+    def roots(self) -> list[KnowledgeNode]:
         """Return root nodes."""
-        return [
-            node
-            for node in self.nodes.values()
-            if self.in_degree(node.id) == 0
-        ]
+        return [node for node in self.nodes.values() if self.in_degree(node.id) == 0]
 
     def isolated_nodes(
         self,
-    ) -> List[KnowledgeNode]:
+    ) -> list[KnowledgeNode]:
         """Return isolated nodes."""
-        return [
-            node
-            for node in self.nodes.values()
-            if self.degree(node.id) == 0
-        ]
+        return [node for node in self.nodes.values() if self.degree(node.id) == 0]
 
     def copy_nodes_from(
         self,
-        other: "KnowledgeGraph",
+        other: KnowledgeGraph,
     ) -> None:
         """Copy only nodes from another graph."""
         for node in other.nodes.values():
             if not self.contains_node(node.id):
-                self.add_node(
-                    deepcopy(node)
-                )
+                self.add_node(deepcopy(node))
 
     def copy_edges_from(
         self,
-        other: "KnowledgeGraph",
+        other: KnowledgeGraph,
     ) -> None:
         """Copy only edges from another graph."""
         for edge in other.edges:
@@ -836,9 +733,7 @@ class KnowledgeGraph:
                 edge.source,
                 edge.target,
             ):
-                self.add_edge(
-                    deepcopy(edge)
-                )
+                self.add_edge(deepcopy(edge))
 
     def update_node(
         self,
@@ -846,9 +741,7 @@ class KnowledgeGraph:
     ) -> None:
         """Replace existing node."""
         if node.id not in self.nodes:
-            raise NodeNotFound(
-                f"Unknown node '{node.id}'."
-            )
+            raise NodeNotFound(f"Unknown node '{node.id}'.")
 
         self.nodes[node.id] = node
 
@@ -863,10 +756,7 @@ class KnowledgeGraph:
         )
 
         if current is None:
-            raise EdgeNotFound(
-                f"Unknown edge "
-                f"{edge.source}->{edge.target}"
-            )
+            raise EdgeNotFound(f"Unknown edge {edge.source}->{edge.target}")
 
         index = self.edges.index(current)
         self.edges[index] = edge
@@ -878,9 +768,7 @@ class KnowledgeGraph:
         for neighbours in self.adjacency.values():
             neighbours.clear()
 
-        for neighbours in (
-            self.reverse_adjacency.values()
-        ):
+        for neighbours in self.reverse_adjacency.values():
             neighbours.clear()
 
     def clear_nodes(self) -> None:
@@ -889,16 +777,14 @@ class KnowledgeGraph:
 
     def graph_statistics(
         self,
-    ) -> Dict[str, int]:
+    ) -> dict[str, int]:
         """Return graph statistics."""
         return {
             "nodes": self.node_count(),
             "edges": self.edge_count(),
             "roots": len(self.roots()),
             "leaves": len(self.leaves()),
-            "isolated": len(
-                self.isolated_nodes()
-            ),
+            "isolated": len(self.isolated_nodes()),
         }
 
     # --------------------------------------------------------
@@ -907,8 +793,8 @@ class KnowledgeGraph:
 
     def has_cycle(self) -> bool:
         """Return True if graph contains a cycle."""
-        visited: Set[EntityId] = set()
-        active: Set[EntityId] = set()
+        visited: set[EntityId] = set()
+        active: set[EntityId] = set()
 
         for node_id in self.nodes:
             if node_id not in visited:
@@ -924,8 +810,8 @@ class KnowledgeGraph:
     def _has_cycle(
         self,
         node_id: EntityId,
-        visited: Set[EntityId],
-        active: Set[EntityId],
+        visited: set[EntityId],
+        active: set[EntityId],
     ) -> bool:
         """Depth-first cycle detection."""
         visited.add(node_id)
@@ -955,40 +841,26 @@ class KnowledgeGraph:
 
     def topological_sort(
         self,
-    ) -> List[KnowledgeNode]:
+    ) -> list[KnowledgeNode]:
         """Return nodes in topological order."""
         if self.has_cycle():
-            raise GraphValidationError(
-                "Graph contains a cycle."
-            )
+            raise GraphValidationError("Graph contains a cycle.")
 
-        indegree: Dict[
+        indegree: dict[
             EntityId,
             int,
-        ] = {
-            node_id: self.in_degree(node_id)
-            for node_id in self.nodes
-        }
+        ] = {node_id: self.in_degree(node_id) for node_id in self.nodes}
 
-        queue: deque[
-            EntityId
-        ] = deque(
-            node_id
-            for node_id, degree
-            in indegree.items()
-            if degree == 0
+        queue: deque[EntityId] = deque(
+            node_id for node_id, degree in indegree.items() if degree == 0
         )
 
-        result: List[
-            KnowledgeNode
-        ] = []
+        result: list[KnowledgeNode] = []
 
         while queue:
             node_id = queue.popleft()
 
-            result.append(
-                self.nodes[node_id]
-            )
+            result.append(self.nodes[node_id])
 
             for successor in self.adjacency.get(
                 node_id,
@@ -1007,15 +879,15 @@ class KnowledgeGraph:
 
     def adjacency_matrix(
         self,
-    ) -> Dict[EntityId, Dict[EntityId, bool]]:
+    ) -> dict[EntityId, dict[EntityId, bool]]:
         """Return adjacency matrix."""
-        matrix: Dict[
+        matrix: dict[
             EntityId,
-            Dict[EntityId, bool],
+            dict[EntityId, bool],
         ] = {}
 
         for source in self.nodes:
-            row: Dict[EntityId, bool] = {}
+            row: dict[EntityId, bool] = {}
 
             for target in self.nodes:
                 row[target] = self.contains_edge(
@@ -1029,7 +901,7 @@ class KnowledgeGraph:
 
     def edge_pairs(
         self,
-    ) -> List[tuple[EntityId, EntityId]]:
+    ) -> list[tuple[EntityId, EntityId]]:
         """Return every edge as source-target tuple."""
         return [
             (
@@ -1039,16 +911,13 @@ class KnowledgeGraph:
             for edge in self.edges
         ]
 
-    def node_ids(self) -> List[EntityId]:
+    def node_ids(self) -> list[EntityId]:
         """Return node identifiers."""
         return list(self.nodes.keys())
 
-    def edge_ids(self) -> List[str]:
+    def edge_ids(self) -> list[str]:
         """Return edge identifiers."""
-        return [
-            edge.id
-            for edge in self.edges
-        ]
+        return [edge.id for edge in self.edges]
 
     def rebuild(self) -> None:
         """Rebuild graph indexes."""
@@ -1090,7 +959,4 @@ class KnowledgeGraph:
         ):
             return False
 
-        return (
-            self.nodes == other.nodes
-            and self.edges == other.edges
-        )
+        return self.nodes == other.nodes and self.edges == other.edges

@@ -15,7 +15,6 @@ def create_acyclic_graph() -> KnowledgeGraph:
     graph = KnowledgeGraph()
 
     for node in ["A", "B", "C", "D"]:
-
         graph.add_node(
             KnowledgeNode(
                 id=node,
@@ -63,18 +62,14 @@ def create_cyclic_graph() -> KnowledgeGraph:
 
 def test_acyclic_graph() -> None:
 
-    algorithm = CycleDetection(
-        create_acyclic_graph()
-    )
+    algorithm = CycleDetection(create_acyclic_graph())
 
     assert algorithm.has_cycle() is False
 
 
 def test_cycle_exists() -> None:
 
-    algorithm = CycleDetection(
-        create_cyclic_graph()
-    )
+    algorithm = CycleDetection(create_cyclic_graph())
 
     assert algorithm.has_cycle() is True
 

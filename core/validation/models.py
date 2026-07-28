@@ -9,7 +9,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Any, Optional
+from typing import Any
 
 from core.models.ids import EntityId
 
@@ -39,7 +39,7 @@ class ValidationIssue:
     code: str
     message: str
     severity: Severity
-    entity_id: Optional[EntityId] = None
+    entity_id: EntityId | None = None
 
 
 @dataclass(slots=True)
@@ -53,7 +53,8 @@ class ValidationReport:
         return [
             issue
             for issue in self.issues
-            if issue.severity in (
+            if issue.severity
+            in (
                 Severity.ERROR,
                 Severity.CRITICAL,
             )
@@ -61,19 +62,11 @@ class ValidationReport:
 
     @property
     def warnings(self) -> list[ValidationIssue]:
-        return [
-            issue
-            for issue in self.issues
-            if issue.severity == Severity.WARNING
-        ]
+        return [issue for issue in self.issues if issue.severity == Severity.WARNING]
 
     @property
     def infos(self) -> list[ValidationIssue]:
-        return [
-            issue
-            for issue in self.issues
-            if issue.severity == Severity.INFO
-        ]
+        return [issue for issue in self.issues if issue.severity == Severity.INFO]
 
     @property
     def is_valid(self) -> bool:

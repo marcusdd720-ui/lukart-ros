@@ -33,7 +33,4 @@ class KnowledgeEdge:
     description: str = ""
 
     def __str__(self) -> str:
-        return (
-            f"[{self.type}] "
-            f"{self.source} -> {self.target}"
-        )
+        return f"[{self.type}] {self.source} -> {self.target}"

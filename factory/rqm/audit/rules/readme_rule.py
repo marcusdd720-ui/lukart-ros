@@ -7,7 +7,6 @@ from factory.rqm.model.finding import Finding
 
 
 class ReadmeRule(AuditRule):
-
     rule_id = "DOC001"
     name = "README exists"
     description = "Repository should contain README.md"

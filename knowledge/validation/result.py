@@ -53,7 +53,7 @@ class ValidationResult:
 
     def merge(
         self,
-        other: "ValidationResult",
+        other: ValidationResult,
     ) -> None:
         """
         Merge another validation result.

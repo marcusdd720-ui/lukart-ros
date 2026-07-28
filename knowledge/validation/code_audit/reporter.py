@@ -1,5 +1,7 @@
 from __future__ import annotations
+
 from pathlib import Path
+
 from validation.code_audit.models import AuditReport
 
 

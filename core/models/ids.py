@@ -13,7 +13,6 @@ from __future__ import annotations
 from typing import NewType
 from uuid import UUID, uuid4
 
-
 # ============================================================================
 # Generic Entity ID
 # ============================================================================

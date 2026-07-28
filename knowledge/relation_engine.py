@@ -20,9 +20,7 @@ from knowledge.relation_types import RelationType
 class RelationEngine:
     """Builds logical relations between graph nodes."""
 
-    DOCUMENT_PATTERN = re.compile(
-        r"\b(?:ADR-\d{4}|KCS-\d+(?:\.\d+)?)\b"
-    )
+    DOCUMENT_PATTERN = re.compile(r"\b(?:ADR-\d{4}|KCS-\d+(?:\.\d+)?)\b")
 
     def run(self, graph: KnowledgeGraph):
 
@@ -31,7 +29,6 @@ class RelationEngine:
         lookup = {}
 
         for node in graph.nodes.values():
-
             document = getattr(node, "document", None)
 
             if document is None:
@@ -42,7 +39,6 @@ class RelationEngine:
             metadata = getattr(document, "metadata", None)
 
             if metadata:
-
                 document_id = getattr(
                     metadata,
                     "document_id",
@@ -53,18 +49,14 @@ class RelationEngine:
                     lookup[document_id] = node
 
         for node in graph.nodes.values():
-
             document = getattr(node, "document", None)
 
             if document is None:
                 continue
 
-            matches = self.DOCUMENT_PATTERN.findall(
-                document.content
-            )
+            matches = self.DOCUMENT_PATTERN.findall(document.content)
 
             for reference in sorted(set(matches)):
-
                 target = lookup.get(reference)
 
                 if target is None:

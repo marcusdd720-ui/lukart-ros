@@ -15,7 +15,7 @@ class Result(Generic[T]):
     It can represent successful values or failures with exceptions.
     """
 
-    __slots__ = ("_value", "_error", "_is_success")
+    __slots__ = ("_error", "_is_success", "_value")
 
     def __init__(
         self,

@@ -6,12 +6,11 @@ Sprint GRAPH-010B
 Tests for OrphanNodesCheck.
 """
 
+from knowledge.edge import KnowledgeEdge
 from knowledge.graph import KnowledgeGraph
 from knowledge.node import KnowledgeNode
-from knowledge.edge import KnowledgeEdge
-
-from knowledge.validation.result import ValidationResult
 from knowledge.validation.checks.orphan_nodes import OrphanNodesCheck
+from knowledge.validation.result import ValidationResult
 
 
 def test_graph_without_orphans() -> None:

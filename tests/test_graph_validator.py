@@ -14,13 +14,9 @@ def test_valid_graph() -> None:
 
     graph = KnowledgeGraph()
 
-    graph.add_node(
-        KnowledgeNode(id="A", name="A")
-    )
+    graph.add_node(KnowledgeNode(id="A", name="A"))
 
-    graph.add_node(
-        KnowledgeNode(id="B", name="B")
-    )
+    graph.add_node(KnowledgeNode(id="B", name="B"))
 
     graph.add_edge(
         KnowledgeEdge(
@@ -39,9 +35,7 @@ def test_unknown_source() -> None:
 
     graph = KnowledgeGraph()
 
-    graph.add_node(
-        KnowledgeNode(id="B", name="B")
-    )
+    graph.add_node(KnowledgeNode(id="B", name="B"))
 
     graph.edges.append(
         KnowledgeEdge(
@@ -54,19 +48,14 @@ def test_unknown_source() -> None:
 
     assert not result.valid
 
-    assert any(
-        issue.code == "UNKNOWN_SOURCE"
-        for issue in result.issues
-    )
+    assert any(issue.code == "UNKNOWN_SOURCE" for issue in result.issues)
 
 
 def test_unknown_target() -> None:
 
     graph = KnowledgeGraph()
 
-    graph.add_node(
-        KnowledgeNode(id="A", name="A")
-    )
+    graph.add_node(KnowledgeNode(id="A", name="A"))
 
     graph.edges.append(
         KnowledgeEdge(
@@ -79,23 +68,16 @@ def test_unknown_target() -> None:
 
     assert not result.valid
 
-    assert any(
-        issue.code == "UNKNOWN_TARGET"
-        for issue in result.issues
-    )
+    assert any(issue.code == "UNKNOWN_TARGET" for issue in result.issues)
 
 
 def test_cycle_detected() -> None:
 
     graph = KnowledgeGraph()
 
-    graph.add_node(
-        KnowledgeNode(id="A", name="A")
-    )
+    graph.add_node(KnowledgeNode(id="A", name="A"))
 
-    graph.add_node(
-        KnowledgeNode(id="B", name="B")
-    )
+    graph.add_node(KnowledgeNode(id="B", name="B"))
 
     graph.add_edge(
         KnowledgeEdge(
@@ -115,10 +97,7 @@ def test_cycle_detected() -> None:
 
     assert not result.valid
 
-    assert any(
-        issue.code == "GRAPH_CYCLE"
-        for issue in result.issues
-    )
+    assert any(issue.code == "GRAPH_CYCLE" for issue in result.issues)
 
 
 def test_empty_graph() -> None:

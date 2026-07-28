@@ -1,4 +1,4 @@
-from typing import Any, Dict
+from typing import Any
 
 
 class Configuration:
@@ -7,7 +7,7 @@ class Configuration:
     """
 
     def __init__(self):
-        self._config: Dict[str, Any] = {}
+        self._config: dict[str, Any] = {}
 
     def set(self, key: str, value: Any):
         """Ustawia wartość konfiguracji."""
@@ -37,6 +37,6 @@ class Configuration:
         """Lista kluczy."""
         return sorted(self._config.keys())
 
-    def as_dict(self) -> Dict[str, Any]:
+    def as_dict(self) -> dict[str, Any]:
         """Zwraca kopię konfiguracji."""
         return dict(self._config)

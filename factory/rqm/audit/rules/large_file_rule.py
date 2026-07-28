@@ -7,7 +7,6 @@ from factory.rqm.model.finding import Finding
 
 
 class LargeFileRule(AuditRule):
-
     rule_id = "PERF001"
     name = "No large files"
     description = "Check for files larger than threshold (default: 5MB)"

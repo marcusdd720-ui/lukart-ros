@@ -9,7 +9,6 @@ from knowledge.validation.checks.duplicate_edges import DuplicateEdgesCheck
 from knowledge.validation.checks.missing_nodes import MissingNodesCheck
 from knowledge.validation.checks.orphan_nodes import OrphanNodesCheck
 
-
 DEFAULT_VALIDATION_CHECKS = (
     MissingNodesCheck(),
     CycleCheck(),

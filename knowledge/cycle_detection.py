@@ -30,9 +30,7 @@ class CycleDetection:
         recursion_stack: set[str] = set()
 
         for node_id in self._graph.nodes:
-
             if node_id not in visited:
-
                 if self._visit(
                     node_id,
                     visited,
@@ -53,9 +51,7 @@ class CycleDetection:
         recursion_stack.add(node_id)
 
         for neighbor in self._graph.neighbors(node_id):
-
             if neighbor.id not in visited:
-
                 if self._visit(
                     neighbor.id,
                     visited,

@@ -20,7 +20,6 @@ class GraphSearch:
     def find_by_name(self, name: str):
 
         for node in self.graph.nodes.values():
-
             if node.name == name:
                 return node
 
@@ -31,9 +30,7 @@ class GraphSearch:
         result = []
 
         for edge in self.graph.edges:
-
             if edge.source == node_id:
-
                 target = self.graph.get_node(edge.target)
 
                 if target:
@@ -46,9 +43,7 @@ class GraphSearch:
         result = []
 
         for edge in self.graph.edges:
-
             if edge.target == node_id:
-
                 source = self.graph.get_node(edge.source)
 
                 if source:

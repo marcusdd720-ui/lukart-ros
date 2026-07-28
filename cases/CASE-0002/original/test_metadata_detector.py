@@ -1,10 +1,7 @@
-from pathlib import Path
-
 from core.analysis.metadata_detector import MetadataDetector
 
 
 class Document:
-
     def __init__(self, path):
         self.path = str(path)
         self.file_size = None

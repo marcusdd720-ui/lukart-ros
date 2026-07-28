@@ -1,7 +1,7 @@
 from __future__ import annotations
+
 import ast
 from pathlib import Path
-from typing import List
 
 from validation.code_audit.models import Finding, Severity
 from validation.code_audit.rules.base import BaseRule
@@ -13,8 +13,8 @@ class ComplexityRule(BaseRule):
 
     MAX_COMPLEXITY = 12
 
-    def check(self, tree: ast.AST, file_path: Path) -> List[Finding]:
-        findings: List[Finding] = []
+    def check(self, tree: ast.AST, file_path: Path) -> list[Finding]:
+        findings: list[Finding] = []
 
         for node in ast.walk(tree):
             if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):

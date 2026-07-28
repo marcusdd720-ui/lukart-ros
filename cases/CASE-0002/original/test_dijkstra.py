@@ -15,7 +15,6 @@ def create_graph() -> KnowledgeGraph:
     graph = KnowledgeGraph()
 
     for node in ["A", "B", "C", "D", "E"]:
-
         graph.add_node(
             KnowledgeNode(
                 id=node,
@@ -80,30 +79,39 @@ def test_distance() -> None:
 
     algorithm = Dijkstra(create_graph())
 
-    assert algorithm.distance(
-        "A",
-        "E",
-    ) == 2
+    assert (
+        algorithm.distance(
+            "A",
+            "E",
+        )
+        == 2
+    )
 
 
 def test_unknown_source() -> None:
 
     algorithm = Dijkstra(create_graph())
 
-    assert algorithm.shortest_path(
-        "X",
-        "E",
-    ) == []
+    assert (
+        algorithm.shortest_path(
+            "X",
+            "E",
+        )
+        == []
+    )
 
 
 def test_unknown_target() -> None:
 
     algorithm = Dijkstra(create_graph())
 
-    assert algorithm.shortest_path(
-        "A",
-        "X",
-    ) == []
+    assert (
+        algorithm.shortest_path(
+            "A",
+            "X",
+        )
+        == []
+    )
 
 
 def test_unreachable() -> None:
@@ -119,12 +127,18 @@ def test_unreachable() -> None:
 
     algorithm = Dijkstra(graph)
 
-    assert algorithm.shortest_path(
-        "A",
-        "Z",
-    ) == []
+    assert (
+        algorithm.shortest_path(
+            "A",
+            "Z",
+        )
+        == []
+    )
 
-    assert algorithm.distance(
-        "A",
-        "Z",
-    ) is None
+    assert (
+        algorithm.distance(
+            "A",
+            "Z",
+        )
+        is None
+    )

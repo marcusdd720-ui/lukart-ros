@@ -7,7 +7,6 @@ from factory.rqm.model.finding import Finding
 
 
 class WorkflowRule(AuditRule):
-
     rule_id = "CI001"
     name = "GitHub Actions"
     description = "Repository should contain GitHub Actions workflow"

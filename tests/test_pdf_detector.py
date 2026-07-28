@@ -2,7 +2,6 @@ from core.analysis.pdf_detector import PDFDetector
 
 
 class Document:
-
     def __init__(self, path):
         self.path = str(path)
         self.is_pdf = False

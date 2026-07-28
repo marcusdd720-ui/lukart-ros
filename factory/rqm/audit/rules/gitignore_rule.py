@@ -7,7 +7,6 @@ from factory.rqm.model.finding import Finding
 
 
 class GitignoreRule(AuditRule):
-
     rule_id = "GIT001"
     name = ".gitignore exists"
     description = "Repository should contain .gitignore"

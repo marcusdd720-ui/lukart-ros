@@ -44,28 +44,21 @@ class Document:
     version: str = "1.0"
 
     @classmethod
-    def from_file(cls, path: Path) -> "Document":
+    def from_file(cls, path: Path) -> Document:
 
         stat = path.stat()
 
         try:
-            content = path.read_text(
-                encoding="utf-8"
-            )
+            content = path.read_text(encoding="utf-8")
         except UnicodeDecodeError:
-            content = path.read_text(
-                encoding="utf-8",
-                errors="ignore"
-            )
+            content = path.read_text(encoding="utf-8", errors="ignore")
 
         document = cls(
             path=path,
             name=path.name,
             extension=path.suffix,
             size=stat.st_size,
-            modified=datetime.fromtimestamp(
-                stat.st_mtime
-            ),
+            modified=datetime.fromtimestamp(stat.st_mtime),
             content=content,
         )
 
@@ -76,23 +69,15 @@ class Document:
     def calculate_hash(self) -> None:
         """Calculate SHA-256 of document content."""
 
-        self.content_hash = sha256(
-            self.content.encode("utf-8")
-        ).hexdigest()
+        self.content_hash = sha256(self.content.encode("utf-8")).hexdigest()
 
     def to_node(self) -> KnowledgeNode:
         """Convert document into KnowledgeNode."""
 
-        node_name = (
-            self.metadata.title
-            if self.metadata.title
-            else self.name
-        )
+        node_name = self.metadata.title if self.metadata.title else self.name
 
         self.logical_id = (
-            self.metadata.document_id
-            if self.metadata.document_id
-            else self.name
+            self.metadata.document_id if self.metadata.document_id else self.name
         )
 
         return KnowledgeNode(
@@ -103,8 +88,4 @@ class Document:
 
     def __str__(self) -> str:
 
-        return (
-            f"{self.logical_id} | "
-            f"{self.name} | "
-            f"{self.content_hash[:8]}"
-        )
+        return f"{self.logical_id} | {self.name} | {self.content_hash[:8]}"

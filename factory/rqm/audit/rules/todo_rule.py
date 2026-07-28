@@ -7,7 +7,6 @@ from factory.rqm.model.finding import Finding
 
 
 class TodoRule(AuditRule):
-
     rule_id = "CODE001"
     name = "TODO / FIXME comments"
     description = "Find pending TODO or FIXME comments in source files"

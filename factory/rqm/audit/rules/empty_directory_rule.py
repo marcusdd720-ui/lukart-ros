@@ -7,7 +7,6 @@ from factory.rqm.model.finding import Finding
 
 
 class EmptyDirectoryRule(AuditRule):
-
     rule_id = "DIR001"
     name = "No empty directories"
     description = "Repository should not contain empty directories"

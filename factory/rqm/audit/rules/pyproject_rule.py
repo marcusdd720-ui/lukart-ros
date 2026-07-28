@@ -7,7 +7,6 @@ from factory.rqm.model.finding import Finding
 
 
 class PyprojectRule(AuditRule):
-
     rule_id = "PY001"
     name = "pyproject.toml exists"
     description = "Repository should contain pyproject.toml"

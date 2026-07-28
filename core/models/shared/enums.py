@@ -6,7 +6,7 @@ Shared enumerations used across the entire Knowledge Operating System.
 
 from __future__ import annotations
 
-from enum import Enum, StrEnum, auto
+from enum import Enum, StrEnum
 
 
 class LifecycleStatus(StrEnum):

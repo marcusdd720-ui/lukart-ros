@@ -7,7 +7,6 @@ from factory.rqm.model.finding import Finding
 
 
 class InitRule(AuditRule):
-
     rule_id = "PY002"
     name = "__init__.py in package directories"
     description = "Directories containing Python files should have __init__.py"

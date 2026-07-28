@@ -48,7 +48,4 @@ def test_validation_engine_cycle():
 
     assert not result.valid
 
-    assert any(
-        issue.code == "GRAPH_CYCLE"
-        for issue in result.issues
-    )
+    assert any(issue.code == "GRAPH_CYCLE" for issue in result.issues)

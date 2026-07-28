@@ -38,7 +38,6 @@ class RelationExtractor:
         lookup = {}
 
         for node in nodes:
-
             lookup[node.name] = node
 
             source = getattr(node, "source", "")
@@ -47,7 +46,6 @@ class RelationExtractor:
                 lookup[source] = node
 
         for node in nodes:
-
             document = getattr(node, "document", None)
 
             if document is None:
@@ -57,16 +55,11 @@ class RelationExtractor:
 
             references = set()
 
-            references.update(
-                self.ADR_PATTERN.findall(content)
-            )
+            references.update(self.ADR_PATTERN.findall(content))
 
-            references.update(
-                self.KCS_PATTERN.findall(content)
-            )
+            references.update(self.KCS_PATTERN.findall(content))
 
             for reference in sorted(references):
-
                 target = lookup.get(reference)
 
                 if target is None:

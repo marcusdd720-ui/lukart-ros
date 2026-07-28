@@ -1,4 +1,4 @@
-from typing import Any, Dict
+from typing import Any
 
 
 class Registry:
@@ -7,7 +7,7 @@ class Registry:
     """
 
     def __init__(self):
-        self._services: Dict[str, Any] = {}
+        self._services: dict[str, Any] = {}
 
     def register(self, name: str, service: Any):
         if name in self._services:

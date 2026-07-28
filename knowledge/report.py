@@ -31,18 +31,14 @@ class GraphReport:
         lines.append("-" * 60)
 
         for node in graph.nodes.values():
-            lines.append(
-                f"{node.name} [{node.type}]"
-            )
+            lines.append(f"{node.name} [{node.type}]")
 
         lines.append("")
         lines.append("Edges")
         lines.append("-" * 60)
 
         for edge in graph.edges:
-            lines.append(
-                f"{edge.source} -> {edge.target} ({edge.type})"
-            )
+            lines.append(f"{edge.source} -> {edge.target} ({edge.type})")
 
         lines.append("")
         lines.append("End of report")

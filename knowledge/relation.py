@@ -28,8 +28,4 @@ class Relation:
 
     def __str__(self):
 
-        return (
-            f"{self.source}"
-            f" --[{self.relation_type.value}]--> "
-            f"{self.target}"
-        )
+        return f"{self.source} --[{self.relation_type.value}]--> {self.target}"

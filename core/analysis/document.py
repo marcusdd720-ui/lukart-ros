@@ -1,5 +1,4 @@
 from dataclasses import dataclass
-from typing import Optional
 
 
 @dataclass
@@ -11,16 +10,16 @@ class Document:
     path: str = ""
     text: str = ""
 
-    language: Optional[str] = None
+    language: str | None = None
 
-    mime_type: Optional[str] = None
+    mime_type: str | None = None
 
-    file_size: Optional[int] = None
+    file_size: int | None = None
 
-    created_at: Optional[float] = None
-    modified_at: Optional[float] = None
+    created_at: float | None = None
+    modified_at: float | None = None
 
     is_pdf: bool = False
-    pdf_version: Optional[str] = None
+    pdf_version: str | None = None
 
     requires_ocr: bool = False

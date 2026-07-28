@@ -25,7 +25,6 @@ class DocumentLoader:
         documents = []
 
         for path in sorted(self.root.rglob("*.md")):
-
             document = Document.from_file(path)
 
             try:
@@ -41,7 +40,6 @@ class DocumentLoader:
 
 
 if __name__ == "__main__":
-
     loader = DocumentLoader()
 
     documents = loader.load_documents()
@@ -51,7 +49,6 @@ if __name__ == "__main__":
     print("=" * 50)
 
     for document in documents:
-
         print(document.name)
 
         if document.metadata.document_id:

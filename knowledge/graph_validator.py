@@ -83,7 +83,6 @@ class GraphValidator:
     ) -> None:
 
         for edge in graph.edges:
-
             if not graph.has_node(edge.source):
                 result.add(
                     "UNKNOWN_SOURCE",
@@ -105,7 +104,6 @@ class GraphValidator:
         detector = CycleDetection(graph)
 
         if detector.has_cycle():
-
             result.add(
                 "GRAPH_CYCLE",
                 "Graph contains at least one directed cycle.",

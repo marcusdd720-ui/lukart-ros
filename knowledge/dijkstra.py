@@ -38,22 +38,15 @@ class Dijkstra:
         if not self._graph.has_node(target):
             return []
 
-        distances: dict[str, int] = {
-            node: float("inf")
-            for node in self._graph.nodes
-        }
+        distances: dict[str, int] = {node: float("inf") for node in self._graph.nodes}
 
-        previous: dict[str, str | None] = {
-            node: None
-            for node in self._graph.nodes
-        }
+        previous: dict[str, str | None] = {node: None for node in self._graph.nodes}
 
         distances[source] = 0
 
         queue: list[tuple[int, str]] = [(0, source)]
 
         while queue:
-
             current_distance, current = heapq.heappop(queue)
 
             if current == target:
@@ -63,11 +56,9 @@ class Dijkstra:
                 continue
 
             for neighbor in self._graph.neighbors(current):
-
                 new_distance = current_distance + 1
 
                 if new_distance < distances[neighbor.id]:
-
                     distances[neighbor.id] = new_distance
                     previous[neighbor.id] = current
 
@@ -87,7 +78,6 @@ class Dijkstra:
         node: str | None = target
 
         while node is not None:
-
             path.append(node)
             node = previous[node]
 

@@ -19,5 +19,3 @@ class ValueObject:
 
     Equality is value-based.
     """
-
-    pass

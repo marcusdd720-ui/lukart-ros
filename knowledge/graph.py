@@ -10,19 +10,18 @@ High-performance directed Knowledge Graph – pełna zgodność z testami.
 
 from __future__ import annotations
 
+import heapq
 from collections import deque
 from dataclasses import dataclass, field
-import heapq
-from typing import Dict, List, Optional, Set
 
 from core.models.ids import EntityId
 from knowledge.edge import KnowledgeEdge
 from knowledge.node import KnowledgeNode
 
-
 # ----------------------------------------------------------------------
 # Exceptions
 # ----------------------------------------------------------------------
+
 
 class GraphError(Exception):
     """Base exception for graph operations."""
@@ -52,18 +51,23 @@ class CycleDetected(GraphError):
 # Knowledge Graph
 # ----------------------------------------------------------------------
 
+
 @dataclass(slots=True)
 class KnowledgeGraph:
     """Directed Knowledge Graph preserving insertion order + fast lookup."""
 
-    nodes: Dict[EntityId, KnowledgeNode] = field(default_factory=dict)
-    edges: List[KnowledgeEdge] = field(default_factory=list)
+    nodes: dict[EntityId, KnowledgeNode] = field(default_factory=dict)
+    edges: list[KnowledgeEdge] = field(default_factory=list)
 
-    adjacency: Dict[EntityId, List[EntityId]] = field(default_factory=dict)
-    reverse_adjacency: Dict[EntityId, List[EntityId]] = field(default_factory=dict)
+    adjacency: dict[EntityId, list[EntityId]] = field(default_factory=dict)
+    reverse_adjacency: dict[EntityId, list[EntityId]] = field(default_factory=dict)
 
-    _adj_lookup: Dict[EntityId, Set[EntityId]] = field(default_factory=dict, init=False, repr=False)
-    _rev_lookup: Dict[EntityId, Set[EntityId]] = field(default_factory=dict, init=False, repr=False)
+    _adj_lookup: dict[EntityId, set[EntityId]] = field(
+        default_factory=dict, init=False, repr=False
+    )
+    _rev_lookup: dict[EntityId, set[EntityId]] = field(
+        default_factory=dict, init=False, repr=False
+    )
 
     def __post_init__(self) -> None:
         self._rebuild_indexes()
@@ -102,7 +106,7 @@ class KnowledgeGraph:
         self._adj_lookup.setdefault(node.id, set())
         self._rev_lookup.setdefault(node.id, set())
 
-    def get_node(self, node_id: EntityId) -> Optional[KnowledgeNode]:
+    def get_node(self, node_id: EntityId) -> KnowledgeNode | None:
         return self.nodes.get(node_id)
 
     def has_node(self, node_id: EntityId) -> bool:
@@ -115,7 +119,9 @@ class KnowledgeGraph:
         if node_id not in self.nodes:
             return
         del self.nodes[node_id]
-        self.edges = [e for e in self.edges if e.source != node_id and e.target != node_id]
+        self.edges = [
+            e for e in self.edges if e.source != node_id and e.target != node_id
+        ]
         self._rebuild_indexes()
 
     # ------------------------------------------------------------------
@@ -143,7 +149,9 @@ class KnowledgeGraph:
 
     def remove_edge(self, source: EntityId, target: EntityId) -> bool:
         initial = len(self.edges)
-        self.edges = [e for e in self.edges if not (e.source == source and e.target == target)]
+        self.edges = [
+            e for e in self.edges if not (e.source == source and e.target == target)
+        ]
         if len(self.edges) < initial:
             self._rebuild_indexes()
             return True
@@ -152,7 +160,7 @@ class KnowledgeGraph:
     def contains_edge(self, source: EntityId, target: EntityId) -> bool:
         return target in self._adj_lookup.get(source, set())
 
-    def get_edge(self, source: EntityId, target: EntityId) -> Optional[KnowledgeEdge]:
+    def get_edge(self, source: EntityId, target: EntityId) -> KnowledgeEdge | None:
         for e in self.edges:
             if e.source == source and e.target == target:
                 return e
@@ -162,30 +170,38 @@ class KnowledgeGraph:
     # Navigation
     # ------------------------------------------------------------------
 
-    def neighbors(self, node_id: EntityId) -> List[KnowledgeNode]:
+    def neighbors(self, node_id: EntityId) -> list[KnowledgeNode]:
         """Return outgoing neighbour nodes."""
         return self.successors(node_id)
 
-    def successors(self, node_id: EntityId) -> List[KnowledgeNode]:
+    def successors(self, node_id: EntityId) -> list[KnowledgeNode]:
         if node_id not in self.nodes:
             raise NodeNotFound(f"Unknown node: {node_id}")
-        return [self.get_node(t) for t in self.adjacency.get(node_id, []) if self.get_node(t)]
+        return [
+            self.get_node(t)
+            for t in self.adjacency.get(node_id, [])
+            if self.get_node(t)
+        ]
 
-    def predecessors(self, node_id: EntityId) -> List[KnowledgeNode]:
+    def predecessors(self, node_id: EntityId) -> list[KnowledgeNode]:
         if node_id not in self.nodes:
             raise NodeNotFound(f"Unknown node: {node_id}")
-        return [self.get_node(s) for s in self.reverse_adjacency.get(node_id, []) if self.get_node(s)]
+        return [
+            self.get_node(s)
+            for s in self.reverse_adjacency.get(node_id, [])
+            if self.get_node(s)
+        ]
 
     # ------------------------------------------------------------------
     # Traversal
     # ------------------------------------------------------------------
 
-    def bfs(self, start: EntityId) -> List[KnowledgeNode]:
+    def bfs(self, start: EntityId) -> list[KnowledgeNode]:
         if start not in self.nodes:
             raise NodeNotFound(f"Unknown node '{start}'.")
-        visited: Set[EntityId] = set()
+        visited: set[EntityId] = set()
         queue: deque[EntityId] = deque([start])
-        result: List[KnowledgeNode] = []
+        result: list[KnowledgeNode] = []
         while queue:
             cur = queue.popleft()
             if cur in visited:
@@ -199,12 +215,12 @@ class KnowledgeGraph:
                     queue.append(n)
         return result
 
-    def dfs(self, start: EntityId) -> List[KnowledgeNode]:
+    def dfs(self, start: EntityId) -> list[KnowledgeNode]:
         if start not in self.nodes:
             raise NodeNotFound(f"Unknown node '{start}'.")
-        visited: Set[EntityId] = set()
-        stack: List[EntityId] = [start]
-        result: List[KnowledgeNode] = []
+        visited: set[EntityId] = set()
+        stack: list[EntityId] = [start]
+        result: list[KnowledgeNode] = []
         while stack:
             cur = stack.pop()
             if cur in visited:
@@ -218,10 +234,10 @@ class KnowledgeGraph:
                     stack.append(n)
         return result
 
-    def dijkstra(self, start: EntityId) -> Dict[EntityId, float]:
+    def dijkstra(self, start: EntityId) -> dict[EntityId, float]:
         if start not in self.nodes:
             raise NodeNotFound(f"Unknown node '{start}'.")
-        dist: Dict[EntityId, float] = {nid: float('inf') for nid in self.nodes}
+        dist: dict[EntityId, float] = {nid: float("inf") for nid in self.nodes}
         dist[start] = 0.0
         pq: list[tuple[float, EntityId]] = [(0.0, start)]
         while pq:
@@ -238,7 +254,7 @@ class KnowledgeGraph:
     def has_path(self, source: EntityId, target: EntityId) -> bool:
         if source == target and source in self.nodes:
             return True
-        visited: Set[EntityId] = set()
+        visited: set[EntityId] = set()
         queue: deque[EntityId] = deque([source])
         while queue:
             cur = queue.popleft()
@@ -251,15 +267,17 @@ class KnowledgeGraph:
         return False
 
     def has_cycle(self) -> bool:
-        visited: Set[EntityId] = set()
-        active: Set[EntityId] = set()
+        visited: set[EntityId] = set()
+        active: set[EntityId] = set()
         for nid in self.nodes:
             if nid not in visited:
                 if self._has_cycle(nid, visited, active):
                     return True
         return False
 
-    def _has_cycle(self, node_id: EntityId, visited: Set[EntityId], active: Set[EntityId]) -> bool:
+    def _has_cycle(
+        self, node_id: EntityId, visited: set[EntityId], active: set[EntityId]
+    ) -> bool:
         visited.add(node_id)
         active.add(node_id)
         for succ in self.adjacency.get(node_id, []):
@@ -307,10 +325,10 @@ class KnowledgeGraph:
             "connected_nodes": connected,
         }
 
-    def isolated_nodes(self) -> List[KnowledgeNode]:
+    def isolated_nodes(self) -> list[KnowledgeNode]:
         return [n for n in self.nodes.values() if self.degree(n.id) == 0]
 
-    def connected_nodes(self) -> List[KnowledgeNode]:
+    def connected_nodes(self) -> list[KnowledgeNode]:
         return [n for n in self.nodes.values() if self.degree(n.id) > 0]
 
     # ------------------------------------------------------------------
@@ -325,7 +343,7 @@ class KnowledgeGraph:
         self._adj_lookup.clear()
         self._rev_lookup.clear()
 
-    def copy(self) -> "KnowledgeGraph":
+    def copy(self) -> KnowledgeGraph:
         return KnowledgeGraph(
             nodes=dict(self.nodes),
             edges=list(self.edges),
@@ -333,7 +351,7 @@ class KnowledgeGraph:
             reverse_adjacency={k: list(v) for k, v in self.reverse_adjacency.items()},
         )
 
-    def subgraph(self, node_ids: set[EntityId]) -> "KnowledgeGraph":
+    def subgraph(self, node_ids: set[EntityId]) -> KnowledgeGraph:
         g = KnowledgeGraph()
         for nid in node_ids:
             node = self.get_node(nid)
@@ -347,14 +365,14 @@ class KnowledgeGraph:
     def validate(self) -> bool:
         return len(self._validate_graph()) == 0
 
-    def validate_integrity(self) -> List[str]:
+    def validate_integrity(self) -> list[str]:
         return self._validate_graph()
 
     def is_valid(self) -> bool:
         return self.validate()
 
-    def _validate_graph(self) -> List[str]:
-        errors: List[str] = []
+    def _validate_graph(self) -> list[str]:
+        errors: list[str] = []
         for e in self.edges:
             if e.source not in self.nodes:
                 errors.append(f"Missing source node: {e.source}")

@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import Any, Optional
+from typing import Any
 
 
 class AnalysisHandler(ABC):
@@ -8,7 +8,7 @@ class AnalysisHandler(ABC):
     """
 
     def __init__(self):
-        self._next: Optional["AnalysisHandler"] = None
+        self._next: AnalysisHandler | None = None
 
     def set_next(self, handler: "AnalysisHandler") -> "AnalysisHandler":
         self._next = handler

@@ -24,11 +24,7 @@ Timestamp: TypeAlias = datetime
 
 JsonPrimitive: TypeAlias = str | int | float | bool | None
 
-JsonValue: TypeAlias = (
-    JsonPrimitive
-    | list["JsonValue"]
-    | dict[str, "JsonValue"]
-)
+JsonValue: TypeAlias = JsonPrimitive | list["JsonValue"] | dict[str, "JsonValue"]
 
 Metadata: TypeAlias = dict[str, JsonValue]
 

@@ -2,13 +2,11 @@ from core.analysis.chain import AnalysisHandler
 
 
 class AddOneHandler(AnalysisHandler):
-
     def handle(self, value):
         return value + 1
 
 
 class MultiplyHandler(AnalysisHandler):
-
     def handle(self, value):
         return value * 2
 

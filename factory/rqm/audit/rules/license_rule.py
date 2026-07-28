@@ -7,7 +7,6 @@ from factory.rqm.model.finding import Finding
 
 
 class LicenseRule(AuditRule):
-
     rule_id = "DOC002"
     name = "LICENSE exists"
     description = "Repository should contain LICENSE"

@@ -1,9 +1,9 @@
 from factory.rqm.model import (
-    Severity,
     Finding,
-    Result,
-    Report,
     Metadata,
+    Report,
+    Result,
+    Severity,
 )
 
 

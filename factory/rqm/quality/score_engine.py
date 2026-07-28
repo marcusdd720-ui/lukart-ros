@@ -25,7 +25,6 @@ class ScoreEngine:
 
         for result in results:
             for finding in result.findings:
-
                 if finding.severity == Severity.INFO:
                     infos += 1
 

@@ -32,10 +32,7 @@ class TopologicalSort:
                 If the graph contains a cycle.
         """
 
-        indegree: dict[str, int] = {
-            node_id: 0
-            for node_id in self._graph.nodes
-        }
+        indegree: dict[str, int] = {node_id: 0 for node_id in self._graph.nodes}
 
         for edge in self._graph.edges:
             indegree[edge.target] += 1
@@ -49,21 +46,17 @@ class TopologicalSort:
         result: list[str] = []
 
         while queue:
-
             current = queue.popleft()
 
             result.append(current)
 
             for neighbor in self._graph.neighbors(current):
-
                 indegree[neighbor.id] -= 1
 
                 if indegree[neighbor.id] == 0:
                     queue.append(neighbor.id)
 
         if len(result) != self._graph.node_count():
-            raise ValueError(
-                "Graph contains a cycle."
-            )
+            raise ValueError("Graph contains a cycle.")
 
         return result

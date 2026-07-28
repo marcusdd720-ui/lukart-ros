@@ -5,18 +5,9 @@ def main():
 
     analyzer = DocumentAnalyzer()
 
-    files = [
-
-        "tests/test_document_analyzer.py",
-
-        "README.md",
-
-        "nie_istnieje.pdf"
-
-    ]
+    files = ["tests/test_document_analyzer.py", "README.md", "nie_istnieje.pdf"]
 
     for file in files:
-
         profile = analyzer.analyze(file)
 
         print("----------------------------------------")

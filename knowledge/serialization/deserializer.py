@@ -26,7 +26,6 @@ class GraphDeserializer:
         graph = KnowledgeGraph()
 
         for node_data in data.get("nodes", []):
-
             graph.add_node(
                 KnowledgeNode(
                     id=node_data["id"],
@@ -38,7 +37,6 @@ class GraphDeserializer:
             )
 
         for edge_data in data.get("edges", []):
-
             graph.add_edge(
                 KnowledgeEdge(
                     id=edge_data["id"],
