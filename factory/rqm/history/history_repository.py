@@ -8,46 +8,48 @@ from factory.rqm.model import Report
 
 class HistoryRepository:
     """
-    Stores and loads Release Quality Manager history.
+    Repository responsible for persisting Release Quality Manager history.
     """
 
-    def __init__(self, path: Path) -> None:
-        self.path = path
+    def __init__(self, history_file: Path) -> None:
+        self.history_file = history_file
 
     def load(self) -> list[dict]:
         """
-        Load history from disk.
+        Load history entries from disk.
         """
-        if not self.path.exists():
+        if not self.history_file.exists():
             return []
 
         try:
-            return json.loads(self.path.read_text(encoding="utf-8"))
-        except (json.JSONDecodeError, OSError):
+            return json.loads(
+                self.history_file.read_text(encoding="utf-8")
+            )
+        except (OSError, json.JSONDecodeError):
             return []
 
     def save(self, report: Report) -> None:
         """
-        Append a report summary to history.
+        Append current report to history.
         """
         history = self.load()
 
         history.append(
             {
+                "created_at": report.created_at.isoformat(),
                 "score": report.score,
                 "decision": report.decision.value,
-                "created_at": report.created_at.isoformat(),
             }
         )
 
-        self.path.write_text(
+        self.history_file.write_text(
             json.dumps(history, indent=2),
             encoding="utf-8",
         )
 
     def last_score(self) -> float | None:
         """
-        Return the previous quality score.
+        Return previous quality score.
         """
         history = self.load()
 
