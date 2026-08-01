@@ -13,14 +13,17 @@ from enum import StrEnum, auto
 
 
 class NodeType(StrEnum):
-    """Types of knowledge nodes."""
-
     DOCUMENT = auto()
     PRINCIPLE = auto()
     EVIDENCE = auto()
     CASE = auto()
     ACTOR = auto()
     EVENT = auto()
+
+    FACT = auto()
+    CLAIM = auto()
+    LAW = auto()
+    DECISION = auto()
 
 
 class EdgeType(StrEnum):
