@@ -2,8 +2,11 @@
 
 from __future__ import annotations
 
+import sys
 from datetime import date
 from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from knowledge.models.case import (
     Case,
@@ -61,7 +64,7 @@ def build_case() -> Case:
     f2 = Fact(
         statement=(
             "W dniu 10.06.2026 r. sędzia referent SSR Magdalena Cichańska "
-            "wysłła wiadomość e-mail ze służbowego adresu."
+            "wysłała wiadomość e-mail ze służbowego adresu."
         ),
         status=FactStatus.SUPPORTED,
         source_refs=["email-2026-06-10"],
@@ -69,8 +72,7 @@ def build_case() -> Case:
     f3 = Fact(
         statement=(
             "W dniu 22.06.2026 r. wnoszący złożył skargę dotyczącą sposobu "
-            "wykonania obowiązku informacyjnego, a nie autentyczności wiadomości "
-            "ani prawa Sądu do udzielania pouczeń."
+            "wykonania obowiązku informacyjnego."
         ),
         status=FactStatus.SUPPORTED,
         source_refs=["skarga-2026-06-22"],
@@ -86,7 +88,8 @@ def build_case() -> Case:
     f5 = Fact(
         statement=(
             "Wnoszący działa bez profesjonalnego pełnomocnika i zgłaszał "
-            "trudności komunikacyjne istotne dla standardu pouczeń."
+            "trudności komunikacyjne istotne dla standardu pouczeń; Sąd "
+            "dysponował tą wiedzą przed wiadomością z 10.06.2026 r."
         ),
         status=FactStatus.SUPPORTED,
         source_refs=["material-trudnosci-komunikacyjne"],
@@ -97,15 +100,15 @@ def build_case() -> Case:
 
     b1 = LegalBasis(
         reference="art. 16 § 1 k.p.k.",
-        note="obowiązek informowania uczestników o uprawnieniach i obowiązkach",
+        note="brak pouczenia albo pouczenie mylne nie może wywoływać ujemnych skutków procesowych",
     )
     b2 = LegalBasis(
         reference="art. 16 § 2–3 k.p.k.",
-        note="sposób i zakres pouczeń; ochrona uczestnika nieprofesjonalnego",
+        note="informowanie w miarę potrzeby; dostosowanie pouczenia do osoby nieporadnej",
     )
     b3 = LegalBasis(
         reference="uchwała SN I KZP 6/13",
-        note="gwarancyjny charakter pouczeń",
+        note="gwarancyjny charakter art. 16 k.p.k.",
     )
     for basis in (b1, b2, b3):
         case.add_legal_basis(basis)
@@ -123,13 +126,39 @@ def build_case() -> Case:
             ),
             fact_ids=[f1.id, f2.id, f3.id, f4.id, f5.id],
             legal_basis_ids=[b1.id, b2.id, b3.id],
+            scope_not_challenged=[
+                "autentyczność wiadomości e-mail z dnia 10 czerwca 2026 r.",
+                "fakt jej wysłania przez sędziego referenta",
+                "wykorzystanie służbowego adresu poczty elektronicznej Sądu",
+                "uprawnienie Sądu do udzielania pouczeń wynikających z przepisów prawa",
+            ],
+            issues=[
+                "czy treść i forma wiadomości z 10.06.2026 r. były jednoznaczne i dostosowane do sytuacji adresata",
+                "czy odpowiedź Prezesa z 23.07.2026 r. odnosi się do standardu komunikacji, a nie tylko do kompetencji organu",
+            ],
+            assessment_points=[
+                "Odpowiedź z 23.07.2026 r. koncentruje się na autentyczności korespondencji i formalnej podstawie pouczenia.",
+                "Brak oceny jednoznaczności komunikatu oraz skutków procesowych.",
+                "Brak odniesienia do trudności komunikacyjnych w świetle art. 16 § 3 k.p.k.",
+                "Uprawnienie organu i standard obowiązku informacyjnego to dwa odrębne zagadnienia prawne.",
+            ],
             outcomes=[
-                "ponowne rozpoznanie skargi w zakresie sposobu komunikacji",
+                "ponowne rozpoznanie skargi z 22.06.2026 r. w zakresie sposobu wykonania obowiązku informacyjnego",
                 "wskazanie charakteru wiadomości e-mail z 10.06.2026 r.",
                 "wskazanie skutków procesowych tej wiadomości",
-                "odniesienie się do zgłoszonych trudności komunikacyjnych",
-                "zapewnienie jednoznacznej komunikacji w dalszym toku sprawy",
-                "przyjęcie niniejszego pisma do akt",
+                "wskazanie, czy uwzględniono trudności komunikacyjne i brak pełnomocnika",
+                "jednoznaczna komunikacja w dalszym toku sprawy",
+                "przyjęcie niniejszego pisma do akt wraz z załącznikami",
+            ],
+            closing_statement=(
+                "Zależy mi na spokojnym i zgodnym z prawem wyjaśnieniu sytuacji. "
+                "Nie kwestionuję autorytetu Sądu ani kompetencji sędziego referenta."
+            ),
+            attachments=[
+                "kopia skargi z dnia 22 czerwca 2026 r.",
+                "kopia odpowiedzi Prezesa Sądu z dnia 23 lipca 2026 r.",
+                "wydruk wiadomości e-mail z dnia 10 czerwca 2026 r.",
+                "dokumentacja potwierdzająca trudności komunikacyjne",
             ],
         )
     )
@@ -142,10 +171,8 @@ def main() -> None:
         sender_name="Arkadiusz Mielewczyk",
         place="Wejherowo",
         letter_date=date(2026, 7, 28),
-        subject=(
-            "Wniosek o ponowne rozpoznanie skargi z 22.06.2026 r. "
-            "— odpowiedź na pismo Prezesa z 23.07.2026 r."
-        ),
+        subject="odpowiedzi z dnia 23 lipca 2026 r. na skargę z dnia 22 czerwca 2026 r.",
+        prosecutor_ref="4057-0.Ds.2517.2025",
         recipient_lines=[
             "Prezes Sądu Rejonowego w Wejherowie",
             "SSR Beata Czabotar-Magulska",
