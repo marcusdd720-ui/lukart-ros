@@ -2,8 +2,8 @@
 Knowledge Operating System (KOS)
 
 File: knowledge/models/case.py
-Version: 1.0
-Sprint: CASE-001
+Version: 1.1
+Sprint: CASE-001 / CASE-004
 
 Domain model for a legal case (virtual chambers).
 Evidence-driven: no decision without recorded facts.
@@ -19,8 +19,6 @@ from uuid import uuid4
 
 
 class CaseStatus(StrEnum):
-    """Lifecycle of a case file."""
-
     NEW = auto()
     INTAKE = auto()
     FACTS = auto()
@@ -51,26 +49,18 @@ def _now() -> datetime:
 
 @dataclass(slots=True)
 class Party:
-    """Participant in the case."""
-
     id: str = field(default_factory=lambda: str(uuid4()))
     name: str = ""
-    role: str = ""  # e.g. applicant, respondent, court, authority
+    role: str = ""
     metadata: dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass(slots=True)
 class Fact:
-    """
-    Atomic factual claim bound to sources.
-
-    A fact is not a conclusion. Conclusions live in Decision.
-    """
-
     id: str = field(default_factory=lambda: str(uuid4()))
     statement: str = ""
     status: FactStatus = FactStatus.UNVERIFIED
-    source_refs: list[str] = field(default_factory=list)  # document/node ids
+    source_refs: list[str] = field(default_factory=list)
     confidence: float = 1.0
     metadata: dict[str, Any] = field(default_factory=dict)
     created_at: datetime = field(default_factory=_now)
@@ -84,19 +74,19 @@ class Fact:
 
 @dataclass(slots=True)
 class LegalBasis:
-    """Citation of a legal provision or authority."""
-
     id: str = field(default_factory=lambda: str(uuid4()))
-    reference: str = ""  # e.g. "art. 16 § 1 k.p.k."
+    reference: str = ""
     note: str = ""
 
 
 @dataclass(slots=True)
 class Decision:
     """
-    Auditable legal decision produced by the pipeline.
+    Auditable legal decision.
 
-    Must reference facts and legal basis — never free-floating text.
+    Optional section fields support complex filings (style 3.1):
+    scope_not_challenged, issues, assessment_points, closing_statement, attachments.
+    Legacy cases may leave them empty and use summary + outcomes only.
     """
 
     id: str = field(default_factory=lambda: str(uuid4()))
@@ -104,7 +94,15 @@ class Decision:
     summary: str = ""
     fact_ids: list[str] = field(default_factory=list)
     legal_basis_ids: list[str] = field(default_factory=list)
-    outcomes: list[str] = field(default_factory=list)  # ordered requests / holdings
+    outcomes: list[str] = field(default_factory=list)
+
+    # Structured sections for large matters
+    scope_not_challenged: list[str] = field(default_factory=list)
+    issues: list[str] = field(default_factory=list)
+    assessment_points: list[str] = field(default_factory=list)
+    closing_statement: str = ""
+    attachments: list[str] = field(default_factory=list)
+
     metadata: dict[str, Any] = field(default_factory=dict)
     created_at: datetime = field(default_factory=_now)
 
@@ -119,13 +117,9 @@ class Decision:
 
 @dataclass(slots=True)
 class Case:
-    """
-    Single source of truth for a matter handled by the virtual chambers.
-    """
-
     id: str = field(default_factory=lambda: str(uuid4()))
     title: str = ""
-    signature: str = ""  # court / authority file number
+    signature: str = ""
     status: CaseStatus = CaseStatus.NEW
 
     parties: list[Party] = field(default_factory=list)
@@ -183,7 +177,6 @@ class Case:
         return self.decisions[-1]
 
     def advance_to(self, status: CaseStatus) -> None:
-        """Explicit status transition (caller enforces business rules)."""
         self.status = status
         self.touch()
 

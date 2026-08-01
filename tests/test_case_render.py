@@ -19,7 +19,11 @@ from knowledge.models.render import CaseLetterRenderer, LetterContext
 
 
 def _sample_case() -> Case:
-    case = Case(title="Skarga na sposob pouczenia", signature="II Kp 459/26")
+    case = Case(
+        title="Skarga na sposob pouczenia",
+        signature="II Kp 459/26",
+        metadata={"prosecutor_ref": "4057-0.Ds.2517.2025"},
+    )
     case.add_party(Party(name="Arkadiusz Mielewczyk", role="applicant"))
     case.add_party(
         Party(
@@ -29,7 +33,7 @@ def _sample_case() -> Case:
         )
     )
     fact = Fact(
-        statement="W dniu 10.06.2026 r. sędzia referent wyslal wiadomosc e-mail.",
+        statement="W dniu 10.06.2026 r. sedzia referent wyslal wiadomosc e-mail.",
         status=FactStatus.SUPPORTED,
         source_refs=["email-2026-06-10"],
     )
@@ -65,10 +69,12 @@ def test_render_contains_sections() -> None:
         ),
     )
     assert "Sygn. akt: II Kp 459/26" in text
-    assert "I. Ustalenia faktyczne" in text
-    assert "II. Podstawa prawna" in text
-    assert "III. Stanowisko" in text
-    assert "IV. Wnioski" in text
+    assert "Sygn. prokuratorska: 4057-0.Ds.2517.2025" in text
+    assert "I. Przedmiot sprawy" in text
+    assert "II. Ustalenia faktyczne" in text
+    assert "III. Podstawa prawna" in text
+    assert "IV. Stanowisko" in text
+    assert "V. Wnioski" in text
     assert "art. 16" in text
     assert "ponowne rozpoznanie skargi" in text
     assert "Wejherowo, dnia 28.07.2026 r." in text
@@ -78,3 +84,36 @@ def test_render_without_decision_raises() -> None:
     case = Case(title="Pusta")
     with pytest.raises(ValueError, match="no decision"):
         CaseLetterRenderer().render(case)
+
+
+def test_render_structured_sections() -> None:
+    case = Case(
+        title="Test",
+        signature="II Kp 459/26",
+        metadata={"prosecutor_ref": "4057-0.Ds.2517.2025"},
+    )
+    case.add_party(Party(name="A", role="applicant"))
+    fact = Fact(statement="Fakt testowy.", status=FactStatus.SUPPORTED)
+    case.add_fact(fact)
+    basis = LegalBasis(reference="art. 16 k.p.k.")
+    case.add_legal_basis(basis)
+    case.add_decision(
+        Decision(
+            kind=DecisionKind.PROCEDURAL,
+            summary="Wniosek o ponowne rozpoznanie.",
+            fact_ids=[fact.id],
+            legal_basis_ids=[basis.id],
+            outcomes=["przyjecie do akt"],
+            scope_not_challenged=["autentycznosc wiadomosci"],
+            issues=["sposob pouczenia"],
+            assessment_points=["Odpowiedz nie odnosi sie do standardu art. 16."],
+            closing_statement="Zalezy mi na spokojnym wyjasnieniu.",
+            attachments=["kopia skargi"],
+        )
+    )
+    text = CaseLetterRenderer().render(case, context=LetterContext(sender_name="A"))
+    assert "I. Przedmiot sprawy" in text
+    assert "Nie jest kwestionowane:" in text
+    assert "Sygn. prokuratorska: 4057-0.Ds.2517.2025" in text
+    assert "Załączniki:" in text
+    assert "kopia skargi" in text

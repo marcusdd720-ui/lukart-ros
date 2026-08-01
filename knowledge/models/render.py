@@ -2,11 +2,11 @@
 Knowledge Operating System (KOS)
 
 File: knowledge/models/render.py
-Version: 1.0.1
-Sprint: CASE-002
+Version: 2.0
+Sprint: CASE-002 / CASE-004
 
-Render a Case + Decision into a formal procedural letter (plain text).
-No generative AI — deterministic mapping from domain model only.
+Render Case + Decision into a formal procedural letter (plain text).
+Supports structured Decision sections (3.1-style) when present.
 """
 
 from __future__ import annotations
@@ -19,8 +19,6 @@ from knowledge.models.case import Case, Decision, Party
 
 @dataclass(slots=True)
 class LetterContext:
-    """Optional header fields not stored on Case."""
-
     sender_name: str = ""
     sender_address: str = ""
     sender_contact: str = ""
@@ -28,13 +26,10 @@ class LetterContext:
     place: str = ""
     letter_date: date | None = None
     subject: str = ""
+    prosecutor_ref: str = ""
 
 
 class CaseLetterRenderer:
-    """
-    Build a formal letter from Case.latest_decision() (or a given decision).
-    """
-
     def render(
         self,
         case: Case,
@@ -49,7 +44,6 @@ class CaseLetterRenderer:
 
         fact_map = {f.id: f for f in case.facts}
         law_map = {b.id: b for b in case.legal_bases}
-
         lines: list[str] = []
 
         if ctx.sender_name:
@@ -73,13 +67,34 @@ class CaseLetterRenderer:
         lines.append("")
         if case.signature:
             lines.append(f"Sygn. akt: {case.signature}")
+        pros = ctx.prosecutor_ref or str(case.metadata.get("prosecutor_ref", "") or "")
+        if pros:
+            lines.append(f"Sygn. prokuratorska: {pros}")
         subject = ctx.subject or case.title or dec.summary
         lines.append(f"Dotyczy: {subject}")
         lines.append("")
-        lines.append(self._salutation(case))
+        lines.append("Szanowni Państwo,")
         lines.append("")
 
-        lines.append("I. Ustalenia faktyczne")
+        # I. Scope / subject of complaint
+        lines.append("I. Przedmiot sprawy")
+        lines.append("")
+        if dec.scope_not_challenged:
+            lines.append("Nie jest kwestionowane:")
+            for i, item in enumerate(dec.scope_not_challenged, start=1):
+                lines.append(f"{i}. {item}")
+            lines.append("")
+        if dec.issues:
+            lines.append("Przedmiotem stanowiska jest:")
+            for i, item in enumerate(dec.issues, start=1):
+                lines.append(f"{i}. {item}")
+            lines.append("")
+        if not dec.scope_not_challenged and not dec.issues:
+            lines.append(dec.summary)
+            lines.append("")
+
+        # II. Facts
+        lines.append("II. Ustalenia faktyczne")
         lines.append("")
         if not dec.fact_ids:
             lines.append("(brak powiązanych faktów)")
@@ -97,7 +112,8 @@ class CaseLetterRenderer:
                 lines.append(f"{i}. {fact.statement}{sources}")
         lines.append("")
 
-        lines.append("II. Podstawa prawna")
+        # III. Law
+        lines.append("III. Podstawa prawna")
         lines.append("")
         if not dec.legal_basis_ids:
             lines.append("(brak podstawy prawnej)")
@@ -111,12 +127,18 @@ class CaseLetterRenderer:
                 lines.append(f"{i}. {basis.reference}{note}")
         lines.append("")
 
-        lines.append("III. Stanowisko")
+        # IV. Assessment / position
+        lines.append("IV. Stanowisko")
         lines.append("")
         lines.append(dec.summary)
+        if dec.assessment_points:
+            lines.append("")
+            for i, point in enumerate(dec.assessment_points, start=1):
+                lines.append(f"{i}. {point}")
         lines.append("")
 
-        lines.append("IV. Wnioski")
+        # V. Requests
+        lines.append("V. Wnioski")
         lines.append("")
         if not dec.outcomes:
             lines.append("1. Przyjęcie niniejszego pisma do akt.")
@@ -125,6 +147,10 @@ class CaseLetterRenderer:
                 lines.append(f"{i}. {item}")
         lines.append("")
 
+        if dec.closing_statement.strip():
+            lines.append(dec.closing_statement.strip())
+            lines.append("")
+
         lines.append("Z poważaniem")
         lines.append("")
         if ctx.sender_name:
@@ -132,6 +158,13 @@ class CaseLetterRenderer:
         else:
             applicant = self._party_by_role(case, "applicant")
             lines.append(applicant.name if applicant else "")
+
+        attachments = list(dec.attachments)
+        if attachments:
+            lines.append("")
+            lines.append("Załączniki:")
+            for i, name in enumerate(attachments, start=1):
+                lines.append(f"{i}. {name}")
 
         return "\n".join(lines).rstrip() + "\n"
 
@@ -142,9 +175,6 @@ class CaseLetterRenderer:
         if place:
             return f"{place}, dnia {formatted} r."
         return f"dnia {formatted} r."
-
-    def _salutation(self, case: Case) -> str:
-        return "Szanowni Państwo,"
 
     def _default_recipient(self, case: Case) -> list[str]:
         authority = self._party_by_role(case, "authority")
