@@ -2,11 +2,11 @@
 Knowledge Operating System (KOS)
 
 File: knowledge/models/case.py
-Version: 1.1
-Sprint: CASE-001 / CASE-004
+Version: 1.2
+Sprint: CASE-005
 
 Domain model for a legal case (virtual chambers).
-Evidence-driven: no decision without recorded facts.
+Signature may be assigned late — cases often start from documents only.
 """
 
 from __future__ import annotations
@@ -19,8 +19,11 @@ from uuid import uuid4
 
 
 class CaseStatus(StrEnum):
+    """Lifecycle of a case file."""
+
     NEW = auto()
     INTAKE = auto()
+    PRE_CASE = auto()
     FACTS = auto()
     ANALYSIS = auto()
     DECISION = auto()
@@ -84,9 +87,7 @@ class Decision:
     """
     Auditable legal decision.
 
-    Optional section fields support complex filings (style 3.1):
-    scope_not_challenged, issues, assessment_points, closing_statement, attachments.
-    Legacy cases may leave them empty and use summary + outcomes only.
+    Optional section fields support complex filings (style 3.1).
     """
 
     id: str = field(default_factory=lambda: str(uuid4()))
@@ -96,7 +97,6 @@ class Decision:
     legal_basis_ids: list[str] = field(default_factory=list)
     outcomes: list[str] = field(default_factory=list)
 
-    # Structured sections for large matters
     scope_not_challenged: list[str] = field(default_factory=list)
     issues: list[str] = field(default_factory=list)
     assessment_points: list[str] = field(default_factory=list)
@@ -117,8 +117,16 @@ class Decision:
 
 @dataclass(slots=True)
 class Case:
+    """
+    Single source of truth for a matter.
+
+    signature may be empty until the authority assigns a file number.
+    working_title is used in drafts and early letters.
+    """
+
     id: str = field(default_factory=lambda: str(uuid4()))
     title: str = ""
+    working_title: str = ""
     signature: str = ""
     status: CaseStatus = CaseStatus.NEW
 
@@ -134,6 +142,28 @@ class Case:
     def touch(self) -> None:
         self.updated_at = _now()
 
+    def display_title(self) -> str:
+        if self.title.strip():
+            return self.title.strip()
+        if self.working_title.strip():
+            return self.working_title.strip()
+        return "Sprawa bez tytułu"
+
+    def has_signature(self) -> bool:
+        return bool(self.signature and self.signature.strip())
+
+    def assign_signature(self, signature: str, *, ref_key: str | None = None) -> None:
+        """Attach authority file number when it becomes known."""
+        text = (signature or "").strip()
+        if not text:
+            raise ValueError("signature cannot be empty when assigning.")
+        self.signature = text
+        if ref_key:
+            self.metadata[ref_key] = text
+        if self.status in (CaseStatus.NEW, CaseStatus.INTAKE, CaseStatus.PRE_CASE):
+            self.status = CaseStatus.FACTS if self.facts else CaseStatus.INTAKE
+        self.touch()
+
     def add_party(self, party: Party) -> None:
         self.parties.append(party)
         self.touch()
@@ -141,7 +171,7 @@ class Case:
     def add_fact(self, fact: Fact) -> None:
         fact.validate()
         self.facts.append(fact)
-        if self.status in (CaseStatus.NEW, CaseStatus.INTAKE):
+        if self.status in (CaseStatus.NEW, CaseStatus.INTAKE, CaseStatus.PRE_CASE):
             self.status = CaseStatus.FACTS
         self.touch()
 
@@ -183,8 +213,10 @@ class Case:
     def summary(self) -> dict[str, Any]:
         return {
             "id": self.id,
-            "title": self.title,
-            "signature": self.signature,
+            "title": self.display_title(),
+            "working_title": self.working_title,
+            "signature": self.signature or None,
+            "has_signature": self.has_signature(),
             "status": self.status.name,
             "parties": len(self.parties),
             "facts": len(self.facts),
