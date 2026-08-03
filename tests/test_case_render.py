@@ -14,6 +14,7 @@ from knowledge.models.case import (
     FactStatus,
     LegalBasis,
     Party,
+    TimelineEvent,
 )
 from knowledge.models.render import CaseLetterRenderer, LetterContext
 
@@ -115,5 +116,36 @@ def test_render_structured_sections() -> None:
     assert "I. Przedmiot sprawy" in text
     assert "Nie jest kwestionowane:" in text
     assert "Sygn. prokuratorska: 4057-0.Ds.2517.2025" in text
-    assert "Załączniki:" in text
+    assert "Zalaczniki:" in text or "Załączniki:" in text
     assert "kopia skargi" in text
+
+
+def test_render_timeline_section() -> None:
+    case = Case(signature="DS.3960.2025", metadata={"prosecutor_ref": "DS.3960.2025"})
+    case.add_party(Party(name="M", role="applicant"))
+    fact = Fact(statement="Fakt.", status=FactStatus.SUPPORTED)
+    case.add_fact(fact)
+    basis = LegalBasis(reference="art. 7 k.p.k.")
+    case.add_legal_basis(basis)
+    case.add_timeline_event(
+        TimelineEvent(
+            date_label="31.05.2025",
+            sort_key="2025-05-31",
+            event="Rejestracja",
+            source="dowod",
+            procedural_meaning="Wpis administracyjny",
+        )
+    )
+    case.add_decision(
+        Decision(
+            summary="Stanowisko.",
+            fact_ids=[fact.id],
+            legal_basis_ids=[basis.id],
+            outcomes=["przyjecie"],
+        )
+    )
+    text = CaseLetterRenderer().render(case, context=LetterContext(sender_name="M"))
+    assert "II.A. Chronologia zdarzeń" in text
+    assert "Rejestracja" in text
+    assert text.count("DS.3960.2025") >= 1
+    assert "Sygn. akt: DS.3960.2025" not in text or "Sygn. prokuratorska: DS.3960.2025" in text

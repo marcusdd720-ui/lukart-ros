@@ -2,11 +2,11 @@
 Knowledge Operating System (KOS)
 
 File: knowledge/models/case.py
-Version: 1.2
-Sprint: CASE-005
+Version: 1.3
+Sprint: CASE-006
 
 Domain model for a legal case (virtual chambers).
-Signature may be assigned late — cases often start from documents only.
+Signature may be assigned late. Timeline is first-class chronology.
 """
 
 from __future__ import annotations
@@ -19,8 +19,6 @@ from uuid import uuid4
 
 
 class CaseStatus(StrEnum):
-    """Lifecycle of a case file."""
-
     NEW = auto()
     INTAKE = auto()
     PRE_CASE = auto()
@@ -83,13 +81,29 @@ class LegalBasis:
 
 
 @dataclass(slots=True)
+class TimelineEvent:
+    """
+    One row of procedural chronology:
+    date | event | source | procedural meaning
+    """
+
+    id: str = field(default_factory=lambda: str(uuid4()))
+    date_label: str = ""
+    event: str = ""
+    source: str = ""
+    procedural_meaning: str = ""
+    sort_key: str = ""
+    metadata: dict[str, Any] = field(default_factory=dict)
+
+    def validate(self) -> None:
+        if not self.event.strip():
+            raise ValueError("TimelineEvent.event cannot be empty.")
+        if not self.source.strip():
+            raise ValueError("TimelineEvent.source cannot be empty.")
+
+
+@dataclass(slots=True)
 class Decision:
-    """
-    Auditable legal decision.
-
-    Optional section fields support complex filings (style 3.1).
-    """
-
     id: str = field(default_factory=lambda: str(uuid4()))
     kind: DecisionKind = DecisionKind.PROCEDURAL
     summary: str = ""
@@ -134,6 +148,7 @@ class Case:
     facts: list[Fact] = field(default_factory=list)
     legal_bases: list[LegalBasis] = field(default_factory=list)
     decisions: list[Decision] = field(default_factory=list)
+    timeline: list[TimelineEvent] = field(default_factory=list)
 
     metadata: dict[str, Any] = field(default_factory=dict)
     created_at: datetime = field(default_factory=_now)
@@ -153,7 +168,6 @@ class Case:
         return bool(self.signature and self.signature.strip())
 
     def assign_signature(self, signature: str, *, ref_key: str | None = None) -> None:
-        """Attach authority file number when it becomes known."""
         text = (signature or "").strip()
         if not text:
             raise ValueError("signature cannot be empty when assigning.")
@@ -180,6 +194,17 @@ class Case:
             raise ValueError("LegalBasis.reference cannot be empty.")
         self.legal_bases.append(basis)
         self.touch()
+
+    def add_timeline_event(self, event: TimelineEvent) -> None:
+        event.validate()
+        self.timeline.append(event)
+        self.touch()
+
+    def ordered_timeline(self) -> list[TimelineEvent]:
+        def _key(e: TimelineEvent) -> tuple[str, str]:
+            return (e.sort_key or e.date_label or "", e.date_label or "")
+
+        return sorted(self.timeline, key=_key)
 
     def add_decision(self, decision: Decision) -> None:
         decision.validate()
@@ -222,4 +247,5 @@ class Case:
             "facts": len(self.facts),
             "legal_bases": len(self.legal_bases),
             "decisions": len(self.decisions),
+            "timeline_events": len(self.timeline),
         }

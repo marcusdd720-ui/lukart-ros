@@ -2,11 +2,11 @@
 Knowledge Operating System (KOS)
 
 File: knowledge/models/render.py
-Version: 2.0
-Sprint: CASE-002 / CASE-004
+Version: 2.2
+Sprint: CASE-006
 
 Render Case + Decision into a formal procedural letter (plain text).
-Supports structured Decision sections (3.1-style) when present.
+Dedupes signature lines. Renders timeline when present.
 """
 
 from __future__ import annotations
@@ -65,18 +65,28 @@ class CaseLetterRenderer:
             lines.extend(recipient)
 
         lines.append("")
-        if case.signature:
-            lines.append(f"Sygn. akt: {case.signature}")
-        pros = ctx.prosecutor_ref or str(case.metadata.get("prosecutor_ref", "") or "")
-        if pros:
-            lines.append(f"Sygn. prokuratorska: {pros}")
-        subject = ctx.subject or case.title or dec.summary
+        sig = case.signature.strip() if case.has_signature() else ""
+        pros = (
+            ctx.prosecutor_ref.strip()
+            if ctx.prosecutor_ref and ctx.prosecutor_ref.strip()
+            else str(case.metadata.get("prosecutor_ref", "") or "").strip()
+        )
+        if sig and pros and sig == pros:
+            lines.append(f"Sygn. prokuratorska: {sig}")
+        else:
+            if sig:
+                lines.append(f"Sygn. akt: {sig}")
+            elif not pros:
+                lines.append(f"Sprawa: {case.display_title()}")
+            if pros and pros != sig:
+                lines.append(f"Sygn. prokuratorska: {pros}")
+
+        subject = ctx.subject or case.display_title() or dec.summary
         lines.append(f"Dotyczy: {subject}")
         lines.append("")
         lines.append("Szanowni Państwo,")
         lines.append("")
 
-        # I. Scope / subject of complaint
         lines.append("I. Przedmiot sprawy")
         lines.append("")
         if dec.scope_not_challenged:
@@ -93,7 +103,6 @@ class CaseLetterRenderer:
             lines.append(dec.summary)
             lines.append("")
 
-        # II. Facts
         lines.append("II. Ustalenia faktyczne")
         lines.append("")
         if not dec.fact_ids:
@@ -112,7 +121,17 @@ class CaseLetterRenderer:
                 lines.append(f"{i}. {fact.statement}{sources}")
         lines.append("")
 
-        # III. Law
+        if case.timeline:
+            lines.append("II.A. Chronologia zdarzeń")
+            lines.append("")
+            lines.append("Data | Zdarzenie | Źródło | Znaczenie procesowe")
+            lines.append("-" * 72)
+            for ev in case.ordered_timeline():
+                lines.append(
+                    f"{ev.date_label} | {ev.event} | {ev.source} | {ev.procedural_meaning}"
+                )
+            lines.append("")
+
         lines.append("III. Podstawa prawna")
         lines.append("")
         if not dec.legal_basis_ids:
@@ -127,7 +146,6 @@ class CaseLetterRenderer:
                 lines.append(f"{i}. {basis.reference}{note}")
         lines.append("")
 
-        # IV. Assessment / position
         lines.append("IV. Stanowisko")
         lines.append("")
         lines.append(dec.summary)
@@ -137,7 +155,6 @@ class CaseLetterRenderer:
                 lines.append(f"{i}. {point}")
         lines.append("")
 
-        # V. Requests
         lines.append("V. Wnioski")
         lines.append("")
         if not dec.outcomes:
@@ -159,11 +176,10 @@ class CaseLetterRenderer:
             applicant = self._party_by_role(case, "applicant")
             lines.append(applicant.name if applicant else "")
 
-        attachments = list(dec.attachments)
-        if attachments:
+        if dec.attachments:
             lines.append("")
             lines.append("Załączniki:")
-            for i, name in enumerate(attachments, start=1):
+            for i, name in enumerate(dec.attachments, start=1):
                 lines.append(f"{i}. {name}")
 
         return "\n".join(lines).rstrip() + "\n"
