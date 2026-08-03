@@ -9,6 +9,8 @@ from knowledge.models.case import (
     CaseStatus,
     Decision,
     DecisionKind,
+    EvidenceItem,
+    EvidenceWeight,
     Fact,
     FactStatus,
     LegalBasis,
@@ -143,3 +145,19 @@ def test_timeline_ordering() -> None:
     assert ordered[0].event == "Rejestracja"
     assert ordered[1].event == "Wezwanie"
     assert case.summary()["timeline_events"] == 2
+
+
+def test_evidence_item_analysis() -> None:
+    case = Case(working_title="E")
+    case.add_evidence(
+        EvidenceItem(
+            label="Umowa darowizny",
+            source_ref="umowa-darowizny",
+            proves=["istnienie pisemnej umowy stron"],
+            does_not=["samodzielne przesadzenie skutecznosci cywilnoprawnej"],
+            weight=EvidenceWeight.HIGH,
+            open_questions=["czy wszystkie elementy oswiadczen woli sa bezsporne"],
+        )
+    )
+    assert case.summary()["evidence_items"] == 1
+    assert case.status == CaseStatus.ANALYSIS

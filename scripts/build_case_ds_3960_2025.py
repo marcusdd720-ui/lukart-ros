@@ -1,9 +1,8 @@
 """
 Build case DS.3960.2025 (VW Transporter / Mariusz Brodziszewski).
 
-Evidence-only facts + 4-column timeline.
+Evidence-only facts + timeline + per-document evidence analysis.
 No civil-ownership conclusions.
-Focus: open course of dealing + belief in right to dispose of the vehicle.
 """
 
 from __future__ import annotations
@@ -19,6 +18,8 @@ from knowledge.models.case import (
     CaseStatus,
     Decision,
     DecisionKind,
+    EvidenceItem,
+    EvidenceWeight,
     Fact,
     FactStatus,
     LegalBasis,
@@ -132,6 +133,7 @@ def build_case() -> Case:
     for fact in (f1, f2, f3, f4, f5, f6, f7):
         case.add_fact(fact)
 
+    # --- Timeline ---
     case.add_timeline_event(
         TimelineEvent(
             date_label="31.05.2025",
@@ -150,9 +152,7 @@ def build_case() -> Case:
             sort_key="2025-05-31-b",
             event="Rejestracja pojazdu na Mariusza Brodziszewskiego",
             source="dowod-rejestracyjny",
-            procedural_meaning=(
-                "Czynność administracyjna na podstawie przedstawionych dokumentów."
-            ),
+            procedural_meaning="Czynność administracyjna na podstawie przedstawionych dokumentów.",
         )
     )
     case.add_timeline_event(
@@ -179,9 +179,7 @@ def build_case() -> Case:
             sort_key="2025-07-08",
             event="Zabezpieczenie oryginału umowy darowizny",
             source="notatka-policji-zabezpieczenie-umowy",
-            procedural_meaning=(
-                "Oryginał w dyspozycji organów — możliwa bezpośrednia ocena."
-            ),
+            procedural_meaning="Oryginał w dyspozycji organów — możliwa bezpośrednia ocena.",
         )
     )
     case.add_timeline_event(
@@ -202,15 +200,135 @@ def build_case() -> Case:
             sort_key="2099-01-01",
             event="Pojazd na posesji Mariusza (oświadczenie)",
             source="oswiadczenie-mariusza-posesja",
-            procedural_meaning=(
-                "Oświadczenie strony; podlega ocenie łącznie z dokumentami."
-            ),
+            procedural_meaning="Oświadczenie strony; podlega ocenie łącznie z dokumentami.",
+        )
+    )
+
+    # --- Evidence analysis (dossier core) ---
+    case.add_evidence(
+        EvidenceItem(
+            label="Umowa darowizny",
+            source_ref="umowa-darowizny",
+            proves=[
+                "istnienie pisemnej umowy pomiędzy wskazanymi stronami",
+                "oznaczenie pojazdu (w tym VIN) jako przedmiotu czynności",
+            ],
+            does_not=[
+                "samodzielne przesądzenie skuteczności cywilnoprawnej darowizny",
+                "automatyczne wyłączenie sporu co do prawa do pojazdu",
+            ],
+            weight=EvidenceWeight.HIGH,
+            open_questions=[
+                "czy treść i forma umowy nie budzą wątpliwości co do oświadczeń woli",
+                "jak organ oceni związek umowy z późniejszą rejestracją",
+            ],
+        )
+    )
+    case.add_evidence(
+        EvidenceItem(
+            label="Dowód rejestracyjny",
+            source_ref="dowod-rejestracyjny",
+            proves=[
+                "dokonanie rejestracji pojazdu przez organ administracji",
+                "wpisanie Mariusza Brodziszewskiego w dowodzie rejestracyjnym",
+            ],
+            does_not=[
+                "konstytutywne nabycie własności w rozumieniu prawa cywilnego",
+                "rozstrzygnięcie sporu karnego",
+            ],
+            weight=EvidenceWeight.HIGH,
+            open_questions=[
+                "na podstawie jakiego kompletu dokumentów organ dokonał wpisu",
+            ],
+        )
+    )
+    case.add_evidence(
+        EvidenceItem(
+            label="Polisa OC",
+            source_ref="polisa-oc",
+            proves=[
+                "zawarcie obowiązkowego ubezpieczenia OC dla pojazdu",
+                "wykonywanie czynności charakterystycznych dla bieżącego dysponowania pojazdem",
+            ],
+            does_not=[
+                "prawo własności",
+                "brak sporu pomiędzy stronami",
+            ],
+            weight=EvidenceWeight.MEDIUM,
+            open_questions=[],
+        )
+    )
+    case.add_evidence(
+        EvidenceItem(
+            label="Dokument Policji – zabezpieczenie umowy",
+            source_ref="notatka-policji-zabezpieczenie-umowy",
+            proves=[
+                "zabezpieczenie oryginału umowy darowizny przez Policję",
+                "pozostawanie oryginału w dyspozycji organów",
+            ],
+            does_not=[
+                "oceny merytorycznej treści umowy",
+                "wniosku o odpowiedzialności karnej którejkolwiek ze stron",
+            ],
+            weight=EvidenceWeight.HIGH,
+            open_questions=[
+                "treść protokołu/notatki w zakresie okoliczności zabezpieczenia",
+            ],
+        )
+    )
+    case.add_evidence(
+        EvidenceItem(
+            label="Wezwanie do wydania pojazdu (07.07.2025)",
+            source_ref="wezwanie-2025-07-07",
+            proves=[
+                "istnienie sporu co do prawa do dysponowania pojazdem",
+                "moment ujawnienia konfliktu po rejestracji i ubezpieczeniu",
+            ],
+            does_not=[
+                "rozstrzygnięcie, która strona ma rację",
+                "udowodnienie znamion czynu zabronionego",
+            ],
+            weight=EvidenceWeight.MEDIUM,
+            open_questions=[
+                "pełna treść żądań i podstaw wskazanych przez wzywającego",
+            ],
+        )
+    )
+    case.add_evidence(
+        EvidenceItem(
+            label="Wyrok rozwodowy",
+            source_ref="wyrok-rozwodowy",
+            proves=[
+                "rozwiązanie małżeństwa stron przez rozwód",
+            ],
+            does_not=[
+                "automatyczne unieważnienie wcześniejszych czynności dotyczących pojazdu",
+                "przesądzenie odpowiedzialności karnej",
+            ],
+            weight=EvidenceWeight.CONTEXT,
+            open_questions=[],
+        )
+    )
+    case.add_evidence(
+        EvidenceItem(
+            label="Oświadczenie o miejscu przechowywania pojazdu",
+            source_ref="oswiadczenie-mariusza-posesja",
+            proves=[
+                "stanowisko Mariusza, że pojazd jest na jego posesji i dostępny dla organów",
+            ],
+            does_not=[
+                "samodzielnego potwierdzenia faktu bez weryfikacji",
+            ],
+            weight=EvidenceWeight.LOW,
+            open_questions=[
+                "czy organ zechce dokonać oględzin / potwierdzenia lokalizacji",
+            ],
         )
     )
 
     b1 = LegalBasis(
         reference="art. 7 k.p.k.",
-        note="swobodna ocena dowodów — nie dowolna; logika, wiedza, doświadczenie życiowe",
+        note="swobodna ocena dowodów — nie dowolna",
     )
     b2 = LegalBasis(
         reference="art. 4 k.p.k.",
@@ -218,7 +336,7 @@ def build_case() -> Case:
     )
     b3 = LegalBasis(
         reference="art. 410 k.p.k.",
-        note="podstawa rozstrzygnięcia — całokształt ujawnionych okoliczności",
+        note="całokształt ujawnionych okoliczności",
     )
     b4 = LegalBasis(
         reference="art. 167 k.p.k.",
@@ -226,7 +344,7 @@ def build_case() -> Case:
     )
     b5 = LegalBasis(
         reference="[ORZECZNICTWO – DO UZUPEŁNIENIA PO WERYFIKACJI]",
-        note="linie orzecznicze dot. art. 7 i 410 k.p.k. — dopiero po weryfikacji sygnatur",
+        note="art. 7 i 410 k.p.k. — po weryfikacji sygnatur",
     )
     for basis in (b1, b2, b3, b4, b5):
         case.add_legal_basis(basis)
@@ -253,68 +371,29 @@ def build_case() -> Case:
                 "rozwiązanie małżeństwa przez rozwód",
             ],
             issues=[
-                (
-                    "czy czynności Mariusza (rejestracja, OC, posiadanie pojazdu) były "
-                    "podejmowane w oparciu o dokumenty i w przekonaniu o prawie do "
-                    "dysponowania pojazdem"
-                ),
-                (
-                    "czy sam późniejszy spór cywilny/rodzinny wystarcza do przyjęcia "
-                    "znamiion czynu zabronionego bez oceny całokształtu materiału"
-                ),
-                (
-                    "czy ocena sprawy wymaga oddzielenia skutków cywilnoprawnych darowizny "
-                    "od oceny zachowania na gruncie prawa karnego"
-                ),
+                "czy czynności Mariusza były podejmowane w oparciu o dokumenty i w przekonaniu o prawie do dysponowania pojazdem",
+                "czy sam późniejszy spór wystarcza do przyjęcia znamion czynu zabronionego bez oceny całokształtu materiału",
+                "czy należy oddzielić skutki cywilnoprawne darowizny od oceny karnej zachowania",
             ],
             assessment_points=[
-                (
-                    "Umowa darowizny, rejestracja i polisa OC tworzą jawny, weryfikowalny "
-                    "ciąg czynności — nie ukryty obrót pojazdem."
-                ),
-                (
-                    "Rejestracja nie konstytuuje własności, ale potwierdza, że organ "
-                    "administracji uznał dokumenty za wystarczające do wpisu."
-                ),
-                (
-                    "Spór (wezwanie 07.07.2025) ujawnił się po rejestracji i ubezpieczeniu "
-                    "— chronologia ma znaczenie dla oceny zamiaru."
-                ),
-                (
-                    "Oryginał umowy jest w dyspozycji organów — treść i autentyczność "
-                    "mogą być ocenione bezpośrednio."
-                ),
-                (
-                    "Oświadczenie o posesji jest oświadczeniem strony i podlega ocenie "
-                    "łącznie z dokumentami, nie zamiast nich."
-                ),
-                (
-                    "Na obecnym etapie materiał nie pozwala na automatyczne przesądzenie "
-                    "realizacji znamion czynu zabronionego bez wszechstronnej oceny "
-                    "(art. 7 i 410 k.p.k.)."
-                ),
+                "Umowa, rejestracja i polisa OC tworzą jawny ciąg czynności.",
+                "Rejestracja nie konstytuuje własności, ale potwierdza ocenę dokumentów przez organ administracji.",
+                "Spór ujawnił się po rejestracji i ubezpieczeniu — chronologia ma znaczenie dla oceny zamiaru.",
+                "Oryginał umowy jest w dyspozycji organów.",
+                "Oświadczenie o posesji jest oświadczeniem strony.",
+                "Brak podstaw do automatycznego przesądzenia znamion czynu bez wszechstronnej oceny (art. 7 i 410 k.p.k.).",
             ],
             outcomes=[
-                (
-                    "uwzględnienie całokształtu dokumentów (umowa, dowód rejestracyjny, "
-                    "polisa OC, dokument Policji, wezwanie, wyrok rozwodowy) przy ocenie "
-                    "zachowania Mariusza Brodziszewskiego"
-                ),
-                (
-                    "oddzielenie oceny cywilnoprawnej skuteczności darowizny od oceny "
-                    "karnej zamiaru i przekonania o prawie do dysponowania pojazdem"
-                ),
-                "dopuszczenie i przeprowadzenie dowodów z dokumentów wskazanych w wnioskach dowodowych",
-                (
-                    "przeprowadzenie czynności zmierzających do wszechstronnego wyjaśnienia "
-                    "sprawy, bez pochopnego przesądzania odpowiedzialności karnej"
-                ),
+                "uwzględnienie całokształtu dokumentów przy ocenie zachowania Mariusza Brodziszewskiego",
+                "oddzielenie oceny cywilnoprawnej darowizny od oceny karnej zamiaru",
+                "dopuszczenie i przeprowadzenie dowodów z wskazanych dokumentów",
+                "wszechstronne wyjaśnienie sprawy bez pochopnego przesądzania odpowiedzialności karnej",
                 "przyjęcie niniejszego stanowiska do akt sprawy DS.3960.2025",
             ],
             closing_statement=(
                 "Niniejsze stanowisko opiera się na dokumentach pozostających w dyspozycji "
                 "składającego. Okoliczności wynikające wyłącznie z oświadczenia strony zostały "
-                "oznaczone. Nie formułuje się twierdzeń wykraczających poza materiał źródłowy."
+                "oznaczone."
             ),
             attachments=[
                 "umowa darowizny (kopia / informacja o oryginale u Policji)",
@@ -340,9 +419,7 @@ def main() -> None:
             "— pojazd Volkswagen Transporter"
         ),
         prosecutor_ref="DS.3960.2025",
-        recipient_lines=[
-            "Prokuratura Rejonowa Poznań-Wilda",
-        ],
+        recipient_lines=["Prokuratura Rejonowa Poznań-Wilda"],
     )
 
     out_dir = Path("output/cases/DS_3960_2025")

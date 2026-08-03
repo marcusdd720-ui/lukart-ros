@@ -2,11 +2,10 @@
 Knowledge Operating System (KOS)
 
 File: knowledge/models/render.py
-Version: 2.2
-Sprint: CASE-006
+Version: 2.3
+Sprint: CASE-007
 
-Render Case + Decision into a formal procedural letter (plain text).
-Dedupes signature lines. Renders timeline when present.
+Render Case + Decision. Timeline + evidence analysis sections.
 """
 
 from __future__ import annotations
@@ -131,6 +130,26 @@ class CaseLetterRenderer:
                     f"{ev.date_label} | {ev.event} | {ev.source} | {ev.procedural_meaning}"
                 )
             lines.append("")
+
+        if case.evidence:
+            lines.append("II.B. Analiza materiału dowodowego")
+            lines.append("")
+            for i, item in enumerate(case.evidence, start=1):
+                lines.append(f"{i}. {item.label} (źródło: {item.source_ref})")
+                lines.append(f"   Waga: {item.weight.name}")
+                if item.proves:
+                    lines.append("   Potwierdza:")
+                    for p in item.proves:
+                        lines.append(f"   - {p}")
+                if item.does_not:
+                    lines.append("   Nie potwierdza:")
+                    for p in item.does_not:
+                        lines.append(f"   - {p}")
+                if item.open_questions:
+                    lines.append("   Pytania otwarte:")
+                    for q in item.open_questions:
+                        lines.append(f"   - {q}")
+                lines.append("")
 
         lines.append("III. Podstawa prawna")
         lines.append("")

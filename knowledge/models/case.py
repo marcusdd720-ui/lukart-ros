@@ -2,11 +2,11 @@
 Knowledge Operating System (KOS)
 
 File: knowledge/models/case.py
-Version: 1.3
-Sprint: CASE-006
+Version: 1.4
+Sprint: CASE-007
 
 Domain model for a legal case (virtual chambers).
-Signature may be assigned late. Timeline is first-class chronology.
+Evidence items power dossier-style proof analysis.
 """
 
 from __future__ import annotations
@@ -42,6 +42,13 @@ class DecisionKind(StrEnum):
     SUBSTANTIVE = auto()
     INTERIM = auto()
     CLOSING = auto()
+
+
+class EvidenceWeight(StrEnum):
+    HIGH = auto()
+    MEDIUM = auto()
+    LOW = auto()
+    CONTEXT = auto()
 
 
 def _now() -> datetime:
@@ -82,11 +89,6 @@ class LegalBasis:
 
 @dataclass(slots=True)
 class TimelineEvent:
-    """
-    One row of procedural chronology:
-    date | event | source | procedural meaning
-    """
-
     id: str = field(default_factory=lambda: str(uuid4()))
     date_label: str = ""
     event: str = ""
@@ -100,6 +102,35 @@ class TimelineEvent:
             raise ValueError("TimelineEvent.event cannot be empty.")
         if not self.source.strip():
             raise ValueError("TimelineEvent.source cannot be empty.")
+
+
+@dataclass(slots=True)
+class EvidenceItem:
+    """
+    Dossier analysis of a single piece of evidence.
+
+    proves      — what the document supports
+    does_not   — what it does NOT establish
+    weight     — procedural weight label
+    open_questions — gaps left for the authority
+    """
+
+    id: str = field(default_factory=lambda: str(uuid4()))
+    label: str = ""
+    source_ref: str = ""
+    proves: list[str] = field(default_factory=list)
+    does_not: list[str] = field(default_factory=list)
+    weight: EvidenceWeight = EvidenceWeight.MEDIUM
+    open_questions: list[str] = field(default_factory=list)
+    metadata: dict[str, Any] = field(default_factory=dict)
+
+    def validate(self) -> None:
+        if not self.label.strip():
+            raise ValueError("EvidenceItem.label cannot be empty.")
+        if not self.source_ref.strip():
+            raise ValueError("EvidenceItem.source_ref cannot be empty.")
+        if not self.proves:
+            raise ValueError("EvidenceItem.proves must contain at least one point.")
 
 
 @dataclass(slots=True)
@@ -131,13 +162,6 @@ class Decision:
 
 @dataclass(slots=True)
 class Case:
-    """
-    Single source of truth for a matter.
-
-    signature may be empty until the authority assigns a file number.
-    working_title is used in drafts and early letters.
-    """
-
     id: str = field(default_factory=lambda: str(uuid4()))
     title: str = ""
     working_title: str = ""
@@ -149,6 +173,7 @@ class Case:
     legal_bases: list[LegalBasis] = field(default_factory=list)
     decisions: list[Decision] = field(default_factory=list)
     timeline: list[TimelineEvent] = field(default_factory=list)
+    evidence: list[EvidenceItem] = field(default_factory=list)
 
     metadata: dict[str, Any] = field(default_factory=dict)
     created_at: datetime = field(default_factory=_now)
@@ -206,6 +231,18 @@ class Case:
 
         return sorted(self.timeline, key=_key)
 
+    def add_evidence(self, item: EvidenceItem) -> None:
+        item.validate()
+        self.evidence.append(item)
+        if self.status in (
+            CaseStatus.NEW,
+            CaseStatus.INTAKE,
+            CaseStatus.PRE_CASE,
+            CaseStatus.FACTS,
+        ):
+            self.status = CaseStatus.ANALYSIS
+        self.touch()
+
     def add_decision(self, decision: Decision) -> None:
         decision.validate()
         known_facts = {f.id for f in self.facts}
@@ -248,4 +285,5 @@ class Case:
             "legal_bases": len(self.legal_bases),
             "decisions": len(self.decisions),
             "timeline_events": len(self.timeline),
+            "evidence_items": len(self.evidence),
         }
