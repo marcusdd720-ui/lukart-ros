@@ -1,8 +1,8 @@
 """
 Build case DS.3960.2025 (VW Transporter / Mariusz Brodziszewski).
 
-Evidence-only facts + timeline + per-document evidence analysis.
-No civil-ownership conclusions.
+Evidence-only facts + timeline + evidence analysis.
+Exports short letter and full analytical dossier.
 """
 
 from __future__ import annotations
@@ -27,6 +27,7 @@ from knowledge.models.case import (
     TimelineEvent,
 )
 from knowledge.models.docx_export import CaseDocxExporter
+from knowledge.models.dossier_render import DossierContext, DossierRenderer
 from knowledge.models.render import CaseLetterRenderer, LetterContext
 
 
@@ -133,7 +134,6 @@ def build_case() -> Case:
     for fact in (f1, f2, f3, f4, f5, f6, f7):
         case.add_fact(fact)
 
-    # --- Timeline ---
     case.add_timeline_event(
         TimelineEvent(
             date_label="31.05.2025",
@@ -204,7 +204,6 @@ def build_case() -> Case:
         )
     )
 
-    # --- Evidence analysis (dossier core) ---
     case.add_evidence(
         EvidenceItem(
             label="Umowa darowizny",
@@ -298,9 +297,7 @@ def build_case() -> Case:
         EvidenceItem(
             label="Wyrok rozwodowy",
             source_ref="wyrok-rozwodowy",
-            proves=[
-                "rozwiązanie małżeństwa stron przez rozwód",
-            ],
+            proves=["rozwiązanie małżeństwa stron przez rozwód"],
             does_not=[
                 "automatyczne unieważnienie wcześniejszych czynności dotyczących pojazdu",
                 "przesądzenie odpowiedzialności karnej",
@@ -316,9 +313,7 @@ def build_case() -> Case:
             proves=[
                 "stanowisko Mariusza, że pojazd jest na jego posesji i dostępny dla organów",
             ],
-            does_not=[
-                "samodzielnego potwierdzenia faktu bez weryfikacji",
-            ],
+            does_not=["samodzielnego potwierdzenia faktu bez weryfikacji"],
             weight=EvidenceWeight.LOW,
             open_questions=[
                 "czy organ zechce dokonać oględzin / potwierdzenia lokalizacji",
@@ -410,7 +405,10 @@ def build_case() -> Case:
 
 def main() -> None:
     case = build_case()
-    ctx = LetterContext(
+    out_dir = Path("output/cases/DS_3960_2025")
+    out_dir.mkdir(parents=True, exist_ok=True)
+
+    letter_ctx = LetterContext(
         sender_name="Mariusz Brodziszewski",
         place="Poznań",
         letter_date=date.today(),
@@ -421,21 +419,32 @@ def main() -> None:
         prosecutor_ref="DS.3960.2025",
         recipient_lines=["Prokuratura Rejonowa Poznań-Wilda"],
     )
+    letter_text = CaseLetterRenderer().render(case, context=letter_ctx)
+    letter_path = out_dir / "stanowisko_szkic.txt"
+    letter_path.write_text(letter_text, encoding="utf-8")
+    print("LETTER TXT:", letter_path.resolve())
 
-    out_dir = Path("output/cases/DS_3960_2025")
-    out_dir.mkdir(parents=True, exist_ok=True)
-
-    text = CaseLetterRenderer().render(case, context=ctx)
-    txt_path = out_dir / "stanowisko_szkic.txt"
-    txt_path.write_text(text, encoding="utf-8")
-    print("TXT:", txt_path.resolve())
-
-    docx_path = CaseDocxExporter().export(
+    CaseDocxExporter().export(
         case,
         out_dir / "stanowisko_szkic.docx",
-        context=ctx,
+        context=letter_ctx,
     )
-    print("DOCX:", docx_path.resolve())
+    print("LETTER DOCX:", (out_dir / "stanowisko_szkic.docx").resolve())
+
+    dossier_ctx = DossierContext(
+        author_name="Mariusz Brodziszewski",
+        place="Poznań",
+        dossier_date=date.today(),
+        subject=(
+            "Stanowisko procesowe wraz z analizą materiału dowodowego "
+            "— pojazd Volkswagen Transporter"
+        ),
+        recipient_lines=["Prokuratura Rejonowa Poznań-Wilda"],
+    )
+    dossier_text = DossierRenderer().render(case, context=dossier_ctx)
+    dossier_path = out_dir / "stanowisko_dossier.txt"
+    dossier_path.write_text(dossier_text, encoding="utf-8")
+    print("DOSSIER TXT:", dossier_path.resolve())
     print("Case summary:", case.summary())
 
 
