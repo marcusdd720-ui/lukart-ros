@@ -1,15 +1,18 @@
-"""Repository audit provider for RQM."""
+"""Repository audit provider for RQM – runs full audit rule library."""
 
 from __future__ import annotations
 
 import time
 
+from factory.rqm.audit.engine import AuditEngine
+from factory.rqm.audit.registry import AuditRegistry
+from factory.rqm.audit.rules import ALL_RULES
 from factory.rqm.model import Finding, Result, Severity
 from factory.rqm.provider.base_provider import BaseProvider
 
 
 class AuditProvider(BaseProvider):
-    """Basic repository structure audit."""
+    """Runs registered audit rules against the repository root."""
 
     provider_name = "audit"
 
@@ -19,49 +22,24 @@ class AuditProvider(BaseProvider):
 
     def run(self) -> Result:
         start = time.perf_counter()
-        findings: list[Finding] = []
 
         try:
-            required_files = [
-                "README.md",
-                ".gitignore",
-            ]
-            for rel in required_files:
-                if not (self.root / rel).exists():
-                    findings.append(
-                        Finding(
-                            rule_id="AUDIT_MISSING_FILE",
-                            message=f"Missing required file: {rel}",
-                            severity=Severity.WARNING,
-                        )
-                    )
+            registry = AuditRegistry()
+            for rule_cls in ALL_RULES:
+                registry.register(rule_cls)
 
-            if not (self.root / "pyproject.toml").exists() and not (
-                self.root / "setup.py"
-            ).exists():
-                findings.append(
-                    Finding(
-                        rule_id="AUDIT_MISSING_PROJECT_FILE",
-                        message="Missing pyproject.toml and setup.py",
-                        severity=Severity.WARNING,
-                    )
-                )
-
-            workflows = self.root / ".github" / "workflows"
-            if not workflows.exists():
-                findings.append(
-                    Finding(
-                        rule_id="AUDIT_MISSING_WORKFLOWS",
-                        message="Missing directory: .github/workflows",
-                        severity=Severity.INFO,
-                    )
-                )
+            engine = AuditEngine(root=self.root, registry=registry)
+            raw_findings = engine.run()
+            findings = [self._normalize_finding(item) for item in raw_findings]
 
             return Result(
                 name=self.name,
                 duration=time.perf_counter() - start,
                 findings=findings,
-                metadata={"checks": "basic_repo_structure"},
+                metadata={
+                    "rules": len(registry),
+                    "engine": "AuditEngine",
+                },
             )
         except Exception as exc:  # noqa: BLE001
             return Result(
@@ -70,9 +48,42 @@ class AuditProvider(BaseProvider):
                 metadata={"exception": exc.__class__.__name__},
                 findings=[
                     Finding(
-                        rule_id="AUDIT_ERROR",
+                        rule_id="AUDIT_PROVIDER_ERROR",
+                        severity=Severity.ERROR,
                         message=str(exc),
-                        severity=Severity.WARNING,
+                        file=None,
+                        line=None,
                     )
                 ],
             )
+
+    @staticmethod
+    def _normalize_finding(item: Finding | object) -> Finding:
+        """Ensure severity is Severity enum (rules may pass plain strings)."""
+        if isinstance(item, Finding) and isinstance(item.severity, Severity):
+            return item
+
+        rule_id = str(getattr(item, "rule_id", "UNKNOWN"))
+        message = str(getattr(item, "message", ""))
+        file = getattr(item, "file", None)
+        line = getattr(item, "line", None)
+        category = str(getattr(item, "category", "general") or "general")
+
+        raw = getattr(item, "severity", Severity.WARNING)
+        if isinstance(raw, Severity):
+            severity = raw
+        else:
+            text = str(raw).upper()
+            severity = (
+                Severity[text] if text in Severity.__members__ else Severity.WARNING
+            )
+
+        return Finding(
+            rule_id=rule_id,
+            severity=severity,
+            message=message,
+            file=file,
+            line=line,
+            category=category,
+            provider="audit",
+        )
