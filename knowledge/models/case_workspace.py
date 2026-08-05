@@ -1,8 +1,7 @@
 """
 CaseWorkspace – single session object for a legal case.
 
-Wires Case + KnowledgeGraph + LegalQuery + authorities + dossier text.
-Does not replace agents; orchestrates them.
+Wires Case + KnowledgeGraph + LegalQuery + authorities + dossier + snapshot.
 """
 
 from __future__ import annotations
@@ -10,7 +9,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from datetime import date
 from pathlib import Path
-from typing import Any, Callable
+from typing import Any
 
 from knowledge.graph import KnowledgeGraph
 from knowledge.legal_query import LegalQuery
@@ -24,14 +23,6 @@ ROOT = Path(__file__).resolve().parents[2]
 
 @dataclass(slots=True)
 class CaseWorkspace:
-    """
-    In-memory workspace for one case run.
-
-    Paths point at lukart-ros layout:
-      cases/<key>/...
-      output/cases/<key>/...
-    """
-
     key: str
     graph_case_id: str
     case: Case
@@ -40,6 +31,7 @@ class CaseWorkspace:
 
     authorities: AuthoritySection | None = None
     dossier_text: str | None = None
+    last_snapshot_path: Path | None = None
 
     fact_ok: bool | None = None
     law_ok: bool | None = None
@@ -102,7 +94,9 @@ class CaseWorkspace:
         self.dossier_text = text
         return text
 
-    def export_dossier_txt(self, filename: str = "stanowisko_dossier_with_authorities.txt") -> Path:
+    def export_dossier_txt(
+        self, filename: str = "stanowisko_dossier_with_authorities.txt"
+    ) -> Path:
         if self.dossier_text is None:
             self.render_dossier()
         assert self.dossier_text is not None
@@ -112,7 +106,7 @@ class CaseWorkspace:
         return path.resolve()
 
     def run_fact_agent(self) -> int:
-        from scripts.fact_agent import review_case_facts, format_report
+        from scripts.fact_agent import format_report, review_case_facts
 
         findings = review_case_facts(self.case)
         print(format_report(self.case, findings))
@@ -120,17 +114,15 @@ class CaseWorkspace:
         return 0 if self.fact_ok else 1
 
     def run_law_agent(self) -> int:
-        from scripts.law_agent import review_case_law_links, format_report
+        from scripts.law_agent import format_report, review_case_law_links
 
-        # Ensure current workspace graph is used: law_agent rebuilds its own graph.
-        # For v0 we still call the script logic; FAIL if no links on *this* graph.
         findings, _lq, cid = review_case_law_links(self.graph_case_id)
         print(format_report(findings, cid))
         self.law_ok = not any(f.severity == "ERROR" for f in findings)
         return 0 if self.law_ok else 1
 
     def run_review_agent(self, path: Path | None = None) -> int:
-        from scripts.review_dossier import review_text, format_report
+        from scripts.review_dossier import format_report, review_text
 
         if path is None:
             if self.dossier_text is None:
@@ -144,6 +136,13 @@ class CaseWorkspace:
         self.review_ok = not any(f.severity == "ERROR" for f in findings)
         return 0 if self.review_ok else 1
 
+    def save_snapshot(self) -> Path:
+        from knowledge.models.case_snapshot import save_workspace_snapshot
+
+        path = save_workspace_snapshot(self, repo_root=self.root)
+        self.last_snapshot_path = path
+        return path
+
     def run(
         self,
         *,
@@ -151,16 +150,28 @@ class CaseWorkspace:
         place: str = "",
         subject: str = "",
         recipient_lines: list[str] | None = None,
+        save_snapshot: bool = True,
     ) -> int:
         """
-        Full pipeline on this workspace:
-          Fact → Law → authorities → dossier → review
+        Fact → Law → authorities → dossier → review → CaseSnapshot
         """
         if self.run_fact_agent() != 0:
             print("WORKSPACE FAIL: FactAgent")
+            if save_snapshot:
+                try:
+                    p = self.save_snapshot()
+                    print("Snapshot (failed run):", p)
+                except Exception as exc:  # noqa: BLE001
+                    print("Snapshot save error:", exc)
             return 1
         if self.run_law_agent() != 0:
             print("WORKSPACE FAIL: LawAgent")
+            if save_snapshot:
+                try:
+                    p = self.save_snapshot()
+                    print("Snapshot (failed run):", p)
+                except Exception as exc:  # noqa: BLE001
+                    print("Snapshot save error:", exc)
             return 1
 
         self.build_authorities()
@@ -176,14 +187,26 @@ class CaseWorkspace:
 
         if self.run_review_agent() != 0:
             print("WORKSPACE FAIL: ReviewAgent")
+            if save_snapshot:
+                try:
+                    p = self.save_snapshot()
+                    print("Snapshot (failed run):", p)
+                except Exception as exc:  # noqa: BLE001
+                    print("Snapshot save error:", exc)
             return 1
+
+        if save_snapshot:
+            snap_path = self.save_snapshot()
+            print("Snapshot:", snap_path)
+            from knowledge.models.case_snapshot import CaseSnapshot
+
+            print("Status:", CaseSnapshot.load(snap_path).status)
 
         print("WORKSPACE PASS")
         return 0
 
 
 def open_ds_3960() -> CaseWorkspace:
-    """Adapter for the existing DS.3960 builder + legal graph link."""
     from scripts.build_case_ds_3960_2025 import build_case
     from scripts.link_case_to_law import link_ds_3960
 
