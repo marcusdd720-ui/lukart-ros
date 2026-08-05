@@ -6,6 +6,7 @@ Wires Case + KnowledgeGraph + LegalQuery + authorities + dossier + snapshot.
 
 from __future__ import annotations
 
+import shutil
 from dataclasses import dataclass, field
 from datetime import date
 from pathlib import Path
@@ -45,6 +46,10 @@ class CaseWorkspace:
     @property
     def output_dir(self) -> Path:
         return self.root / "output" / "cases" / self.key
+
+    @property
+    def outbound_dir(self) -> Path:
+        return self.case_dir / "outbound"
 
     @property
     def legal(self) -> LegalQuery:
@@ -141,6 +146,31 @@ class CaseWorkspace:
         doc.save(str(path))
         return path.resolve()
 
+    def sync_outbound(
+        self,
+        *,
+        filenames: list[str] | None = None,
+    ) -> list[Path]:
+        """
+        Copy generated artifacts from output/cases/<key>/ into cases/<key>/outbound/.
+        """
+        names = filenames or [
+            "stanowisko_dossier_with_authorities.txt",
+            "stanowisko_dossier_with_authorities.docx",
+            "authorities_from_graph.txt",
+            "authorities_from_graph.docx",
+        ]
+        self.outbound_dir.mkdir(parents=True, exist_ok=True)
+        copied: list[Path] = []
+        for name in names:
+            src = self.output_dir / name
+            if not src.is_file():
+                continue
+            dest = self.outbound_dir / name
+            shutil.copy2(src, dest)
+            copied.append(dest.resolve())
+        return copied
+
     def run_fact_agent(self) -> int:
         from scripts.fact_agent import format_report, review_case_facts
 
@@ -188,9 +218,10 @@ class CaseWorkspace:
         recipient_lines: list[str] | None = None,
         save_snapshot: bool = True,
         export_docx: bool = True,
+        sync_outbound: bool = True,
     ) -> int:
         """
-        Fact → Law → authorities → dossier (txt/docx) → review → CaseSnapshot
+        Fact → Law → authorities → dossier (txt/docx) → review → outbound → snapshot
         """
         if self.run_fact_agent() != 0:
             print("WORKSPACE FAIL: FactAgent")
@@ -239,6 +270,15 @@ class CaseWorkspace:
                 except Exception as exc:  # noqa: BLE001
                     print("Snapshot save error:", exc)
             return 1
+
+        if sync_outbound:
+            copied = self.sync_outbound()
+            if copied:
+                print("Outbound:")
+                for path in copied:
+                    print(" ", path)
+            else:
+                print("Outbound: (nothing copied)")
 
         if save_snapshot:
             snap_path = self.save_snapshot()
