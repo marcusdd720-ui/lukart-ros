@@ -1,12 +1,10 @@
 """
 Knowledge Operating System (KOS)
 File: knowledge/types.py
-Version: 1.0
-Sprint: F-006
-Status: Stable
+Version: 1.1
+Sprint: K1.2
 
-Purpose:
-Defines the core domain types used throughout the KOS.
+Core domain types for KOS / Knowledge Graph.
 """
 
 from enum import StrEnum, auto
@@ -25,6 +23,10 @@ class NodeType(StrEnum):
     LAW = auto()
     DECISION = auto()
 
+    # Legal knowledge (K1)
+    STATUTE = auto()
+    CASE_LAW = auto()
+
 
 class EdgeType(StrEnum):
     """Types of relationships between nodes."""
@@ -34,6 +36,13 @@ class EdgeType(StrEnum):
     SUPPORTS = auto()
     CONTRADICTS = auto()
     CONTAINS = auto()
+
+    # Legal / argumentative (K1)
+    INTERPRETS = auto()
+    APPLIES = auto()
+    RELIES_ON = auto()
+    SUPPORTED_BY = auto()
+    CITES = auto()
 
 
 class Severity(StrEnum):
