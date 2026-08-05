@@ -1,52 +1,43 @@
 """
-Case pipeline v2:
-  1) FactAgent
-  2) LawAgent
-  3) export dossier with graph authorities
-  4) ReviewAgent
+Case pipeline – thin CLI over CaseWorkspace.
 """
 
 from __future__ import annotations
 
-import subprocess
+import argparse
 import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT))
 
-
-def run(cmd: list[str]) -> int:
-    print(">", " ".join(cmd))
-    completed = subprocess.run(cmd, cwd=ROOT)
-    return completed.returncode
+from knowledge.models.case_workspace import open_ds_3960
 
 
 def main() -> int:
-    steps = [
-        [sys.executable, str(ROOT / "scripts" / "fact_agent.py")],
-        [sys.executable, str(ROOT / "scripts" / "law_agent.py")],
-        [sys.executable, str(ROOT / "scripts" / "export_dossier_with_authorities.py")],
-        [
-            sys.executable,
-            str(ROOT / "scripts" / "review_dossier.py"),
-            str(
-                ROOT
-                / "output"
-                / "cases"
-                / "DS_3960_2025"
-                / "stanowisko_dossier_with_authorities.txt"
-            ),
-        ],
-    ]
+    parser = argparse.ArgumentParser(description="Run case workspace pipeline")
+    parser.add_argument(
+        "--case",
+        default="DS_3960_2025",
+        help="Case key (currently only DS_3960_2025 is wired)",
+    )
+    args = parser.parse_args()
 
-    for cmd in steps:
-        code = run(cmd)
-        if code != 0:
-            print(f"PIPELINE FAIL (exit {code})")
-            return code
+    if args.case != "DS_3960_2025":
+        print(f"Unsupported case key: {args.case}")
+        print("Wired adapters: DS_3960_2025")
+        return 2
 
-    print("PIPELINE PASS")
-    return 0
+    ws = open_ds_3960()
+    return ws.run(
+        author_name="Mariusz Brodziszewski",
+        place="Poznań",
+        subject=(
+            "Stanowisko procesowe wraz z analizą materiału dowodowego "
+            "— pojazd Volkswagen Transporter"
+        ),
+        recipient_lines=["Prokuratura Rejonowa Poznań-Wilda"],
+    )
 
 
 if __name__ == "__main__":
