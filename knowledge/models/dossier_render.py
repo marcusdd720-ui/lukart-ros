@@ -2,11 +2,11 @@
 Knowledge Operating System (KOS)
 
 File: knowledge/models/dossier_render.py
-Version: 1.0
-Sprint: CASE-008
+Version: 1.1
+Sprint: CASE-008 / K2
 
 Analytical dossier renderer (not a short letter).
-Builds structured procedural analysis from Case domain objects only.
+Optional authorities_text from AuthoritySection (graph) is injected in section VI.
 """
 
 from __future__ import annotations
@@ -24,6 +24,8 @@ class DossierContext:
     dossier_date: date | None = None
     recipient_lines: list[str] | None = None
     subject: str = ""
+    # Plain text from AuthoritySection.to_plain_text() — optional
+    authorities_text: str | None = None
 
 
 class DossierRenderer:
@@ -36,7 +38,7 @@ class DossierRenderer:
       III  Stan faktyczny
       IV   Chronologia
       V    Analiza materiału dowodowego
-      VI   Podstawa prawna
+      VI   Podstawa prawna (+ optional graph authorities)
       VII  Ocena łączna / stanowisko
       VIII Wnioski dowodowe
       IX   Wnioski końcowe
@@ -137,8 +139,8 @@ class DossierRenderer:
         lines.append("Wniosek z rozdziału III")
         lines.append(
             "Zgromadzone ustalenia opierają się na dokumentach i oznaczonych "
-            "oświadczeniach. Na tym etapie nie przesądza się skutków prawnych "
-            "poszczególnych zdarzeń — stanowią one podstawę dalszej analizy."
+            "oświadczeniach strony. Stanowią one punkt wyjścia do oceny zamiaru "
+            "i przebiegu zdarzeń, a nie ostateczne rozstrzygnięcie sprawy."
         )
         lines.append("")
 
@@ -195,7 +197,7 @@ class DossierRenderer:
         lines.append("VI. PODSTAWA PRAWNA")
         lines.append("")
         if not dec.legal_basis_ids:
-            lines.append("(brak podstawy prawnej)")
+            lines.append("(brak podstawy prawnej w modelu Case)")
         else:
             for i, lid in enumerate(dec.legal_basis_ids, start=1):
                 basis = law_map.get(lid)
@@ -205,6 +207,17 @@ class DossierRenderer:
                 note = f" — {basis.note}" if basis.note else ""
                 lines.append(f"{i}. {basis.reference}{note}")
         lines.append("")
+
+        # Optional block from Knowledge Graph (AuthoritySection)
+        if ctx.authorities_text and ctx.authorities_text.strip():
+            lines.append("VI.A. ORZECZNICTWO I TEZY (Knowledge Graph)")
+            lines.append("")
+            for block_line in ctx.authorities_text.strip().splitlines():
+                # Skip duplicate main heading if present
+                if block_line.strip() == "PODSTAWA PRAWNA I ORZECZNICTWO":
+                    continue
+                lines.append(block_line)
+            lines.append("")
 
         lines.append("VII. OCENA ŁĄCZNA I STANOWISKO")
         lines.append("")
