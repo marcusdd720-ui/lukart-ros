@@ -52,6 +52,10 @@ class CaseWorkspace:
         return self.case_dir / "outbound"
 
     @property
+    def notes_dir(self) -> Path:
+        return self.case_dir / "notes"
+
+    @property
     def legal(self) -> LegalQuery:
         return LegalQuery(self.graph)
 
@@ -151,9 +155,6 @@ class CaseWorkspace:
         *,
         filenames: list[str] | None = None,
     ) -> list[Path]:
-        """
-        Copy generated artifacts from output/cases/<key>/ into cases/<key>/outbound/.
-        """
         names = filenames or [
             "stanowisko_dossier_with_authorities.txt",
             "stanowisko_dossier_with_authorities.docx",
@@ -170,6 +171,30 @@ class CaseWorkspace:
             shutil.copy2(src, dest)
             copied.append(dest.resolve())
         return copied
+
+    def write_run_note(
+        self,
+        *,
+        snapshot_status: str | None = None,
+        outbound_files: list[Path] | None = None,
+        dossier_txt: Path | None = None,
+        dossier_docx: Path | None = None,
+    ) -> Path:
+        from knowledge.models.run_note import write_run_note
+
+        return write_run_note(
+            notes_dir=self.notes_dir,
+            case_key=self.key,
+            graph_case_id=self.graph_case_id,
+            fact_ok=self.fact_ok,
+            law_ok=self.law_ok,
+            review_ok=self.review_ok,
+            snapshot_path=self.last_snapshot_path,
+            snapshot_status=snapshot_status,
+            outbound_files=outbound_files,
+            dossier_txt=dossier_txt,
+            dossier_docx=dossier_docx,
+        )
 
     def run_fact_agent(self) -> int:
         from scripts.fact_agent import format_report, review_case_facts
@@ -219,10 +244,16 @@ class CaseWorkspace:
         save_snapshot: bool = True,
         export_docx: bool = True,
         sync_outbound: bool = True,
+        write_note: bool = True,
     ) -> int:
         """
-        Fact → Law → authorities → dossier (txt/docx) → review → outbound → snapshot
+        Fact → Law → authorities → dossier → review → outbound → snapshot → note
         """
+        dossier_txt: Path | None = None
+        dossier_docx: Path | None = None
+        outbound_files: list[Path] = []
+        snapshot_status: str | None = None
+
         if self.run_fact_agent() != 0:
             print("WORKSPACE FAIL: FactAgent")
             if save_snapshot:
@@ -251,13 +282,13 @@ class CaseWorkspace:
             recipient_lines=recipient_lines,
             include_authorities=True,
         )
-        out = self.export_dossier_txt()
-        print("Saved:", out)
+        dossier_txt = self.export_dossier_txt()
+        print("Saved:", dossier_txt)
 
         if export_docx:
             try:
-                docx_path = self.export_dossier_docx()
-                print("Saved DOCX:", docx_path)
+                dossier_docx = self.export_dossier_docx()
+                print("Saved DOCX:", dossier_docx)
             except ImportError as exc:
                 print("DOCX skipped:", exc)
 
@@ -272,10 +303,10 @@ class CaseWorkspace:
             return 1
 
         if sync_outbound:
-            copied = self.sync_outbound()
-            if copied:
+            outbound_files = self.sync_outbound()
+            if outbound_files:
                 print("Outbound:")
-                for path in copied:
+                for path in outbound_files:
                     print(" ", path)
             else:
                 print("Outbound: (nothing copied)")
@@ -285,7 +316,17 @@ class CaseWorkspace:
             print("Snapshot:", snap_path)
             from knowledge.models.case_snapshot import CaseSnapshot
 
-            print("Status:", CaseSnapshot.load(snap_path).status)
+            snapshot_status = CaseSnapshot.load(snap_path).status
+            print("Status:", snapshot_status)
+
+        if write_note:
+            note_path = self.write_run_note(
+                snapshot_status=snapshot_status,
+                outbound_files=outbound_files,
+                dossier_txt=dossier_txt,
+                dossier_docx=dossier_docx,
+            )
+            print("Note:", note_path)
 
         print("WORKSPACE PASS")
         return 0
