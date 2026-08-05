@@ -1,8 +1,9 @@
 """
-Case pipeline v1:
-  1) FactAgent – hygiene of Case.facts
-  2) export dossier with graph authorities
-  3) ReviewAgent checklist on generated text
+Case pipeline v2:
+  1) FactAgent
+  2) LawAgent
+  3) export dossier with graph authorities
+  4) ReviewAgent
 """
 
 from __future__ import annotations
@@ -23,6 +24,7 @@ def run(cmd: list[str]) -> int:
 def main() -> int:
     steps = [
         [sys.executable, str(ROOT / "scripts" / "fact_agent.py")],
+        [sys.executable, str(ROOT / "scripts" / "law_agent.py")],
         [sys.executable, str(ROOT / "scripts" / "export_dossier_with_authorities.py")],
         [
             sys.executable,
