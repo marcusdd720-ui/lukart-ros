@@ -1,0 +1,22 @@
+{
+  "schema": "lukart.snapshot.v1",
+  "snapshot_id": "3c96aa8f-54fe-42c7-8685-e4a8bd3e3886",
+  "timestamp": "2026-08-05T19-43-24Z",
+  "case_key": "DS_3960_2025",
+  "graph_case_id": "case:DS.3960.2025",
+  "legal_seed": "2026.08",
+  "graph_node_count": 10,
+  "graph_edge_count": 14,
+  "fact_pass": true,
+  "law_pass": true,
+  "review_pass": true,
+  "workspace_pass": true,
+  "dossier_path": "C:/Users/LukaszA/Projects/lukart-ros/output/cases/DS_3960_2025/stanowisko_dossier_with_authorities.txt",
+  "dossier_sha256": "1adfcf0d28a172eb41771e94a402e16f69327bd5b9bfaee20f8fcedb613ccdf4",
+  "git_commit": "36f043b915bea523f1c3aed24a229fbfdcec40a3",
+  "git_dirty": true,
+  "status": "READY_TO_PUBLISH",
+  "meta": {
+    "display_title": "Stanowisko procesowe wraz z analizą materiału dowodowego"
+  }
+}
