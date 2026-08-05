@@ -1,16 +1,14 @@
+"""RQM execution history storage."""
+
 from __future__ import annotations
 
 import json
 from pathlib import Path
 from typing import Any
 
-from factory.rqm.model.quality_report import QualityReport
-
 
 class StateManager:
-    """
-    Stores RQM execution history.
-    """
+    """Stores RQM execution history."""
 
     def __init__(
         self,
@@ -22,34 +20,46 @@ class StateManager:
     def load(self) -> list[dict[str, Any]]:
         if not self.path.exists():
             return []
-
         try:
-            return json.loads(self.path.read_text(encoding="utf-8"))
-        except Exception:
+            data = json.loads(self.path.read_text(encoding="utf-8"))
+            return data if isinstance(data, list) else []
+        except Exception:  # noqa: BLE001
             return []
 
-    def save_snapshot(
-        self,
-        report: QualityReport,
-    ) -> None:
+    def save_snapshot(self, report: Any) -> None:
         history = self.load()
+
+        created = getattr(report, "created_at", None) or getattr(
+            report, "timestamp", None
+        )
+        if created is not None and hasattr(created, "isoformat"):
+            ts = created.isoformat()
+        else:
+            from datetime import datetime, timezone
+
+            ts = datetime.now(timezone.utc).isoformat()
+
+        score = getattr(report, "overall_score", None)
+        if score is None:
+            score = getattr(report, "score", 0.0)
+
+        decision = getattr(report, "decision", None)
+        decision_val = getattr(decision, "value", decision)
+        if decision_val is None:
+            decision_val = "UNKNOWN"
 
         history.append(
             {
-                "timestamp": report.timestamp.isoformat(),
-                "overall_score": report.overall_score,
-                "decision": report.decision.value,
+                "timestamp": ts,
+                "overall_score": float(score),
+                "decision": str(decision_val),
                 "trend": getattr(report, "trend", "NEW"),
-                "delta": getattr(report, "delta", 0.0),
+                "delta": float(getattr(report, "delta", 0.0) or 0.0),
             }
         )
 
         self.path.write_text(
-            json.dumps(
-                history,
-                indent=2,
-                ensure_ascii=False,
-            ),
+            json.dumps(history, indent=2, ensure_ascii=False),
             encoding="utf-8",
         )
 

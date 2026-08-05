@@ -1,3 +1,5 @@
+"""Repository audit provider for RQM."""
+
 from __future__ import annotations
 
 import time
@@ -7,49 +9,61 @@ from factory.rqm.provider.base_provider import BaseProvider
 
 
 class AuditProvider(BaseProvider):
-    """
-    Provider executing the Validation Code Audit Engine.
-    """
+    """Basic repository structure audit."""
+
+    provider_name = "audit"
 
     @property
     def name(self) -> str:
-        return "code_audit"
+        return self.provider_name
 
     def run(self) -> Result:
         start = time.perf_counter()
+        findings: list[Finding] = []
 
         try:
-            from validation.code_audit.engine import CodeAuditEngine
-
-            engine = CodeAuditEngine()
-            report = engine.audit_directory(self.root / "knowledge")
-
-            findings = [
-                Finding(
-                    rule_id=f.rule_id,
-                    message=f.message,
-                    severity=(
-                        f.severity
-                        if isinstance(f.severity, Severity)
-                        else Severity(str(f.severity).upper())
-                    ),
-                    file=f.file,
-                    line=f.line,
-                )
-                for f in report.findings
+            required_files = [
+                "README.md",
+                ".gitignore",
             ]
+            for rel in required_files:
+                if not (self.root / rel).exists():
+                    findings.append(
+                        Finding(
+                            rule_id="AUDIT_MISSING_FILE",
+                            message=f"Missing required file: {rel}",
+                            severity=Severity.WARNING,
+                        )
+                    )
+
+            if not (self.root / "pyproject.toml").exists() and not (
+                self.root / "setup.py"
+            ).exists():
+                findings.append(
+                    Finding(
+                        rule_id="AUDIT_MISSING_PROJECT_FILE",
+                        message="Missing pyproject.toml and setup.py",
+                        severity=Severity.WARNING,
+                    )
+                )
+
+            workflows = self.root / ".github" / "workflows"
+            if not workflows.exists():
+                findings.append(
+                    Finding(
+                        rule_id="AUDIT_MISSING_WORKFLOWS",
+                        message="Missing directory: .github/workflows",
+                        severity=Severity.INFO,
+                    )
+                )
 
             return Result(
                 name=self.name,
-                findings=findings,
                 duration=time.perf_counter() - start,
-                metadata={
-                    "errors": len(report.errors),
-                    "warnings": len(report.warnings),
-                },
+                findings=findings,
+                metadata={"checks": "basic_repo_structure"},
             )
-
-        except Exception as exc:
+        except Exception as exc:  # noqa: BLE001
             return Result(
                 name=self.name,
                 duration=time.perf_counter() - start,

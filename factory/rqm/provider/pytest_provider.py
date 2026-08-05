@@ -1,5 +1,8 @@
+"""Pytest provider for RQM."""
+
 from __future__ import annotations
 
+import re
 import subprocess
 import time
 
@@ -8,13 +11,13 @@ from factory.rqm.provider.base_provider import BaseProvider
 
 
 class PytestProvider(BaseProvider):
-    """
-    Provider executing the project's pytest suite.
-    """
+    """Provider executing the project's pytest suite."""
+
+    provider_name = "pytest"
 
     @property
     def name(self) -> str:
-        return "pytest"
+        return self.provider_name
 
     def run(self) -> Result:
         start = time.perf_counter()
@@ -26,11 +29,10 @@ class PytestProvider(BaseProvider):
                 capture_output=True,
                 text=True,
                 timeout=180,
+                check=False,
             )
-
             output = (process.stdout or "") + (process.stderr or "")
             passed, failed = self._parse(output)
-
             findings: list[Finding] = []
 
             if failed:
@@ -42,26 +44,31 @@ class PytestProvider(BaseProvider):
                     )
                 )
 
+            if process.returncode not in (0, 1) and not failed:
+                findings.append(
+                    Finding(
+                        rule_id="PYTEST_ERROR",
+                        message=f"pytest exited with code {process.returncode}",
+                        severity=Severity.ERROR,
+                    )
+                )
+
             return Result(
                 name=self.name,
-                findings=findings,
                 duration=time.perf_counter() - start,
+                findings=findings,
                 metadata={
+                    "returncode": process.returncode,
                     "passed": passed,
                     "failed": failed,
-                    "returncode": process.returncode,
+                    "output_tail": output.strip()[-1500:],
                 },
             )
-
-        except Exception as exc:
+        except Exception as exc:  # noqa: BLE001
             return Result(
                 name=self.name,
                 duration=time.perf_counter() - start,
-                metadata={
-                    "passed": 0,
-                    "failed": 1,
-                    "exception": exc.__class__.__name__,
-                },
+                metadata={"exception": exc.__class__.__name__},
                 findings=[
                     Finding(
                         rule_id="PYTEST_ERROR",
@@ -73,26 +80,11 @@ class PytestProvider(BaseProvider):
 
     @staticmethod
     def _parse(output: str) -> tuple[int, int]:
-        """
-        Parse pytest summary output.
-
-        Examples:
-            201 passed in 3.16s
-            198 passed, 3 failed in 5.11s
-        """
-        passed = 0
-        failed = 0
-
-        for part in output.split(","):
-            tokens = part.strip().split()
-
-            if len(tokens) < 2:
-                continue
-
-            if tokens[0].isdigit():
-                if tokens[1] == "passed":
-                    passed = int(tokens[0])
-                elif tokens[1] == "failed":
-                    failed = int(tokens[0])
-
+        passed = failed = 0
+        m = re.search(r"(\d+)\s+passed", output)
+        if m:
+            passed = int(m.group(1))
+        m = re.search(r"(\d+)\s+failed", output)
+        if m:
+            failed = int(m.group(1))
         return passed, failed
