@@ -1,5 +1,5 @@
 """
-Publish gate: only pushes when CaseSnapshot status is READY_TO_PUBLISH.
+Publish gate: only pushes when CaseSnapshot validates as READY_TO_PUBLISH.
 
 Does not run pipeline, agents, or renderers.
 """
@@ -13,17 +13,17 @@ import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-SCHEMA = "lukart.snapshot.v1"
+
+sys.path.insert(0, str(ROOT))
+
+from knowledge.models.snapshot_validator import validate_snapshot
 
 
 def load_latest(case_key: str) -> dict:
     path = ROOT / "output" / "cases" / case_key / "snapshots" / "latest.json"
     if not path.is_file():
         raise FileNotFoundError(f"No snapshot: {path}")
-    data = json.loads(path.read_text(encoding="utf-8"))
-    if data.get("schema") != SCHEMA:
-        raise ValueError(f"Bad schema: {data.get('schema')!r}")
-    return data
+    return json.loads(path.read_text(encoding="utf-8"))
 
 
 def run_git(args: list[str]) -> subprocess.CompletedProcess[str]:
@@ -36,8 +36,14 @@ def run_git(args: list[str]) -> subprocess.CompletedProcess[str]:
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description="Publish case outputs if snapshot READY_TO_PUBLISH")
-    parser.add_argument("--case", default="DS_3960_2025", help="Case folder key under cases/")
+    parser = argparse.ArgumentParser(
+        description="Publish case outputs if snapshot READY_TO_PUBLISH"
+    )
+    parser.add_argument(
+        "--case",
+        default="DS_3960_2025",
+        help="Case folder key under cases/",
+    )
     parser.add_argument(
         "--commit",
         action="store_true",
@@ -57,18 +63,18 @@ def main() -> int:
 
     try:
         snap = load_latest(args.case)
-    except (OSError, ValueError, json.JSONDecodeError) as exc:
+    except (OSError, json.JSONDecodeError) as exc:
         print("PUBLISH BLOCKED:", exc)
         return 2
 
-    status = snap.get("status")
-    print("Snapshot status:", status)
+    result = validate_snapshot(snap)
+    print(result.report())
+    print("Status field:", snap.get("status"))
     print("Case:", snap.get("case_key"))
-    print("Git commit (at run):", snap.get("git_commit"))
     print("Dossier:", snap.get("dossier_path"))
 
-    if status != "READY_TO_PUBLISH":
-        print("PUBLISH BLOCKED: status is not READY_TO_PUBLISH")
+    if not result.ready_to_publish:
+        print("PUBLISH BLOCKED: snapshot not ready")
         return 1
 
     if args.dry_run or (not args.commit and not args.push):
@@ -83,15 +89,19 @@ def main() -> int:
             f"cases/{args.case}",
             "knowledge/models/case_workspace.py",
             "knowledge/models/case_snapshot.py",
+            "knowledge/models/snapshot_validator.py",
+            "scripts/publish.py",
         ]
         existing = [p for p in paths if (ROOT / p).exists()]
         add = run_git(["add", *existing])
         if add.returncode != 0:
             print(add.stderr)
             return add.returncode
-        msg = f"Publish {args.case} snapshot {snap.get('snapshot_id', '')[:8]} READY_TO_PUBLISH"
+        msg = (
+            f"Publish {args.case} snapshot "
+            f"{str(snap.get('snapshot_id', ''))[:8]} READY_TO_PUBLISH"
+        )
         commit = run_git(["commit", "-m", msg])
-        # exit 1 often means "nothing to commit" – treat as OK
         if commit.returncode not in (0, 1):
             print(commit.stdout)
             print(commit.stderr)
