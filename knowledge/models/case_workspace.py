@@ -105,6 +105,42 @@ class CaseWorkspace:
         path.write_text(self.dossier_text, encoding="utf-8")
         return path.resolve()
 
+    def export_dossier_docx(
+        self, filename: str = "stanowisko_dossier_with_authorities.docx"
+    ) -> Path:
+        if self.dossier_text is None:
+            self.render_dossier()
+        assert self.dossier_text is not None
+        try:
+            from docx import Document
+            from docx.enum.text import WD_LINE_SPACING
+            from docx.shared import Pt
+        except ImportError as exc:
+            raise ImportError(
+                "python-docx is required: pip install python-docx"
+            ) from exc
+
+        self.output_dir.mkdir(parents=True, exist_ok=True)
+        path = self.output_dir / filename
+
+        doc = Document()
+        style = doc.styles["Normal"]
+        style.font.name = "Times New Roman"
+        style.font.size = Pt(12)
+
+        for block in self.dossier_text.split("\n"):
+            para = doc.add_paragraph(block)
+            pf = para.paragraph_format
+            pf.space_after = Pt(0)
+            pf.space_before = Pt(0)
+            pf.line_spacing_rule = WD_LINE_SPACING.SINGLE
+            for run in para.runs:
+                run.font.name = "Times New Roman"
+                run.font.size = Pt(12)
+
+        doc.save(str(path))
+        return path.resolve()
+
     def run_fact_agent(self) -> int:
         from scripts.fact_agent import format_report, review_case_facts
 
@@ -151,9 +187,10 @@ class CaseWorkspace:
         subject: str = "",
         recipient_lines: list[str] | None = None,
         save_snapshot: bool = True,
+        export_docx: bool = True,
     ) -> int:
         """
-        Fact → Law → authorities → dossier → review → CaseSnapshot
+        Fact → Law → authorities → dossier (txt/docx) → review → CaseSnapshot
         """
         if self.run_fact_agent() != 0:
             print("WORKSPACE FAIL: FactAgent")
@@ -164,6 +201,7 @@ class CaseWorkspace:
                 except Exception as exc:  # noqa: BLE001
                     print("Snapshot save error:", exc)
             return 1
+
         if self.run_law_agent() != 0:
             print("WORKSPACE FAIL: LawAgent")
             if save_snapshot:
@@ -184,6 +222,13 @@ class CaseWorkspace:
         )
         out = self.export_dossier_txt()
         print("Saved:", out)
+
+        if export_docx:
+            try:
+                docx_path = self.export_dossier_docx()
+                print("Saved DOCX:", docx_path)
+            except ImportError as exc:
+                print("DOCX skipped:", exc)
 
         if self.run_review_agent() != 0:
             print("WORKSPACE FAIL: ReviewAgent")
