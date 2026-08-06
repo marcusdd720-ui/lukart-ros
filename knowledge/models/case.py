@@ -2,11 +2,11 @@
 Knowledge Operating System (KOS)
 
 File: knowledge/models/case.py
-Version: 1.3.9
-Sprint: CASE-010
+Version: 1.4.0
+Sprint: CASE-011
 
 Compat for render/dossier: timeline, evidence, ordered_timeline(), has_signature().
-LegalIssue between Fact and Law.
+LegalIssue between Fact and Law — closed contract.
 """
 
 from __future__ import annotations
@@ -221,10 +221,23 @@ class LegalBasis:
 
 @dataclass(slots=True)
 class LegalIssue:
+    """
+    Obligatory bridge between Fact and Law.
+
+    Contract (closed):
+    - question          – required, non-empty
+    - fact_ids          – required, at least one, all must exist in Case.facts
+    - legal_basis_ids   – optional at creation, validated when present
+    - status            – lifecycle
+    - hypothesis        – free-text working hypothesis
+    - statute_refs      – soft string refs (legacy / quick notes)
+    - case_law_refs     – soft string refs (legacy / quick notes)
+    """
     id: str = field(default_factory=lambda: str(uuid4()))
     question: str = ""
     status: IssueStatus = IssueStatus.OPEN
     fact_ids: list[str] = field(default_factory=list)
+    legal_basis_ids: list[str] = field(default_factory=list)
     hypothesis: str = ""
     statute_refs: list[str] = field(default_factory=list)
     case_law_refs: list[str] = field(default_factory=list)
@@ -234,6 +247,8 @@ class LegalIssue:
     def validate(self) -> None:
         if not (self.question or "").strip():
             raise ValueError("LegalIssue.question cannot be empty")
+        if not self.fact_ids:
+            raise ValueError("LegalIssue.fact_ids must contain at least one fact id")
 
 
 @dataclass(slots=True)
@@ -245,6 +260,7 @@ class Decision:
     legal_basis_ids: list[str] = field(default_factory=list)
     issue_ids: list[str] = field(default_factory=list)
     scope_not_challenged: list[str] = field(default_factory=list)
+    # legacy residual – do not use in new code; kept for snapshot compatibility
     issues: list[str] = field(default_factory=list)
     assessment_points: list[str] = field(default_factory=list)
     outcomes: list[str] = field(default_factory=list)
@@ -354,10 +370,17 @@ class Case:
 
     def add_issue(self, issue: LegalIssue) -> None:
         issue.validate()
-        known = {f.id for f in self.facts}
-        missing = [fid for fid in issue.fact_ids if fid not in known]
-        if missing:
-            raise ValueError(f"LegalIssue references unknown facts: {missing}")
+        known_facts = {f.id for f in self.facts}
+        known_bases = {b.id for b in self.legal_bases}
+
+        missing_facts = [fid for fid in issue.fact_ids if fid not in known_facts]
+        if missing_facts:
+            raise ValueError(f"LegalIssue references unknown facts: {missing_facts}")
+
+        missing_bases = [bid for bid in issue.legal_basis_ids if bid not in known_bases]
+        if missing_bases:
+            raise ValueError(f"LegalIssue references unknown legal bases: {missing_bases}")
+
         self.legal_issues.append(issue)
         if self.status in (CaseStatus.NEW, CaseStatus.INTAKE, CaseStatus.FACTS):
             self.status = CaseStatus.ANALYSIS

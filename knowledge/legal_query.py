@@ -1,7 +1,7 @@
 """
-Legal queries over KnowledgeGraph (STATUTE / CASE_LAW).
+Legal queries over KnowledgeGraph (STATUTE / CASE_LAW / ISSUE).
 
-Depends on GraphQuery + EdgeType legal relations from K1.
+Depends on GraphQuery + EdgeType legal relations from K1 + CASE-011.
 """
 
 from __future__ import annotations
@@ -16,12 +16,16 @@ class LegalQuery:
     """
     Read-only legal facade.
 
-    Edge conventions (seed K1.3):
+    Edge conventions:
       CASE_LAW --INTERPRETS--> STATUTE
       CASE_LAW --APPLIES-----> STATUTE
       CASE_LAW --CITES-------> STATUTE
       CASE/DECISION --RELIES_ON-----> STATUTE|CASE_LAW
       CASE/DECISION --SUPPORTED_BY--> CASE_LAW|STATUTE
+
+      # CASE-011
+      FACT --RAISES--> ISSUE
+      ISSUE --RESOLVES--> STATUTE | LAW | DECISION
     """
 
     def __init__(self, graph: KnowledgeGraph) -> None:
@@ -39,6 +43,9 @@ class LegalQuery:
 
     def case_law(self) -> list[KnowledgeNode]:
         return self.q.find_by_type(NodeType.CASE_LAW)
+
+    def issues(self) -> list[KnowledgeNode]:
+        return self.q.find_by_type(NodeType.ISSUE)
 
     def statute_by_article(self, article: str) -> list[KnowledgeNode]:
         """Match metadata['article'] or name contains."""
@@ -94,7 +101,7 @@ class LegalQuery:
             direction="in",
         )
 
-    # ----- Case / Decision support (K1.5 ready) -----
+    # ----- Case / Decision support -----
 
     def relied_on_by(self, node_id: str) -> list[KnowledgeNode]:
         """Nodes that RELIES_ON this statute/case_law."""
@@ -123,6 +130,40 @@ class LegalQuery:
         return self.q.related(
             authority_id,
             edge_type=EdgeType.SUPPORTED_BY,
+            direction="in",
+        )
+
+    # ----- ISSUE bridge (CASE-011) -----
+
+    def issues_raised_by(self, fact_id: str) -> list[KnowledgeNode]:
+        """ISSUE nodes raised by the given Fact (outgoing RAISES)."""
+        return self.q.related(
+            fact_id,
+            edge_type=EdgeType.RAISES,
+            direction="out",
+        )
+
+    def facts_raising(self, issue_id: str) -> list[KnowledgeNode]:
+        """FACT nodes that raise the given Issue (incoming RAISES)."""
+        return self.q.related(
+            issue_id,
+            edge_type=EdgeType.RAISES,
+            direction="in",
+        )
+
+    def resolves(self, issue_id: str) -> list[KnowledgeNode]:
+        """Nodes that the Issue resolves to (outgoing RESOLVES)."""
+        return self.q.related(
+            issue_id,
+            edge_type=EdgeType.RESOLVES,
+            direction="out",
+        )
+
+    def resolved_by(self, target_id: str) -> list[KnowledgeNode]:
+        """ISSUE nodes that resolve to the given target (incoming RESOLVES)."""
+        return self.q.related(
+            target_id,
+            edge_type=EdgeType.RESOLVES,
             direction="in",
         )
 

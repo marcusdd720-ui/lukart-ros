@@ -1,5 +1,5 @@
 """
-LawAgent v1 – check case node links to STATUTE / CASE_LAW.
+LawAgent v2 – check case node links to STATUTE / CASE_LAW + LegalIssue bridge.
 
 Does not import link_ds_3960 or any fixed case builder.
 Operates on (graph, case_id) or opens CaseSpec workspace.
@@ -15,8 +15,8 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
-from knowledge.graph import KnowledgeGraph
-from knowledge.legal_query import LegalQuery
+from knowledge.graph import KnowledgeGraph  # noqa: E402
+from knowledge.legal_query import LegalQuery  # noqa: E402
 
 
 @dataclass(slots=True)
@@ -43,7 +43,9 @@ def review_case_law_links(
 
     statutes = lq.relies_on(case_id)
     authorities = lq.supported_by(case_id)
+    issues = lq.issues()
 
+    # --- classic checks ---
     if not statutes:
         findings.append(
             LawFinding("ERROR", "LAW002", "No RELIES_ON statutes linked to case.")
@@ -77,12 +79,45 @@ def review_case_law_links(
                 )
             )
 
+    # --- ISSUE bridge checks (CASE-011) ---
+    if not issues:
+        findings.append(
+            LawFinding(
+                "WARNING",
+                "LAW010",
+                "No ISSUE nodes present in graph – LegalIssue bridge not projected yet.",
+            )
+        )
+    else:
+        unresolved = []
+        for issue in issues:
+            targets = lq.resolves(issue.id)
+            if not targets:
+                unresolved.append(issue.id)
+
+        if unresolved:
+            findings.append(
+                LawFinding(
+                    "WARNING",
+                    "LAW011",
+                    f"{len(unresolved)} ISSUE node(s) have no RESOLVES target: {unresolved[:5]}",
+                )
+            )
+        else:
+            findings.append(
+                LawFinding(
+                    "INFO",
+                    "LAW012",
+                    f"All {len(issues)} ISSUE node(s) have RESOLVES targets.",
+                )
+            )
+
     if not any(f.severity == "ERROR" for f in findings):
         findings.append(
             LawFinding(
                 "INFO",
                 "LAW000",
-                f"OK: {len(statutes)} statutes, {len(authorities)} case-law nodes.",
+                f"OK: {len(statutes)} statutes, {len(authorities)} case-law, {len(issues)} issues.",
             )
         )
 

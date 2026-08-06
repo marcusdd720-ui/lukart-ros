@@ -1,8 +1,8 @@
 """
 Knowledge Operating System (KOS)
 File: knowledge/types.py
-Version: 1.1
-Sprint: K1.2
+Version: 1.2.0
+Sprint: CASE-011
 
 Core domain types for KOS / Knowledge Graph.
 """
@@ -27,6 +27,9 @@ class NodeType(StrEnum):
     STATUTE = auto()
     CASE_LAW = auto()
 
+    # Domain bridge (CASE-011)
+    ISSUE = auto()
+
 
 class EdgeType(StrEnum):
     """Types of relationships between nodes."""
@@ -43,6 +46,10 @@ class EdgeType(StrEnum):
     RELIES_ON = auto()
     SUPPORTED_BY = auto()
     CITES = auto()
+
+    # Domain bridge (CASE-011)
+    RAISES = auto()      # Fact → Issue
+    RESOLVES = auto()    # Issue → Statute / Law / Decision
 
 
 class Severity(StrEnum):
