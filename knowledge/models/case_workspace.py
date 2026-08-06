@@ -3,6 +3,7 @@ CaseWorkspace – single session object for a legal case.
 
 Supports full run() or run(stage=...).
 Snapshots: OPEN (start) → FREEZE (success end) → RELEASE (explicit).
+DS.3960 opens with LegalIssue attached.
 """
 
 from __future__ import annotations
@@ -340,7 +341,6 @@ class CaseWorkspace:
             from knowledge.models.case_snapshot import CaseSnapshot
             from knowledge.models.snapshot_validator import validate_snapshot
 
-            # Prefer last freeze pointer if present
             freeze_ptr = self.output_dir / "snapshots" / "latest_freeze.json"
             if freeze_ptr.is_file():
                 data = __import__("json").loads(
@@ -494,10 +494,11 @@ class CaseWorkspace:
 
 
 def open_ds_3960() -> CaseWorkspace:
+    from scripts.attach_legal_issues_ds3960 import attach_ds3960_issues
     from scripts.build_case_ds_3960_2025 import build_case
     from scripts.link_case_to_law import link_ds_3960
 
-    case = build_case()
+    case = attach_ds3960_issues(build_case())
     graph, graph_case_id = link_ds_3960()
     return CaseWorkspace(
         key="DS_3960_2025",
