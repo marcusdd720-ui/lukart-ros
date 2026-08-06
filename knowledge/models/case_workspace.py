@@ -3,7 +3,7 @@ CaseWorkspace – single session object for a legal case.
 
 Supports full run() or run(stage=...).
 Snapshots: OPEN (start) → FREEZE (success end) → RELEASE (explicit).
-DS.3960 opens with LegalIssue attached + projected to graph.
+LegalIssues projected on open for both live cases.
 """
 
 from __future__ import annotations
@@ -495,14 +495,12 @@ class CaseWorkspace:
 
 def open_ds_3960() -> CaseWorkspace:
     from knowledge.project_case_issues import project_case_issues
-    from scripts.attach_legal_issues_ds3960 import attach_ds3960_issues
     from scripts.build_case_ds_3960_2025 import build_case
     from scripts.link_case_to_law import link_ds_3960
 
-    case = attach_ds3960_issues(build_case())
+    case = build_case()
     graph, graph_case_id = link_ds_3960()
 
-    # Project domain LegalIssues into the graph
     project_case_issues(
         graph,
         case,
