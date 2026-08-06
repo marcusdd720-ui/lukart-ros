@@ -525,11 +525,23 @@ def open_ds_3960() -> CaseWorkspace:
 
 
 def open_ii_kp_459_26() -> CaseWorkspace:
+    from knowledge.project_case_issues import project_case_issues
     from scripts.build_case_ii_kp_459_26 import build_case
     from scripts.link_case_ii_kp_459_26 import link_ii_kp_459_26
 
     case = build_case()
     graph, graph_case_id = link_ii_kp_459_26()
+
+    project_case_issues(
+        graph,
+        case,
+        statute_id_map={
+            "art. 16 § 1 k.p.k.": "statute:kpk:16",
+            "art. 16 § 2–3 k.p.k.": "statute:kpk:16",
+            "uchwała SN I KZP 6/13": "caselaw:sn:I_KZP_6_13",
+        },
+    )
+
     return CaseWorkspace(
         key="II_Kp_459_26",
         graph_case_id=graph_case_id,

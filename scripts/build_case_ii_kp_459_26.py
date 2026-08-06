@@ -15,6 +15,7 @@ from knowledge.models.case import (
     Fact,
     FactStatus,
     LegalBasis,
+    LegalIssue,
     Party,
 )
 from knowledge.models.docx_export import CaseDocxExporter
@@ -114,6 +115,41 @@ def build_case() -> Case:
     for basis in (b1, b2, b3):
         case.add_legal_basis(basis)
 
+    # ----- LegalIssues (CASE-011) -----
+    issue1 = LegalIssue(
+        question=(
+            "Czy treść i forma wiadomości e-mail z 10.06.2026 r. były "
+            "jednoznaczne oraz dostosowane do sytuacji adresata działającego "
+            "bez profesjonalnego pełnomocnika i zgłaszającego trudności komunikacyjne?"
+        ),
+        fact_ids=[f2.id, f5.id, f1.id],
+        legal_basis_ids=[b1.id, b2.id, b3.id],
+        hypothesis=(
+            "Standard art. 16 k.p.k. wymaga zrozumiałości i dostosowania "
+            "pouczenia do konkretnego uczestnika, nie tylko formalnego wysłania informacji."
+        ),
+        statute_refs=["art. 16 § 1 k.p.k.", "art. 16 § 2–3 k.p.k."],
+        case_law_refs=["uchwała SN I KZP 6/13"],
+    )
+    issue2 = LegalIssue(
+        question=(
+            "Czy odpowiedź Prezesa Sądu z 23.07.2026 r. odnosi się do standardu "
+            "wykonania obowiązku informacyjnego, czy ogranicza się jedynie do "
+            "stwierdzenia kompetencji organu i autentyczności korespondencji?"
+        ),
+        fact_ids=[f3.id, f4.id, f2.id, f5.id],
+        legal_basis_ids=[b1.id, b2.id, b3.id],
+        hypothesis=(
+            "Uprawnienie organu do pouczania i standard wykonania tego obowiązku "
+            "to dwa odrębne zagadnienia prawne; odpowiedź koncentruje się na pierwszym."
+        ),
+        statute_refs=["art. 16 § 1 k.p.k.", "art. 16 § 2–3 k.p.k."],
+        case_law_refs=["uchwała SN I KZP 6/13"],
+    )
+
+    for issue in (issue1, issue2):
+        case.add_issue(issue)
+
     case.add_decision(
         Decision(
             kind=DecisionKind.PROCEDURAL,
@@ -127,6 +163,7 @@ def build_case() -> Case:
             ),
             fact_ids=[f1.id, f2.id, f3.id, f4.id, f5.id],
             legal_basis_ids=[b1.id, b2.id, b3.id],
+            issue_ids=[issue1.id, issue2.id],
             scope_not_challenged=[
                 "autentyczność wiadomości e-mail z dnia 10 czerwca 2026 r.",
                 "fakt jej wysłania przez sędziego referenta",
