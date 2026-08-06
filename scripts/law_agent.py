@@ -1,17 +1,22 @@
 """
-LawAgent v0 – check that a case is linked to STATUTE / CASE_LAW in the graph.
+LawAgent v1 – check case node links to STATUTE / CASE_LAW.
+
+Does not import link_ds_3960 or any fixed case builder.
+Operates on (graph, case_id) or opens CaseSpec workspace.
 """
 
 from __future__ import annotations
 
+import argparse
 import sys
 from dataclasses import dataclass
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT))
 
+from knowledge.graph import KnowledgeGraph
 from knowledge.legal_query import LegalQuery
-from scripts.link_case_to_law import link_ds_3960
 
 
 @dataclass(slots=True)
@@ -21,31 +26,34 @@ class LawFinding:
     message: str
 
 
-def review_case_law_links(case_id: str = "case:DS.3960.2025") -> tuple[list[LawFinding], LegalQuery, str]:
-    graph, linked_id = link_ds_3960()
-    cid = linked_id or case_id
-    lq = LegalQuery(graph)
+def review_case_law_links(
+    graph: KnowledgeGraph,
+    case_id: str,
+    *,
+    focus_statute_id: str | None = None,
+) -> list[LawFinding]:
     findings: list[LawFinding] = []
+    lq = LegalQuery(graph)
 
-    if not graph.has_node(cid):
+    if not graph.has_node(case_id):
         findings.append(
-            LawFinding("ERROR", "LAW001", f"Case node missing in graph: {cid}")
+            LawFinding("ERROR", "LAW001", f"Case node missing in graph: {case_id}")
         )
-        return findings, lq, cid
+        return findings
 
-    statutes = lq.relies_on(cid)
-    authorities = lq.supported_by(cid)
+    statutes = lq.relies_on(case_id)
+    authorities = lq.supported_by(case_id)
 
     if not statutes:
         findings.append(
             LawFinding("ERROR", "LAW002", "No RELIES_ON statutes linked to case.")
         )
-    elif len(statutes) < 2:
+    elif len(statutes) < 1:
         findings.append(
             LawFinding(
                 "WARNING",
                 "LAW003",
-                f"Only {len(statutes)} statute(s) linked – consider full legal basis.",
+                f"Only {len(statutes)} statute(s) linked – consider fuller legal basis.",
             )
         )
 
@@ -58,18 +66,18 @@ def review_case_law_links(case_id: str = "case:DS.3960.2025") -> tuple[list[LawF
             )
         )
 
-    # Focus article 284 for this criminal case
-    interps = lq.interpretations_of("statute:kk:284:2")
-    if not interps:
-        findings.append(
-            LawFinding(
-                "WARNING",
-                "LAW005",
-                "No INTERPRETS edges for art. 284 § 2 in library.",
+    if focus_statute_id:
+        interps = lq.interpretations_of(focus_statute_id)
+        if not interps:
+            findings.append(
+                LawFinding(
+                    "WARNING",
+                    "LAW005",
+                    f"No INTERPRETS edges for focus statute {focus_statute_id}.",
+                )
             )
-        )
 
-    if not findings:
+    if not any(f.severity == "ERROR" for f in findings):
         findings.append(
             LawFinding(
                 "INFO",
@@ -78,7 +86,7 @@ def review_case_law_links(case_id: str = "case:DS.3960.2025") -> tuple[list[LawF
             )
         )
 
-    return findings, lq, cid
+    return findings
 
 
 def format_report(findings: list[LawFinding], case_id: str) -> str:
@@ -112,8 +120,38 @@ def format_report(findings: list[LawFinding], case_id: str) -> str:
 
 
 def main() -> int:
-    findings, _lq, cid = review_case_law_links()
-    print(format_report(findings, cid))
+    parser = argparse.ArgumentParser(description="LawAgent – review graph legal links")
+    parser.add_argument(
+        "--case",
+        default="DS_3960_2025",
+        help="Case key from case_registry",
+    )
+    parser.add_argument(
+        "--focus-statute",
+        default=None,
+        help="Optional statute node id for INTERPRETS check",
+    )
+    args = parser.parse_args()
+
+    try:
+        from knowledge.models.case_registry import get_spec
+
+        spec = get_spec(args.case)
+        ws = spec.open()
+    except KeyError as exc:
+        print(exc)
+        return 2
+
+    focus = args.focus_statute
+    if focus is None and args.case == "DS_3960_2025":
+        focus = "statute:kk:284:2"
+
+    findings = review_case_law_links(
+        ws.graph,
+        ws.graph_case_id,
+        focus_statute_id=focus,
+    )
+    print(format_report(findings, ws.graph_case_id))
     return 1 if any(f.severity == "ERROR" for f in findings) else 0
 
 

@@ -28,6 +28,7 @@ def build_case() -> Case:
         metadata={
             "prosecutor_ref": "4057-0.Ds.2517.2025",
             "court": "Sąd Rejonowy w Wejherowie",
+            "graph_case_id": "case:II_Kp_459_26",
         },
     )
 

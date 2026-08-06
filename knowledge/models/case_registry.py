@@ -69,7 +69,7 @@ def registered_keys() -> list[str]:
 def _bootstrap() -> None:
     if _REGISTRY:
         return
-    from knowledge.models.case_workspace import open_ds_3960
+    from knowledge.models.case_workspace import open_ds_3960, open_ii_kp_459_26
 
     register(
         CaseSpec(
@@ -83,6 +83,29 @@ def _bootstrap() -> None:
             ),
             recipient_lines=("Prokuratura Rejonowa Poznań-Wilda",),
             meta={"signature": "DS.3960.2025"},
+        )
+    )
+    register(
+        CaseSpec(
+            key="II_Kp_459_26",
+            opener=open_ii_kp_459_26,
+            author_name="Arkadiusz Mielewczyk",
+            place="Wejherowo",
+            subject=(
+                "Wniosek o ponowne rozpoznanie skargi z 22.06.2026 r. "
+                "— odpowiedź na pismo Prezesa z 23.07.2026 r."
+            ),
+            recipient_lines=(
+                "Prezes Sądu Rejonowego w Wejherowie",
+                "SSR Beata Czabotar-Magulska",
+                "Sąd Rejonowy w Wejherowie",
+                "ul. Wniebowstąpienia 4",
+                "84-200 Wejherowo",
+            ),
+            meta={
+                "signature": "II Kp 459/26",
+                "prosecutor_ref": "4057-0.Ds.2517.2025",
+            },
         )
     )
 

@@ -1,17 +1,21 @@
 """
-FactAgent v0 – evidence hygiene on Case.facts (no LLM).
+FactAgent v1 – evidence hygiene on Case.facts (no LLM).
+
+Does not import any specific case builder.
+CLI may load a case via CaseSpec registry.
 """
 
 from __future__ import annotations
 
+import argparse
 import sys
 from dataclasses import dataclass
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT))
 
 from knowledge.models.case import Case, FactStatus
-from scripts.build_case_ds_3960_2025 import build_case
 
 
 @dataclass(slots=True)
@@ -131,8 +135,29 @@ def format_report(case: Case, findings: list[FactFinding]) -> str:
     return "\n".join(lines)
 
 
+def _load_case(case_key: str) -> Case:
+    from knowledge.models.case_registry import get_spec
+
+    spec = get_spec(case_key)
+    ws = spec.open()
+    return ws.case
+
+
 def main() -> int:
-    case = build_case()
+    parser = argparse.ArgumentParser(description="FactAgent – review Case.facts")
+    parser.add_argument(
+        "--case",
+        default="DS_3960_2025",
+        help="Case key from case_registry (default: DS_3960_2025)",
+    )
+    args = parser.parse_args()
+
+    try:
+        case = _load_case(args.case)
+    except KeyError as exc:
+        print(exc)
+        return 2
+
     findings = review_case_facts(case)
     print(format_report(case, findings))
     return 1 if any(f.severity == "ERROR" for f in findings) else 0

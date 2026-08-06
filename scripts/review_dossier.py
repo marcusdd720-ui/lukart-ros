@@ -1,11 +1,12 @@
 """
-ReviewAgent (v0) – checklist review of a generated dossier text.
+ReviewAgent (v1) – checklist review of a generated dossier text.
 No LLM. Deterministic rules for LukArt pleadings.
 """
 
 from __future__ import annotations
 
 import argparse
+import re
 import sys
 from dataclasses import dataclass
 from pathlib import Path
@@ -20,6 +21,37 @@ class Finding:
     message: str
 
 
+def _normalize_sig(value: str) -> str:
+    """Lowercase, unify separators for signature comparison."""
+    text = (value or "").lower().strip()
+    text = text.replace("—", "-").replace("–", "-")
+    text = re.sub(r"[_\s./\\]+", "", text)
+    return text
+
+
+def _signature_found(text: str, signature_hint: str) -> bool:
+    if not signature_hint.strip():
+        return False
+    raw = text.lower()
+    hint = signature_hint.strip()
+    if hint.lower() in raw:
+        return True
+    # compact form: "II Kp 459/26" vs "II_Kp_459_26" vs "II.Kp.459.26"
+    norm_body = _normalize_sig(text)
+    norm_hint = _normalize_sig(hint)
+    if norm_hint and norm_hint in norm_body:
+        return True
+    # last segment often unique: 459/26
+    parts = re.findall(r"\d+", hint)
+    if len(parts) >= 2:
+        tail = f"{parts[-2]}/{parts[-1]}"
+        if tail in text:
+            return True
+        if f"{parts[-2]}{parts[-1]}" in norm_body:
+            return True
+    return False
+
+
 def review_text(text: str, *, signature_hint: str = "DS.3960") -> list[Finding]:
     findings: list[Finding] = []
     t = text or ""
@@ -30,17 +62,39 @@ def review_text(text: str, *, signature_hint: str = "DS.3960") -> list[Finding]:
             findings.append(Finding(severity=severity, code=code, message=msg))
 
     need("HDR001", "stanowisko" in low or "STANOWISKO" in t, "Brak nagłówka stanowiska.")
-    need("SIG001", signature_hint.lower() in low or signature_hint in t, f"Brak sygnatury ({signature_hint}).")
+    need(
+        "SIG001",
+        _signature_found(t, signature_hint),
+        f"Brak sygnatury ({signature_hint}).",
+    )
     need("SEC001", "I." in t or "I " in t, "Brak sekcji numerowanych (I.).", "WARNING")
     need("SEC006", "VI" in t and "PODSTAWA" in t.upper(), "Brak sekcji VI Podstawa prawna.")
-    need("SEC006A", "VI.A" in t or "ORZECZNICTWO" in t.upper(), "Brak sekcji orzecznictwa (VI.A / ORZECZNICTWO).", "WARNING")
-    need("SN001", "KK" in t or "Sąd Najwyższy" in t or "SN " in t, "Brak odniesienia do orzecznictwa SN.", "WARNING")
-    need("ART001", "284" in t or "art." in low, "Brak odesłania do artykułu ustawy.")
-    need("OUT001", "WNIOSEK" in t.upper() or "wnoszę" in low or "wnosze" in low, "Brak wniosków / prośby procesowej.")
-    need("ATT001", "ZAŁĄCZNIK" in t.upper() or "Załącznik" in t, "Brak wykazu załączników.", "WARNING")
+    need(
+        "SEC006A",
+        "VI.A" in t or "ORZECZNICTWO" in t.upper(),
+        "Brak sekcji orzecznictwa (VI.A / ORZECZNICTWO).",
+        "WARNING",
+    )
+    need(
+        "SN001",
+        "KK" in t or "KZP" in t or "Sąd Najwyższy" in t or "SN " in t,
+        "Brak odniesienia do orzecznictwa SN.",
+        "WARNING",
+    )
+    need("ART001", "art." in low or "§" in t, "Brak odesłania do artykułu ustawy.")
+    need(
+        "OUT001",
+        "WNIOSEK" in t.upper() or "wnoszę" in low or "wnosze" in low,
+        "Brak wniosków / prośby procesowej.",
+    )
+    need(
+        "ATT001",
+        "ZAŁĄCZNIK" in t.upper() or "Załącznik" in t,
+        "Brak wykazu załączników.",
+        "WARNING",
+    )
     need("LEN001", len(t) >= 800, "Tekst bardzo krótki jak na dossier analityczne.", "WARNING")
 
-    # Risky / style
     if "na oko" in low or "wydaje się że" in low:
         findings.append(
             Finding("WARNING", "STY001", "Sformułowania spekulatywne („na oko” / „wydaje się”).")
@@ -90,7 +144,11 @@ def main() -> int:
         default="output/cases/DS_3960_2025/stanowisko_dossier_with_authorities.txt",
         help="Path to generated dossier text",
     )
-    parser.add_argument("--signature", default="DS.3960", help="Expected signature fragment")
+    parser.add_argument(
+        "--signature",
+        default="DS.3960",
+        help="Expected signature fragment (flexible match)",
+    )
     args = parser.parse_args()
 
     path = Path(args.path)

@@ -33,6 +33,7 @@ class CaseWorkspace:
     authorities: AuthoritySection | None = None
     dossier_text: str | None = None
     last_snapshot_path: Path | None = None
+    focus_statute_id: str | None = None
 
     fact_ok: bool | None = None
     law_ok: bool | None = None
@@ -62,12 +63,13 @@ class CaseWorkspace:
     def build_authorities(
         self,
         *,
-        focus_statute_id: str | None = "statute:kk:284:2",
+        focus_statute_id: str | None = None,
     ) -> AuthoritySection:
+        focus = focus_statute_id or self.focus_statute_id
         section = build_authority_section(
             self.legal,
             self.graph_case_id,
-            focus_statute_id=focus_statute_id,
+            focus_statute_id=focus,
         )
         self.authorities = section
         return section
@@ -207,8 +209,12 @@ class CaseWorkspace:
     def run_law_agent(self) -> int:
         from scripts.law_agent import format_report, review_case_law_links
 
-        findings, _lq, cid = review_case_law_links(self.graph_case_id)
-        print(format_report(findings, cid))
+        findings = review_case_law_links(
+            self.graph,
+            self.graph_case_id,
+            focus_statute_id=self.focus_statute_id,
+        )
+        print(format_report(findings, self.graph_case_id))
         self.law_ok = not any(f.severity == "ERROR" for f in findings)
         return 0 if self.law_ok else 1
 
@@ -222,7 +228,12 @@ class CaseWorkspace:
         else:
             text = path.read_text(encoding="utf-8")
 
-        findings = review_text(text, signature_hint=self.key.replace("_", "."))
+        hint = (
+            (self.case.signature or "").strip()
+            or str(self.meta.get("signature", "")).strip()
+            or self.key.replace("_", ".")
+        )
+        findings = review_text(text, signature_hint=hint)
         print(format_report(findings))
         self.review_ok = not any(f.severity == "ERROR" for f in findings)
         return 0 if self.review_ok else 1
@@ -246,9 +257,6 @@ class CaseWorkspace:
         sync_outbound: bool = True,
         write_note: bool = True,
     ) -> int:
-        """
-        Fact → Law → authorities → dossier → review → outbound → snapshot → note
-        """
         dossier_txt: Path | None = None
         dossier_docx: Path | None = None
         outbound_files: list[Path] = []
@@ -343,7 +351,27 @@ def open_ds_3960() -> CaseWorkspace:
         graph_case_id=graph_case_id,
         case=case,
         graph=graph,
+        focus_statute_id="statute:kk:284:2",
         meta={"signature": "DS.3960.2025"},
+    )
+
+
+def open_ii_kp_459_26() -> CaseWorkspace:
+    from scripts.build_case_ii_kp_459_26 import build_case
+    from scripts.link_case_ii_kp_459_26 import link_ii_kp_459_26
+
+    case = build_case()
+    graph, graph_case_id = link_ii_kp_459_26()
+    return CaseWorkspace(
+        key="II_Kp_459_26",
+        graph_case_id=graph_case_id,
+        case=case,
+        graph=graph,
+        focus_statute_id="statute:kpk:16",
+        meta={
+            "signature": "II Kp 459/26",
+            "prosecutor_ref": "4057-0.Ds.2517.2025",
+        },
     )
 
 
