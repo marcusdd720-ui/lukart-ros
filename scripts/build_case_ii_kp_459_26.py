@@ -9,6 +9,8 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from knowledge.models.case import (
+    Argument,
+    ArgumentStatus,
     Case,
     Decision,
     DecisionKind,
@@ -150,6 +152,33 @@ def build_case() -> Case:
     for issue in (issue1, issue2):
         case.add_issue(issue)
 
+    # ----- Arguments (CASE-012) -----
+    arg1 = Argument(
+        issue_id=issue1.id,
+        claim=(
+            "Treść i forma wiadomości z 10.06.2026 r. nie spełniały standardu "
+            "zrozumiałości i dostosowania do sytuacji adresata działającego "
+            "bez pełnomocnika i zgłaszającego trudności komunikacyjne."
+        ),
+        support_fact_ids=[f2.id, f5.id, f1.id],
+        legal_basis_ids=[b1.id, b2.id, b3.id],
+        status=ArgumentStatus.ADVANCED,
+    )
+    arg2 = Argument(
+        issue_id=issue2.id,
+        claim=(
+            "Odpowiedź Prezesa z 23.07.2026 r. ogranicza się do kompetencji organu "
+            "i autentyczności korespondencji, pomijając standard wykonania "
+            "obowiązku informacyjnego."
+        ),
+        support_fact_ids=[f3.id, f4.id, f2.id, f5.id],
+        legal_basis_ids=[b1.id, b2.id, b3.id],
+        status=ArgumentStatus.ADVANCED,
+    )
+
+    for arg in (arg1, arg2):
+        case.add_argument(arg)
+
     case.add_decision(
         Decision(
             kind=DecisionKind.PROCEDURAL,
@@ -164,6 +193,7 @@ def build_case() -> Case:
             fact_ids=[f1.id, f2.id, f3.id, f4.id, f5.id],
             legal_basis_ids=[b1.id, b2.id, b3.id],
             issue_ids=[issue1.id, issue2.id],
+            argument_ids=[arg1.id, arg2.id],
             scope_not_challenged=[
                 "autentyczność wiadomości e-mail z dnia 10 czerwca 2026 r.",
                 "fakt jej wysłania przez sędziego referenta",
