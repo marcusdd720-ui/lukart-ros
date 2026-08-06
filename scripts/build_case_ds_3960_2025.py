@@ -14,6 +14,8 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from knowledge.models.case import (
+    Argument,
+    ArgumentStatus,
     Case,
     CaseStatus,
     Decision,
@@ -391,6 +393,43 @@ def build_case() -> Case:
     for issue in (issue1, issue2, issue3):
         case.add_issue(issue)
 
+    # ----- Arguments (CASE-012) -----
+    arg1 = Argument(
+        issue_id=issue1.id,
+        claim=(
+            "Czynności Mariusza Brodziszewskiego (umowa, rejestracja, OC, posiadanie) "
+            "były podejmowane w oparciu o dokumenty i w przekonaniu o prawie "
+            "do dysponowania pojazdem."
+        ),
+        support_fact_ids=[f1.id, f2.id, f3.id, f4.id, f7.id],
+        legal_basis_ids=[b1.id, b3.id],
+        status=ArgumentStatus.ADVANCED,
+    )
+    arg2 = Argument(
+        issue_id=issue2.id,
+        claim=(
+            "Sam fakt późniejszego sporu (wezwanie do wydania) nie wystarcza "
+            "do przyjęcia znamion czynu zabronionego bez oceny całokształtu materiału."
+        ),
+        support_fact_ids=[f5.id, f1.id, f2.id, f3.id, f4.id],
+        legal_basis_ids=[b1.id, b3.id],
+        status=ArgumentStatus.ADVANCED,
+    )
+    arg3 = Argument(
+        issue_id=issue3.id,
+        claim=(
+            "Skutki cywilnoprawne darowizny należy oddzielić od oceny karnej "
+            "zachowania; rejestracja i umowa mają znaczenie dowodowe, "
+            "ale nie przesądzają automatycznie odpowiedzialności karnej."
+        ),
+        support_fact_ids=[f1.id, f2.id, f6.id],
+        legal_basis_ids=[b1.id, b2.id, b3.id],
+        status=ArgumentStatus.ADVANCED,
+    )
+
+    for arg in (arg1, arg2, arg3):
+        case.add_argument(arg)
+
     case.add_decision(
         Decision(
             kind=DecisionKind.PROCEDURAL,
@@ -405,6 +444,7 @@ def build_case() -> Case:
             fact_ids=[f1.id, f2.id, f3.id, f4.id, f5.id, f6.id, f7.id],
             legal_basis_ids=[b1.id, b2.id, b3.id, b4.id, b5.id],
             issue_ids=[issue1.id, issue2.id, issue3.id],
+            argument_ids=[arg1.id, arg2.id, arg3.id],
             scope_not_challenged=[
                 "istnienie pisemnej umowy darowizny jako dokumentu w sprawie",
                 "fakt dokonania rejestracji pojazdu przez organ administracji",
