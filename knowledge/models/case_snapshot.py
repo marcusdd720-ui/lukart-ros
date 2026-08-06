@@ -72,6 +72,7 @@ class CaseSnapshot:
     graph_node_count: int = 0
     graph_edge_count: int = 0
     legal_issue_count: int = 0
+    argument_count: int = 0
     fact_pass: bool | None = None
     law_pass: bool | None = None
     review_pass: bool | None = None
@@ -149,6 +150,7 @@ def build_snapshot_from_workspace(
     commit, dirty = _git_info(root)
 
     issue_count = len(getattr(workspace.case, "legal_issues", []) or [])
+    argument_count = len(getattr(workspace.case, "arguments", []) or [])
 
     snap = CaseSnapshot(
         timestamp=stamp,
@@ -159,6 +161,7 @@ def build_snapshot_from_workspace(
         graph_node_count=int(workspace.graph.node_count()),
         graph_edge_count=int(workspace.graph.edge_count()),
         legal_issue_count=issue_count,
+        argument_count=argument_count,
         fact_pass=workspace.fact_ok,
         law_pass=workspace.law_ok,
         review_pass=workspace.review_ok,
@@ -179,6 +182,7 @@ def build_snapshot_from_workspace(
             "display_title": workspace.case.display_title(),
             "phase": phase_u,
             "legal_issue_count": issue_count,
+            "argument_count": argument_count,
         },
     )
     snap.compute_status()
@@ -220,8 +224,9 @@ def main() -> int:
     ws = open_ds_3960()
     open_path = save_workspace_snapshot(ws, phase="OPEN")
     print("OPEN:", open_path)
-    print("legal_issue_count:", CaseSnapshot.load(open_path).legal_issue_count)
-
+    s = CaseSnapshot.load(open_path)
+    print("legal_issue_count:", s.legal_issue_count)
+    print("argument_count:", s.argument_count)
     return 0
 
 
