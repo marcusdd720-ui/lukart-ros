@@ -2,6 +2,7 @@
 CaseWorkspace – single session object for a legal case.
 
 Wires Case + KnowledgeGraph + LegalQuery + authorities + dossier + snapshot.
+Supports full run() or a single stage via run(stage=...).
 """
 
 from __future__ import annotations
@@ -20,6 +21,16 @@ from knowledge.models.dossier_render import DossierContext, DossierRenderer
 
 
 ROOT = Path(__file__).resolve().parents[2]
+
+STAGES = (
+    "FACT",
+    "LAW",
+    "DOSSIER",
+    "REVIEW",
+    "OUTBOUND",
+    "FREEZE",
+    "NOTE",
+)
 
 
 @dataclass(slots=True)
@@ -40,6 +51,11 @@ class CaseWorkspace:
     review_ok: bool | None = None
     meta: dict[str, Any] = field(default_factory=dict)
 
+    _author_name: str = ""
+    _place: str = ""
+    _subject: str = ""
+    _recipient_lines: list[str] | None = None
+
     @property
     def case_dir(self) -> Path:
         return self.root / "cases" / self.key
@@ -59,6 +75,19 @@ class CaseWorkspace:
     @property
     def legal(self) -> LegalQuery:
         return LegalQuery(self.graph)
+
+    def set_letter_context(
+        self,
+        *,
+        author_name: str = "",
+        place: str = "",
+        subject: str = "",
+        recipient_lines: list[str] | None = None,
+    ) -> None:
+        self._author_name = author_name
+        self._place = place
+        self._subject = subject
+        self._recipient_lines = recipient_lines
 
     def build_authorities(
         self,
@@ -94,11 +123,15 @@ class CaseWorkspace:
         )
 
         ctx = DossierContext(
-            author_name=author_name,
-            place=place,
+            author_name=author_name or self._author_name,
+            place=place or self._place,
             dossier_date=dossier_date or date.today(),
-            subject=subject or self.case.display_title(),
-            recipient_lines=recipient_lines,
+            subject=subject or self._subject or self.case.display_title(),
+            recipient_lines=(
+                recipient_lines
+                if recipient_lines is not None
+                else self._recipient_lines
+            ),
             authorities_text=authorities_text,
         )
         text = DossierRenderer().render(self.case, context=ctx)
@@ -245,6 +278,76 @@ class CaseWorkspace:
         self.last_snapshot_path = path
         return path
 
+    def run_stage(self, stage: str, *, export_docx: bool = True) -> int:
+        name = stage.strip().upper()
+        if name not in STAGES:
+            print(f"Unknown stage: {stage!r}. Known: {', '.join(STAGES)}")
+            return 2
+
+        if name == "FACT":
+            return self.run_fact_agent()
+        if name == "LAW":
+            return self.run_law_agent()
+
+        if name == "DOSSIER":
+            self.build_authorities()
+            self.render_dossier(
+                author_name=self._author_name,
+                place=self._place,
+                subject=self._subject,
+                recipient_lines=self._recipient_lines,
+                include_authorities=True,
+            )
+            path = self.export_dossier_txt()
+            print("Saved:", path)
+            if export_docx:
+                try:
+                    docx_path = self.export_dossier_docx()
+                    print("Saved DOCX:", docx_path)
+                except ImportError as exc:
+                    print("DOCX skipped:", exc)
+            return 0
+
+        if name == "REVIEW":
+            return self.run_review_agent()
+
+        if name == "OUTBOUND":
+            copied = self.sync_outbound()
+            if copied:
+                print("Outbound:")
+                for path in copied:
+                    print(" ", path)
+            else:
+                print("Outbound: (nothing copied)")
+            return 0
+
+        if name == "FREEZE":
+            snap_path = self.save_snapshot()
+            print("Snapshot:", snap_path)
+            from knowledge.models.case_snapshot import CaseSnapshot
+
+            print("Status:", CaseSnapshot.load(snap_path).status)
+            return 0
+
+        if name == "NOTE":
+            status = None
+            if self.last_snapshot_path and self.last_snapshot_path.is_file():
+                from knowledge.models.case_snapshot import CaseSnapshot
+
+                status = CaseSnapshot.load(self.last_snapshot_path).status
+            note_path = self.write_run_note(
+                snapshot_status=status,
+                outbound_files=None,
+                dossier_txt=self.output_dir
+                / "stanowisko_dossier_with_authorities.txt",
+                dossier_docx=self.output_dir
+                / "stanowisko_dossier_with_authorities.docx",
+            )
+            print("Note:", note_path)
+            return 0
+
+        return 2
+
     def run(
         self,
         *,
@@ -252,11 +355,27 @@ class CaseWorkspace:
         place: str = "",
         subject: str = "",
         recipient_lines: list[str] | None = None,
+        stage: str | None = None,
         save_snapshot: bool = True,
         export_docx: bool = True,
         sync_outbound: bool = True,
         write_note: bool = True,
     ) -> int:
+        self.set_letter_context(
+            author_name=author_name,
+            place=place,
+            subject=subject,
+            recipient_lines=recipient_lines,
+        )
+
+        if stage is not None:
+            code = self.run_stage(stage, export_docx=export_docx)
+            if code == 0:
+                print(f"STAGE PASS: {stage.strip().upper()}")
+            else:
+                print(f"STAGE FAIL: {stage.strip().upper()}")
+            return code
+
         dossier_txt: Path | None = None
         dossier_docx: Path | None = None
         outbound_files: list[Path] = []
