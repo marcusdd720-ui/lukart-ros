@@ -1,5 +1,5 @@
 """
-Publish gate: only pushes when CaseSnapshot validates as READY_TO_PUBLISH.
+Publish gate: only acts when a FREEZE (or RELEASE) snapshot is READY_TO_PUBLISH.
 
 Does not run pipeline, agents, or renderers.
 """
@@ -13,17 +13,27 @@ import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-
 sys.path.insert(0, str(ROOT))
 
 from knowledge.models.snapshot_validator import validate_snapshot
 
 
-def load_latest(case_key: str) -> dict:
-    path = ROOT / "output" / "cases" / case_key / "snapshots" / "latest.json"
-    if not path.is_file():
-        raise FileNotFoundError(f"No snapshot: {path}")
-    return json.loads(path.read_text(encoding="utf-8"))
+def load_snapshot(case_key: str, *, prefer: str = "freeze") -> dict:
+    base = ROOT / "output" / "cases" / case_key / "snapshots"
+    candidates = [
+        base / f"latest_{prefer}.json",
+        base / "latest_freeze.json",
+        base / "latest.json",
+        base / "latest_release.json",
+    ]
+    for path in candidates:
+        if path.is_file():
+            data = json.loads(path.read_text(encoding="utf-8"))
+            data["_snapshot_file"] = str(path)
+            return data
+    raise FileNotFoundError(
+        f"No freeze/latest snapshot under {base}. Run pipeline FREEZE first."
+    )
 
 
 def run_git(args: list[str]) -> subprocess.CompletedProcess[str]:
@@ -37,7 +47,7 @@ def run_git(args: list[str]) -> subprocess.CompletedProcess[str]:
 
 def main() -> int:
     parser = argparse.ArgumentParser(
-        description="Publish case outputs if snapshot READY_TO_PUBLISH"
+        description="Publish case outputs if FREEZE snapshot is READY_TO_PUBLISH"
     )
     parser.add_argument(
         "--case",
@@ -45,9 +55,15 @@ def main() -> int:
         help="Case folder key under cases/",
     )
     parser.add_argument(
+        "--prefer",
+        choices=("freeze", "release", "latest"),
+        default="freeze",
+        help="Which latest pointer to load (default: freeze)",
+    )
+    parser.add_argument(
         "--commit",
         action="store_true",
-        help="git add case output/snapshot paths and commit before push",
+        help="git add case output paths and commit before push",
     )
     parser.add_argument(
         "--push",
@@ -61,11 +77,21 @@ def main() -> int:
     )
     args = parser.parse_args()
 
+    prefer = "latest" if args.prefer == "latest" else args.prefer
+
     try:
-        snap = load_latest(args.case)
-    except (OSError, json.JSONDecodeError) as exc:
+        snap = load_snapshot(args.case, prefer=prefer)
+    except (OSError, json.JSONDecodeError, FileNotFoundError) as exc:
         print("PUBLISH BLOCKED:", exc)
         return 2
+
+    phase = str(snap.get("phase", "")).upper()
+    print("Snapshot file:", snap.get("_snapshot_file"))
+    print("Phase:", phase or "(missing)")
+
+    if phase and phase not in ("FREEZE", "RELEASE"):
+        print(f"PUBLISH BLOCKED: phase must be FREEZE or RELEASE (got {phase!r})")
+        return 1
 
     result = validate_snapshot(snap)
     print(result.report())
@@ -74,11 +100,11 @@ def main() -> int:
     print("Dossier:", snap.get("dossier_path"))
 
     if not result.ready_to_publish:
-        print("PUBLISH BLOCKED: snapshot not ready")
+        print("PUBLISH BLOCKED: snapshot not READY_TO_PUBLISH")
         return 1
 
     if args.dry_run or (not args.commit and not args.push):
-        print("PUBLISH OK (dry): snapshot allows publish")
+        print("PUBLISH OK (dry): FREEZE/RELEASE allows publish")
         if not args.commit and not args.push and not args.dry_run:
             print("Hint: pass --commit and/or --push to perform git actions")
         return 0
@@ -98,7 +124,7 @@ def main() -> int:
             print(add.stderr)
             return add.returncode
         msg = (
-            f"Publish {args.case} snapshot "
+            f"Publish {args.case} {phase or 'FREEZE'} "
             f"{str(snap.get('snapshot_id', ''))[:8]} READY_TO_PUBLISH"
         )
         commit = run_git(["commit", "-m", msg])
