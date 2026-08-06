@@ -1,11 +1,12 @@
 """
-Project all LegalIssues from a domain Case into the KnowledgeGraph.
+Project all LegalIssues and Arguments from a domain Case into the KnowledgeGraph.
 """
 
 from __future__ import annotations
 
 from knowledge.graph import KnowledgeGraph
 from knowledge.models.case import Case
+from knowledge.project_argument import project_argument
 from knowledge.project_issue import project_legal_issue
 
 
@@ -17,11 +18,8 @@ def project_case_issues(
     statute_id_map: dict[str, str] | None = None,
 ) -> list[str]:
     """
-    Project every LegalIssue of the domain Case into the graph.
-
-    fact_id_map:     domain fact.id → graph fact node id
-    statute_id_map:  domain legal_basis.id → graph statute node id
-                     (or direct statute node ids)
+    Project every LegalIssue of the domain Case into the graph,
+    then every Argument (ADVANCES → Issue).
 
     Returns list of created ISSUE node ids.
     """
@@ -38,11 +36,9 @@ def project_case_issues(
 
         statute_nodes = []
         if statute_id_map:
-            # prefer explicit legal_basis_ids mapping
             for bid in issue.legal_basis_ids:
                 if bid in statute_id_map:
                     statute_nodes.append(statute_id_map[bid])
-            # fallback: soft statute_refs that already look like node ids
             for ref in issue.statute_refs:
                 if ref.startswith("statute:") and graph.has_node(ref):
                     statute_nodes.append(ref)
@@ -54,5 +50,14 @@ def project_case_issues(
             statute_node_ids=statute_nodes or None,
         )
         created.append(node_id)
+
+    # Arguments → ADVANCES → Issue
+    for argument in case.arguments:
+        issue_node_id = f"issue:{argument.issue_id}"
+        project_argument(
+            graph,
+            argument,
+            issue_node_id=issue_node_id if graph.has_node(issue_node_id) else None,
+        )
 
     return created
