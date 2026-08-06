@@ -71,6 +71,7 @@ class CaseSnapshot:
     legal_seed: str = LEGAL_SEED_DEFAULT
     graph_node_count: int = 0
     graph_edge_count: int = 0
+    legal_issue_count: int = 0
     fact_pass: bool | None = None
     law_pass: bool | None = None
     review_pass: bool | None = None
@@ -147,6 +148,8 @@ def build_snapshot_from_workspace(
 
     commit, dirty = _git_info(root)
 
+    issue_count = len(getattr(workspace.case, "legal_issues", []) or [])
+
     snap = CaseSnapshot(
         timestamp=stamp,
         phase=phase_u,
@@ -155,6 +158,7 @@ def build_snapshot_from_workspace(
         legal_seed=LEGAL_SEED_DEFAULT,
         graph_node_count=int(workspace.graph.node_count()),
         graph_edge_count=int(workspace.graph.edge_count()),
+        legal_issue_count=issue_count,
         fact_pass=workspace.fact_ok,
         law_pass=workspace.law_ok,
         review_pass=workspace.review_ok,
@@ -174,6 +178,7 @@ def build_snapshot_from_workspace(
         meta={
             "display_title": workspace.case.display_title(),
             "phase": phase_u,
+            "legal_issue_count": issue_count,
         },
     )
     snap.compute_status()
@@ -215,19 +220,9 @@ def main() -> int:
     ws = open_ds_3960()
     open_path = save_workspace_snapshot(ws, phase="OPEN")
     print("OPEN:", open_path)
+    print("legal_issue_count:", CaseSnapshot.load(open_path).legal_issue_count)
 
-    code = ws.run(
-        author_name="Mariusz Brodziszewski",
-        place="Poznań",
-        subject=(
-            "Stanowisko procesowe wraz z analizą materiału dowodowego "
-            "— pojazd Volkswagen Transporter"
-        ),
-        recipient_lines=["Prokuratura Rejonowa Poznań-Wilda"],
-        save_snapshot=True,
-    )
-    print("run exit:", code)
-    return code
+    return 0
 
 
 if __name__ == "__main__":
