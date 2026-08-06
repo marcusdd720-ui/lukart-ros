@@ -2,11 +2,12 @@
 Knowledge Operating System (KOS)
 
 File: knowledge/models/dossier_render.py
-Version: 1.1
-Sprint: CASE-008 / K2
+Version: 1.2.0
+Sprint: CASE-011
 
 Analytical dossier renderer (not a short letter).
 Optional authorities_text from AuthoritySection (graph) is injected in section VI.
+LegalIssues rendered from domain model (CASE-011).
 """
 
 from __future__ import annotations
@@ -35,6 +36,7 @@ class DossierRenderer:
     Sections:
       I    Metodyka
       II   Przedmiot
+      II.A Zagadnienia prawne (LegalIssue)
       III  Stan faktyczny
       IV   Chronologia
       V    Analiza materiału dowodowego
@@ -115,6 +117,33 @@ class DossierRenderer:
         if not dec.scope_not_challenged and not dec.issues:
             lines.append(dec.summary)
             lines.append("")
+
+        # ----- II.A LegalIssues (CASE-011) -----
+        if case.legal_issues:
+            lines.append("II.A. ZAGADNIENIA PRAWNE")
+            lines.append("")
+            for i, issue in enumerate(case.legal_issues, start=1):
+                lines.append(f"{i}. {issue.question}")
+                if issue.hypothesis.strip():
+                    lines.append(f"   Hipoteza robocza: {issue.hypothesis.strip()}")
+                if issue.statute_refs:
+                    lines.append(
+                        f"   Przepisy: {', '.join(issue.statute_refs)}"
+                    )
+                if issue.case_law_refs:
+                    lines.append(
+                        f"   Orzecznictwo: {', '.join(issue.case_law_refs)}"
+                    )
+                linked_facts = [
+                    fact_map[fid].statement[:100]
+                    for fid in issue.fact_ids
+                    if fid in fact_map
+                ]
+                if linked_facts:
+                    lines.append("   Powiązane fakty:")
+                    for fs in linked_facts:
+                        lines.append(f"   - {fs}...")
+                lines.append("")
 
         lines.append("III. STAN FAKTYCZNY")
         lines.append("")
@@ -213,7 +242,6 @@ class DossierRenderer:
             lines.append("VI.A. ORZECZNICTWO I TEZY (Knowledge Graph)")
             lines.append("")
             for block_line in ctx.authorities_text.strip().splitlines():
-                # Skip duplicate main heading if present
                 if block_line.strip() == "PODSTAWA PRAWNA I ORZECZNICTWO":
                     continue
                 lines.append(block_line)
