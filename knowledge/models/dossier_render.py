@@ -2,12 +2,12 @@
 Knowledge Operating System (KOS)
 
 File: knowledge/models/dossier_render.py
-Version: 1.2.0
-Sprint: CASE-011
+Version: 1.3.0
+Sprint: CASE-012
 
 Analytical dossier renderer (not a short letter).
 Optional authorities_text from AuthoritySection (graph) is injected in section VI.
-LegalIssues rendered from domain model (CASE-011).
+LegalIssues + Arguments rendered from domain model.
 """
 
 from __future__ import annotations
@@ -37,6 +37,7 @@ class DossierRenderer:
       I    Metodyka
       II   Przedmiot
       II.A Zagadnienia prawne (LegalIssue)
+      II.B Argumenty (Argument)
       III  Stan faktyczny
       IV   Chronologia
       V    Analiza materiału dowodowego
@@ -61,6 +62,7 @@ class DossierRenderer:
 
         fact_map = {f.id: f for f in case.facts}
         law_map = {b.id: b for b in case.legal_bases}
+        issue_map = {i.id: i for i in case.legal_issues}
         lines: list[str] = []
 
         lines.append("STANOWISKO PROCESOWE")
@@ -143,6 +145,26 @@ class DossierRenderer:
                     lines.append("   Powiązane fakty:")
                     for fs in linked_facts:
                         lines.append(f"   - {fs}...")
+                lines.append("")
+
+        # ----- II.B Arguments (CASE-012) -----
+        if case.arguments:
+            lines.append("II.B. ARGUMENTY")
+            lines.append("")
+            for i, arg in enumerate(case.arguments, start=1):
+                lines.append(f"{i}. {arg.claim}")
+                lines.append(f"   Status: {arg.status.name}")
+                issue = issue_map.get(arg.issue_id)
+                if issue is not None:
+                    lines.append(f"   Zagadnienie: {issue.question[:120]}")
+                if arg.legal_basis_ids:
+                    refs = [
+                        law_map[bid].reference
+                        for bid in arg.legal_basis_ids
+                        if bid in law_map
+                    ]
+                    if refs:
+                        lines.append(f"   Podstawa: {', '.join(refs)}")
                 lines.append("")
 
         lines.append("III. STAN FAKTYCZNY")
