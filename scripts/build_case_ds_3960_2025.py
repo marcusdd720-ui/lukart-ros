@@ -23,6 +23,7 @@ from knowledge.models.case import (
     Fact,
     FactStatus,
     LegalBasis,
+    LegalIssue,
     Party,
     TimelineEvent,
 )
@@ -344,6 +345,52 @@ def build_case() -> Case:
     for basis in (b1, b2, b3, b4, b5):
         case.add_legal_basis(basis)
 
+    # ----- LegalIssues (CASE-011) -----
+    issue1 = LegalIssue(
+        question=(
+            "Czy czynności Mariusza Brodziszewskiego dotyczące pojazdu "
+            "były podejmowane w oparciu o dokumenty i w przekonaniu "
+            "o przysługującym prawie do dysponowania pojazdem?"
+        ),
+        fact_ids=[f1.id, f2.id, f3.id, f4.id, f7.id],
+        legal_basis_ids=[b1.id, b3.id],
+        hypothesis=(
+            "Jawny ciąg: umowa → rejestracja → polisa OC + oświadczenie "
+            "o posesji wskazują na działanie w oparciu o dokumenty."
+        ),
+        statute_refs=["art. 7 k.p.k.", "art. 410 k.p.k."],
+    )
+    issue2 = LegalIssue(
+        question=(
+            "Czy sam późniejszy spór (wezwanie do wydania pojazdu) "
+            "wystarcza do przyjęcia znamion czynu zabronionego "
+            "bez oceny całokształtu materiału dowodowego?"
+        ),
+        fact_ids=[f5.id, f1.id, f2.id, f3.id, f4.id],
+        legal_basis_ids=[b1.id, b3.id],
+        hypothesis=(
+            "Spór ujawnił się po rejestracji i ubezpieczeniu. "
+            "Sam fakt wezwania nie przesądza znamion."
+        ),
+        statute_refs=["art. 7 k.p.k.", "art. 410 k.p.k."],
+    )
+    issue3 = LegalIssue(
+        question=(
+            "Czy należy oddzielić skutki cywilnoprawne darowizny "
+            "od oceny karnej zachowania Mariusza Brodziszewskiego?"
+        ),
+        fact_ids=[f1.id, f2.id, f6.id],
+        legal_basis_ids=[b1.id, b2.id, b3.id],
+        hypothesis=(
+            "Rejestracja i umowa mają znaczenie dowodowe, "
+            "ale nie przesądzają automatycznie odpowiedzialności karnej."
+        ),
+        statute_refs=["art. 7 k.p.k.", "art. 4 k.p.k.", "art. 410 k.p.k."],
+    )
+
+    for issue in (issue1, issue2, issue3):
+        case.add_issue(issue)
+
     case.add_decision(
         Decision(
             kind=DecisionKind.PROCEDURAL,
@@ -357,6 +404,7 @@ def build_case() -> Case:
             ),
             fact_ids=[f1.id, f2.id, f3.id, f4.id, f5.id, f6.id, f7.id],
             legal_basis_ids=[b1.id, b2.id, b3.id, b4.id, b5.id],
+            issue_ids=[issue1.id, issue2.id, issue3.id],
             scope_not_challenged=[
                 "istnienie pisemnej umowy darowizny jako dokumentu w sprawie",
                 "fakt dokonania rejestracji pojazdu przez organ administracji",
