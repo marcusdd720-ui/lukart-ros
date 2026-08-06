@@ -1,4 +1,32 @@
+# --- Python ---
 __pycache__/
-*.pyc
+*.py[cod]
+*$py.class
+*.so
+.Python
 .venv/
+venv/
+env/
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# --- IDE / OS ---
+.idea/
+.vscode/
+*.swp
+.DS_Store
+Thumbs.db
+
+# --- LukArt runtime noise ---
+# Immutable snapshots stay on disk; do not flood git
+output/**/snapshots/
+rqm_history.json
+reports/quality_report.md
+
+# Optional local env
 .env
+.env.local
