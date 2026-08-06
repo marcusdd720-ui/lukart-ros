@@ -1,0 +1,25 @@
+PODSTAWA PRAWNA I ORZECZNICTWO (z Knowledge Graph)
+
+I. Przepisy (RELIES_ON)
+  1. art. 410 k.p.k. (410)
+     Podstawę wyroku stanowi całokształt okoliczności ujawnionych w toku rozprawy głównej.
+  2. art. 284 § 2 k.k. (284 § 2)
+     Przywłaszczenie rzeczy powierzonej. Wymaga m.in. powierzenia z obowiązkiem zwrotu oraz zamiaru bezpośredniego przywłaszczenia.
+  3. art. 17 § 1 pkt 2 k.p.k. (17 § 1 pkt 2)
+     Nie wszczyna się postępowania, a wszczęte umarza, gdy czyn nie zawiera znamion czynu zabronionego.
+  4. art. 7 k.p.k. (7)
+     Swobodna ocena dowodów – organ ocenia dowody według własnego przekonania, z uwzględnieniem zasad prawidłowego rozumowania.
+
+II. Orzecznictwo (SUPPORTED_BY)
+  1. IV KK 283/16
+     Teza: Odpowiedzialność z art. 284 § 2 k.k. dotyczy rzeczy powierzonej i wymaga ustalenia stosunku powierzenia oraz zamiaru bezpośredniego przywłaszczenia.
+  2. V KK 491/17
+     Teza: Naruszenie art. 410 k.p.k. zachodzi, gdy rozstrzygnięcie opiera się na materiale nieujawnionym albo jedynie na części materiału ujawnionego.
+  3. II KK 8/15
+     Teza: Swobodna ocena dowodów nie jest oceną dowolną; wymaga oparcia na całokształcie dowodów i zasadach prawidłowego rozumowania.
+  4. V KK 391/14
+     Teza: Powierzenie rzeczy polega na przekazaniu sprawcy władztwa nad rzeczą z obowiązkiem jej zwrotu.
+
+III. Interpretacje art. 284 § 2 k.k. (biblioteka)
+  - SN IV KK 283/16: Odpowiedzialność z art. 284 § 2 k.k. dotyczy rzeczy powierzonej i wymaga ustalenia stosunku powierzenia oraz zamiaru bezpośredniego przywłaszczenia.
+  - SN V KK 391/14: Powierzenie rzeczy polega na przekazaniu sprawcy władztwa nad rzeczą z obowiązkiem jej zwrotu.
