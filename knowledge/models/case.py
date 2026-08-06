@@ -2,11 +2,12 @@
 Knowledge Operating System (KOS)
 
 File: knowledge/models/case.py
-Version: 1.4.0
-Sprint: CASE-011
+Version: 1.5.0
+Sprint: CASE-012
 
 Compat for render/dossier: timeline, evidence, ordered_timeline(), has_signature().
 LegalIssue between Fact and Law — closed contract.
+Argument between LegalIssue and Decision.
 """
 
 from __future__ import annotations
@@ -41,6 +42,12 @@ class IssueStatus(StrEnum):
     ANALYZED = auto()
     DECIDED = auto()
     DROPPED = auto()
+
+
+class ArgumentStatus(StrEnum):
+    DRAFT = auto()
+    ADVANCED = auto()
+    REJECTED = auto()
 
 
 class DecisionKind(StrEnum):
@@ -252,6 +259,34 @@ class LegalIssue:
 
 
 @dataclass(slots=True)
+class Argument:
+    """
+    Bridge between LegalIssue and Decision.
+
+    Contract:
+    - issue_id           – required, must exist in Case.legal_issues
+    - claim              – required, non-empty
+    - support_fact_ids   – optional, validated when present
+    - legal_basis_ids    – optional, validated when present
+    - status             – DRAFT | ADVANCED | REJECTED
+    """
+    id: str = field(default_factory=lambda: str(uuid4()))
+    issue_id: str = ""
+    claim: str = ""
+    status: ArgumentStatus = ArgumentStatus.DRAFT
+    support_fact_ids: list[str] = field(default_factory=list)
+    legal_basis_ids: list[str] = field(default_factory=list)
+    metadata: dict[str, Any] = field(default_factory=dict)
+    created_at: datetime = field(default_factory=_now)
+
+    def validate(self) -> None:
+        if not (self.issue_id or "").strip():
+            raise ValueError("Argument.issue_id cannot be empty")
+        if not (self.claim or "").strip():
+            raise ValueError("Argument.claim cannot be empty")
+
+
+@dataclass(slots=True)
 class Decision:
     id: str = field(default_factory=lambda: str(uuid4()))
     kind: DecisionKind = DecisionKind.PROCEDURAL
@@ -259,6 +294,7 @@ class Decision:
     fact_ids: list[str] = field(default_factory=list)
     legal_basis_ids: list[str] = field(default_factory=list)
     issue_ids: list[str] = field(default_factory=list)
+    argument_ids: list[str] = field(default_factory=list)
     scope_not_challenged: list[str] = field(default_factory=list)
     # legacy residual – do not use in new code; kept for snapshot compatibility
     issues: list[str] = field(default_factory=list)
@@ -287,6 +323,7 @@ class Case:
     facts: list[Fact] = field(default_factory=list)
     legal_bases: list[LegalBasis] = field(default_factory=list)
     legal_issues: list[LegalIssue] = field(default_factory=list)
+    arguments: list[Argument] = field(default_factory=list)
     decisions: list[Decision] = field(default_factory=list)
     metadata: dict[str, Any] = field(default_factory=dict)
     created_at: datetime = field(default_factory=_now)
@@ -386,20 +423,44 @@ class Case:
             self.status = CaseStatus.ANALYSIS
         self.touch()
 
+    def add_argument(self, argument: Argument) -> None:
+        argument.validate()
+        known_issues = {i.id for i in self.legal_issues}
+        known_facts = {f.id for f in self.facts}
+        known_bases = {b.id for b in self.legal_bases}
+
+        if argument.issue_id not in known_issues:
+            raise ValueError(f"Argument references unknown issue: {argument.issue_id}")
+
+        missing_facts = [fid for fid in argument.support_fact_ids if fid not in known_facts]
+        if missing_facts:
+            raise ValueError(f"Argument references unknown facts: {missing_facts}")
+
+        missing_bases = [bid for bid in argument.legal_basis_ids if bid not in known_bases]
+        if missing_bases:
+            raise ValueError(f"Argument references unknown legal bases: {missing_bases}")
+
+        self.arguments.append(argument)
+        self.touch()
+
     def add_decision(self, decision: Decision) -> None:
         decision.validate()
         known_facts = {f.id for f in self.facts}
         known_law = {b.id for b in self.legal_bases}
         known_issues = {i.id for i in self.legal_issues}
+        known_args = {a.id for a in self.arguments}
         missing_facts = [fid for fid in decision.fact_ids if fid not in known_facts]
         missing_law = [lid for lid in decision.legal_basis_ids if lid not in known_law]
         missing_issues = [iid for iid in decision.issue_ids if iid not in known_issues]
+        missing_args = [aid for aid in decision.argument_ids if aid not in known_args]
         if missing_facts:
             raise ValueError(f"Decision references unknown facts: {missing_facts}")
         if missing_law:
             raise ValueError(f"Decision references unknown legal bases: {missing_law}")
         if missing_issues:
             raise ValueError(f"Decision references unknown legal issues: {missing_issues}")
+        if missing_args:
+            raise ValueError(f"Decision references unknown arguments: {missing_args}")
         self.decisions.append(decision)
         self.status = CaseStatus.DECISION
         self.touch()
@@ -414,6 +475,12 @@ class Case:
         for issue in self.legal_issues:
             if issue.id == issue_id:
                 return issue
+        return None
+
+    def get_argument(self, argument_id: str) -> Argument | None:
+        for arg in self.arguments:
+            if arg.id == argument_id:
+                return arg
         return None
 
     def get_evidence(self, evidence_id: str) -> EvidenceItem | None:
@@ -445,5 +512,6 @@ class Case:
             "facts": len(self.facts),
             "legal_bases": len(self.legal_bases),
             "legal_issues": len(self.legal_issues),
+            "arguments": len(self.arguments),
             "decisions": len(self.decisions),
         }
