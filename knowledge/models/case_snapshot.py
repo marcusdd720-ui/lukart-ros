@@ -2,6 +2,7 @@
 CaseSnapshot v1 – immutable run record for a case workspace.
 
 schema: lukart.snapshot.v1
+Phases: OPEN | FREEZE | RELEASE
 JSON = machine contract (not a human pleading).
 """
 
@@ -18,6 +19,7 @@ from typing import Any
 
 SCHEMA = "lukart.snapshot.v1"
 LEGAL_SEED_DEFAULT = "2026.08"
+PHASES = ("OPEN", "FREEZE", "RELEASE")
 
 
 def _utc_now() -> datetime:
@@ -35,7 +37,6 @@ def _sha256_file(path: Path) -> str | None:
 
 
 def _git_info(repo: Path) -> tuple[str | None, bool | None]:
-    """Return (commit, dirty) or (None, None) if git unavailable."""
     try:
         import subprocess
 
@@ -59,11 +60,12 @@ def _git_info(repo: Path) -> tuple[str | None, bool | None]:
 
 @dataclass(slots=True)
 class CaseSnapshot:
-    """Versioned snapshot of one workspace run."""
+    """Versioned snapshot of one workspace run / phase."""
 
     schema: str = SCHEMA
     snapshot_id: str = field(default_factory=lambda: str(uuid.uuid4()))
     timestamp: str = ""
+    phase: str = "FREEZE"  # OPEN | FREEZE | RELEASE
     case_key: str = ""
     graph_case_id: str = ""
     legal_seed: str = LEGAL_SEED_DEFAULT
@@ -81,11 +83,6 @@ class CaseSnapshot:
     meta: dict[str, Any] = field(default_factory=dict)
 
     def compute_status(self) -> str:
-        """
-        FAILED – any required agent failed
-        PASS_LOCAL – agents ok, but not publish-ready (e.g. dirty git optional)
-        READY_TO_PUBLISH – agents ok + dossier hash present
-        """
         flags = [self.fact_pass, self.law_pass, self.review_pass]
         if any(f is False for f in flags):
             self.status = "FAILED"
@@ -127,11 +124,16 @@ class CaseSnapshot:
         return cls(**filtered)
 
 
-def build_snapshot_from_workspace(workspace: Any, *, repo_root: Path | None = None) -> CaseSnapshot:
-    """
-    Build snapshot from CaseWorkspace-like object.
-    Expects attributes used by knowledge.models.case_workspace.CaseWorkspace.
-    """
+def build_snapshot_from_workspace(
+    workspace: Any,
+    *,
+    repo_root: Path | None = None,
+    phase: str = "FREEZE",
+) -> CaseSnapshot:
+    phase_u = (phase or "FREEZE").strip().upper()
+    if phase_u not in PHASES:
+        raise ValueError(f"Unknown snapshot phase: {phase!r}. Known: {PHASES}")
+
     root = Path(repo_root) if repo_root is not None else Path(workspace.root)
     ts = _utc_now()
     stamp = ts.strftime("%Y-%m-%dT%H-%M-%SZ")
@@ -147,6 +149,7 @@ def build_snapshot_from_workspace(workspace: Any, *, repo_root: Path | None = No
 
     snap = CaseSnapshot(
         timestamp=stamp,
+        phase=phase_u,
         case_key=str(workspace.key),
         graph_case_id=str(workspace.graph_case_id),
         legal_seed=LEGAL_SEED_DEFAULT,
@@ -168,22 +171,38 @@ def build_snapshot_from_workspace(workspace: Any, *, repo_root: Path | None = No
         dossier_sha256=dossier_hash,
         git_commit=commit,
         git_dirty=dirty,
-        meta={"display_title": workspace.case.display_title()},
+        meta={
+            "display_title": workspace.case.display_title(),
+            "phase": phase_u,
+        },
     )
     snap.compute_status()
     return snap
 
 
-def save_workspace_snapshot(workspace: Any, *, repo_root: Path | None = None) -> Path:
+def save_workspace_snapshot(
+    workspace: Any,
+    *,
+    repo_root: Path | None = None,
+    phase: str = "FREEZE",
+) -> Path:
     """Write immutable snapshot under output/cases/<key>/snapshots/."""
-    snap = build_snapshot_from_workspace(workspace, repo_root=repo_root)
+    snap = build_snapshot_from_workspace(
+        workspace, repo_root=repo_root, phase=phase
+    )
     out_dir = Path(workspace.output_dir) / "snapshots"
-    filename = f"{snap.timestamp}_{snap.snapshot_id[:8]}.json"
+    filename = f"{snap.timestamp}_{snap.phase}_{snap.snapshot_id[:8]}.json"
     path = out_dir / filename
     snap.write(path)
-    # convenience pointer (overwritten on purpose – full history stays in snapshots/)
+
+    # latest pointers (overwritten on purpose – history stays in dated files)
     latest = out_dir / "latest.json"
     latest.write_text(
+        json.dumps(snap.to_dict(), ensure_ascii=False, indent=2) + "\n",
+        encoding="utf-8",
+    )
+    phase_latest = out_dir / f"latest_{snap.phase.lower()}.json"
+    phase_latest.write_text(
         json.dumps(snap.to_dict(), ensure_ascii=False, indent=2) + "\n",
         encoding="utf-8",
     )
@@ -194,6 +213,9 @@ def main() -> int:
     from knowledge.models.case_workspace import open_ds_3960
 
     ws = open_ds_3960()
+    open_path = save_workspace_snapshot(ws, phase="OPEN")
+    print("OPEN:", open_path)
+
     code = ws.run(
         author_name="Mariusz Brodziszewski",
         place="Poznań",
@@ -202,13 +224,9 @@ def main() -> int:
             "— pojazd Volkswagen Transporter"
         ),
         recipient_lines=["Prokuratura Rejonowa Poznań-Wilda"],
+        save_snapshot=True,
     )
-    path = save_workspace_snapshot(ws)
-    snap = CaseSnapshot.load(path)
-    print("Snapshot:", path)
-    print("Status:", snap.status)
-    print("Schema:", snap.schema)
-    print("Dossier SHA256:", (snap.dossier_sha256 or "")[:16], "...")
+    print("run exit:", code)
     return code
 
 

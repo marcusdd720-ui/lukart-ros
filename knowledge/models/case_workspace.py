@@ -1,8 +1,8 @@
 """
 CaseWorkspace – single session object for a legal case.
 
-Wires Case + KnowledgeGraph + LegalQuery + authorities + dossier + snapshot.
-Supports full run() or a single stage via run(stage=...).
+Supports full run() or run(stage=...).
+Snapshots: OPEN (start) → FREEZE (success end) → RELEASE (explicit).
 """
 
 from __future__ import annotations
@@ -28,7 +28,9 @@ STAGES = (
     "DOSSIER",
     "REVIEW",
     "OUTBOUND",
+    "OPEN",
     "FREEZE",
+    "RELEASE",
     "NOTE",
 )
 
@@ -271,10 +273,10 @@ class CaseWorkspace:
         self.review_ok = not any(f.severity == "ERROR" for f in findings)
         return 0 if self.review_ok else 1
 
-    def save_snapshot(self) -> Path:
+    def save_snapshot(self, *, phase: str = "FREEZE") -> Path:
         from knowledge.models.case_snapshot import save_workspace_snapshot
 
-        path = save_workspace_snapshot(self, repo_root=self.root)
+        path = save_workspace_snapshot(self, repo_root=self.root, phase=phase)
         self.last_snapshot_path = path
         return path
 
@@ -321,12 +323,37 @@ class CaseWorkspace:
                 print("Outbound: (nothing copied)")
             return 0
 
+        if name == "OPEN":
+            path = self.save_snapshot(phase="OPEN")
+            print("Snapshot OPEN:", path)
+            return 0
+
         if name == "FREEZE":
-            snap_path = self.save_snapshot()
-            print("Snapshot:", snap_path)
+            path = self.save_snapshot(phase="FREEZE")
+            print("Snapshot FREEZE:", path)
             from knowledge.models.case_snapshot import CaseSnapshot
 
-            print("Status:", CaseSnapshot.load(snap_path).status)
+            print("Status:", CaseSnapshot.load(path).status)
+            return 0
+
+        if name == "RELEASE":
+            from knowledge.models.case_snapshot import CaseSnapshot
+            from knowledge.models.snapshot_validator import validate_snapshot
+
+            # Prefer last freeze pointer if present
+            freeze_ptr = self.output_dir / "snapshots" / "latest_freeze.json"
+            if freeze_ptr.is_file():
+                data = __import__("json").loads(
+                    freeze_ptr.read_text(encoding="utf-8")
+                )
+                result = validate_snapshot(data)
+                if not result.ready_to_publish:
+                    print(result.report())
+                    print("RELEASE blocked: freeze snapshot not READY_TO_PUBLISH")
+                    return 1
+            path = self.save_snapshot(phase="RELEASE")
+            print("Snapshot RELEASE:", path)
+            print("Status:", CaseSnapshot.load(path).status)
             return 0
 
         if name == "NOTE":
@@ -381,12 +408,19 @@ class CaseWorkspace:
         outbound_files: list[Path] = []
         snapshot_status: str | None = None
 
+        if save_snapshot:
+            try:
+                open_path = self.save_snapshot(phase="OPEN")
+                print("Snapshot OPEN:", open_path)
+            except Exception as exc:  # noqa: BLE001
+                print("Snapshot OPEN error:", exc)
+
         if self.run_fact_agent() != 0:
             print("WORKSPACE FAIL: FactAgent")
             if save_snapshot:
                 try:
-                    p = self.save_snapshot()
-                    print("Snapshot (failed run):", p)
+                    p = self.save_snapshot(phase="FREEZE")
+                    print("Snapshot FREEZE (failed run):", p)
                 except Exception as exc:  # noqa: BLE001
                     print("Snapshot save error:", exc)
             return 1
@@ -395,8 +429,8 @@ class CaseWorkspace:
             print("WORKSPACE FAIL: LawAgent")
             if save_snapshot:
                 try:
-                    p = self.save_snapshot()
-                    print("Snapshot (failed run):", p)
+                    p = self.save_snapshot(phase="FREEZE")
+                    print("Snapshot FREEZE (failed run):", p)
                 except Exception as exc:  # noqa: BLE001
                     print("Snapshot save error:", exc)
             return 1
@@ -423,8 +457,8 @@ class CaseWorkspace:
             print("WORKSPACE FAIL: ReviewAgent")
             if save_snapshot:
                 try:
-                    p = self.save_snapshot()
-                    print("Snapshot (failed run):", p)
+                    p = self.save_snapshot(phase="FREEZE")
+                    print("Snapshot FREEZE (failed run):", p)
                 except Exception as exc:  # noqa: BLE001
                     print("Snapshot save error:", exc)
             return 1
@@ -439,8 +473,8 @@ class CaseWorkspace:
                 print("Outbound: (nothing copied)")
 
         if save_snapshot:
-            snap_path = self.save_snapshot()
-            print("Snapshot:", snap_path)
+            snap_path = self.save_snapshot(phase="FREEZE")
+            print("Snapshot FREEZE:", snap_path)
             from knowledge.models.case_snapshot import CaseSnapshot
 
             snapshot_status = CaseSnapshot.load(snap_path).status
