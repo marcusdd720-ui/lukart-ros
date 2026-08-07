@@ -16,7 +16,6 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
-
 SCHEMA = "lukart.snapshot.v1"
 LEGAL_SEED_DEFAULT = "2026.08"
 PHASES = ("OPEN", "FREEZE", "RELEASE")
@@ -73,6 +72,10 @@ class CaseSnapshot:
     graph_edge_count: int = 0
     legal_issue_count: int = 0
     argument_count: int = 0
+    fact_node_count: int = 0
+    raises_count: int = 0
+    advances_count: int = 0
+    resolves_count: int = 0
     fact_pass: bool | None = None
     law_pass: bool | None = None
     review_pass: bool | None = None
@@ -132,6 +135,8 @@ def build_snapshot_from_workspace(
     repo_root: Path | None = None,
     phase: str = "FREEZE",
 ) -> CaseSnapshot:
+    from knowledge.types import EdgeType, NodeType
+
     phase_u = (phase or "FREEZE").strip().upper()
     if phase_u not in PHASES:
         raise ValueError(f"Unknown snapshot phase: {phase!r}. Known: {PHASES}")
@@ -152,6 +157,15 @@ def build_snapshot_from_workspace(
     issue_count = len(getattr(workspace.case, "legal_issues", []) or [])
     argument_count = len(getattr(workspace.case, "arguments", []) or [])
 
+    fact_node_count = sum(1 for n in workspace.graph if n.type == NodeType.FACT)
+    raises_count = sum(1 for e in workspace.graph.edges if e.type == EdgeType.RAISES)
+    advances_count = sum(
+        1 for e in workspace.graph.edges if e.type == EdgeType.ADVANCES
+    )
+    resolves_count = sum(
+        1 for e in workspace.graph.edges if e.type == EdgeType.RESOLVES
+    )
+
     snap = CaseSnapshot(
         timestamp=stamp,
         phase=phase_u,
@@ -162,6 +176,10 @@ def build_snapshot_from_workspace(
         graph_edge_count=int(workspace.graph.edge_count()),
         legal_issue_count=issue_count,
         argument_count=argument_count,
+        fact_node_count=fact_node_count,
+        raises_count=raises_count,
+        advances_count=advances_count,
+        resolves_count=resolves_count,
         fact_pass=workspace.fact_ok,
         law_pass=workspace.law_ok,
         review_pass=workspace.review_ok,
@@ -183,6 +201,10 @@ def build_snapshot_from_workspace(
             "phase": phase_u,
             "legal_issue_count": issue_count,
             "argument_count": argument_count,
+            "fact_node_count": fact_node_count,
+            "raises_count": raises_count,
+            "advances_count": advances_count,
+            "resolves_count": resolves_count,
         },
     )
     snap.compute_status()
@@ -204,7 +226,6 @@ def save_workspace_snapshot(
     path = out_dir / filename
     snap.write(path)
 
-    # latest pointers (overwritten on purpose – history stays in dated files)
     latest = out_dir / "latest.json"
     latest.write_text(
         json.dumps(snap.to_dict(), ensure_ascii=False, indent=2) + "\n",
@@ -227,6 +248,10 @@ def main() -> int:
     s = CaseSnapshot.load(open_path)
     print("legal_issue_count:", s.legal_issue_count)
     print("argument_count:", s.argument_count)
+    print("fact_node_count:", s.fact_node_count)
+    print("raises_count:", s.raises_count)
+    print("advances_count:", s.advances_count)
+    print("resolves_count:", s.resolves_count)
     return 0
 
 

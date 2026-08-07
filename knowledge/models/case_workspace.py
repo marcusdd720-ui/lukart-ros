@@ -21,7 +21,6 @@ from knowledge.models.authority_section import AuthoritySection, build_authority
 from knowledge.models.case import Case
 from knowledge.models.dossier_render import DossierContext, DossierRenderer
 
-
 ROOT = Path(__file__).resolve().parents[2]
 
 STAGES = (
