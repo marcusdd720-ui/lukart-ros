@@ -4,15 +4,18 @@ Project domain TimelineEvent into KnowledgeGraph.
 Contract:
   - stable id: event:<domain_event.id>
   - NodeType.EVENT
-  - idempotent via ensure_node
+  - EdgeType.REFERENCES: Event → Evidence (when event.evidence_ids present)
+  - idempotent via ensure_node / ensure_edge
 """
 
 from __future__ import annotations
 
+from knowledge.edge import KnowledgeEdge
 from knowledge.graph import KnowledgeGraph
 from knowledge.models.case import TimelineEvent
 from knowledge.node import KnowledgeNode
-from knowledge.types import NodeType
+from knowledge.project_evidence import evidence_node_id
+from knowledge.types import EdgeType, NodeType
 
 
 def event_node_id(event_id: str) -> str:
@@ -27,6 +30,7 @@ def project_timeline_event(graph: KnowledgeGraph, event: TimelineEvent) -> str:
 
     Returns the EVENT node id.
     Safe to call repeatedly.
+    Also wires Event ──REFERENCES──→ Evidence for known evidence_ids.
     """
     event.validate()
     node_id = event_node_id(event.id)
@@ -55,9 +59,27 @@ def project_timeline_event(graph: KnowledgeGraph, event: TimelineEvent) -> str:
             "date_label": getattr(event, "date_label", "") or "",
             "sort_key": getattr(event, "sort_key", "") or "",
             "source": getattr(event, "source", "") or "",
+            "evidence_ids": list(getattr(event, "evidence_ids", None) or []),
+            "fact_ids": list(getattr(event, "fact_ids", None) or []),
         },
         tags={"timeline", "event"},
     )
     node.validate()
     graph.ensure_node(node)
+
+    # Event ──REFERENCES──→ Evidence
+    for eid in getattr(event, "evidence_ids", None) or []:
+        ev_id = evidence_node_id(eid)
+        if not graph.has_node(ev_id):
+            continue
+        edge = KnowledgeEdge(
+            source=node_id,
+            target=ev_id,
+            type=EdgeType.REFERENCES,
+            description=f"{node_id} references {ev_id}",
+            confidence=1.0,
+        )
+        edge.validate()
+        graph.ensure_edge(edge)
+
     return node_id
