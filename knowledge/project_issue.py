@@ -3,8 +3,9 @@ Project domain LegalIssue into KnowledgeGraph.
 
 Creates:
   - NodeType.ISSUE
-  - EdgeType.RAISES  (Fact → Issue)
-  - EdgeType.RESOLVES (Issue → Statute)
+  - EdgeType.RAISES     (Fact → Issue)
+  - EdgeType.RELIES_ON  (Issue → Statute / CaseLaw)  — legal basis
+  - RESOLVES reserved for later Decision linkage
 
 Idempotent via ensure_node / ensure_edge.
 """
@@ -65,14 +66,15 @@ def project_legal_issue(
         edge.validate()
         graph.ensure_edge(edge)
 
+    # Issue ──RELIES_ON──→ Statute / CaseLaw (legal basis, not "resolved")
     for statute_id in statute_node_ids or []:
         if not graph.has_node(statute_id):
             continue
         edge = KnowledgeEdge(
             source=node_id,
             target=statute_id,
-            type=EdgeType.RESOLVES,
-            description=f"{node_id} resolves to {statute_id}",
+            type=EdgeType.RELIES_ON,
+            description=f"{node_id} relies on {statute_id}",
             confidence=1.0,
         )
         edge.validate()

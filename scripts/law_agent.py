@@ -1,8 +1,8 @@
 """
-LawAgent v2.1 – check case node links to STATUTE / CASE_LAW + LegalIssue + Argument bridge.
+LawAgent v2.2 – STATUTE / CASE_LAW + LegalIssue + Argument bridge.
 
-Does not import link_ds_3960 or any fixed case builder.
-Operates on (graph, case_id) or opens CaseSpec workspace.
+Issue legal basis = RELIES_ON (not RESOLVES).
+RESOLVES reserved for Decision linkage.
 """
 
 from __future__ import annotations
@@ -48,19 +48,16 @@ def review_case_law_links(
     arguments = [n for n in graph if n.type == NodeType.ARGUMENT]
     advances = [e for e in graph.edges if e.type == EdgeType.ADVANCES]
     arg_ids_with_advances = {e.source for e in advances}
+    relies_edges = [
+        e
+        for e in graph.edges
+        if e.type == EdgeType.RELIES_ON and e.source.startswith("issue:")
+    ]
+    issues_with_basis = {e.source for e in relies_edges}
 
-    # --- classic checks ---
     if not statutes:
         findings.append(
             LawFinding("ERROR", "LAW002", "No RELIES_ON statutes linked to case.")
-        )
-    elif len(statutes) < 1:
-        findings.append(
-            LawFinding(
-                "WARNING",
-                "LAW003",
-                f"Only {len(statutes)} statute(s) linked – consider fuller legal basis.",
-            )
         )
 
     if not authorities:
@@ -83,7 +80,6 @@ def review_case_law_links(
                 )
             )
 
-    # --- ISSUE bridge checks (CASE-011) ---
     if not issues:
         findings.append(
             LawFinding(
@@ -93,18 +89,14 @@ def review_case_law_links(
             )
         )
     else:
-        unresolved = []
-        for issue in issues:
-            targets = lq.resolves(issue.id)
-            if not targets:
-                unresolved.append(issue.id)
-
-        if unresolved:
+        without_basis = [i.id for i in issues if i.id not in issues_with_basis]
+        if without_basis:
             findings.append(
                 LawFinding(
                     "WARNING",
                     "LAW011",
-                    f"{len(unresolved)} ISSUE node(s) have no RESOLVES target: {unresolved[:5]}",
+                    f"{len(without_basis)} ISSUE node(s) have no RELIES_ON legal basis: "
+                    f"{without_basis[:5]}",
                 )
             )
         else:
@@ -112,11 +104,10 @@ def review_case_law_links(
                 LawFinding(
                     "INFO",
                     "LAW012",
-                    f"All {len(issues)} ISSUE node(s) have RESOLVES targets.",
+                    f"All {len(issues)} ISSUE node(s) have RELIES_ON legal basis.",
                 )
             )
 
-    # --- ARGUMENT bridge checks (CASE-012 / H4) ---
     if not arguments:
         findings.append(
             LawFinding(
