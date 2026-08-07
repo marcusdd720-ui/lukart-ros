@@ -5,8 +5,14 @@ Deterministic projection order:
   1. Evidence
   2. Timeline
   3. Facts (+ SUPPORTS from Evidence)
-  4. LegalIssues (+ RAISES / RESOLVES)
+  4. LegalIssues (+ RAISES / RELIES_ON from statute_refs + case_law_refs)
   5. Arguments (+ ADVANCES)
+
+Primary authority source for ISSUE → law:
+  LegalIssue.statute_refs
+  LegalIssue.case_law_refs
+
+legal_basis_ids = optional compatibility layer only.
 
 Idempotent: project_case(X) ∘ project_case(X) ≡ project_case(X)
 
@@ -25,6 +31,26 @@ from knowledge.project_issue import project_legal_issue
 from knowledge.project_timeline import project_timeline_event
 
 
+def _resolve_authority_nodes(
+    *,
+    refs: list[str],
+    authority_id_map: dict[str, str],
+    graph: KnowledgeGraph,
+    seen: set[str],
+    out: list[str],
+) -> None:
+    for ref in refs:
+        key = (ref or "").strip()
+        if not key:
+            continue
+        node_id = authority_id_map.get(key, key)
+        if node_id in seen:
+            continue
+        if graph.has_node(node_id):
+            seen.add(node_id)
+            out.append(node_id)
+
+
 def project_case(
     graph: KnowledgeGraph,
     case: Case,
@@ -34,6 +60,11 @@ def project_case(
 ) -> list[str]:
     """
     Full domain → graph projection.
+
+    statute_id_map (authority map) keys may be human refs or node ids:
+      "art. 7 k.p.k." → "statute:kpk:7"
+      "uchwała SN I KZP 6/13" → "caselaw:sn:I_KZP_6_13"
+      "statute:kpk:7" → "statute:kpk:7"
 
     Returns list of ISSUE node ids.
     """
@@ -54,6 +85,9 @@ def project_case(
             if fid in domain_facts and not graph.has_node(gnid):
                 fact_id_map[fid] = project_fact(graph, domain_facts[fid])
 
+    authority_id_map = dict(statute_id_map or {})
+    basis_by_id = {b.id: b for b in case.legal_bases}
+
     created: list[str] = []
     for issue in case.legal_issues:
         fact_nodes = [
@@ -61,13 +95,42 @@ def project_case(
         ]
 
         statute_nodes: list[str] = []
-        if statute_id_map:
-            for bid in issue.legal_basis_ids:
-                if bid in statute_id_map:
-                    statute_nodes.append(statute_id_map[bid])
-            for ref in issue.statute_refs:
-                if ref.startswith("statute:") and graph.has_node(ref):
-                    statute_nodes.append(ref)
+        seen: set[str] = set()
+
+        # PRIMARY: statute_refs + case_law_refs
+        _resolve_authority_nodes(
+            refs=list(issue.statute_refs),
+            authority_id_map=authority_id_map,
+            graph=graph,
+            seen=seen,
+            out=statute_nodes,
+        )
+        _resolve_authority_nodes(
+            refs=list(issue.case_law_refs),
+            authority_id_map=authority_id_map,
+            graph=graph,
+            seen=seen,
+            out=statute_nodes,
+        )
+
+        # COMPAT: legal_basis_ids → LegalBasis.reference → map
+        for bid in getattr(issue, "legal_basis_ids", None) or []:
+            if bid in authority_id_map:
+                node_id = authority_id_map[bid]
+                if node_id not in seen and graph.has_node(node_id):
+                    seen.add(node_id)
+                    statute_nodes.append(node_id)
+                continue
+            basis = basis_by_id.get(bid)
+            if basis is None:
+                continue
+            ref = (basis.reference or "").strip()
+            if not ref:
+                continue
+            node_id = authority_id_map.get(ref, ref)
+            if node_id not in seen and graph.has_node(node_id):
+                seen.add(node_id)
+                statute_nodes.append(node_id)
 
         node_id = project_legal_issue(
             graph,
