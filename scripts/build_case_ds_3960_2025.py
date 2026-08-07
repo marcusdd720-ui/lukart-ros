@@ -1,17 +1,21 @@
 """
-Build case DS.3960.2025 (VW Transporter / Mariusz Brodziszewski).
+Build case DS.3960.2025 — VW Transporter / Mariusz Brodziszewski.
 
-Evidence-only facts + timeline + evidence analysis.
-Facts and timeline linked to Evidence via evidence_ids (SUPPORTS / REFERENCES).
+Pure domain factory with CaseRegistry slug mapping.
+No I/O. No renderer imports at module level.
+
+  build_case()  → Case
+  main()        → optional CLI export
 """
 
 from __future__ import annotations
 
 import sys
-from datetime import date
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+ROOT = Path(__file__).resolve().parents[1]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
 
 from knowledge.models.case import (
     Argument,
@@ -29,419 +33,581 @@ from knowledge.models.case import (
     Party,
     TimelineEvent,
 )
-from knowledge.models.docx_export import CaseDocxExporter
-from knowledge.models.dossier_render import DossierContext, DossierRenderer
-from knowledge.models.render import CaseLetterRenderer, LetterContext
+from knowledge.models.registry import CaseRegistry
+
+CASE_KEY = "DS_3960_2025"
+CASE_SIGNATURE = "DS.3960.2025"
+CASE_TITLE = "Stanowisko procesowe wraz z analizą materiału dowodowego"
+CASE_WORKING_TITLE = "VW Transporter – czynności po umowie darowizny"
+CASE_SUBJECT = (
+    "Stanowisko procesowe wraz z analizą materiału dowodowego "
+    "— pojazd Volkswagen Transporter"
+)
+
+VEHICLE_MAKE = "Volkswagen Transporter"
+VEHICLE_REG = "PZ2V467"
+VEHICLE_VIN = "WV1ZZZ7HZDH008410"
+
+APPLICANT_NAME = "Mariusz Brodziszewski"
+OTHER_PARTY_NAME = "Katarzyna Anna Brodziszewska"
+AUTHORITY_NAME = "Prokuratura Rejonowa Poznań-Wilda"
+PLACE = "Poznań"
+RECIPIENT_LINES = (AUTHORITY_NAME,)
+OUTPUT_DIR = ROOT / "output" / "cases" / CASE_KEY
 
 
 def build_case() -> Case:
     case = Case(
-        title="Stanowisko procesowe wraz z analizą materiału dowodowego",
-        working_title="VW Transporter – czynności po umowie darowizny",
-        signature="DS.3960.2025",
+        title=CASE_TITLE,
+        working_title=CASE_WORKING_TITLE,
+        signature=CASE_SIGNATURE,
         status=CaseStatus.INTAKE,
         metadata={
-            "prosecutor_ref": "DS.3960.2025",
-            "vehicle": "Volkswagen Transporter",
-            "reg": "PZ2V467",
-            "vin": "WV1ZZZ7HZDH008410",
+            "prosecutor_ref": CASE_SIGNATURE,
+            "vehicle": VEHICLE_MAKE,
+            "reg": VEHICLE_REG,
+            "vin": VEHICLE_VIN,
             "contact_sylwia": "Sylwia Grochowska",
+            "case_key": CASE_KEY,
         },
     )
+    R = CaseRegistry()
 
+    _add_parties(case)
+    _add_evidence(case, R)
+    _add_facts(case, R)
+    _add_timeline(case, R)
+    _add_legal_bases(case, R)
+    _add_issues(case, R)
+    _add_arguments(case, R)
+    _add_decision(case, R)
+    return case
+
+
+def _add_parties(case: Case) -> None:
     case.add_party(
         Party(
-            name="Mariusz Brodziszewski",
+            name=APPLICANT_NAME,
             role="applicant",
             metadata={"acts_without_counsel": True},
         )
     )
     case.add_party(
         Party(
-            name="Katarzyna Anna Brodziszewska",
+            name=OTHER_PARTY_NAME,
             role="other_party",
             metadata={"relation": "former_spouse"},
         )
     )
     case.add_party(
         Party(
-            name="Prokuratura Rejonowa Poznań-Wilda",
+            name=AUTHORITY_NAME,
             role="authority",
-            metadata={"case_ref": "DS.3960.2025"},
+            metadata={"case_ref": CASE_SIGNATURE},
         )
     )
 
-    # ----- Evidence first (stable ids for Fact/Timeline links) -----
-    e_umowa = EvidenceItem(
-        label="Umowa darowizny",
-        source_ref="umowa-darowizny",
-        proves=[
-            "istnienie pisemnej umowy pomiędzy wskazanymi stronami",
-            "oznaczenie pojazdu (w tym VIN) jako przedmiotu czynności",
-        ],
-        does_not=[
-            "samodzielne przesądzenie skuteczności cywilnoprawnej darowizny",
-            "automatyczne wyłączenie sporu co do prawa do pojazdu",
-        ],
-        weight=EvidenceWeight.HIGH,
-        open_questions=[
-            "czy treść i forma umowy nie budzą wątpliwości co do oświadczeń woli",
-            "jak organ oceni związek umowy z późniejszą rejestracją",
-        ],
-    )
-    e_dowod = EvidenceItem(
-        label="Dowód rejestracyjny",
-        source_ref="dowod-rejestracyjny",
-        proves=[
-            "dokonanie rejestracji pojazdu przez organ administracji",
-            "wpisanie Mariusza Brodziszewskiego w dowodzie rejestracyjnym",
-        ],
-        does_not=[
-            "konstytutywne nabycie własności w rozumieniu prawa cywilnego",
-            "rozstrzygnięcie sporu karnego",
-        ],
-        weight=EvidenceWeight.HIGH,
-        open_questions=[
-            "na podstawie jakiego kompletu dokumentów organ dokonał wpisu",
-        ],
-    )
-    e_oc = EvidenceItem(
-        label="Polisa OC",
-        source_ref="polisa-oc",
-        proves=[
-            "zawarcie obowiązkowego ubezpieczenia OC dla pojazdu",
-            "wykonywanie czynności charakterystycznych dla bieżącego dysponowania pojazdem",
-        ],
-        does_not=[
-            "prawo własności",
-            "brak sporu pomiędzy stronami",
-        ],
-        weight=EvidenceWeight.MEDIUM,
-        open_questions=[],
-    )
-    e_policja = EvidenceItem(
-        label="Dokument Policji – zabezpieczenie umowy",
-        source_ref="notatka-policji-zabezpieczenie-umowy",
-        proves=[
-            "zabezpieczenie oryginału umowy darowizny przez Policję",
-            "pozostawanie oryginału w dyspozycji organów",
-        ],
-        does_not=[
-            "oceny merytorycznej treści umowy",
-            "wniosku o odpowiedzialności karnej którejkolwiek ze stron",
-        ],
-        weight=EvidenceWeight.HIGH,
-        open_questions=[
-            "treść protokołu/notatki w zakresie okoliczności zabezpieczenia",
-        ],
-    )
-    e_wezwanie = EvidenceItem(
-        label="Wezwanie do wydania pojazdu (07.07.2025)",
-        source_ref="wezwanie-2025-07-07",
-        proves=[
-            "istnienie sporu co do prawa do dysponowania pojazdem",
-            "moment ujawnienia konfliktu po rejestracji i ubezpieczeniu",
-        ],
-        does_not=[
-            "rozstrzygnięcie, która strona ma rację",
-            "udowodnienie znamion czynu zabronionego",
-        ],
-        weight=EvidenceWeight.MEDIUM,
-        open_questions=[
-            "pełna treść żądań i podstaw wskazanych przez wzywającego",
-        ],
-    )
-    e_wyrok = EvidenceItem(
-        label="Wyrok rozwodowy",
-        source_ref="wyrok-rozwodowy",
-        proves=["rozwiązanie małżeństwa stron przez rozwód"],
-        does_not=[
-            "automatyczne unieważnienie wcześniejszych czynności dotyczących pojazdu",
-            "przesądzenie odpowiedzialności karnej",
-        ],
-        weight=EvidenceWeight.CONTEXT,
-        open_questions=[],
-    )
-    e_oswiadczenie = EvidenceItem(
-        label="Oświadczenie o miejscu przechowywania pojazdu",
-        source_ref="oswiadczenie-mariusza-posesja",
-        proves=[
-            "stanowisko Mariusza, że pojazd jest na jego posesji i dostępny dla organów",
-        ],
-        does_not=["samodzielnego potwierdzenia faktu bez weryfikacji"],
-        weight=EvidenceWeight.LOW,
-        open_questions=[
-            "czy organ zechce dokonać oględzin / potwierdzenia lokalizacji",
-        ],
-    )
 
-    for item in (
-        e_umowa,
-        e_dowod,
-        e_oc,
-        e_policja,
-        e_wezwanie,
-        e_wyrok,
-        e_oswiadczenie,
-    ):
+def _add_evidence(case: Case, R: CaseRegistry) -> None:
+    specs: list[tuple[str, EvidenceItem]] = [
+        (
+            "umowa_darowizny",
+            EvidenceItem(
+                label="Umowa darowizny",
+                source_ref="umowa-darowizny",
+                proves=[
+                    "istnienie pisemnej umowy pomiędzy wskazanymi stronami",
+                    "oznaczenie pojazdu (w tym VIN) jako przedmiotu czynności",
+                ],
+                does_not=[
+                    "samodzielne przesądzenie skuteczności cywilnoprawnej darowizny",
+                    "automatyczne wyłączenie sporu co do prawa do pojazdu",
+                ],
+                weight=EvidenceWeight.HIGH,
+                open_questions=[
+                    "czy treść i forma umowy nie budzą wątpliwości co do oświadczeń woli",
+                    "jak organ oceni związek umowy z późniejszą rejestracją",
+                ],
+            ),
+        ),
+        (
+            "dowod_rejestracyjny",
+            EvidenceItem(
+                label="Dowód rejestracyjny",
+                source_ref="dowod-rejestracyjny",
+                proves=[
+                    "dokonanie rejestracji pojazdu przez organ administracji",
+                    f"wpisanie {APPLICANT_NAME} w dowodzie rejestracyjnym",
+                ],
+                does_not=[
+                    "konstytutywne nabycie własności w rozumieniu prawa cywilnego",
+                    "rozstrzygnięcie sporu karnego",
+                ],
+                weight=EvidenceWeight.HIGH,
+                open_questions=[
+                    "na podstawie jakiego kompletu dokumentów organ dokonał wpisu",
+                ],
+            ),
+        ),
+        (
+            "polisa_oc",
+            EvidenceItem(
+                label="Polisa OC",
+                source_ref="polisa-oc",
+                proves=[
+                    "zawarcie obowiązkowego ubezpieczenia OC dla pojazdu",
+                    "wykonywanie czynności charakterystycznych dla bieżącego dysponowania pojazdem",
+                ],
+                does_not=["prawo własności", "brak sporu pomiędzy stronami"],
+                weight=EvidenceWeight.MEDIUM,
+                open_questions=[],
+            ),
+        ),
+        (
+            "notatka_policji",
+            EvidenceItem(
+                label="Dokument Policji – zabezpieczenie umowy",
+                source_ref="notatka-policji-zabezpieczenie-umowy",
+                proves=[
+                    "zabezpieczenie oryginału umowy darowizny przez Policję",
+                    "pozostawanie oryginału w dyspozycji organów",
+                ],
+                does_not=[
+                    "oceny merytorycznej treści umowy",
+                    "wniosku o odpowiedzialności karnej którejkolwiek ze stron",
+                ],
+                weight=EvidenceWeight.HIGH,
+                open_questions=[
+                    "treść protokołu/notatki w zakresie okoliczności zabezpieczenia",
+                ],
+            ),
+        ),
+        (
+            "wezwanie_wydania",
+            EvidenceItem(
+                label="Wezwanie do wydania pojazdu (07.07.2025)",
+                source_ref="wezwanie-2025-07-07",
+                proves=[
+                    "istnienie sporu co do prawa do dysponowania pojazdem",
+                    "moment ujawnienia konfliktu po rejestracji i ubezpieczeniu",
+                ],
+                does_not=[
+                    "rozstrzygnięcie, która strona ma rację",
+                    "udowodnienie znamion czynu zabronionego",
+                ],
+                weight=EvidenceWeight.MEDIUM,
+                open_questions=[
+                    "pełna treść żądań i podstaw wskazanych przez wzywającego",
+                ],
+            ),
+        ),
+        (
+            "wyrok_rozwodowy",
+            EvidenceItem(
+                label="Wyrok rozwodowy",
+                source_ref="wyrok-rozwodowy",
+                proves=["rozwiązanie małżeństwa stron przez rozwód"],
+                does_not=[
+                    "automatyczne unieważnienie wcześniejszych czynności dotyczących pojazdu",
+                    "przesądzenie odpowiedzialności karnej",
+                ],
+                weight=EvidenceWeight.CONTEXT,
+                open_questions=[],
+            ),
+        ),
+        (
+            "oswiadczenie_posesja",
+            EvidenceItem(
+                label="Oświadczenie o miejscu przechowywania pojazdu",
+                source_ref="oswiadczenie-mariusza-posesja",
+                proves=[
+                    "stanowisko Mariusza, że pojazd jest na jego posesji i dostępny dla organów",
+                ],
+                does_not=["samodzielnego potwierdzenia faktu bez weryfikacji"],
+                weight=EvidenceWeight.LOW,
+                open_questions=[
+                    "czy organ zechce dokonać oględzin / potwierdzenia lokalizacji",
+                ],
+            ),
+        ),
+    ]
+    for slug, item in specs:
         case.add_evidence(item)
+        R.add_evidence(slug, item)
 
-    # ----- Facts (linked to Evidence via evidence_ids) -----
-    f1 = Fact(
-        statement=(
-            "Sporządzono pisemną umowę darowizny pojazdu marki Volkswagen Transporter "
-            "pomiędzy Katarzyną Anną Brodziszewską jako darczyńcą a Mariuszem Brodziszewskim "
-            "jako obdarowanym; dokument identyfikuje pojazd (w tym VIN)."
+
+def _add_facts(case: Case, R: CaseRegistry) -> None:
+    specs: list[tuple[str, Fact]] = [
+        (
+            "darowizna_pojazdu",
+            Fact(
+                statement=(
+                    f"Sporządzono pisemną umowę darowizny pojazdu marki {VEHICLE_MAKE} "
+                    f"pomiędzy {OTHER_PARTY_NAME} jako darczyńcą a {APPLICANT_NAME} "
+                    f"jako obdarowanym; dokument identyfikuje pojazd (w tym VIN {VEHICLE_VIN})."
+                ),
+                status=FactStatus.SUPPORTED,
+                source_refs=[R.E("umowa_darowizny").source_ref],
+                evidence_ids=R.E_ids("umowa_darowizny"),
+            ),
         ),
-        status=FactStatus.SUPPORTED,
-        source_refs=["umowa-darowizny"],
-        evidence_ids=[e_umowa.id],
-    )
-    f2 = Fact(
-        statement=(
-            "W dniu 31.05.2025 r. właściwy organ administracji dokonał rejestracji "
-            "pojazdu z wpisem Mariusza Brodziszewskiego jako właściciela w dowodzie "
-            "rejestracyjnym (czynność administracyjna; nie przesądza sama przez się "
-            "skuteczności nabycia własności w rozumieniu prawa cywilnego)."
+        (
+            "rejestracja_pojazdu",
+            Fact(
+                statement=(
+                    "W dniu 31.05.2025 r. właściwy organ administracji dokonał rejestracji "
+                    f"pojazdu z wpisem {APPLICANT_NAME} jako właściciela w dowodzie "
+                    "rejestracyjnym (czynność administracyjna; nie przesądza sama przez się "
+                    "skuteczności nabycia własności w rozumieniu prawa cywilnego)."
+                ),
+                status=FactStatus.SUPPORTED,
+                source_refs=[R.E("dowod_rejestracyjny").source_ref],
+                evidence_ids=R.E_ids("dowod_rejestracyjny"),
+            ),
         ),
-        status=FactStatus.SUPPORTED,
-        source_refs=["dowod-rejestracyjny"],
-        evidence_ids=[e_dowod.id],
-    )
-    f3 = Fact(
-        statement=(
-            "Dla przedmiotowego pojazdu zawarto umowę obowiązkowego ubezpieczenia OC."
+        (
+            "polisa_oc",
+            Fact(
+                statement=(
+                    "Dla przedmiotowego pojazdu zawarto umowę obowiązkowego ubezpieczenia OC."
+                ),
+                status=FactStatus.SUPPORTED,
+                source_refs=[R.E("polisa_oc").source_ref],
+                evidence_ids=R.E_ids("polisa_oc"),
+            ),
         ),
-        status=FactStatus.SUPPORTED,
-        source_refs=["polisa-oc"],
-        evidence_ids=[e_oc.id],
-    )
-    f4 = Fact(
-        statement=(
-            "Funkcjonariusze Policji zabezpieczyli oryginał umowy darowizny; dokument "
-            "pozostaje w dyspozycji organów prowadzących postępowanie."
+        (
+            "zabezpieczenie_umowy",
+            Fact(
+                statement=(
+                    "Funkcjonariusze Policji zabezpieczyli oryginał umowy darowizny; dokument "
+                    "pozostaje w dyspozycji organów prowadzących postępowanie."
+                ),
+                status=FactStatus.SUPPORTED,
+                source_refs=[R.E("notatka_policji").source_ref],
+                evidence_ids=R.E_ids("notatka_policji"),
+            ),
         ),
-        status=FactStatus.SUPPORTED,
-        source_refs=["notatka-policji-zabezpieczenie-umowy"],
-        evidence_ids=[e_policja.id],
-    )
-    f5 = Fact(
-        statement=(
-            "W dniu 07.07.2025 r. sporządzono wezwanie skierowane do Mariusza "
-            "Brodziszewskiego do wydania pojazdu — dokument potwierdza istnienie sporu "
-            "co do prawa do dysponowania pojazdem."
+        (
+            "wezwanie_wydania",
+            Fact(
+                statement=(
+                    f"W dniu 07.07.2025 r. sporządzono wezwanie skierowane do {APPLICANT_NAME} "
+                    "do wydania pojazdu — dokument potwierdza istnienie sporu "
+                    "co do prawa do dysponowania pojazdem."
+                ),
+                status=FactStatus.SUPPORTED,
+                source_refs=[R.E("wezwanie_wydania").source_ref],
+                evidence_ids=R.E_ids("wezwanie_wydania"),
+            ),
         ),
-        status=FactStatus.SUPPORTED,
-        source_refs=["wezwanie-2025-07-07"],
-        evidence_ids=[e_wezwanie.id],
-    )
-    f6 = Fact(
-        statement=(
-            "Małżeństwo Mariusza Brodziszewskiego i Katarzyny Brodziszewskiej zostało "
-            "rozwiązane przez rozwód (okoliczność wynikająca z odpisu wyroku; znaczenie "
-            "prawne dla oceny wcześniejszych czynności nie jest tu przesądzane)."
+        (
+            "rozwod",
+            Fact(
+                statement=(
+                    f"Małżeństwo {APPLICANT_NAME} i {OTHER_PARTY_NAME} zostało "
+                    "rozwiązane przez rozwód (okoliczność wynikająca z odpisu wyroku; znaczenie "
+                    "prawne dla oceny wcześniejszych czynności nie jest tu przesądzane)."
+                ),
+                status=FactStatus.SUPPORTED,
+                source_refs=[R.E("wyrok_rozwodowy").source_ref],
+                evidence_ids=R.E_ids("wyrok_rozwodowy"),
+            ),
         ),
-        status=FactStatus.SUPPORTED,
-        source_refs=["wyrok-rozwodowy"],
-        evidence_ids=[e_wyrok.id],
-    )
-    f7 = Fact(
-        statement=(
-            "Mariusz Brodziszewski oświadcza, że pojazd pozostaje na jego posesji, "
-            "nie został ukryty, zbyty ani przekazany osobom trzecim i jest dostępny "
-            "dla organów prowadzących postępowanie."
+        (
+            "posesja_oswiadczenie",
+            Fact(
+                statement=(
+                    f"{APPLICANT_NAME} oświadcza, że pojazd pozostaje na jego posesji, "
+                    "nie został ukryty, zbyty ani przekazany osobom trzecim i jest dostępny "
+                    "dla organów prowadzących postępowanie."
+                ),
+                status=FactStatus.SUPPORTED,
+                source_refs=[R.E("oswiadczenie_posesja").source_ref],
+                evidence_ids=R.E_ids("oswiadczenie_posesja"),
+                confidence=0.85,
+                metadata={"kind": "party_statement"},
+            ),
         ),
-        status=FactStatus.SUPPORTED,
-        source_refs=["oswiadczenie-mariusza-posesja"],
-        evidence_ids=[e_oswiadczenie.id],
-        confidence=0.85,
-        metadata={"kind": "party_statement"},
-    )
-    for fact in (f1, f2, f3, f4, f5, f6, f7):
+    ]
+    for slug, fact in specs:
         case.add_fact(fact)
+        R.add_fact(slug, fact)
 
-    # ----- Timeline (linked to Evidence via evidence_ids) -----
-    case.add_timeline_event(
-        TimelineEvent(
-            date_label="31.05.2025",
-            sort_key="2025-05-31",
-            event="Sporządzenie umowy darowizny VW Transporter",
-            source="umowa-darowizny",
-            evidence_ids=[e_umowa.id],
-            procedural_meaning=(
-                "Dokument stanowiący podstawę dalszych czynności; "
-                "nie przesądza skuteczności cywilnoprawnej."
-            ),
-        )
-    )
-    case.add_timeline_event(
-        TimelineEvent(
-            date_label="31.05.2025",
-            sort_key="2025-05-31-b",
-            event="Rejestracja pojazdu na Mariusza Brodziszewskiego",
-            source="dowod-rejestracyjny",
-            evidence_ids=[e_dowod.id],
-            procedural_meaning="Czynność administracyjna na podstawie przedstawionych dokumentów.",
-        )
-    )
-    case.add_timeline_event(
-        TimelineEvent(
-            date_label="po rejestracji",
-            sort_key="2025-06-01",
-            event="Zawarcie obowiązkowego ubezpieczenia OC",
-            source="polisa-oc",
-            evidence_ids=[e_oc.id],
-            procedural_meaning="Jawne wykonywanie obowiązków związanych z pojazdem.",
-        )
-    )
-    case.add_timeline_event(
-        TimelineEvent(
-            date_label="07.07.2025",
-            sort_key="2025-07-07",
-            event="Wezwanie do wydania pojazdu",
-            source="wezwanie-2025-07-07",
-            evidence_ids=[e_wezwanie.id],
-            procedural_meaning="Ujawnienie sporu pomiędzy stronami.",
-        )
-    )
-    case.add_timeline_event(
-        TimelineEvent(
-            date_label="wg dokumentacji Policji",
-            sort_key="2025-07-08",
-            event="Zabezpieczenie oryginału umowy darowizny",
-            source="notatka-policji-zabezpieczenie-umowy",
-            evidence_ids=[e_policja.id],
-            procedural_meaning="Oryginał w dyspozycji organów — możliwa bezpośrednia ocena.",
-        )
-    )
-    case.add_timeline_event(
-        TimelineEvent(
-            date_label="12.05.2026",
-            sort_key="2026-05-12",
-            event="Rozwód stron",
-            source="wyrok-rozwodowy",
-            evidence_ids=[e_wyrok.id],
-            procedural_meaning=(
-                "Zdarzenie po czynnościach dotyczących pojazdu; tło konfliktu, "
-                "nie przesłanka automatycznej bezprawności."
-            ),
-        )
-    )
-    case.add_timeline_event(
-        TimelineEvent(
-            date_label="stan na dzień stanowiska",
-            sort_key="2099-01-01",
-            event="Pojazd na posesji Mariusza (oświadczenie)",
-            source="oswiadczenie-mariusza-posesja",
-            evidence_ids=[e_oswiadczenie.id],
-            procedural_meaning="Oświadczenie strony; podlega ocenie łącznie z dokumentami.",
-        )
-    )
 
-    b1 = LegalBasis(
-        reference="art. 7 k.p.k.",
-        note="swobodna ocena dowodów — nie dowolna",
-    )
-    b2 = LegalBasis(
-        reference="art. 4 k.p.k.",
-        note="zasada obiektywizmu",
-    )
-    b3 = LegalBasis(
-        reference="art. 410 k.p.k.",
-        note="całokształt ujawnionych okoliczności",
-    )
-    b4 = LegalBasis(
-        reference="art. 167 k.p.k.",
-        note="inicjatywa dowodowa",
-    )
-    b5 = LegalBasis(
-        reference="[ORZECZNICTWO – DO UZUPEŁNIENIA PO WERYFIKACJI]",
-        note="art. 7 i 410 k.p.k. — po weryfikacji sygnatur",
-    )
-    for basis in (b1, b2, b3, b4, b5):
+def _add_timeline(case: Case, R: CaseRegistry) -> None:
+    specs: list[tuple[str, TimelineEvent]] = [
+        (
+            "t_umowa",
+            TimelineEvent(
+                date_label="31.05.2025",
+                sort_key="2025-05-31",
+                event=f"Sporządzenie umowy darowizny {VEHICLE_MAKE}",
+                source=R.E("umowa_darowizny").source_ref,
+                evidence_ids=R.E_ids("umowa_darowizny"),
+                procedural_meaning=(
+                    "Dokument stanowiący podstawę dalszych czynności; "
+                    "nie przesądza skuteczności cywilnoprawnej."
+                ),
+            ),
+        ),
+        (
+            "t_rejestracja",
+            TimelineEvent(
+                date_label="31.05.2025",
+                sort_key="2025-05-31-b",
+                event=f"Rejestracja pojazdu na {APPLICANT_NAME}",
+                source=R.E("dowod_rejestracyjny").source_ref,
+                evidence_ids=R.E_ids("dowod_rejestracyjny"),
+                procedural_meaning=(
+                    "Czynność administracyjna na podstawie przedstawionych dokumentów."
+                ),
+            ),
+        ),
+        (
+            "t_oc",
+            TimelineEvent(
+                date_label="po rejestracji",
+                sort_key="2025-06-01",
+                event="Zawarcie obowiązkowego ubezpieczenia OC",
+                source=R.E("polisa_oc").source_ref,
+                evidence_ids=R.E_ids("polisa_oc"),
+                procedural_meaning="Jawne wykonywanie obowiązków związanych z pojazdem.",
+            ),
+        ),
+        (
+            "t_wezwanie",
+            TimelineEvent(
+                date_label="07.07.2025",
+                sort_key="2025-07-07",
+                event="Wezwanie do wydania pojazdu",
+                source=R.E("wezwanie_wydania").source_ref,
+                evidence_ids=R.E_ids("wezwanie_wydania"),
+                procedural_meaning="Ujawnienie sporu pomiędzy stronami.",
+            ),
+        ),
+        (
+            "t_policja",
+            TimelineEvent(
+                date_label="wg dokumentacji Policji",
+                sort_key="2025-07-08",
+                event="Zabezpieczenie oryginału umowy darowizny",
+                source=R.E("notatka_policji").source_ref,
+                evidence_ids=R.E_ids("notatka_policji"),
+                procedural_meaning=(
+                    "Oryginał w dyspozycji organów — możliwa bezpośrednia ocena."
+                ),
+            ),
+        ),
+        (
+            "t_rozwod",
+            TimelineEvent(
+                date_label="12.05.2026",
+                sort_key="2026-05-12",
+                event="Rozwód stron",
+                source=R.E("wyrok_rozwodowy").source_ref,
+                evidence_ids=R.E_ids("wyrok_rozwodowy"),
+                procedural_meaning=(
+                    "Zdarzenie po czynnościach dotyczących pojazdu; tło konfliktu, "
+                    "nie przesłanka automatycznej bezprawności."
+                ),
+            ),
+        ),
+        (
+            "t_posesja",
+            TimelineEvent(
+                date_label="stan na dzień stanowiska",
+                sort_key="2099-01-01",
+                event="Pojazd na posesji Mariusza (oświadczenie)",
+                source=R.E("oswiadczenie_posesja").source_ref,
+                evidence_ids=R.E_ids("oswiadczenie_posesja"),
+                procedural_meaning=(
+                    "Oświadczenie strony; podlega ocenie łącznie z dokumentami."
+                ),
+            ),
+        ),
+    ]
+    for slug, event in specs:
+        case.add_timeline_event(event)
+        R.add_timeline(slug, event)
+
+
+def _add_legal_bases(case: Case, R: CaseRegistry) -> None:
+    specs: list[tuple[str, LegalBasis]] = [
+        (
+            "art_7_kpk",
+            LegalBasis(
+                reference="art. 7 k.p.k.",
+                note="swobodna ocena dowodów — nie dowolna",
+            ),
+        ),
+        (
+            "art_4_kpk",
+            LegalBasis(
+                reference="art. 4 k.p.k.",
+                note="zasada obiektywizmu",
+            ),
+        ),
+        (
+            "art_410_kpk",
+            LegalBasis(
+                reference="art. 410 k.p.k.",
+                note="całokształt ujawnionych okoliczności",
+            ),
+        ),
+        (
+            "art_167_kpk",
+            LegalBasis(
+                reference="art. 167 k.p.k.",
+                note="inicjatywa dowodowa",
+            ),
+        ),
+    ]
+    for slug, basis in specs:
         case.add_legal_basis(basis)
+        R.add_legal(slug, basis)
 
-    issue1 = LegalIssue(
-        question=(
-            "Czy czynności Mariusza Brodziszewskiego dotyczące pojazdu "
-            "były podejmowane w oparciu o dokumenty i w przekonaniu "
-            "o przysługującym prawie do dysponowania pojazdem?"
-        ),
-        fact_ids=[f1.id, f2.id, f3.id, f4.id, f7.id],
-        legal_basis_ids=[b1.id, b3.id],
-        hypothesis=(
-            "Jawny ciąg: umowa → rejestracja → polisa OC + oświadczenie "
-            "o posesji wskazują na działanie w oparciu o dokumenty."
-        ),
-        statute_refs=["art. 7 k.p.k.", "art. 410 k.p.k."],
-    )
-    issue2 = LegalIssue(
-        question=(
-            "Czy sam późniejszy spór (wezwanie do wydania pojazdu) "
-            "wystarcza do przyjęcia znamion czynu zabronionego "
-            "bez oceny całokształtu materiału dowodowego?"
-        ),
-        fact_ids=[f5.id, f1.id, f2.id, f3.id, f4.id],
-        legal_basis_ids=[b1.id, b3.id],
-        hypothesis=(
-            "Spór ujawnił się po rejestracji i ubezpieczeniu. "
-            "Sam fakt wezwania nie przesądza znamion."
-        ),
-        statute_refs=["art. 7 k.p.k.", "art. 410 k.p.k."],
-    )
-    issue3 = LegalIssue(
-        question=(
-            "Czy należy oddzielić skutki cywilnoprawne darowizny "
-            "od oceny karnej zachowania Mariusza Brodziszewskiego?"
-        ),
-        fact_ids=[f1.id, f2.id, f6.id],
-        legal_basis_ids=[b1.id, b2.id, b3.id],
-        hypothesis=(
-            "Rejestracja i umowa mają znaczenie dowodowe, "
-            "ale nie przesądzają automatycznie odpowiedzialności karnej."
-        ),
-        statute_refs=["art. 7 k.p.k.", "art. 4 k.p.k.", "art. 410 k.p.k."],
-    )
 
-    for issue in (issue1, issue2, issue3):
+def _add_issues(case: Case, R: CaseRegistry) -> None:
+    specs: list[tuple[str, LegalIssue]] = [
+        (
+            "zamiar_i_dokumenty",
+            LegalIssue(
+                question=(
+                    f"Czy czynności {APPLICANT_NAME} dotyczące pojazdu "
+                    "były podejmowane w oparciu o dokumenty i w przekonaniu "
+                    "o przysługującym prawie do dysponowania pojazdem?"
+                ),
+                fact_ids=R.F_ids(
+                    "darowizna_pojazdu",
+                    "rejestracja_pojazdu",
+                    "polisa_oc",
+                    "zabezpieczenie_umowy",
+                    "posesja_oswiadczenie",
+                ),
+                legal_basis_ids=R.L_ids("art_7_kpk", "art_410_kpk"),
+                hypothesis=(
+                    "Jawny ciąg: umowa → rejestracja → polisa OC + oświadczenie "
+                    "o posesji wskazują na działanie w oparciu o dokumenty."
+                ),
+                statute_refs=["art. 7 k.p.k.", "art. 410 k.p.k."],
+            ),
+        ),
+        (
+            "spor_nie_znamiona",
+            LegalIssue(
+                question=(
+                    "Czy sam późniejszy spór (wezwanie do wydania pojazdu) "
+                    "wystarcza do przyjęcia znamion czynu zabronionego "
+                    "bez oceny całokształtu materiału dowodowego?"
+                ),
+                fact_ids=R.F_ids(
+                    "wezwanie_wydania",
+                    "darowizna_pojazdu",
+                    "rejestracja_pojazdu",
+                    "polisa_oc",
+                    "zabezpieczenie_umowy",
+                ),
+                legal_basis_ids=R.L_ids("art_7_kpk", "art_410_kpk"),
+                hypothesis=(
+                    "Spór ujawnił się po rejestracji i ubezpieczeniu. "
+                    "Sam fakt wezwania nie przesądza znamion."
+                ),
+                statute_refs=["art. 7 k.p.k.", "art. 410 k.p.k."],
+            ),
+        ),
+        (
+            "cywilne_vs_karne",
+            LegalIssue(
+                question=(
+                    "Czy należy oddzielić skutki cywilnoprawne darowizny "
+                    f"od oceny karnej zachowania {APPLICANT_NAME}?"
+                ),
+                fact_ids=R.F_ids(
+                    "darowizna_pojazdu",
+                    "rejestracja_pojazdu",
+                    "rozwod",
+                ),
+                legal_basis_ids=R.L_ids("art_7_kpk", "art_4_kpk", "art_410_kpk"),
+                hypothesis=(
+                    "Rejestracja i umowa mają znaczenie dowodowe, "
+                    "ale nie przesądzają automatycznie odpowiedzialności karnej."
+                ),
+                statute_refs=["art. 7 k.p.k.", "art. 4 k.p.k.", "art. 410 k.p.k."],
+            ),
+        ),
+    ]
+    for slug, issue in specs:
         case.add_issue(issue)
+        R.add_issue(slug, issue)
 
-    arg1 = Argument(
-        issue_id=issue1.id,
-        claim=(
-            "Czynności Mariusza Brodziszewskiego (umowa, rejestracja, OC, posiadanie) "
-            "były podejmowane w oparciu o dokumenty i w przekonaniu o prawie "
-            "do dysponowania pojazdem."
-        ),
-        support_fact_ids=[f1.id, f2.id, f3.id, f4.id, f7.id],
-        legal_basis_ids=[b1.id, b3.id],
-        status=ArgumentStatus.ADVANCED,
-    )
-    arg2 = Argument(
-        issue_id=issue2.id,
-        claim=(
-            "Sam fakt późniejszego sporu (wezwanie do wydania) nie wystarcza "
-            "do przyjęcia znamion czynu zabronionego bez oceny całokształtu materiału."
-        ),
-        support_fact_ids=[f5.id, f1.id, f2.id, f3.id, f4.id],
-        legal_basis_ids=[b1.id, b3.id],
-        status=ArgumentStatus.ADVANCED,
-    )
-    arg3 = Argument(
-        issue_id=issue3.id,
-        claim=(
-            "Skutki cywilnoprawne darowizny należy oddzielić od oceny karnej "
-            "zachowania; rejestracja i umowa mają znaczenie dowodowe, "
-            "ale nie przesądzają automatycznie odpowiedzialności karnej."
-        ),
-        support_fact_ids=[f1.id, f2.id, f6.id],
-        legal_basis_ids=[b1.id, b2.id, b3.id],
-        status=ArgumentStatus.ADVANCED,
-    )
 
-    for arg in (arg1, arg2, arg3):
+def _add_arguments(case: Case, R: CaseRegistry) -> None:
+    specs: list[tuple[str, Argument]] = [
+        (
+            "arg_zamiar",
+            Argument(
+                issue_id=R.I_id("zamiar_i_dokumenty"),
+                claim=(
+                    f"Czynności {APPLICANT_NAME} (umowa, rejestracja, OC, posiadanie) "
+                    "były podejmowane w oparciu o dokumenty i w przekonaniu o prawie "
+                    "do dysponowania pojazdem."
+                ),
+                support_fact_ids=R.F_ids(
+                    "darowizna_pojazdu",
+                    "rejestracja_pojazdu",
+                    "polisa_oc",
+                    "zabezpieczenie_umowy",
+                    "posesja_oswiadczenie",
+                ),
+                legal_basis_ids=R.L_ids("art_7_kpk", "art_410_kpk"),
+                status=ArgumentStatus.ADVANCED,
+            ),
+        ),
+        (
+            "arg_spor",
+            Argument(
+                issue_id=R.I_id("spor_nie_znamiona"),
+                claim=(
+                    "Sam fakt późniejszego sporu (wezwanie do wydania) nie wystarcza "
+                    "do przyjęcia znamion czynu zabronionego bez oceny całokształtu materiału."
+                ),
+                support_fact_ids=R.F_ids(
+                    "wezwanie_wydania",
+                    "darowizna_pojazdu",
+                    "rejestracja_pojazdu",
+                    "polisa_oc",
+                    "zabezpieczenie_umowy",
+                ),
+                legal_basis_ids=R.L_ids("art_7_kpk", "art_410_kpk"),
+                status=ArgumentStatus.ADVANCED,
+            ),
+        ),
+        (
+            "arg_cywilne_karne",
+            Argument(
+                issue_id=R.I_id("cywilne_vs_karne"),
+                claim=(
+                    "Skutki cywilnoprawne darowizny należy oddzielić od oceny karnej "
+                    "zachowania; rejestracja i umowa mają znaczenie dowodowe, "
+                    "ale nie przesądzają automatycznie odpowiedzialności karnej."
+                ),
+                support_fact_ids=R.F_ids(
+                    "darowizna_pojazdu",
+                    "rejestracja_pojazdu",
+                    "rozwod",
+                ),
+                legal_basis_ids=R.L_ids("art_7_kpk", "art_4_kpk", "art_410_kpk"),
+                status=ArgumentStatus.ADVANCED,
+            ),
+        ),
+    ]
+    for slug, arg in specs:
         case.add_argument(arg)
+        R.add_argument(slug, arg)
 
+
+def _add_decision(case: Case, R: CaseRegistry) -> None:
     case.add_decision(
         Decision(
             kind=DecisionKind.PROCEDURAL,
@@ -453,10 +619,31 @@ def build_case() -> Case:
                 "umowy darowizny; akcent spoczywa na jawnym, udokumentowanym ciągu czynności "
                 "oraz na ocenie zamiaru w świetle całokształtu materiału dowodowego."
             ),
-            fact_ids=[f1.id, f2.id, f3.id, f4.id, f5.id, f6.id, f7.id],
-            legal_basis_ids=[b1.id, b2.id, b3.id, b4.id, b5.id],
-            issue_ids=[issue1.id, issue2.id, issue3.id],
-            argument_ids=[arg1.id, arg2.id, arg3.id],
+            fact_ids=R.F_ids(
+                "darowizna_pojazdu",
+                "rejestracja_pojazdu",
+                "polisa_oc",
+                "zabezpieczenie_umowy",
+                "wezwanie_wydania",
+                "rozwod",
+                "posesja_oswiadczenie",
+            ),
+            legal_basis_ids=R.L_ids(
+                "art_7_kpk",
+                "art_4_kpk",
+                "art_410_kpk",
+                "art_167_kpk",
+            ),
+            issue_ids=R.I_ids(
+                "zamiar_i_dokumenty",
+                "spor_nie_znamiona",
+                "cywilne_vs_karne",
+            ),
+            argument_ids=R.A_ids(
+                "arg_zamiar",
+                "arg_spor",
+                "arg_cywilne_karne",
+            ),
             scope_not_challenged=[
                 "istnienie pisemnej umowy darowizny jako dokumentu w sprawie",
                 "fakt dokonania rejestracji pojazdu przez organ administracji",
@@ -477,13 +664,14 @@ def build_case() -> Case:
                 "Oryginał umowy jest w dyspozycji organów.",
                 "Oświadczenie o posesji jest oświadczeniem strony.",
                 "Brak podstaw do automatycznego przesądzenia znamion czynu bez wszechstronnej oceny (art. 7 i 410 k.p.k.).",
+                "Jawna rejestracja pojazdu na własne nazwisko oraz zawarcie umowy OC są obiektywnie sprzeczne z typowym sposobem działania osoby dążącej do przywłaszczenia.",
             ],
             outcomes=[
-                "uwzględnienie całokształtu dokumentów przy ocenie zachowania Mariusza Brodziszewskiego",
+                f"uwzględnienie całokształtu dokumentów przy ocenie zachowania {APPLICANT_NAME}",
                 "oddzielenie oceny cywilnoprawnej darowizny od oceny karnej zamiaru",
                 "dopuszczenie i przeprowadzenie dowodów z wskazanych dokumentów",
                 "wszechstronne wyjaśnienie sprawy bez pochopnego przesądzania odpowiedzialności karnej",
-                "przyjęcie niniejszego stanowiska do akt sprawy DS.3960.2025",
+                f"przyjęcie niniejszego stanowiska do akt sprawy {CASE_SIGNATURE}",
             ],
             closing_statement=(
                 "Niniejsze stanowisko opiera się na dokumentach pozostających w dyspozycji "
@@ -500,53 +688,59 @@ def build_case() -> Case:
             ],
         )
     )
-    return case
 
 
-def main() -> None:
+def main() -> int:
+    from datetime import date
+
+    from knowledge.models.docx_export import CaseDocxExporter
+    from knowledge.models.dossier_render import DossierContext, DossierRenderer
+    from knowledge.models.render import CaseLetterRenderer, LetterContext
+
     case = build_case()
-    out_dir = Path("output/cases/DS_3960_2025")
-    out_dir.mkdir(parents=True, exist_ok=True)
+    OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
     letter_ctx = LetterContext(
-        sender_name="Mariusz Brodziszewski",
-        place="Poznań",
+        sender_name=APPLICANT_NAME,
+        place=PLACE,
         letter_date=date.today(),
-        subject=(
-            "Stanowisko procesowe wraz z analizą materiału dowodowego "
-            "— pojazd Volkswagen Transporter"
-        ),
-        prosecutor_ref="DS.3960.2025",
-        recipient_lines=["Prokuratura Rejonowa Poznań-Wilda"],
+        subject=CASE_SUBJECT,
+        prosecutor_ref=CASE_SIGNATURE,
+        recipient_lines=list(RECIPIENT_LINES),
     )
-    letter_text = CaseLetterRenderer().render(case, context=letter_ctx)
-    letter_path = out_dir / "stanowisko_szkic.txt"
-    letter_path.write_text(letter_text, encoding="utf-8")
+    letter_path = OUTPUT_DIR / "stanowisko_szkic.txt"
+    letter_path.write_text(
+        CaseLetterRenderer().render(case, context=letter_ctx),
+        encoding="utf-8",
+    )
     print("LETTER TXT:", letter_path.resolve())
 
-    CaseDocxExporter().export(
-        case,
-        out_dir / "stanowisko_szkic.docx",
-        context=letter_ctx,
-    )
-    print("LETTER DOCX:", (out_dir / "stanowisko_szkic.docx").resolve())
+    try:
+        CaseDocxExporter().export(
+            case,
+            OUTPUT_DIR / "stanowisko_szkic.docx",
+            context=letter_ctx,
+        )
+        print("LETTER DOCX:", (OUTPUT_DIR / "stanowisko_szkic.docx").resolve())
+    except ImportError as exc:
+        print("LETTER DOCX skipped:", exc)
 
     dossier_ctx = DossierContext(
-        author_name="Mariusz Brodziszewski",
-        place="Poznań",
+        author_name=APPLICANT_NAME,
+        place=PLACE,
         dossier_date=date.today(),
-        subject=(
-            "Stanowisko procesowe wraz z analizą materiału dowodowego "
-            "— pojazd Volkswagen Transporter"
-        ),
-        recipient_lines=["Prokuratura Rejonowa Poznań-Wilda"],
+        subject=CASE_SUBJECT,
+        recipient_lines=list(RECIPIENT_LINES),
     )
-    dossier_text = DossierRenderer().render(case, context=dossier_ctx)
-    dossier_path = out_dir / "stanowisko_dossier.txt"
-    dossier_path.write_text(dossier_text, encoding="utf-8")
+    dossier_path = OUTPUT_DIR / "stanowisko_dossier.txt"
+    dossier_path.write_text(
+        DossierRenderer().render(case, context=dossier_ctx),
+        encoding="utf-8",
+    )
     print("DOSSIER TXT:", dossier_path.resolve())
     print("Case summary:", case.summary())
+    return 0
 
 
 if __name__ == "__main__":
-    main()
+    raise SystemExit(main())
