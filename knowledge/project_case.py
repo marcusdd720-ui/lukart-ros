@@ -7,6 +7,7 @@ Deterministic projection order:
   3. Facts (+ SUPPORTS from Evidence)
   4. LegalIssues (+ RAISES / RELIES_ON from statute_refs + case_law_refs)
   5. Arguments (+ ADVANCES)
+  6. Decisions (+ RESOLVES from Issue)
 
 Primary authority source for ISSUE → law:
   LegalIssue.statute_refs
@@ -25,6 +26,7 @@ from __future__ import annotations
 from knowledge.graph import KnowledgeGraph
 from knowledge.models.case import Case
 from knowledge.project_argument import project_argument
+from knowledge.project_decision import project_decision
 from knowledge.project_evidence import project_evidence
 from knowledge.project_fact import project_fact
 from knowledge.project_issue import project_legal_issue
@@ -97,7 +99,6 @@ def project_case(
         statute_nodes: list[str] = []
         seen: set[str] = set()
 
-        # PRIMARY: statute_refs + case_law_refs
         _resolve_authority_nodes(
             refs=list(issue.statute_refs),
             authority_id_map=authority_id_map,
@@ -113,7 +114,6 @@ def project_case(
             out=statute_nodes,
         )
 
-        # COMPAT: legal_basis_ids → LegalBasis.reference → map
         for bid in getattr(issue, "legal_basis_ids", None) or []:
             if bid in authority_id_map:
                 node_id = authority_id_map[bid]
@@ -147,6 +147,9 @@ def project_case(
             argument,
             issue_node_id=issue_node_id if graph.has_node(issue_node_id) else None,
         )
+
+    for decision in case.decisions:
+        project_decision(graph, decision)
 
     return created
 
