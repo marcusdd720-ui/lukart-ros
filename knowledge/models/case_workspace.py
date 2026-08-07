@@ -3,7 +3,8 @@ CaseWorkspace – single session object for a legal case.
 
 Supports full run() or run(stage=...).
 Snapshots: OPEN (start) → FREEZE (success end) → RELEASE (explicit).
-LegalIssues projected on open for both live cases.
+LegalIssues + Arguments projected on open for both live cases.
+Graph Integrity Gate runs with LawAgent.
 """
 
 from __future__ import annotations
@@ -243,6 +244,7 @@ class CaseWorkspace:
         return 0 if self.fact_ok else 1
 
     def run_law_agent(self) -> int:
+        from knowledge.graph_integrity import check_graph_integrity
         from scripts.law_agent import format_report, review_case_law_links
 
         findings = review_case_law_links(
@@ -251,7 +253,13 @@ class CaseWorkspace:
             focus_statute_id=self.focus_statute_id,
         )
         print(format_report(findings, self.graph_case_id))
-        self.law_ok = not any(f.severity == "ERROR" for f in findings)
+        law_fail = any(f.severity == "ERROR" for f in findings)
+
+        integrity = check_graph_integrity(self.graph, self.case)
+        print(integrity.report())
+        integrity_fail = not integrity.ok
+
+        self.law_ok = not (law_fail or integrity_fail)
         return 0 if self.law_ok else 1
 
     def run_review_agent(self, path: Path | None = None) -> int:
