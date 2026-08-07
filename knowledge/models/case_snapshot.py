@@ -64,7 +64,7 @@ class CaseSnapshot:
     schema: str = SCHEMA
     snapshot_id: str = field(default_factory=lambda: str(uuid.uuid4()))
     timestamp: str = ""
-    phase: str = "FREEZE"  # OPEN | FREEZE | RELEASE
+    phase: str = "FREEZE"
     case_key: str = ""
     graph_case_id: str = ""
     legal_seed: str = LEGAL_SEED_DEFAULT
@@ -73,9 +73,14 @@ class CaseSnapshot:
     legal_issue_count: int = 0
     argument_count: int = 0
     fact_node_count: int = 0
+    evidence_node_count: int = 0
+    event_node_count: int = 0
+    decision_node_count: int = 0
     raises_count: int = 0
     advances_count: int = 0
     resolves_count: int = 0
+    supports_count: int = 0
+    references_count: int = 0
     fact_pass: bool | None = None
     law_pass: bool | None = None
     review_pass: bool | None = None
@@ -158,12 +163,26 @@ def build_snapshot_from_workspace(
     argument_count = len(getattr(workspace.case, "arguments", []) or [])
 
     fact_node_count = sum(1 for n in workspace.graph if n.type == NodeType.FACT)
+    evidence_node_count = sum(
+        1 for n in workspace.graph if n.type == NodeType.EVIDENCE
+    )
+    event_node_count = sum(1 for n in workspace.graph if n.type == NodeType.EVENT)
+    decision_node_count = sum(
+        1 for n in workspace.graph if n.type == NodeType.DECISION
+    )
+
     raises_count = sum(1 for e in workspace.graph.edges if e.type == EdgeType.RAISES)
     advances_count = sum(
         1 for e in workspace.graph.edges if e.type == EdgeType.ADVANCES
     )
     resolves_count = sum(
         1 for e in workspace.graph.edges if e.type == EdgeType.RESOLVES
+    )
+    supports_count = sum(
+        1 for e in workspace.graph.edges if e.type == EdgeType.SUPPORTS
+    )
+    references_count = sum(
+        1 for e in workspace.graph.edges if e.type == EdgeType.REFERENCES
     )
 
     snap = CaseSnapshot(
@@ -177,9 +196,14 @@ def build_snapshot_from_workspace(
         legal_issue_count=issue_count,
         argument_count=argument_count,
         fact_node_count=fact_node_count,
+        evidence_node_count=evidence_node_count,
+        event_node_count=event_node_count,
+        decision_node_count=decision_node_count,
         raises_count=raises_count,
         advances_count=advances_count,
         resolves_count=resolves_count,
+        supports_count=supports_count,
+        references_count=references_count,
         fact_pass=workspace.fact_ok,
         law_pass=workspace.law_ok,
         review_pass=workspace.review_ok,
@@ -202,9 +226,14 @@ def build_snapshot_from_workspace(
             "legal_issue_count": issue_count,
             "argument_count": argument_count,
             "fact_node_count": fact_node_count,
+            "evidence_node_count": evidence_node_count,
+            "event_node_count": event_node_count,
+            "decision_node_count": decision_node_count,
             "raises_count": raises_count,
             "advances_count": advances_count,
             "resolves_count": resolves_count,
+            "supports_count": supports_count,
+            "references_count": references_count,
         },
     )
     snap.compute_status()
@@ -246,12 +275,23 @@ def main() -> int:
     open_path = save_workspace_snapshot(ws, phase="OPEN")
     print("OPEN:", open_path)
     s = CaseSnapshot.load(open_path)
-    print("legal_issue_count:", s.legal_issue_count)
-    print("argument_count:", s.argument_count)
-    print("fact_node_count:", s.fact_node_count)
-    print("raises_count:", s.raises_count)
-    print("advances_count:", s.advances_count)
-    print("resolves_count:", s.resolves_count)
+    print(
+        "I/A/F/E/Ev/D:",
+        s.legal_issue_count,
+        s.argument_count,
+        s.fact_node_count,
+        s.evidence_node_count,
+        s.event_node_count,
+        s.decision_node_count,
+    )
+    print(
+        "RAISES/ADV/RES/SUP/REF:",
+        s.raises_count,
+        s.advances_count,
+        s.resolves_count,
+        s.supports_count,
+        s.references_count,
+    )
     return 0
 
 
