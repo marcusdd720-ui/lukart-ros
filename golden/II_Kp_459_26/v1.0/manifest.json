@@ -1,0 +1,19 @@
+{
+  "validation_case": "II Kp 459/26",
+  "version": "1.0",
+  "role": "scalability_validation",
+  "graph_hash": "1b113a09c8383f21",
+  "pipeline_at_freeze": "1.5.0",
+  "registry": "1.0.0",
+  "knowledge": "2026.08",
+  "integrity_level": "PASS",
+  "export_status": "READY",
+  "counts": {
+    "evidence": 5,
+    "facts": 5,
+    "events": 0,
+    "issues": 2,
+    "arguments": 2,
+    "decisions": 1
+  }
+}

@@ -1,13 +1,9 @@
 """
 CI regression gate for Case Factory v1.x.
 
-Runs:
-  1. Golden Case structure + hash (DS.3960.2025)
-  2. II_Kp structure + integrity
-  3. Cross-case isolation (domain)
-  4. IntegrityEngine both cases
-
-Exit 0 = PASS, 1 = FAIL
+  1. Golden Case DS.3960.2025 (strict hash + counts)
+  2. Validation Case II_Kp (hash + counts + integrity)
+  3. Cross-case domain isolation
 """
 
 from __future__ import annotations
@@ -26,7 +22,8 @@ from knowledge.models.case_workspace import open_ds_3960, open_ii_kp_459_26
 from knowledge.project_case import project_case
 from knowledge.types import NodeType
 
-MANIFEST = ROOT / "golden" / "DS.3960.2025" / "v1.0" / "manifest.json"
+GOLDEN_DS = ROOT / "golden" / "DS.3960.2025" / "v1.0" / "manifest.json"
+VALID_II = ROOT / "golden" / "II_Kp_459_26" / "v1.0" / "manifest.json"
 DOMAIN_TYPES = {
     NodeType.FACT,
     NodeType.ISSUE,
@@ -47,38 +44,47 @@ def _ok(msg: str) -> None:
     print("OK:", msg)
 
 
-def check_golden() -> None:
-    if not MANIFEST.is_file():
-        _fail(f"missing golden manifest: {MANIFEST}")
-    m = json.loads(MANIFEST.read_text(encoding="utf-8"))
+def _counts(graph) -> dict[str, int]:
+    return {
+        "evidence": sum(1 for n in graph if n.type == NodeType.EVIDENCE),
+        "facts": sum(1 for n in graph if n.type == NodeType.FACT),
+        "events": sum(1 for n in graph if n.type == NodeType.EVENT),
+        "issues": sum(1 for n in graph if n.type == NodeType.ISSUE),
+        "arguments": sum(1 for n in graph if n.type == NodeType.ARGUMENT),
+        "decisions": sum(1 for n in graph if n.type == NodeType.DECISION),
+    }
+
+
+def check_golden_ds() -> None:
+    if not GOLDEN_DS.is_file():
+        _fail(f"missing golden manifest: {GOLDEN_DS}")
+    m = json.loads(GOLDEN_DS.read_text(encoding="utf-8"))
     ws = open_ds_3960()
     h = compute_graph_hash(ws.graph)
     if h != m["graph_hash"]:
-        _fail(f"golden hash mismatch: {h} != {m['graph_hash']}")
-    counts = {
-        "evidence": sum(1 for n in ws.graph if n.type == NodeType.EVIDENCE),
-        "facts": sum(1 for n in ws.graph if n.type == NodeType.FACT),
-        "events": sum(1 for n in ws.graph if n.type == NodeType.EVENT),
-        "issues": sum(1 for n in ws.graph if n.type == NodeType.ISSUE),
-        "arguments": sum(1 for n in ws.graph if n.type == NodeType.ARGUMENT),
-        "decisions": sum(1 for n in ws.graph if n.type == NodeType.DECISION),
-    }
-    if counts != m["counts"]:
-        _fail(f"golden counts mismatch: {counts} != {m['counts']}")
+        _fail(f"DS hash mismatch: {h} != {m['graph_hash']}")
+    if _counts(ws.graph) != m["counts"]:
+        _fail(f"DS counts mismatch: {_counts(ws.graph)} != {m['counts']}")
     r = IntegrityEngine.run(ws.graph, ws.case)
     if r.blocks:
-        _fail(f"golden integrity BLOCK: {r.blocks}")
-    _ok(f"golden DS hash={h} counts={counts}")
+        _fail(f"DS integrity BLOCK: {r.blocks}")
+    _ok(f"Golden Case       PASS  hash={h}")
 
 
-def check_ii_kp() -> None:
+def check_validation_ii() -> None:
+    if not VALID_II.is_file():
+        _fail(f"missing II_Kp validation manifest: {VALID_II}")
+    m = json.loads(VALID_II.read_text(encoding="utf-8"))
     ws = open_ii_kp_459_26()
-    if len(ws.case.facts) != 5 or len(ws.case.legal_issues) != 2:
-        _fail("II_Kp unexpected domain size")
+    h = compute_graph_hash(ws.graph)
+    if h != m["graph_hash"]:
+        _fail(f"II_Kp hash mismatch: {h} != {m['graph_hash']}")
+    if _counts(ws.graph) != m["counts"]:
+        _fail(f"II_Kp counts mismatch: {_counts(ws.graph)} != {m['counts']}")
     r = IntegrityEngine.run(ws.graph, ws.case)
     if r.export_status == ExportStatus.BLOCKED or r.blocks:
-        _fail(f"II_Kp integrity blocked: {r.report()}")
-    _ok(f"II_Kp integrity={r.level.name} export={r.export_status.name}")
+        _fail(f"II_Kp blocked: {r.report()}")
+    _ok(f"II_Kp             PASS  hash={h} export={r.export_status.name}")
 
 
 def check_isolation() -> None:
@@ -97,14 +103,16 @@ def check_isolation() -> None:
     project_case(a.graph, a.case)
     if compute_graph_hash(b.graph) != hb_before:
         _fail("mutation of A changed hash of B")
-    _ok(f"isolation domain A={len(ids_a)} B={len(ids_b)}")
+    _ok(f"Isolation         PASS  domain A={len(ids_a)} B={len(ids_b)}")
 
 
 def main() -> int:
-    print("Case Factory CI gate")
-    check_golden()
-    check_ii_kp()
+    print("CI GATE")
+    print("─" * 40)
+    check_golden_ds()
+    check_validation_ii()
     check_isolation()
+    print("─" * 40)
     print("CI GATE PASS")
     return 0
 
