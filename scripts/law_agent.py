@@ -1,5 +1,5 @@
 """
-LawAgent v2 – check case node links to STATUTE / CASE_LAW + LegalIssue bridge.
+LawAgent v2.1 – check case node links to STATUTE / CASE_LAW + LegalIssue + Argument bridge.
 
 Does not import link_ds_3960 or any fixed case builder.
 Operates on (graph, case_id) or opens CaseSpec workspace.
@@ -17,6 +17,7 @@ sys.path.insert(0, str(ROOT))
 
 from knowledge.graph import KnowledgeGraph  # noqa: E402
 from knowledge.legal_query import LegalQuery  # noqa: E402
+from knowledge.types import EdgeType, NodeType  # noqa: E402
 
 
 @dataclass(slots=True)
@@ -44,6 +45,9 @@ def review_case_law_links(
     statutes = lq.relies_on(case_id)
     authorities = lq.supported_by(case_id)
     issues = lq.issues()
+    arguments = [n for n in graph if n.type == NodeType.ARGUMENT]
+    advances = [e for e in graph.edges if e.type == EdgeType.ADVANCES]
+    arg_ids_with_advances = {e.source for e in advances}
 
     # --- classic checks ---
     if not statutes:
@@ -112,12 +116,41 @@ def review_case_law_links(
                 )
             )
 
+    # --- ARGUMENT bridge checks (CASE-012 / H4) ---
+    if not arguments:
+        findings.append(
+            LawFinding(
+                "WARNING",
+                "LAW020",
+                "No ARGUMENT nodes present in graph – Argument bridge not projected yet.",
+            )
+        )
+    else:
+        orphan_args = [a.id for a in arguments if a.id not in arg_ids_with_advances]
+        if orphan_args:
+            findings.append(
+                LawFinding(
+                    "ERROR",
+                    "LAW021",
+                    f"{len(orphan_args)} ARGUMENT node(s) without ADVANCES: {orphan_args[:5]}",
+                )
+            )
+        else:
+            findings.append(
+                LawFinding(
+                    "INFO",
+                    "LAW022",
+                    f"All {len(arguments)} ARGUMENT node(s) have ADVANCES to ISSUE.",
+                )
+            )
+
     if not any(f.severity == "ERROR" for f in findings):
         findings.append(
             LawFinding(
                 "INFO",
                 "LAW000",
-                f"OK: {len(statutes)} statutes, {len(authorities)} case-law, {len(issues)} issues.",
+                f"OK: {len(statutes)} statutes, {len(authorities)} case-law, "
+                f"{len(issues)} issues, {len(arguments)} arguments.",
             )
         )
 
