@@ -2,10 +2,11 @@
 Project domain Case into KnowledgeGraph.
 
 Order (deterministic):
-  1. Evidence   → EVIDENCE nodes
-  2. Facts      → FACT nodes
-  3. LegalIssues → ISSUE + RAISES + RESOLVES
-  4. Arguments   → ARGUMENT + ADVANCES
+  1. Evidence   → EVIDENCE
+  2. Timeline   → EVENT
+  3. Facts      → FACT
+  4. LegalIssues → ISSUE + RAISES + RESOLVES
+  5. Arguments   → ARGUMENT + ADVANCES
 
 Idempotent: project(X) ∘ project(X) ≡ project(X)
 """
@@ -18,6 +19,7 @@ from knowledge.project_argument import project_argument
 from knowledge.project_evidence import project_evidence
 from knowledge.project_fact import project_fact
 from knowledge.project_issue import project_legal_issue
+from knowledge.project_timeline import project_timeline_event
 
 
 def project_case_issues(
@@ -28,16 +30,19 @@ def project_case_issues(
     statute_id_map: dict[str, str] | None = None,
 ) -> list[str]:
     """
-    Full domain → graph projection for Evidence, Facts, Issues, Arguments.
+    Full domain → graph projection.
 
-    If fact_id_map is None, all case.facts are projected and mapped automatically.
     Returns list of ISSUE node ids.
     """
     # 0. Evidence
     for item in case.evidence_items:
         project_evidence(graph, item)
 
-    # 1. Facts
+    # 1. Timeline
+    for event in case.timeline_events:
+        project_timeline_event(graph, event)
+
+    # 2. Facts
     if fact_id_map is None:
         fact_id_map = {}
         for fact in case.facts:
@@ -49,7 +54,7 @@ def project_case_issues(
             if fid in domain_facts and not graph.has_node(gnid):
                 fact_id_map[fid] = project_fact(graph, domain_facts[fid])
 
-    # 2. Issues
+    # 3. Issues
     created: list[str] = []
     for issue in case.legal_issues:
         fact_nodes = [
@@ -75,7 +80,7 @@ def project_case_issues(
         )
         created.append(node_id)
 
-    # 3. Arguments
+    # 4. Arguments
     for argument in case.arguments:
         issue_node_id = f"issue:{argument.issue_id}"
         project_argument(
