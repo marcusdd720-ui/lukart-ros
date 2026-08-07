@@ -2,9 +2,10 @@
 Project domain Case into KnowledgeGraph.
 
 Order (deterministic):
-  1. Facts      → FACT nodes
-  2. LegalIssues → ISSUE + RAISES + RESOLVES
-  3. Arguments   → ARGUMENT + ADVANCES
+  1. Evidence   → EVIDENCE nodes
+  2. Facts      → FACT nodes
+  3. LegalIssues → ISSUE + RAISES + RESOLVES
+  4. Arguments   → ARGUMENT + ADVANCES
 
 Idempotent: project(X) ∘ project(X) ≡ project(X)
 """
@@ -14,6 +15,7 @@ from __future__ import annotations
 from knowledge.graph import KnowledgeGraph
 from knowledge.models.case import Case
 from knowledge.project_argument import project_argument
+from knowledge.project_evidence import project_evidence
 from knowledge.project_fact import project_fact
 from knowledge.project_issue import project_legal_issue
 
@@ -26,11 +28,15 @@ def project_case_issues(
     statute_id_map: dict[str, str] | None = None,
 ) -> list[str]:
     """
-    Full domain → graph projection for Facts, Issues, Arguments.
+    Full domain → graph projection for Evidence, Facts, Issues, Arguments.
 
     If fact_id_map is None, all case.facts are projected and mapped automatically.
     Returns list of ISSUE node ids.
     """
+    # 0. Evidence
+    for item in case.evidence_items:
+        project_evidence(graph, item)
+
     # 1. Facts
     if fact_id_map is None:
         fact_id_map = {}
