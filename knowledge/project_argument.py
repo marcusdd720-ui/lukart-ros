@@ -4,6 +4,8 @@ Project domain Argument into KnowledgeGraph.
 Creates:
   - NodeType.ARGUMENT
   - EdgeType.ADVANCES (Argument → Issue)
+
+Idempotent via ensure_node / ensure_edge.
 """
 
 from __future__ import annotations
@@ -24,16 +26,12 @@ def project_argument(
     """
     Project a domain Argument into the graph.
 
-    Returns the created ARGUMENT node id.
-    issue_node_id should be the graph node id of the related ISSUE
-    (typically f\"issue:{argument.issue_id}\").
+    Returns the ARGUMENT node id.
+    Safe to call repeatedly.
     """
     argument.validate()
 
     node_id = f"argument:{argument.id}"
-
-    if graph.has_node(node_id):
-        return node_id
 
     node = KnowledgeNode(
         id=node_id,
@@ -48,7 +46,7 @@ def project_argument(
         tags={"argument"},
     )
     node.validate()
-    graph.add_node(node)
+    graph.ensure_node(node)
 
     target_issue = issue_node_id or f"issue:{argument.issue_id}"
     if graph.has_node(target_issue):
@@ -60,6 +58,6 @@ def project_argument(
             confidence=1.0,
         )
         edge.validate()
-        graph.add_edge(edge)
+        graph.ensure_edge(edge)
 
     return node_id

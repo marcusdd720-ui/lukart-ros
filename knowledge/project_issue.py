@@ -5,6 +5,8 @@ Creates:
   - NodeType.ISSUE
   - EdgeType.RAISES  (Fact → Issue)
   - EdgeType.RESOLVES (Issue → Statute)
+
+Idempotent via ensure_node / ensure_edge.
 """
 
 from __future__ import annotations
@@ -26,16 +28,13 @@ def project_legal_issue(
     """
     Project a domain LegalIssue into the graph.
 
-    Returns the created ISSUE node id.
-    Does not invent missing Fact/Statute nodes – they must already exist
-    or be passed explicitly.
+    Returns the ISSUE node id.
+    Fact/Statute nodes must already exist (or be passed explicitly).
+    Safe to call repeatedly.
     """
     issue.validate()
 
     node_id = f"issue:{issue.id}"
-
-    if graph.has_node(node_id):
-        return node_id
 
     node = KnowledgeNode(
         id=node_id,
@@ -51,9 +50,8 @@ def project_legal_issue(
         tags={"issue", "legal_issue"},
     )
     node.validate()
-    graph.add_node(node)
+    graph.ensure_node(node)
 
-    # RAISES: Fact → Issue
     for fact_id in fact_node_ids or []:
         if not graph.has_node(fact_id):
             continue
@@ -65,9 +63,8 @@ def project_legal_issue(
             confidence=1.0,
         )
         edge.validate()
-        graph.add_edge(edge)
+        graph.ensure_edge(edge)
 
-    # RESOLVES: Issue → Statute
     for statute_id in statute_node_ids or []:
         if not graph.has_node(statute_id):
             continue
@@ -79,6 +76,6 @@ def project_legal_issue(
             confidence=1.0,
         )
         edge.validate()
-        graph.add_edge(edge)
+        graph.ensure_edge(edge)
 
     return node_id
