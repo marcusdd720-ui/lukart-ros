@@ -1,8 +1,9 @@
 """
-LawAgent v2.2 – STATUTE / CASE_LAW + LegalIssue + Argument bridge.
+LawAgent v3 – legal link + domain chain checks via LegalQuery.
 
-Issue legal basis = RELIES_ON (not RESOLVES).
-RESOLVES reserved for Decision linkage.
+Does not mutate the graph.
+Does not project nodes.
+Does not invent authorities.
 """
 
 from __future__ import annotations
@@ -17,7 +18,7 @@ sys.path.insert(0, str(ROOT))
 
 from knowledge.graph import KnowledgeGraph  # noqa: E402
 from knowledge.legal_query import LegalQuery  # noqa: E402
-from knowledge.types import EdgeType, NodeType  # noqa: E402
+from knowledge.types import NodeType  # noqa: E402
 
 
 @dataclass(slots=True)
@@ -45,16 +46,10 @@ def review_case_law_links(
     statutes = lq.relies_on(case_id)
     authorities = lq.supported_by(case_id)
     issues = lq.issues()
-    arguments = [n for n in graph if n.type == NodeType.ARGUMENT]
-    advances = [e for e in graph.edges if e.type == EdgeType.ADVANCES]
-    arg_ids_with_advances = {e.source for e in advances}
-    relies_edges = [
-        e
-        for e in graph.edges
-        if e.type == EdgeType.RELIES_ON and e.source.startswith("issue:")
-    ]
-    issues_with_basis = {e.source for e in relies_edges}
+    arguments = lq.arguments()
+    facts = lq.facts()
 
+    # --- classic case-level links ---
     if not statutes:
         findings.append(
             LawFinding("ERROR", "LAW002", "No RELIES_ON statutes linked to case.")
@@ -80,6 +75,7 @@ def review_case_law_links(
                 )
             )
 
+    # --- ISSUE bridge ---
     if not issues:
         findings.append(
             LawFinding(
@@ -89,7 +85,16 @@ def review_case_law_links(
             )
         )
     else:
-        without_basis = [i.id for i in issues if i.id not in issues_with_basis]
+        without_basis = []
+        without_facts = []
+        for issue in issues:
+            basis = lq.authorities_for_issue(issue.id)
+            if not basis:
+                without_basis.append(issue.id)
+            raising = lq.facts_raising(issue.id)
+            if not raising:
+                without_facts.append(issue.id)
+
         if without_basis:
             findings.append(
                 LawFinding(
@@ -108,6 +113,17 @@ def review_case_law_links(
                 )
             )
 
+        if without_facts:
+            findings.append(
+                LawFinding(
+                    "WARNING",
+                    "LAW013",
+                    f"{len(without_facts)} ISSUE node(s) have no RAISES from FACT: "
+                    f"{without_facts[:5]}",
+                )
+            )
+
+    # --- ARGUMENT bridge ---
     if not arguments:
         findings.append(
             LawFinding(
@@ -117,13 +133,18 @@ def review_case_law_links(
             )
         )
     else:
-        orphan_args = [a.id for a in arguments if a.id not in arg_ids_with_advances]
+        orphan_args = []
+        for arg in arguments:
+            targets = lq.issue_for_argument(arg.id)
+            if not targets:
+                orphan_args.append(arg.id)
         if orphan_args:
             findings.append(
                 LawFinding(
                     "ERROR",
                     "LAW021",
-                    f"{len(orphan_args)} ARGUMENT node(s) without ADVANCES: {orphan_args[:5]}",
+                    f"{len(orphan_args)} ARGUMENT node(s) without ADVANCES: "
+                    f"{orphan_args[:5]}",
                 )
             )
         else:
@@ -135,13 +156,31 @@ def review_case_law_links(
                 )
             )
 
+    # --- FACT bridge (presence only; evidence link optional until domain fills evidence_ids) ---
+    if not facts:
+        findings.append(
+            LawFinding(
+                "WARNING",
+                "LAW030",
+                "No FACT nodes present in graph – Fact projection missing.",
+            )
+        )
+    else:
+        findings.append(
+            LawFinding(
+                "INFO",
+                "LAW031",
+                f"{len(facts)} FACT node(s) present in graph.",
+            )
+        )
+
     if not any(f.severity == "ERROR" for f in findings):
         findings.append(
             LawFinding(
                 "INFO",
                 "LAW000",
                 f"OK: {len(statutes)} statutes, {len(authorities)} case-law, "
-                f"{len(issues)} issues, {len(arguments)} arguments.",
+                f"{len(issues)} issues, {len(arguments)} arguments, {len(facts)} facts.",
             )
         )
 
