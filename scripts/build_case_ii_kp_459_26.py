@@ -1,4 +1,7 @@
-"""Build case II Kp 459/26 and export letter (txt + docx)."""
+"""Build case II Kp 459/26 and export letter (txt + docx).
+
+Facts linked to Evidence via evidence_ids (SUPPORTS).
+"""
 
 from __future__ import annotations
 
@@ -14,6 +17,8 @@ from knowledge.models.case import (
     Case,
     Decision,
     DecisionKind,
+    EvidenceItem,
+    EvidenceWeight,
     Fact,
     FactStatus,
     LegalBasis,
@@ -57,6 +62,67 @@ def build_case() -> Case:
         )
     )
 
+    # ----- Evidence first -----
+    e_email_25 = EvidenceItem(
+        label="Wiadomość e-mail z 25.05.2026 r.",
+        source_ref="email-2026-05-25",
+        proves=["skierowanie prośby o konsultację/interwencję"],
+        does_not=["rozstrzygnięcie standardu pouczenia"],
+        weight=EvidenceWeight.MEDIUM,
+        open_questions=[],
+    )
+    e_email_10 = EvidenceItem(
+        label="Wiadomość e-mail sędziego referenta z 10.06.2026 r.",
+        source_ref="email-2026-06-10",
+        proves=[
+            "wysłanie wiadomości ze służbowego adresu",
+            "fakt komunikacji sędziego referenta z wnoszącym",
+        ],
+        does_not=[
+            "automatyczne uznanie pouczenia za prawidłowe",
+            "rozstrzygnięcie, czy forma była dostosowana do adresata",
+        ],
+        weight=EvidenceWeight.HIGH,
+        open_questions=[
+            "czy treść była jednoznaczna dla osoby bez pełnomocnika",
+        ],
+    )
+    e_skarga = EvidenceItem(
+        label="Skarga z 22.06.2026 r.",
+        source_ref="skarga-2026-06-22",
+        proves=["złożenie skargi na sposób wykonania obowiązku informacyjnego"],
+        does_not=["rozstrzygnięcie skargi"],
+        weight=EvidenceWeight.HIGH,
+        open_questions=[],
+    )
+    e_odpowiedz = EvidenceItem(
+        label="Odpowiedź Prezesa Sądu z 23.07.2026 r.",
+        source_ref="pismo-prezesa-2026-07-23",
+        proves=["udzielenie odpowiedzi na skargę"],
+        does_not=[
+            "automatyczne uznanie, że standard pouczenia został oceniony merytorycznie",
+        ],
+        weight=EvidenceWeight.HIGH,
+        open_questions=[
+            "czy odpowiedź odnosi się do standardu komunikacji, czy tylko do kompetencji organu",
+        ],
+    )
+    e_trudnosci = EvidenceItem(
+        label="Dokumentacja trudności komunikacyjnych",
+        source_ref="material-trudnosci-komunikacyjne",
+        proves=[
+            "działanie bez profesjonalnego pełnomocnika",
+            "zgłaszanie trudności komunikacyjnych istotnych dla standardu pouczeń",
+        ],
+        does_not=["samodzielne przesądzenie skutków procesowych"],
+        weight=EvidenceWeight.MEDIUM,
+        open_questions=[],
+    )
+
+    for item in (e_email_25, e_email_10, e_skarga, e_odpowiedz, e_trudnosci):
+        case.add_evidence(item)
+
+    # ----- Facts (linked to Evidence) -----
     f1 = Fact(
         statement=(
             "W dniu 25.05.2026 r. wnoszący skierował wiadomość e-mail "
@@ -64,6 +130,7 @@ def build_case() -> Case:
         ),
         status=FactStatus.SUPPORTED,
         source_refs=["email-2026-05-25"],
+        evidence_ids=[e_email_25.id],
     )
     f2 = Fact(
         statement=(
@@ -72,6 +139,7 @@ def build_case() -> Case:
         ),
         status=FactStatus.SUPPORTED,
         source_refs=["email-2026-06-10"],
+        evidence_ids=[e_email_10.id],
     )
     f3 = Fact(
         statement=(
@@ -80,6 +148,7 @@ def build_case() -> Case:
         ),
         status=FactStatus.SUPPORTED,
         source_refs=["skarga-2026-06-22"],
+        evidence_ids=[e_skarga.id],
     )
     f4 = Fact(
         statement=(
@@ -88,6 +157,7 @@ def build_case() -> Case:
         ),
         status=FactStatus.SUPPORTED,
         source_refs=["pismo-prezesa-2026-07-23"],
+        evidence_ids=[e_odpowiedz.id],
     )
     f5 = Fact(
         statement=(
@@ -97,6 +167,7 @@ def build_case() -> Case:
         ),
         status=FactStatus.SUPPORTED,
         source_refs=["material-trudnosci-komunikacyjne"],
+        evidence_ids=[e_trudnosci.id],
         confidence=0.9,
     )
     for fact in (f1, f2, f3, f4, f5):
@@ -117,7 +188,6 @@ def build_case() -> Case:
     for basis in (b1, b2, b3):
         case.add_legal_basis(basis)
 
-    # ----- LegalIssues (CASE-011) -----
     issue1 = LegalIssue(
         question=(
             "Czy treść i forma wiadomości e-mail z 10.06.2026 r. były "
@@ -152,7 +222,6 @@ def build_case() -> Case:
     for issue in (issue1, issue2):
         case.add_issue(issue)
 
-    # ----- Arguments (CASE-012) -----
     arg1 = Argument(
         issue_id=issue1.id,
         claim=(
