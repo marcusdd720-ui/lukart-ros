@@ -1,0 +1,23 @@
+{
+  "golden_case": "DS.3960.2025",
+  "version": "1.0",
+  "graph_hash": "8568cfb42abb635d",
+  "pipeline_at_freeze": "1.5.0",
+  "registry": "1.0.0",
+  "knowledge": "2026.08",
+  "status": "READY_TO_PUBLISH",
+  "exit_code": 0,
+  "flags": {
+    "fact": true,
+    "law": true,
+    "review": true
+  },
+  "counts": {
+    "evidence": 7,
+    "facts": 7,
+    "events": 7,
+    "issues": 3,
+    "arguments": 3,
+    "decisions": 1
+  }
+}

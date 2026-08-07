@@ -4,11 +4,8 @@ CaseSnapshot — immutable, reproducible run record.
 schema: lukart.snapshot.v1
 Phases: OPEN | FREEZE | RELEASE
 
-Enterprise contract:
-  - graph_hash: deterministic fingerprint of projected graph
-  - registry_version / knowledge_version / pipeline_version
-  - dossier content hash
-  - git provenance
+graph_hash is semantic (type|name|description + edge endpoints),
+not dependent on runtime UUIDs.
 """
 
 from __future__ import annotations
@@ -49,17 +46,29 @@ def _sha256_text(text: str) -> str:
 
 def compute_graph_hash(graph: Any) -> str:
     """
-    Deterministic fingerprint of graph structure.
-    Nodes: id|type sorted. Edges: source|type|target sorted.
-    Independent of insertion order and object identity.
+    Deterministic fingerprint independent of runtime UUIDs.
+
+    Nodes:  type|name|description_prefix
+    Edges:  src_label|edge_type|tgt_label
     """
-    node_lines = sorted(
-        f"{n.id}|{getattr(n.type, 'name', n.type)}" for n in graph
-    )
-    edge_lines = sorted(
-        f"{e.source}|{getattr(e.type, 'name', e.type)}|{e.target}"
-        for e in graph.edges
-    )
+    by_id = {n.id: n for n in graph}
+
+    def _label(n: Any) -> str:
+        t = getattr(n.type, "name", str(n.type))
+        name = (n.name or "").strip()
+        desc = (n.description or "").strip()[:80]
+        return f"{t}|{name}|{desc}"
+
+    node_lines = sorted(_label(n) for n in graph)
+    edge_lines: list[str] = []
+    for e in graph.edges:
+        src = by_id.get(e.source)
+        tgt = by_id.get(e.target)
+        if src is None or tgt is None:
+            continue
+        et = getattr(e.type, "name", str(e.type))
+        edge_lines.append(f"{_label(src)}|{et}|{_label(tgt)}")
+    edge_lines.sort()
     payload = "NODES\n" + "\n".join(node_lines) + "\nEDGES\n" + "\n".join(edge_lines)
     return _sha256_text(payload)[:16]
 
@@ -88,23 +97,17 @@ def _git_info(repo: Path) -> tuple[str | None, bool | None]:
 
 @dataclass(slots=True)
 class CaseSnapshot:
-    """Versioned, reproducible snapshot of one workspace run / phase."""
-
     schema: str = SCHEMA
     snapshot_id: str = field(default_factory=lambda: str(uuid.uuid4()))
     timestamp: str = ""
     phase: str = "FREEZE"
-
     case_key: str = ""
     graph_case_id: str = ""
-
-    # versioning / reproducibility
     legal_seed: str = LEGAL_SEED_DEFAULT
     knowledge_version: str = KNOWLEDGE_VERSION
     registry_version: str = REGISTRY_VERSION
     pipeline_version: str = PIPELINE_VERSION
     graph_hash: str = ""
-
     graph_node_count: int = 0
     graph_edge_count: int = 0
     legal_issue_count: int = 0
@@ -118,12 +121,10 @@ class CaseSnapshot:
     resolves_count: int = 0
     supports_count: int = 0
     references_count: int = 0
-
     fact_pass: bool | None = None
     law_pass: bool | None = None
     review_pass: bool | None = None
     workspace_pass: bool | None = None
-
     dossier_path: str | None = None
     dossier_sha256: str | None = None
     git_commit: str | None = None
@@ -210,7 +211,6 @@ def build_snapshot_from_workspace(
     decision_node_count = sum(
         1 for n in workspace.graph if n.type == NodeType.DECISION
     )
-
     raises_count = sum(1 for e in workspace.graph.edges if e.type == EdgeType.RAISES)
     advances_count = sum(
         1 for e in workspace.graph.edges if e.type == EdgeType.ADVANCES
@@ -271,17 +271,6 @@ def build_snapshot_from_workspace(
             "pipeline_version": PIPELINE_VERSION,
             "registry_version": REGISTRY_VERSION,
             "knowledge_version": KNOWLEDGE_VERSION,
-            "legal_issue_count": issue_count,
-            "argument_count": argument_count,
-            "fact_node_count": fact_node_count,
-            "evidence_node_count": evidence_node_count,
-            "event_node_count": event_node_count,
-            "decision_node_count": decision_node_count,
-            "raises_count": raises_count,
-            "advances_count": advances_count,
-            "resolves_count": resolves_count,
-            "supports_count": supports_count,
-            "references_count": references_count,
         },
     )
     snap.compute_status()
@@ -294,7 +283,6 @@ def save_workspace_snapshot(
     repo_root: Path | None = None,
     phase: str = "FREEZE",
 ) -> Path:
-    """Write immutable snapshot under output/cases/<key>/snapshots/."""
     snap = build_snapshot_from_workspace(
         workspace, repo_root=repo_root, phase=phase
     )
@@ -302,7 +290,6 @@ def save_workspace_snapshot(
     filename = f"{snap.timestamp}_{snap.phase}_{snap.snapshot_id[:8]}.json"
     path = out_dir / filename
     snap.write(path)
-
     payload = json.dumps(snap.to_dict(), ensure_ascii=False, indent=2) + "\n"
     (out_dir / "latest.json").write_text(payload, encoding="utf-8")
     (out_dir / f"latest_{snap.phase.lower()}.json").write_text(
@@ -317,23 +304,8 @@ def main() -> int:
     ws = open_ds_3960()
     open_path = save_workspace_snapshot(ws, phase="OPEN")
     s = CaseSnapshot.load(open_path)
-    print("OPEN:", open_path)
     print("graph_hash:", s.graph_hash)
-    print("pipeline:", s.pipeline_version)
-    print("registry:", s.registry_version)
-    print("knowledge:", s.knowledge_version)
-    print(
-        "I/A/F/E/Ev/D:",
-        s.legal_issue_count,
-        s.argument_count,
-        s.fact_node_count,
-        s.evidence_node_count,
-        s.event_node_count,
-        s.decision_node_count,
-    )
-    # reproducibility: same graph → same hash
-    h2 = compute_graph_hash(ws.graph)
-    print("hash_stable:", s.graph_hash == h2)
+    print("stable:", s.graph_hash == compute_graph_hash(ws.graph))
     return 0
 
 
