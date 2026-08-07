@@ -5,6 +5,7 @@ Supports full run() or run(stage=...).
 Snapshots: OPEN (start) → FREEZE (success end) → RELEASE (explicit).
 LegalIssues + Arguments projected on open for both live cases.
 Graph Integrity Gate runs with LawAgent.
+Projection gateway: project_case().
 """
 
 from __future__ import annotations
@@ -501,14 +502,14 @@ class CaseWorkspace:
 
 
 def open_ds_3960() -> CaseWorkspace:
-    from knowledge.project_case_issues import project_case_issues
+    from knowledge.project_case import project_case
     from scripts.build_case_ds_3960_2025 import build_case
     from scripts.link_case_to_law import link_ds_3960
 
     case = build_case()
     graph, graph_case_id = link_ds_3960()
 
-    project_case_issues(
+    project_case(
         graph,
         case,
         statute_id_map={
@@ -530,14 +531,14 @@ def open_ds_3960() -> CaseWorkspace:
 
 
 def open_ii_kp_459_26() -> CaseWorkspace:
-    from knowledge.project_case_issues import project_case_issues
+    from knowledge.project_case import project_case
     from scripts.build_case_ii_kp_459_26 import build_case
     from scripts.link_case_ii_kp_459_26 import link_ii_kp_459_26
 
     case = build_case()
     graph, graph_case_id = link_ii_kp_459_26()
 
-    project_case_issues(
+    project_case(
         graph,
         case,
         statute_id_map={
