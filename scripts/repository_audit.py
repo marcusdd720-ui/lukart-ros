@@ -31,7 +31,11 @@ def audit(root: Path) -> list[str]:
         if not path.is_file():
             continue
 
-        if path.suffix == ".py" and path.stat().st_size == 0 and path.name not in IGNORED_EMPTY_PY:
+        if (
+            path.suffix == ".py"
+            and path.stat().st_size == 0
+            and path.name not in IGNORED_EMPTY_PY
+        ):
             findings.append(f"empty Python module: {relative}")
 
         if relative.startswith("reports/") and path.suffix == ".md":
@@ -51,9 +55,10 @@ def audit(root: Path) -> list[str]:
 
 def main() -> int:
     root = Path(sys.argv[1] if len(sys.argv) > 1 else ".").resolve()
+    files = tracked_files(root)
     findings = audit(root)
     print("Repository audit scope: entire git-tracked tree")
-    print(f"Tracked files: {len(tracked_files(root))}")
+    print(f"Tracked files: {len(files)}")
     if findings:
         print("Repository audit: FAIL")
         for finding in findings:
