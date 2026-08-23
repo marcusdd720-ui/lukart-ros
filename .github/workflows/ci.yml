@@ -20,11 +20,10 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
-      - name: Install project and development dependencies
+      - name: Install development tools
         run: |
           python -m pip install --upgrade pip
-          python -m pip install -e ".[dev]"
-          python -m pip install mypy
+          python -m pip install pytest ruff mypy
       - name: Ruff
         run: python -m ruff check .
       - name: MyPy
@@ -36,4 +35,4 @@ jobs:
         run: python scripts/repository_audit.py
       - name: PII and confidentiality gate
         if: matrix.python-version == '3.11'
-        run: python scripts/pii_scan.py .
+        run: python scripts/pii_scan.py
