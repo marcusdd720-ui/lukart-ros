@@ -27,6 +27,17 @@ output/**/snapshots/
 rqm_history.json
 reports/quality_report.md
 
+# --- Confidential / legal source material ---
+# Real case documents belong in private storage, never in the public repo.
+cases/**/source/
+cases/**/raw/
+cases/**/outbound/
+*.pdf
+*.doc
+*.docx
+*.odt
+*.rtf
+
 # Optional local env
 .env
 .env.local
