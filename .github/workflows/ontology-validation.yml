@@ -3,16 +3,14 @@ name: Ontology Validation
 on:
   push:
     paths:
-      - "knowledge/**"
-      - "tests/**"
+      - "**/*.py"
       - "pyproject.toml"
-      - ".github/workflows/**"
+      - "tests/**"
   pull_request:
     paths:
-      - "knowledge/**"
-      - "tests/**"
+      - "**/*.py"
       - "pyproject.toml"
-      - ".github/workflows/**"
+      - "tests/**"
 
 jobs:
   validation:
@@ -45,3 +43,6 @@ jobs:
 
       - name: PyTest
         run: python -m pytest -v
+
+      - name: Repository quality audit
+        run: python scripts/repository_audit.py
