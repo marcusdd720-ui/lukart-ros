@@ -1,10 +1,4 @@
-"""
-Knowledge Operating System (KOS)
-
-Sprint GRAPH-014
-
-Schema validation.
-"""
+"""Validation of the persisted KnowledgeGraph wire format."""
 
 from __future__ import annotations
 
@@ -12,27 +6,22 @@ from knowledge.serialization.exceptions import SchemaValidationError
 
 
 class GraphSchemaValidator:
-    """
-    Validate serialized graph structure.
-    """
+    """Validate the minimum, versioned graph envelope."""
 
-    REQUIRED_ROOT_KEYS = {
-        "nodes",
-        "edges",
-    }
+    REQUIRED_ROOT_KEYS = {"schema_version", "nodes", "edges"}
+    CURRENT_SCHEMA_VERSION = "1.0.0"
 
-    def validate(
-        self,
-        data: dict,
-    ) -> None:
-
+    def validate(self, data: dict) -> None:
         if not isinstance(data, dict):
             raise SchemaValidationError("Serialized graph must be a dictionary.")
 
         missing = self.REQUIRED_ROOT_KEYS - set(data.keys())
-
         if missing:
             raise SchemaValidationError(f"Missing keys: {sorted(missing)}")
+
+        version = data["schema_version"]
+        if not isinstance(version, str) or not version.strip():
+            raise SchemaValidationError("'schema_version' must be a non-empty string.")
 
         if not isinstance(data["nodes"], list):
             raise SchemaValidationError("'nodes' must be a list.")
