@@ -5,19 +5,22 @@ on:
     paths:
       - "knowledge/**"
       - "tests/**"
-
+      - "pyproject.toml"
+      - ".github/workflows/**"
   pull_request:
     paths:
       - "knowledge/**"
       - "tests/**"
+      - "pyproject.toml"
+      - ".github/workflows/**"
 
 jobs:
   validation:
     runs-on: ubuntu-latest
-
     strategy:
+      fail-fast: false
       matrix:
-        python-version: ["3.13"]
+        python-version: ["3.11", "3.12", "3.13"]
 
     steps:
       - name: Checkout
@@ -26,18 +29,19 @@ jobs:
       - name: Setup Python
         uses: actions/setup-python@v5
         with:
-          python-version: "3.13"
+          python-version: ${{ matrix.python-version }}
 
-      - name: Install dependencies
+      - name: Install project dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install pytest ruff mypy
+          python -m pip install -e ".[dev]"
+          python -m pip install mypy
 
       - name: Ruff
-        run: ruff check .
+        run: python -m ruff check .
 
       - name: MyPy
-        run: mypy .
+        run: python -m mypy .
 
       - name: PyTest
-        run: pytest -v
+        run: python -m pytest -v
