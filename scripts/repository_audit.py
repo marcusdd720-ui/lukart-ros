@@ -1,14 +1,8 @@
-"""Project-wide integrity audit for LukArt ROS.
-
-This audit is deliberately independent of the RQM implementation. It verifies
-that the repository has an executable quality-control surface and that obvious
-placeholder quality claims cannot pass as evidence.
-"""
+"""Project-wide integrity audit for LukArt ROS."""
 
 from __future__ import annotations
 
 import subprocess
-import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -44,7 +38,12 @@ def audit() -> list[str]:
             findings.append(f"missing required quality-control file: {relative}")
 
     for path in tracked_files():
-        if path.suffix == ".py" and path.is_file() and path.stat().st_size == 0:
+        if (
+            path.suffix == ".py"
+            and path.is_file()
+            and path.stat().st_size == 0
+            and path.name != "__init__.py"
+        ):
             findings.append(f"empty tracked Python module: {path.relative_to(ROOT)}")
 
         if path.suffix in {".md", ".txt"} and path.is_file():
@@ -52,11 +51,12 @@ def audit() -> list[str]:
                 text = path.read_text(encoding="utf-8")
             except UnicodeDecodeError:
                 continue
-            for marker in FORBIDDEN_REPORT_MARKERS:
-                if marker in text and path.parts[0] == "reports":
-                    findings.append(
-                        f"stale quality claim in report {path.relative_to(ROOT)}: {marker}"
-                    )
+            if path.parts and path.parts[0] == "reports":
+                for marker in FORBIDDEN_REPORT_MARKERS:
+                    if marker in text:
+                        findings.append(
+                            f"stale quality claim in report {path.relative_to(ROOT)}: {marker}"
+                        )
 
     return sorted(set(findings))
 
