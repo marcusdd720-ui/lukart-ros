@@ -27,3 +27,6 @@ jobs:
         run: python -m ruff check .
       - name: Pytest
         run: python -m pytest -q
+      - name: PII and confidentiality gate
+        if: matrix.python-version == '3.11'
+        run: python scripts/pii_scan.py .
