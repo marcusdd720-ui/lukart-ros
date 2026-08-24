@@ -5,7 +5,7 @@ import logging
 import os
 import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 from factory.rqm.scanner.cache import ScanCache
@@ -35,16 +35,11 @@ class ProjectScanner:
 
     def scan(self) -> RepositorySnapshot:
         """Wykonuje pełne skanowanie repozytorium."""
-
         start = time.perf_counter()
-
         logger.info("Scanning project: %s", self.root)
-
         files: list[FileInfo] = []
 
-        with ThreadPoolExecutor(
-            max_workers=self.config.max_workers,
-        ) as executor:
+        with ThreadPoolExecutor(max_workers=self.config.max_workers) as executor:
             futures = [
                 executor.submit(
                     self._process_file,
@@ -57,69 +52,47 @@ class ProjectScanner:
 
             for future in as_completed(futures):
                 result = future.result()
-
                 if result is not None:
                     files.append(result)
 
         scan_time = time.perf_counter() - start
         stats = ScanStatistics.from_files(files)
-
         snapshot = RepositorySnapshot(
             files=files,
             statistics=stats.to_dict(),
             scan_time=scan_time,
             ignored_count=0,
             repository_hash=self._compute_repo_hash(files),
-            timestamp=datetime.now(timezone.utc),
+            timestamp=datetime.now(UTC),
         )
-
         self.cache.save(snapshot)
-
         logger.info(
             "Scan completed in %.2fs — %d files",
             scan_time,
             len(files),
         )
-
         return snapshot
 
-    def _process_file(
-        self,
-        path: Path,
-    ) -> FileInfo | None:
+    def _process_file(self, path: Path) -> FileInfo | None:
         try:
             stat = path.stat()
             sha256 = self.hasher.hash_file(path)
-
             return FileInfo(
                 path=path,
                 relative_path=str(path.relative_to(self.root)),
                 size=stat.st_size,
                 sha256=sha256,
-                modified=datetime.fromtimestamp(
-                    stat.st_mtime,
-                    tz=timezone.utc,
-                ),
+                modified=datetime.fromtimestamp(stat.st_mtime, tz=UTC),
                 extension=path.suffix.lower(),
                 is_python=path.suffix.lower() == ".py",
-                is_markdown=path.suffix.lower()
-                in {".md", ".markdown"},
-                is_config=path.suffix.lower()
-                in {".toml", ".yaml", ".yml", ".json"},
+                is_markdown=path.suffix.lower() in {".md", ".markdown"},
+                is_config=path.suffix.lower() in {".toml", ".yaml", ".yml", ".json"},
             )
-
-        except Exception:
+        except OSError:
             logger.exception("Failed to process file: %s", path)
             return None
 
-    def _compute_repo_hash(
-        self,
-        files: list[FileInfo],
-    ) -> str:
+    def _compute_repo_hash(self, files: list[FileInfo]) -> str:
         """Oblicza hash całego repozytorium."""
-
         combined = "".join(file.sha256 for file in files)
-
-        return hashlib.sha256(
-            combined.encode("utf-8"),
-        ).hexdigest()
+        return hashlib.sha256(combined.encode("utf-8")).hexdigest()
