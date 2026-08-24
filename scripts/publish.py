@@ -1,7 +1,8 @@
 """
-Publish gate: only acts when a FREEZE (or RELEASE) snapshot is READY_TO_PUBLISH.
+Publish gate: only acts when a local FREEZE or RELEASE snapshot is
+READY_TO_PUBLISH.
 
-Does not run pipeline, agents, or renderers.
+Never embeds or defaults to a real case identifier.
 """
 
 from __future__ import annotations
@@ -9,13 +10,11 @@ from __future__ import annotations
 import argparse
 import json
 import subprocess
-import sys
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parents[1]
-sys.path.insert(0, str(ROOT))
-
 from knowledge.models.snapshot_validator import validate_snapshot
+
+ROOT = Path(__file__).resolve().parents[1]
 
 
 def load_snapshot(case_key: str, *, prefer: str = "freeze") -> dict:
@@ -47,12 +46,12 @@ def run_git(args: list[str]) -> subprocess.CompletedProcess[str]:
 
 def main() -> int:
     parser = argparse.ArgumentParser(
-        description="Publish case outputs if FREEZE snapshot is READY_TO_PUBLISH"
+        description="Publish local case outputs if a snapshot is READY_TO_PUBLISH"
     )
     parser.add_argument(
         "--case",
-        default="DS_3960_2025",
-        help="Case folder key under cases/",
+        required=True,
+        help="Local case folder key under cases/",
     )
     parser.add_argument(
         "--prefer",
@@ -63,7 +62,7 @@ def main() -> int:
     parser.add_argument(
         "--commit",
         action="store_true",
-        help="git add case output paths and commit before push",
+        help="git add local case output paths and commit before push",
     )
     parser.add_argument(
         "--push",
@@ -77,10 +76,8 @@ def main() -> int:
     )
     args = parser.parse_args()
 
-    prefer = "latest" if args.prefer == "latest" else args.prefer
-
     try:
-        snap = load_snapshot(args.case, prefer=prefer)
+        snap = load_snapshot(args.case, prefer=args.prefer)
     except (OSError, json.JSONDecodeError, FileNotFoundError) as exc:
         print("PUBLISH BLOCKED:", exc)
         return 2
@@ -124,7 +121,7 @@ def main() -> int:
             print(add.stderr)
             return add.returncode
         msg = (
-            f"Publish {args.case} {phase or 'FREEZE'} "
+            f"Publish local case {args.case} {phase or 'FREEZE'} "
             f"{str(snap.get('snapshot_id', ''))[:8]} READY_TO_PUBLISH"
         )
         commit = run_git(["commit", "-m", msg])
