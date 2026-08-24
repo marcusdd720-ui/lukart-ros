@@ -6,9 +6,12 @@ class QualityEngine:
     """Uruchamia wszystkie kontrole jakości."""
 
     def run_all_checks(self) -> dict:
-        report = {"failed_tests": 0, "lint_passed": True, "type_check_passed": True}
+        report = {
+            "failed_tests": 0,
+            "lint_passed": True,
+            "type_check_passed": True,
+        }
 
-        # pytest
         try:
             result = run(
                 ["python", "-m", "pytest", "-q", "--tb=no"],
@@ -17,10 +20,7 @@ class QualityEngine:
                 timeout=60,
             )
             report["failed_tests"] = result.returncode
-        except:
+        except (OSError, TimeoutError):
             report["failed_tests"] = 1
-
-        # Ruff + mypy (opcjonalnie)
-        # Można rozbudować
 
         return report
