@@ -2,18 +2,13 @@
 FactAgent v1 – evidence hygiene on Case.facts (no LLM).
 
 Does not import any specific case builder.
-CLI may load a case via CaseSpec registry.
+CLI loads a case only from a local runtime CaseSpec registration.
 """
 
 from __future__ import annotations
 
 import argparse
-import sys
 from dataclasses import dataclass
-from pathlib import Path
-
-ROOT = Path(__file__).resolve().parents[1]
-sys.path.insert(0, str(ROOT))
 
 from knowledge.models.case import Case, FactStatus
 
@@ -122,8 +117,10 @@ def format_report(case: Case, findings: list[FactFinding]) -> str:
         if not group:
             continue
         lines.append(label)
-        for f in group:
-            lines.append(f"  [{f.code}] fact={f.fact_id} – {f.message}")
+        for finding in group:
+            lines.append(
+                f"  [{finding.code}] fact={finding.fact_id} – {finding.message}"
+            )
         lines.append("")
 
     if errors:
@@ -139,16 +136,15 @@ def _load_case(case_key: str) -> Case:
     from knowledge.models.case_registry import get_spec
 
     spec = get_spec(case_key)
-    ws = spec.open()
-    return ws.case
+    return spec.open().case
 
 
 def main() -> int:
     parser = argparse.ArgumentParser(description="FactAgent – review Case.facts")
     parser.add_argument(
         "--case",
-        default="DS_3960_2025",
-        help="Case key from case_registry (default: DS_3960_2025)",
+        required=True,
+        help="Case key from a local runtime CaseSpec registration",
     )
     args = parser.parse_args()
 
