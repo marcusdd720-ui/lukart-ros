@@ -10,9 +10,9 @@ from pathlib import Path
 
 from factory.rqm.scanner.cache import ScanCache
 from factory.rqm.scanner.config import ScannerConfig
-from factory.rqm.scanner.file_info import FileInfo
 from factory.rqm.scanner.filters import DefaultFilters
 from factory.rqm.scanner.hasher import FileHasher
+from factory.rqm.scanner.file_info import FileInfo
 from factory.rqm.scanner.repository_snapshot import RepositorySnapshot
 from factory.rqm.scanner.statistics import ScanStatistics
 
