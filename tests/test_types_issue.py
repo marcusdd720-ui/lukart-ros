@@ -1,6 +1,6 @@
 """Tests for ISSUE / RAISES / RESOLVES in types.py 1.2.0"""
 
-from knowledge.types import NodeType, EdgeType
+from knowledge.types import EdgeType, NodeType
 
 
 def test_node_type_issue_exists() -> None:
