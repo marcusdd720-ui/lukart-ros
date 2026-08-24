@@ -1,31 +1,24 @@
-"""
-Case pipeline – thin CLI over CaseSpec registry.
-"""
+"""Case pipeline – thin CLI over the local CaseSpec registry."""
 
 from __future__ import annotations
 
 import argparse
-import sys
-from pathlib import Path
-
-ROOT = Path(__file__).resolve().parents[1]
-sys.path.insert(0, str(ROOT))
 
 from knowledge.models.case_registry import get_spec, registered_keys
 from knowledge.models.case_workspace import STAGES
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description="Run case workspace pipeline")
+    parser = argparse.ArgumentParser(description="Run local case workspace pipeline")
     parser.add_argument(
         "--case",
-        default="DS_3960_2025",
-        help="Case key registered in case_registry",
+        required=True,
+        help="Case key registered by the local application layer",
     )
     parser.add_argument(
         "--list",
         action="store_true",
-        help="List registered case keys and exit",
+        help="List locally registered case keys and exit",
     )
     parser.add_argument(
         "--stage",
