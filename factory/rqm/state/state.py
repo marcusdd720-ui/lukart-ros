@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
@@ -23,21 +24,18 @@ class StateManager:
         try:
             data = json.loads(self.path.read_text(encoding="utf-8"))
             return data if isinstance(data, list) else []
-        except Exception:  # noqa: BLE001
+        except (OSError, json.JSONDecodeError):
             return []
 
     def save_snapshot(self, report: Any) -> None:
         history = self.load()
-
         created = getattr(report, "created_at", None) or getattr(
             report, "timestamp", None
         )
         if created is not None and hasattr(created, "isoformat"):
             ts = created.isoformat()
         else:
-            from datetime import datetime, timezone
-
-            ts = datetime.now(timezone.utc).isoformat()
+            ts = datetime.now(UTC).isoformat()
 
         score = getattr(report, "overall_score", None)
         if score is None:
@@ -57,7 +55,6 @@ class StateManager:
                 "delta": float(getattr(report, "delta", 0.0) or 0.0),
             }
         )
-
         self.path.write_text(
             json.dumps(history, indent=2, ensure_ascii=False),
             encoding="utf-8",
