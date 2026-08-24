@@ -1,15 +1,13 @@
-"""
-CaseWorkspace – single session object for a legal case.
+"""Session object for a legal case workspace.
 
-Supports full run() or run(stage=...).
-Snapshots: OPEN (start) → FREEZE (success end) → RELEASE (explicit).
-LegalIssues + Arguments projected on open for both live cases.
-Graph Integrity Gate runs with LawAgent.
-Projection gateway: project_case().
+The workspace is intentionally case-agnostic. Real case identifiers, personal
+information, source documents, and case-specific builders must never be
+embedded in application source code or repository fixtures.
 """
 
 from __future__ import annotations
 
+import json
 import shutil
 from dataclasses import dataclass, field
 from datetime import date
@@ -125,8 +123,7 @@ class CaseWorkspace:
             if include_authorities and self.authorities is not None
             else None
         )
-
-        ctx = DossierContext(
+        context = DossierContext(
             author_name=author_name or self._author_name,
             place=place or self._place,
             dossier_date=dossier_date or date.today(),
@@ -138,9 +135,8 @@ class CaseWorkspace:
             ),
             authorities_text=authorities_text,
         )
-        text = DossierRenderer().render(self.case, context=ctx)
-        self.dossier_text = text
-        return text
+        self.dossier_text = DossierRenderer().render(self.case, context=context)
+        return self.dossier_text
 
     def export_dossier_txt(
         self, filename: str = "stanowisko_dossier_with_authorities.txt"
@@ -170,7 +166,6 @@ class CaseWorkspace:
 
         self.output_dir.mkdir(parents=True, exist_ok=True)
         path = self.output_dir / filename
-
         doc = Document()
         style = doc.styles["Normal"]
         style.font.name = "Times New Roman"
@@ -189,11 +184,7 @@ class CaseWorkspace:
         doc.save(str(path))
         return path.resolve()
 
-    def sync_outbound(
-        self,
-        *,
-        filenames: list[str] | None = None,
-    ) -> list[Path]:
+    def sync_outbound(self, *, filenames: list[str] | None = None) -> list[Path]:
         names = filenames or [
             "stanowisko_dossier_with_authorities.txt",
             "stanowisko_dossier_with_authorities.docx",
@@ -254,12 +245,9 @@ class CaseWorkspace:
         )
         print(format_report(findings, self.graph_case_id))
         law_fail = any(f.severity == "ERROR" for f in findings)
-
         integrity = check_graph_integrity(self.graph, self.case)
         print(integrity.report())
-        integrity_fail = not integrity.ok
-
-        self.law_ok = not (law_fail or integrity_fail)
+        self.law_ok = not (law_fail or not integrity.ok)
         return 0 if self.law_ok else 1
 
     def run_review_agent(self, path: Path | None = None) -> int:
@@ -294,12 +282,10 @@ class CaseWorkspace:
         if name not in STAGES:
             print(f"Unknown stage: {stage!r}. Known: {', '.join(STAGES)}")
             return 2
-
         if name == "FACT":
             return self.run_fact_agent()
         if name == "LAW":
             return self.run_law_agent()
-
         if name == "DOSSIER":
             self.build_authorities()
             self.render_dossier(
@@ -307,36 +293,24 @@ class CaseWorkspace:
                 place=self._place,
                 subject=self._subject,
                 recipient_lines=self._recipient_lines,
-                include_authorities=True,
             )
-            path = self.export_dossier_txt()
-            print("Saved:", path)
+            print("Saved:", self.export_dossier_txt())
             if export_docx:
                 try:
-                    docx_path = self.export_dossier_docx()
-                    print("Saved DOCX:", docx_path)
+                    print("Saved DOCX:", self.export_dossier_docx())
                 except ImportError as exc:
                     print("DOCX skipped:", exc)
             return 0
-
         if name == "REVIEW":
             return self.run_review_agent()
-
         if name == "OUTBOUND":
             copied = self.sync_outbound()
-            if copied:
-                print("Outbound:")
-                for path in copied:
-                    print(" ", path)
-            else:
-                print("Outbound: (nothing copied)")
+            for path in copied:
+                print(" ", path)
             return 0
-
         if name == "OPEN":
-            path = self.save_snapshot(phase="OPEN")
-            print("Snapshot OPEN:", path)
+            print("Snapshot OPEN:", self.save_snapshot(phase="OPEN"))
             return 0
-
         if name == "FREEZE":
             path = self.save_snapshot(phase="FREEZE")
             print("Snapshot FREEZE:", path)
@@ -344,16 +318,13 @@ class CaseWorkspace:
 
             print("Status:", CaseSnapshot.load(path).status)
             return 0
-
         if name == "RELEASE":
             from knowledge.models.case_snapshot import CaseSnapshot
             from knowledge.models.snapshot_validator import validate_snapshot
 
             freeze_ptr = self.output_dir / "snapshots" / "latest_freeze.json"
             if freeze_ptr.is_file():
-                data = __import__("json").loads(
-                    freeze_ptr.read_text(encoding="utf-8")
-                )
+                data = json.loads(freeze_ptr.read_text(encoding="utf-8"))
                 result = validate_snapshot(data)
                 if not result.ready_to_publish:
                     print(result.report())
@@ -363,24 +334,23 @@ class CaseWorkspace:
             print("Snapshot RELEASE:", path)
             print("Status:", CaseSnapshot.load(path).status)
             return 0
-
         if name == "NOTE":
             status = None
             if self.last_snapshot_path and self.last_snapshot_path.is_file():
                 from knowledge.models.case_snapshot import CaseSnapshot
 
                 status = CaseSnapshot.load(self.last_snapshot_path).status
-            note_path = self.write_run_note(
-                snapshot_status=status,
-                outbound_files=None,
-                dossier_txt=self.output_dir
-                / "stanowisko_dossier_with_authorities.txt",
-                dossier_docx=self.output_dir
-                / "stanowisko_dossier_with_authorities.docx",
+            print(
+                "Note:",
+                self.write_run_note(
+                    snapshot_status=status,
+                    dossier_txt=self.output_dir
+                    / "stanowisko_dossier_with_authorities.txt",
+                    dossier_docx=self.output_dir
+                    / "stanowisko_dossier_with_authorities.docx",
+                ),
             )
-            print("Note:", note_path)
             return 0
-
         return 2
 
     def run(
@@ -402,13 +372,11 @@ class CaseWorkspace:
             subject=subject,
             recipient_lines=recipient_lines,
         )
-
         if stage is not None:
             code = self.run_stage(stage, export_docx=export_docx)
-            if code == 0:
-                print(f"STAGE PASS: {stage.strip().upper()}")
-            else:
-                print(f"STAGE FAIL: {stage.strip().upper()}")
+            print(
+                f"STAGE {'PASS' if code == 0 else 'FAIL'}: {stage.strip().upper()}"
+            )
             return code
 
         dossier_txt: Path | None = None
@@ -418,29 +386,15 @@ class CaseWorkspace:
 
         if save_snapshot:
             try:
-                open_path = self.save_snapshot(phase="OPEN")
-                print("Snapshot OPEN:", open_path)
-            except Exception as exc:  # noqa: BLE001
+                print("Snapshot OPEN:", self.save_snapshot(phase="OPEN"))
+            except OSError as exc:
                 print("Snapshot OPEN error:", exc)
 
         if self.run_fact_agent() != 0:
             print("WORKSPACE FAIL: FactAgent")
-            if save_snapshot:
-                try:
-                    p = self.save_snapshot(phase="FREEZE")
-                    print("Snapshot FREEZE (failed run):", p)
-                except Exception as exc:  # noqa: BLE001
-                    print("Snapshot save error:", exc)
             return 1
-
         if self.run_law_agent() != 0:
             print("WORKSPACE FAIL: LawAgent")
-            if save_snapshot:
-                try:
-                    p = self.save_snapshot(phase="FREEZE")
-                    print("Snapshot FREEZE (failed run):", p)
-                except Exception as exc:  # noqa: BLE001
-                    print("Snapshot save error:", exc)
             return 1
 
         self.build_authorities()
@@ -449,7 +403,6 @@ class CaseWorkspace:
             place=place,
             subject=subject,
             recipient_lines=recipient_lines,
-            include_authorities=True,
         )
         dossier_txt = self.export_dossier_txt()
         print("Saved:", dossier_txt)
@@ -463,22 +416,12 @@ class CaseWorkspace:
 
         if self.run_review_agent() != 0:
             print("WORKSPACE FAIL: ReviewAgent")
-            if save_snapshot:
-                try:
-                    p = self.save_snapshot(phase="FREEZE")
-                    print("Snapshot FREEZE (failed run):", p)
-                except Exception as exc:  # noqa: BLE001
-                    print("Snapshot save error:", exc)
             return 1
 
         if sync_outbound:
             outbound_files = self.sync_outbound()
-            if outbound_files:
-                print("Outbound:")
-                for path in outbound_files:
-                    print(" ", path)
-            else:
-                print("Outbound: (nothing copied)")
+            for path in outbound_files:
+                print(" ", path)
 
         if save_snapshot:
             snap_path = self.save_snapshot(phase="FREEZE")
@@ -489,90 +432,15 @@ class CaseWorkspace:
             print("Status:", snapshot_status)
 
         if write_note:
-            note_path = self.write_run_note(
-                snapshot_status=snapshot_status,
-                outbound_files=outbound_files,
-                dossier_txt=dossier_txt,
-                dossier_docx=dossier_docx,
+            print(
+                "Note:",
+                self.write_run_note(
+                    snapshot_status=snapshot_status,
+                    outbound_files=outbound_files,
+                    dossier_txt=dossier_txt,
+                    dossier_docx=dossier_docx,
+                ),
             )
-            print("Note:", note_path)
 
         print("WORKSPACE PASS")
         return 0
-
-
-def open_ds_3960() -> CaseWorkspace:
-    from knowledge.project_case import project_case
-    from scripts.build_case_ds_3960_2025 import build_case
-    from scripts.link_case_to_law import link_ds_3960
-
-    case = build_case()
-    graph, graph_case_id = link_ds_3960()
-
-    project_case(
-        graph,
-        case,
-        statute_id_map={
-            "art. 7 k.p.k.": "statute:kpk:7",
-            "art. 410 k.p.k.": "statute:kpk:410",
-            "art. 4 k.p.k.": "statute:kpk:5:2",
-            "art. 284 § 2 k.k.": "statute:kk:284:2",
-        },
-    )
-
-    return CaseWorkspace(
-        key="DS_3960_2025",
-        graph_case_id=graph_case_id,
-        case=case,
-        graph=graph,
-        focus_statute_id="statute:kk:284:2",
-        meta={"signature": "DS.3960.2025"},
-    )
-
-
-def open_ii_kp_459_26() -> CaseWorkspace:
-    from knowledge.project_case import project_case
-    from scripts.build_case_ii_kp_459_26 import build_case
-    from scripts.link_case_ii_kp_459_26 import link_ii_kp_459_26
-
-    case = build_case()
-    graph, graph_case_id = link_ii_kp_459_26()
-
-    project_case(
-        graph,
-        case,
-        statute_id_map={
-            "art. 16 § 1 k.p.k.": "statute:kpk:16",
-            "art. 16 § 2–3 k.p.k.": "statute:kpk:16",
-            "uchwała SN I KZP 6/13": "caselaw:sn:I_KZP_6_13",
-        },
-    )
-
-    return CaseWorkspace(
-        key="II_Kp_459_26",
-        graph_case_id=graph_case_id,
-        case=case,
-        graph=graph,
-        focus_statute_id="statute:kpk:16",
-        meta={
-            "signature": "II Kp 459/26",
-            "prosecutor_ref": "4057-0.Ds.2517.2025",
-        },
-    )
-
-
-def main() -> int:
-    ws = open_ds_3960()
-    return ws.run(
-        author_name="Mariusz Brodziszewski",
-        place="Poznań",
-        subject=(
-            "Stanowisko procesowe wraz z analizą materiału dowodowego "
-            "— pojazd Volkswagen Transporter"
-        ),
-        recipient_lines=["Prokuratura Rejonowa Poznań-Wilda"],
-    )
-
-
-if __name__ == "__main__":
-    raise SystemExit(main())
