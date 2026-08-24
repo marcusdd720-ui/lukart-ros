@@ -7,10 +7,10 @@ Sprint: F-012
 Status: Stable
 """
 
-from enum import Enum
+from enum import StrEnum
 
 
-class RelationType(str, Enum):
+class RelationType(StrEnum):
     """Supported relation types."""
 
     REFERENCES = "references"
