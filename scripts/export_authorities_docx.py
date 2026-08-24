@@ -1,23 +1,22 @@
-"""
-Export AuthoritySection for a case to a Word (.docx) file.
+"""Export an AuthoritySection to a Word document.
+
+The exporter accepts an already-built graph and case identifier. It never
+loads a real case, personal data, or case-specific builder from source code.
 """
 
 from __future__ import annotations
 
-import sys
 from pathlib import Path
-
-sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from knowledge.legal_query import LegalQuery
 from knowledge.models.authority_section import build_authority_section
-from scripts.link_case_to_law import link_ds_3960
 
 
 def export_authorities_docx(
     path: Path,
     *,
-    case_id: str = "case:DS.3960.2025",
+    graph,
+    case_id: str,
 ) -> Path:
     try:
         from docx import Document
@@ -26,9 +25,7 @@ def export_authorities_docx(
     except ImportError as exc:
         raise ImportError("python-docx is required: pip install python-docx") from exc
 
-    graph, linked_id = link_ds_3960()
-    cid = linked_id or case_id
-    section = build_authority_section(LegalQuery(graph), cid)
+    section = build_authority_section(LegalQuery(graph), case_id)
 
     doc = Document()
     style = doc.styles["Normal"]
@@ -56,6 +53,7 @@ def export_authorities_docx(
             add_line(f"{i}. {item.title}")
             if item.summary:
                 add_line(f"   {item.summary}")
+
     add_line()
     add_line("Orzecznictwo wspierające ocenę prawną:", bold=True)
     if not section.case_law:
@@ -65,6 +63,7 @@ def export_authorities_docx(
             add_line(f"{i}. {item.citation or item.title}")
             if item.summary:
                 add_line(f"   Teza: {item.summary}")
+
     add_line()
     add_line("Wybrane interpretacje (przepis wiodący):", bold=True)
     if not section.interpretations:
@@ -80,13 +79,3 @@ def export_authorities_docx(
     path.parent.mkdir(parents=True, exist_ok=True)
     doc.save(str(path))
     return path.resolve()
-
-
-def main() -> None:
-    out = Path("output") / "cases" / "DS_3960_2025" / "authorities_from_graph.docx"
-    saved = export_authorities_docx(out)
-    print("Saved:", saved)
-
-
-if __name__ == "__main__":
-    main()
