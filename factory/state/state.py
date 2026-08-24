@@ -1,5 +1,5 @@
+from datetime import UTC, datetime
 import json
-from datetime import datetime
 from pathlib import Path
 
 
@@ -16,12 +16,12 @@ class StateManager:
         if self.state_file.exists():
             try:
                 return json.loads(self.state_file.read_text(encoding="utf-8"))
-            except:
+            except (OSError, json.JSONDecodeError):
                 return {}
         return {}
 
     def save_state(self, files, changes, health):
-        self.state["last_run"] = datetime.now().isoformat()
+        self.state["last_run"] = datetime.now(UTC).isoformat()
         self.state["health_score"] = health.score
         self.state_file.write_text(
             json.dumps(self.state, indent=2, default=str), encoding="utf-8"
