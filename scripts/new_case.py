@@ -7,7 +7,6 @@ import re
 import shutil
 from pathlib import Path
 
-
 ROOT = Path(__file__).resolve().parents[1]
 TEMPLATE = ROOT / "cases" / "_TEMPLATE"
 CASES = ROOT / "cases"
