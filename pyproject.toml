@@ -39,7 +39,7 @@ target-version = "py311"
 select = ["E", "F", "I", "UP"]
 
 [tool.mypy]
-python_version = "3.11"
+python_version = "3.13"
 files = ["core", "knowledge", "factory", "canon", "validation", "scripts"]
 exclude = [
   "^tests/",
