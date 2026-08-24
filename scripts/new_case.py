@@ -1,11 +1,10 @@
-"""Create a new case folder from cases/_TEMPLATE."""
+"""Create a new local case folder from cases/_TEMPLATE."""
 
 from __future__ import annotations
 
 import argparse
 import re
 import shutil
-import sys
 from pathlib import Path
 
 
@@ -27,12 +26,12 @@ def main() -> int:
     )
     parser.add_argument(
         "name",
-        help="Working name of the case (e.g. Pani_Sylwia or DS_1234_2026)",
+        help="Local working name of the case",
     )
     parser.add_argument(
         "--force",
         action="store_true",
-        help="Overwrite existing case folder contents (dangerous)",
+        help="Overwrite existing local case folder contents (dangerous)",
     )
     args = parser.parse_args()
 
