@@ -1,13 +1,11 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from enum import Enum
+from enum import StrEnum
 
 
-class TrendDirection(str, Enum):
-    """
-    Quality trend direction.
-    """
+class TrendDirection(StrEnum):
+    """Quality trend direction."""
 
     NEW = "NEW"
     UP = "UP"
@@ -17,9 +15,7 @@ class TrendDirection(str, Enum):
 
 @dataclass(slots=True, frozen=True)
 class Trend:
-    """
-    Quality trend information.
-    """
+    """Quality trend information."""
 
     direction: TrendDirection
     delta: float
