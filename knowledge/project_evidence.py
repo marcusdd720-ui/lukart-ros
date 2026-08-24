@@ -38,7 +38,11 @@ def project_evidence(graph: KnowledgeGraph, item: EvidenceItem) -> str:
         or node_id
     )
     weight = getattr(item, "weight", None)
-    weight_name = weight.name if weight is not None and hasattr(weight, "name") else str(weight or "")
+    weight_name = (
+        weight.name
+        if weight is not None and hasattr(weight, "name")
+        else str(weight or "")
+    )
 
     node = KnowledgeNode(
         id=node_id,
