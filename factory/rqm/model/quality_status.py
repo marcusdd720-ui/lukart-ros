@@ -1,9 +1,9 @@
 from __future__ import annotations
 
-from enum import Enum
+from enum import StrEnum
 
 
-class QualityStatus(str, Enum):
+class QualityStatus(StrEnum):
     """
     Legacy compatibility layer.
 
@@ -14,34 +14,24 @@ class QualityStatus(str, Enum):
     """
 
     PASS = "PASS"
-
     WARNING = "WARNING"
-
     FAIL = "FAIL"
-
     SKIPPED = "SKIPPED"
-
     NOT_RUN = "NOT_RUN"
 
     @property
     def passed(self) -> bool:
-        """
-        Returns True if the status represents a successful execution.
-        """
+        """Returns True if the status represents a successful execution."""
         return self is QualityStatus.PASS
 
     @property
     def failed(self) -> bool:
-        """
-        Returns True if the status represents a failed execution.
-        """
+        """Returns True if the status represents a failed execution."""
         return self is QualityStatus.FAIL
 
     @property
     def executed(self) -> bool:
-        """
-        Returns True if the provider was executed.
-        """
+        """Returns True if the provider was executed."""
         return self not in (
             QualityStatus.NOT_RUN,
             QualityStatus.SKIPPED,
@@ -49,7 +39,5 @@ class QualityStatus(str, Enum):
 
     @property
     def terminal(self) -> bool:
-        """
-        Returns True if execution has finished.
-        """
+        """Returns True if execution has finished."""
         return self is not QualityStatus.NOT_RUN
