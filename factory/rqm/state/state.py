@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+from datetime import UTC
 from pathlib import Path
 from typing import Any
 
@@ -35,9 +36,9 @@ class StateManager:
         if created is not None and hasattr(created, "isoformat"):
             ts = created.isoformat()
         else:
-            from datetime import datetime, timezone
+            from datetime import datetime
 
-            ts = datetime.now(timezone.utc).isoformat()
+            ts = datetime.now(UTC).isoformat()
 
         score = getattr(report, "overall_score", None)
         if score is None:

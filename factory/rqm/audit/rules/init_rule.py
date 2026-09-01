@@ -14,7 +14,6 @@ class InitRule(AuditRule):
     severity = "WARNING"
 
     def check(self, root: Path) -> list[Finding]:
-
         findings: list[Finding] = []
         ignored_dirs = {
             ".git",
@@ -42,7 +41,10 @@ class InitRule(AuditRule):
                         Finding(
                             rule_id=self.rule_id,
                             severity=self.severity,
-                            message=f"Missing __init__.py in Python package directory '{rel_parent}'.",
+                            message=(
+                                f"Missing __init__.py in Python package "
+                                f"directory '{rel_parent}'."
+                            ),
                             file=str(rel_parent),
                             line=None,
                         )

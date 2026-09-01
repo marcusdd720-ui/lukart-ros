@@ -9,9 +9,10 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
+from scripts.link_case_to_law import link_ds_3960
+
 from knowledge.legal_query import LegalQuery
 from knowledge.models.authority_section import build_authority_section
-from scripts.link_case_to_law import link_ds_3960
 
 
 def export_authorities_docx(

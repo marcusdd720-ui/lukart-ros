@@ -16,7 +16,7 @@ class StateManager:
         if self.state_file.exists():
             try:
                 return json.loads(self.state_file.read_text(encoding="utf-8"))
-            except:
+            except Exception:
                 return {}
         return {}
 

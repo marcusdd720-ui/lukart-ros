@@ -5,9 +5,7 @@ from __future__ import annotations
 import argparse
 import re
 import shutil
-import sys
 from pathlib import Path
-
 
 ROOT = Path(__file__).resolve().parents[1]
 TEMPLATE = ROOT / "cases" / "_TEMPLATE"

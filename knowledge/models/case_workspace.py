@@ -502,9 +502,10 @@ class CaseWorkspace:
 
 
 def open_ds_3960() -> CaseWorkspace:
-    from knowledge.project_case import project_case
     from scripts.build_case_ds_3960_2025 import build_case
     from scripts.link_case_to_law import link_ds_3960
+
+    from knowledge.project_case import project_case
 
     case = build_case()
     graph, graph_case_id = link_ds_3960()
@@ -531,9 +532,10 @@ def open_ds_3960() -> CaseWorkspace:
 
 
 def open_ii_kp_459_26() -> CaseWorkspace:
-    from knowledge.project_case import project_case
     from scripts.build_case_ii_kp_459_26 import build_case
     from scripts.link_case_ii_kp_459_26 import link_ii_kp_459_26
+
+    from knowledge.project_case import project_case
 
     case = build_case()
     graph, graph_case_id = link_ii_kp_459_26()

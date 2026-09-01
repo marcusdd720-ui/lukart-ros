@@ -1,9 +1,9 @@
 from __future__ import annotations
 
-from enum import Enum
+from enum import StrEnum
 
 
-class Decision(str, Enum):
+class Decision(StrEnum):
     """
     Release decision produced by the Release Quality Manager.
     """

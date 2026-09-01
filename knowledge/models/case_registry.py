@@ -26,7 +26,7 @@ class CaseSpec:
     recipient_lines: tuple[str, ...] = field(default_factory=tuple)
     meta: dict[str, Any] = field(default_factory=dict)
 
-    def open(self) -> "CaseWorkspace":
+    def open(self) -> CaseWorkspace:
         return self.opener()
 
     def run_kwargs(self) -> dict[str, Any]:
@@ -58,7 +58,7 @@ def get_spec(case_key: str) -> CaseSpec:
         ) from exc
 
 
-def open_case(case_key: str) -> "CaseWorkspace":
+def open_case(case_key: str) -> CaseWorkspace:
     return get_spec(case_key).open()
 
 

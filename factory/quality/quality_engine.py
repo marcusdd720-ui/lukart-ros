@@ -17,7 +17,7 @@ class QualityEngine:
                 timeout=60,
             )
             report["failed_tests"] = result.returncode
-        except:
+        except Exception:
             report["failed_tests"] = 1
 
         # Ruff + mypy (opcjonalnie)

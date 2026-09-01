@@ -1,9 +1,9 @@
 from __future__ import annotations
 
-from enum import Enum
+from enum import StrEnum
 
 
-class QualityStatus(str, Enum):
+class QualityStatus(StrEnum):
     """
     Legacy compatibility layer.
 

@@ -33,8 +33,8 @@ class CaseDocxExporter:
     ) -> Path:
         try:
             from docx import Document
-            from docx.shared import Pt
             from docx.enum.text import WD_LINE_SPACING
+            from docx.shared import Pt
         except ImportError as exc:
             raise ImportError(
                 "python-docx is required: pip install python-docx"
