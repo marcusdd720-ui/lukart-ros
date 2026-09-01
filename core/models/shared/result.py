@@ -1,13 +1,10 @@
 from __future__ import annotations
 
 from collections.abc import Callable
-from typing import Any, Generic, TypeVar, cast
-
-T = TypeVar("T")
-U = TypeVar("U")
+from typing import Any, cast
 
 
-class Result(Generic[T]):
+class Result[T]:
     """
     Generic result container for success/failure flows.
 
@@ -43,7 +40,7 @@ class Result(Generic[T]):
         return Success(value)
 
     @classmethod
-    def fail(cls, error: BaseException | str) -> Failure[Any]:
+    def fail(cls, error: BaseException | str) -> Failure:
         """Create a failed Result."""
         return Failure(error)
 
@@ -67,7 +64,7 @@ class Result(Generic[T]):
         """Return the wrapped error or None for successes."""
         return self._error
 
-    def map(self, fn: Callable[[T], U]) -> Result[U]:
+    def map[U](self, fn: Callable[[T], U]) -> Result[U]:
         """
         Apply a transformation function to a successful result.
 
@@ -78,7 +75,7 @@ class Result(Generic[T]):
 
         return Success(fn(cast(T, self._value)))
 
-    def bind(self, fn: Callable[[T], Result[U]]) -> Result[U]:
+    def bind[U](self, fn: Callable[[T], Result[U]]) -> Result[U]:
         """
         Chain a function returning a Result.
 
@@ -122,7 +119,7 @@ class Result(Generic[T]):
         return f"Failure({self._error!r})"
 
 
-class Success(Result[T]):
+class Success[T](Result[T]):
     """Successful Result wrapper."""
 
     def __init__(self, value: T) -> None:
