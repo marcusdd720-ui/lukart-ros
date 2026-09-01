@@ -13,72 +13,64 @@ from __future__ import annotations
 from collections.abc import Mapping
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Literal, Protocol, TypeAlias
+from typing import Any, Literal, Protocol
 from uuid import UUID
 
 # ============================================================================
 # Primitive aliases
 # ============================================================================
 
-Timestamp: TypeAlias = datetime
+type Timestamp = datetime
 
-JsonPrimitive: TypeAlias = str | int | float | bool | None
+type JsonPrimitive = str | int | float | bool | None
 
-JsonValue: TypeAlias = JsonPrimitive | list["JsonValue"] | dict[str, "JsonValue"]
+type JsonValue = JsonPrimitive | list[JsonValue] | dict[str, JsonValue]
 
-Metadata: TypeAlias = dict[str, JsonValue]
-
-Tags: TypeAlias = set[str]
-
-Attributes: TypeAlias = dict[str, JsonValue]
-
-Labels: TypeAlias = dict[str, str]
-
-PathLike: TypeAlias = str | Path
-
-Headers: TypeAlias = Mapping[str, str]
+type Metadata = dict[str, JsonValue]
+type Tags = set[str]
+type Attributes = dict[str, JsonValue]
+type Labels = dict[str, str]
+type PathLike = str | Path
+type Headers = Mapping[str, str]
 
 # ============================================================================
 # Confidence
 # ============================================================================
 
-ConfidenceScore: TypeAlias = float
+type ConfidenceScore = float
 
 # ============================================================================
 # Hashes
 # ============================================================================
 
-HashValue: TypeAlias = str
-
-Checksum: TypeAlias = str
+type HashValue = str
+type Checksum = str
 
 # ============================================================================
 # MIME
 # ============================================================================
 
-MimeType: TypeAlias = str
-
-Encoding: TypeAlias = str
+type MimeType = str
+type Encoding = str
 
 # ============================================================================
 # Generic identifiers
 # ============================================================================
 
-Identifier: TypeAlias = UUID
+type Identifier = UUID
 
 # ============================================================================
 # Generic dictionaries
 # ============================================================================
 
-JsonDict: TypeAlias = dict[str, JsonValue]
-
-ObjectDict: TypeAlias = dict[str, Any]
+type JsonDict = dict[str, JsonValue]
+type ObjectDict = dict[str, Any]
 
 # ============================================================================
 # Status literals
 # ============================================================================
 
-ProcessingStatus: TypeAlias = Literal[
+type ProcessingStatus = Literal[
     "new",
     "queued",
     "processing",
@@ -86,7 +78,7 @@ ProcessingStatus: TypeAlias = Literal[
     "failed",
 ]
 
-ValidationStatus: TypeAlias = Literal[
+type ValidationStatus = Literal[
     "unknown",
     "valid",
     "invalid",
