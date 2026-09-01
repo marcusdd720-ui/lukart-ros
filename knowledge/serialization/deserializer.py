@@ -12,21 +12,19 @@ from __future__ import annotations
 
 from datetime import datetime
 from enum import Enum
-from typing import Any, TypeVar
+from typing import Any
 
 from knowledge.edge import KnowledgeEdge
 from knowledge.graph import KnowledgeGraph
 from knowledge.node import KnowledgeNode
 from knowledge.types import EdgeType, NodeType
 
-E = TypeVar("E", bound=Enum)
-
 
 class DeserializationError(ValueError):
     """Raised when graph payload is invalid."""
 
 
-def _parse_enum(enum_cls: type[E], value: Any, default: E) -> E:
+def _parse_enum[E: Enum](enum_cls: type[E], value: Any, default: E) -> E:
     if value is None:
         return default
     if isinstance(value, enum_cls):
