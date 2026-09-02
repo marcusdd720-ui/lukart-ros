@@ -4,7 +4,7 @@ The evaluator is deliberately independent of any extraction implementation. This
 measurement stable while extractors and adapters evolve.
 """
 
-from __future__ import annotations
+from __future__ import annotations  # noqa: I001
 
 import unicodedata
 from collections.abc import Iterable, Mapping, Sequence
