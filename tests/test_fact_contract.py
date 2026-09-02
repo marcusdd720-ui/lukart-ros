@@ -40,6 +40,13 @@ def test_fact_contract_rejects_invalid_source_hash() -> None:
     ]
 
 
+def test_fact_contract_rejects_uppercase_source_hash() -> None:
+    errors = FactContractValidator().validate([_fact(source_document_sha256="A" * 64)])
+    assert errors == [
+        "fact[0]: source_document_sha256 must be a 64-character lowercase hexadecimal SHA-256"
+    ]
+
+
 def test_fact_contract_requires_extraction_method() -> None:
     errors = FactContractValidator().validate([_fact(extraction_method="")])
     assert errors == ["fact[0]: extraction_method is required"]
