@@ -1,0 +1,40 @@
+name: Stage Orchestrator
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+
+concurrency:
+  group: lukart-ros-stage-orchestrator
+  cancel-in-progress: false
+
+jobs:
+  orchestrate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install project and development tools
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install ".[dev]"
+      - name: Execute current lifecycle stage
+        run: python -m factory.stage_orchestrator
+      - name: Persist lifecycle state
+        run: |
+          if git diff --quiet -- factory/stage_state.json; then
+            echo "No lifecycle state change."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add factory/stage_state.json
+          git commit -m "chore: advance stage lifecycle state"
+          git push
