@@ -1,6 +1,7 @@
 {
+  "block_reason": "gate_not_implemented",
   "current_stage": 7,
   "last_completed_stage": 6,
   "last_result": "PASS",
-  "status": "READY"
+  "status": "BLOCKED"
 }
