@@ -5,12 +5,27 @@ from __future__ import annotations
 import argparse
 import re
 import shutil
+from datetime import date
 from pathlib import Path
 
-from factory.local_case_store import case_dir, ensure_data_root
+import yaml
+
+from factory.local_case_store import case_dir, ensure_data_root, validate_case_key
 
 ROOT = Path(__file__).resolve().parents[1]
 TEMPLATE = ROOT / "cases" / "_TEMPLATE"
+CASE_FOLDERS = (
+    "original",
+    "extracted",
+    "markdown",
+    "evidence",
+    "timeline",
+    "reports",
+    "exports",
+    "outbound",
+    "inbound",
+    "notes",
+)
 
 
 def slugify(name: str) -> str:
@@ -33,7 +48,7 @@ def main() -> int:
 
     try:
         data_root = ensure_data_root(Path(args.data_root).expanduser() if args.data_root else None)
-        case_name = slugify(args.name)
+        case_name = validate_case_key(slugify(args.name))
         target = case_dir(case_name, data_root, repo_root=ROOT)
     except (OSError, ValueError, RuntimeError) as exc:
         print("PRIVACY BLOCKED:", exc)
@@ -46,14 +61,33 @@ def main() -> int:
         shutil.rmtree(target)
 
     shutil.copytree(TEMPLATE, target)
+    for folder in CASE_FOLDERS:
+        (target / folder).mkdir(parents=True, exist_ok=True)
+
+    metadata = {
+        "id": case_name,
+        "title": "",
+        "working_title": case_name,
+        "institution": "",
+        "case_number": "",
+        "signature": "",
+        "status": "active",
+        "created": str(date.today()),
+        "version": "1.0",
+        "local_only": True,
+    }
+    with (target / "case.yaml").open("w", encoding="utf-8") as file:
+        yaml.safe_dump(metadata, file, allow_unicode=True, sort_keys=False)
+
     readme = target / "README.md"
     if readme.exists():
         text = readme.read_text(encoding="utf-8")
         readme.write_text(text.replace("[NAZWA_ROBOCZA]", case_name), encoding="utf-8")
 
     print("Created private local case:", target)
-    for sub in ("outbound", "inbound", "notes", "evidence"):
+    for sub in CASE_FOLDERS:
         print(" ", sub, "OK" if (target / sub).is_dir() else "MISSING")
+    print(" case.yaml", "OK" if (target / "case.yaml").is_file() else "MISSING")
     print("GitHub upload: DISABLED")
     return 0
 

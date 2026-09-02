@@ -1,4 +1,4 @@
-"""Run a registered private local MVROS case workspace."""
+"""Run a dynamically discovered private local MVROS case workspace."""
 
 from __future__ import annotations
 
@@ -20,16 +20,26 @@ def main() -> int:
     )
     parser.add_argument("--case", required=False, help="Private local case key")
     parser.add_argument("--data-root", default=None, help="Private local MVROS data root")
-    parser.add_argument("--list", action="store_true", help="List registered case keys and exit")
+    parser.add_argument(
+        "--list",
+        action="store_true",
+        help="List local/registered case keys and exit",
+    )
     parser.add_argument(
         "--stage", default=None, help=f"Run single stage only: {', '.join(STAGES)}"
     )
-    parser.add_argument("--list-stages", action="store_true", help="List available stages and exit")
+    parser.add_argument(
+        "--list-stages", action="store_true", help="List available stages and exit"
+    )
     args = parser.parse_args()
 
+    data_root = Path(args.data_root).expanduser() if args.data_root else None
+    if data_root:
+        os.environ["MVROS_DATA_ROOT"] = str(data_root)
+
     if args.list:
-        print("Registered case definitions:")
-        for key in registered_keys():
+        print("Available local/registered case keys:")
+        for key in registered_keys(data_root=data_root):
             print(f"  - {key}")
         return 0
 
@@ -43,13 +53,9 @@ def main() -> int:
         print("ERROR: --case is required for a real local case")
         return 2
 
-    data_root = Path(args.data_root).expanduser() if args.data_root else None
-    if data_root:
-        os.environ["MVROS_DATA_ROOT"] = str(data_root)
-
     try:
-        spec = get_spec(args.case)
-    except KeyError as exc:
+        spec = get_spec(args.case, data_root=data_root)
+    except (KeyError, ValueError, RuntimeError) as exc:
         print(exc)
         return 2
 
