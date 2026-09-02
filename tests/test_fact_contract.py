@@ -3,6 +3,8 @@ import pytest
 from knowledge.fact_contract import FactContractValidator
 from knowledge.provenance import EntityType, ExtractedFact
 
+_VALID_SHA256 = "a" * 64
+
 
 def _fact(**overrides: object) -> ExtractedFact:
     values: dict[str, object] = {
@@ -13,7 +15,7 @@ def _fact(**overrides: object) -> ExtractedFact:
         "char_start": 0,
         "char_end": 10,
         "extractor_version": "test-v1",
-        "source_document_sha256": "abc123",
+        "source_document_sha256": _VALID_SHA256,
         "extraction_method": "deterministic_regex",
     }
     values.update(overrides)
@@ -26,12 +28,31 @@ def test_fact_contract_accepts_complete_provenance() -> None:
 
 def test_fact_contract_requires_source_hash() -> None:
     errors = FactContractValidator().validate([_fact(source_document_sha256="")])
-    assert errors == ["fact[0]: source_document_sha256 is required"]
+    assert errors == [
+        "fact[0]: source_document_sha256 must be a 64-character lowercase hexadecimal SHA-256"
+    ]
+
+
+def test_fact_contract_rejects_invalid_source_hash() -> None:
+    errors = FactContractValidator().validate([_fact(source_document_sha256="abc123")])
+    assert errors == [
+        "fact[0]: source_document_sha256 must be a 64-character lowercase hexadecimal SHA-256"
+    ]
 
 
 def test_fact_contract_requires_extraction_method() -> None:
     errors = FactContractValidator().validate([_fact(extraction_method="")])
     assert errors == ["fact[0]: extraction_method is required"]
+
+
+def test_fact_contract_requires_extractor_version() -> None:
+    errors = FactContractValidator().validate([_fact(extractor_version="")])
+    assert errors == ["fact[0]: extractor_version is required"]
+
+
+def test_fact_contract_requires_non_whitespace_value() -> None:
+    errors = FactContractValidator().validate([_fact(value="   ")])
+    assert errors == ["fact[0]: value must contain non-whitespace text"]
 
 
 def test_fact_contract_raise_is_fail_closed() -> None:
