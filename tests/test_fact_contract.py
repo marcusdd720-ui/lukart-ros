@@ -1,3 +1,5 @@
+import types
+
 import pytest
 
 from knowledge.fact_contract import FactContractValidator
@@ -20,6 +22,22 @@ def _fact(**overrides: object) -> ExtractedFact:
     }
     values.update(overrides)
     return ExtractedFact(**values)
+
+
+def _contract_fact(**overrides: object) -> object:
+    values: dict[str, object] = {
+        "value": "01.09.2026",
+        "entity_type": EntityType.DATE,
+        "source_document_id": "DOC-1",
+        "page": 1,
+        "char_start": 0,
+        "char_end": 10,
+        "extractor_version": "test-v1",
+        "source_document_sha256": _VALID_SHA256,
+        "extraction_method": "deterministic_regex",
+    }
+    values.update(overrides)
+    return types.SimpleNamespace(**values)
 
 
 def test_fact_contract_accepts_complete_provenance() -> None:
@@ -53,12 +71,14 @@ def test_fact_contract_requires_extraction_method() -> None:
 
 
 def test_fact_contract_requires_extractor_version() -> None:
-    errors = FactContractValidator().validate([_fact(extractor_version="")])
+    errors = FactContractValidator().validate(
+        [_contract_fact(extractor_version="")]
+    )
     assert errors == ["fact[0]: extractor_version is required"]
 
 
 def test_fact_contract_requires_non_whitespace_value() -> None:
-    errors = FactContractValidator().validate([_fact(value="   ")])
+    errors = FactContractValidator().validate([_contract_fact(value="   ")])
     assert errors == ["fact[0]: value must contain non-whitespace text"]
 
 
