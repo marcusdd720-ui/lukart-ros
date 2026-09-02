@@ -1,7 +1,5 @@
 """Tests for the extraction-quality benchmark contract."""
 
-from __future__ import annotations
-
 import json
 from pathlib import Path
 
