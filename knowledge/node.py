@@ -9,6 +9,7 @@ Purpose:
 Represents a node inside the Knowledge Graph.
 """
 
+from collections.abc import Collection
 from dataclasses import dataclass, field
 from uuid import uuid4
 
@@ -26,7 +27,7 @@ class KnowledgeNode:
     description: str = ""
     status: str = ""
     confidence: float = 1.0
-    tags: list[str] = field(default_factory=list)
+    tags: Collection[str] = field(default_factory=list)
     metadata: dict[str, object] = field(default_factory=dict)
 
     def validate(self) -> None:
