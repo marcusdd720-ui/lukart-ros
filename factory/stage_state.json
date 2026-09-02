@@ -1,6 +1,5 @@
 {
-  "current_stage": 1,
-  "last_completed_stage": 0,
-  "last_result": "PASS",
+  "current_stage": 0,
+  "last_completed_stage": -1,
   "status": "READY"
 }
