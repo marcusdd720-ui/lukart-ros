@@ -8,7 +8,7 @@ import urllib.error
 import urllib.parse
 import urllib.request
 from dataclasses import dataclass
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from typing import Any
 
 import jwt
@@ -58,7 +58,7 @@ class GitHubActionsClient:
         self._token_expires_at = 0.0
 
     @classmethod
-    def from_environment(cls) -> "GitHubActionsClient":
+    def from_environment(cls) -> GitHubActionsClient:
         import os
 
         required = (
@@ -80,7 +80,7 @@ class GitHubActionsClient:
         )
 
     def _app_jwt(self) -> str:
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         payload = {
             "iat": int((now - timedelta(seconds=60)).timestamp()),
             "exp": int((now + timedelta(minutes=9)).timestamp()),
@@ -103,9 +103,7 @@ class GitHubActionsClient:
 
         installation_id = self.installation_id or self._resolve_installation_id()
         url = f"{self.api_base}/app/installations/{installation_id}/access_tokens"
-        body = json.dumps(
-            {"repositories": [self.repository.split("/", 1)[1]]}
-        ).encode()
+        body = json.dumps({"repositories": [self.repository.split("/", 1)[1]]}).encode()
         data = self._request("POST", url, token=self._app_jwt(), body=body)
         token = data.get("token")
         expires_at = data.get("expires_at")
@@ -176,7 +174,7 @@ class GitHubActionsClient:
         )
 
     def dispatch_stage_and_find_run(self, stage: int, *, ref: str = "main") -> int:
-        started_at = datetime.now(timezone.utc)
+        started_at = datetime.now(UTC)
         self.dispatch_stage(stage, ref=ref)
         deadline = time.monotonic() + 60
         while time.monotonic() < deadline:
