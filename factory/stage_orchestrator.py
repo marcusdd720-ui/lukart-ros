@@ -9,7 +9,7 @@ import subprocess
 import time
 from pathlib import Path
 
-from factory.stage_registry import STAGES, get_stage, next_stage
+from factory.stage_registry import get_stage, next_stage
 
 DEFAULT_STATE = {
     "current_stage": 6,
@@ -68,8 +68,16 @@ def dispatch_smoke(stage_number: int, expected_sha: str) -> int:
         raise OrchestratorError("GITHUB_REPOSITORY is required")
     result = run(
         [
-            "gh", "workflow", "run", "github-app-smoke.yml",
-            "--repo", repository, "--ref", "main", "-f", f"stage={stage_number}",
+            "gh",
+            "workflow",
+            "run",
+            "github-app-smoke.yml",
+            "--repo",
+            repository,
+            "--ref",
+            "main",
+            "-f",
+            f"stage={stage_number}",
         ],
         capture=True,
     )
@@ -79,9 +87,17 @@ def dispatch_smoke(stage_number: int, expected_sha: str) -> int:
     for _ in range(SMOKE_DISCOVERY_ATTEMPTS):
         runs = run(
             [
-                "gh", "run", "list", "--repo", repository,
-                "--workflow", "github-app-smoke.yml", "--limit", "50",
-                "--json", "databaseId,headSha,status,conclusion,event,createdAt",
+                "gh",
+                "run",
+                "list",
+                "--repo",
+                repository,
+                "--workflow",
+                "github-app-smoke.yml",
+                "--limit",
+                "50",
+                "--json",
+                "databaseId,headSha,status,conclusion,event,createdAt",
             ],
             capture=True,
         )
@@ -104,8 +120,14 @@ def wait_for_run(run_id: int) -> tuple[bool, str]:
     for _ in range(180):
         result = run(
             [
-                "gh", "run", "view", str(run_id), "--repo", repository,
-                "--json", "status,conclusion,headSha",
+                "gh",
+                "run",
+                "view",
+                str(run_id),
+                "--repo",
+                repository,
+                "--json",
+                "status,conclusion,headSha",
             ],
             capture=True,
         )
@@ -120,7 +142,18 @@ def wait_for_run(run_id: int) -> tuple[bool, str]:
 
 def capture_failure(run_id: int) -> str:
     repository = os.environ.get("GITHUB_REPOSITORY", "")
-    result = run(["gh", "run", "view", str(run_id), "--repo", repository, "--log-failed"], capture=True)
+    result = run(
+        [
+            "gh",
+            "run",
+            "view",
+            str(run_id),
+            "--repo",
+            repository,
+            "--log-failed",
+        ],
+        capture=True,
+    )
     return (result.stdout + result.stderr)[-20000:]
 
 
@@ -146,7 +179,9 @@ def auto_repair() -> bool:
     status = run(["git", "status", "--porcelain"], capture=True)
     if status.returncode != 0:
         raise OrchestratorError(status.stderr.strip() or "Cannot inspect repair diff")
-    source_changes = [line for line in status.stdout.splitlines() if not line.endswith("factory/stage_state.json")]
+    source_changes = [
+        line for line in status.stdout.splitlines() if not line.endswith("factory/stage_state.json")
+    ]
     if not source_changes:
         return False
     add = run(["git", "add", "-A"])
