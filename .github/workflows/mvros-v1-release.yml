@@ -81,6 +81,12 @@ jobs:
           test "$TAG_COMMIT" = "$VALIDATED_SHA"
           echo "Existing tag points to the validated SHA."
 
+      - name: Configure release git identity
+        run: |
+          set -euo pipefail
+          git config user.name "lukart-ros-release[bot]"
+          git config user.email "lukart-ros-release[bot]@users.noreply.github.com"
+
       - name: Create tag and GitHub Release
         env:
           GH_TOKEN: ${{ github.token }}
