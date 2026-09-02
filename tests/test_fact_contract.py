@@ -1,0 +1,39 @@
+import pytest
+
+from knowledge.fact_contract import FactContractValidator
+from knowledge.provenance import EntityType, ExtractedFact
+
+
+def _fact(**overrides: object) -> ExtractedFact:
+    values: dict[str, object] = {
+        "value": "01.09.2026",
+        "entity_type": EntityType.DATE,
+        "source_document_id": "DOC-1",
+        "page": 1,
+        "char_start": 0,
+        "char_end": 10,
+        "extractor_version": "test-v1",
+        "source_document_sha256": "abc123",
+        "extraction_method": "deterministic_regex",
+    }
+    values.update(overrides)
+    return ExtractedFact(**values)
+
+
+def test_fact_contract_accepts_complete_provenance() -> None:
+    assert FactContractValidator().validate([_fact()]) == []
+
+
+def test_fact_contract_requires_source_hash() -> None:
+    errors = FactContractValidator().validate([_fact(source_document_sha256="")])
+    assert errors == ["fact[0]: source_document_sha256 is required"]
+
+
+def test_fact_contract_requires_extraction_method() -> None:
+    errors = FactContractValidator().validate([_fact(extraction_method="")])
+    assert errors == ["fact[0]: extraction_method is required"]
+
+
+def test_fact_contract_raise_is_fail_closed() -> None:
+    with pytest.raises(ValueError, match="Fact contract violation"):
+        FactContractValidator().validate_or_raise([_fact(source_document_sha256="")])
