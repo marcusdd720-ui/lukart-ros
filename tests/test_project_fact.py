@@ -17,7 +17,9 @@ def test_project_fact_creates_node() -> None:
     nid = project_fact(g, fact)
     assert nid == f"fact:{fact.id}"
     assert g.has_node(nid)
-    assert g.get_node(nid).type == NodeType.FACT
+    node = g.get_node(nid)
+    assert node is not None
+    assert node.type == NodeType.FACT
 
 
 def test_project_fact_idempotent() -> None:
