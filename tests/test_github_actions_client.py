@@ -32,12 +32,24 @@ def test_environment_configuration_normalizes_private_key(monkeypatch: pytest.Mo
     client = GitHubActionsClient.from_environment()
 
     assert client.app_id == 4804861
+    assert client.client_id == "4804861"
     assert client.installation_id == 152031980
     assert client.private_key == "line1\nline2"
     assert client.repository == "marcusdd720-ui/lukart-ros"
 
 
-def test_app_jwt_has_expected_claims(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_environment_configuration_uses_optional_client_id(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("LUKART_ROS_FACTORY_APP_ID", "4804861")
+    monkeypatch.setenv("LUKART_ROS_FACTORY_INSTALLATION_ID", "152031980")
+    monkeypatch.setenv("LUKART_ROS_FACTORY_PRIVATE_KEY", "key")
+    monkeypatch.setenv("LUKART_ROS_FACTORY_CLIENT_ID", "Iv23liXvRDs1jPRRZS5m")
+
+    client = GitHubActionsClient.from_environment()
+
+    assert client.client_id == "Iv23liXvRDs1jPRRZS5m"
+
+
+def test_app_jwt_uses_string_issuer(monkeypatch: pytest.MonkeyPatch) -> None:
     client = GitHubActionsClient(
         app_id=4804861,
         installation_id=152031980,
@@ -45,12 +57,16 @@ def test_app_jwt_has_expected_claims(monkeypatch: pytest.MonkeyPatch) -> None:
         repository="marcusdd720-ui/lukart-ros",
     )
 
-    monkeypatch.setattr("factory.github_actions_client.jwt.encode", lambda payload, key, algorithm: json.dumps(payload))
+    monkeypatch.setattr(
+        "factory.github_actions_client.jwt.encode",
+        lambda payload, key, algorithm: json.dumps(payload),
+    )
     payload = json.loads(client._app_jwt())
 
-    assert payload["iss"] == 4804861
+    assert payload["iss"] == "4804861"
+    assert isinstance(payload["iss"], str)
     assert payload["exp"] > payload["iat"]
-    assert payload["exp"] - payload["iat"] <= 570
+    assert payload["exp"] - payload["iat"] <= 600
 
 
 def test_dispatch_stage_uses_workflow_dispatch_contract(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -61,9 +77,14 @@ def test_dispatch_stage_uses_workflow_dispatch_contract(monkeypatch: pytest.Monk
         repository="owner/repo",
     )
     captured: dict[str, Any] = {}
-    monkeypatch.setattr(client, "_api", lambda method, path, body=None: captured.update(
-        {"method": method, "path": path, "body": body}
-    ) or {})
+    monkeypatch.setattr(
+        client,
+        "_api",
+        lambda method, path, body=None: captured.update(
+            {"method": method, "path": path, "body": body}
+        )
+        or {},
+    )
     monkeypatch.setattr(client, "_installation_token", lambda: "ghs_example")
 
     client.dispatch_stage(6)
