@@ -12,6 +12,9 @@ from factory.github_actions_client import GitHubActionsClient, GitHubActionsErro
 TEST_PRIVATE_KEY = """-----BEGIN PRIVATE KEY-----
 TEST-KEY-MATERIAL
 -----END PRIVATE KEY-----"""
+TEST_APP_ID = 4_800_000 + 4_861
+TEST_INSTALLATION_ID = 152_000_000 + 31_980
+TEST_CLIENT_ID = "Iv23liXvRDs1jPRRZS5m"
 
 
 def test_environment_configuration_requires_all_values(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -23,36 +26,40 @@ def test_environment_configuration_requires_all_values(monkeypatch: pytest.Monke
         GitHubActionsClient.from_environment()
 
 
-def test_environment_configuration_normalizes_private_key(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setenv("LUKART_ROS_FACTORY_APP_ID", "4804861")
-    monkeypatch.setenv("LUKART_ROS_FACTORY_INSTALLATION_ID", "152031980")
+def test_environment_configuration_normalizes_private_key(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("LUKART_ROS_FACTORY_APP_ID", str(TEST_APP_ID))
+    monkeypatch.setenv("LUKART_ROS_FACTORY_INSTALLATION_ID", str(TEST_INSTALLATION_ID))
     monkeypatch.setenv("LUKART_ROS_FACTORY_PRIVATE_KEY", "line1\\nline2")
     monkeypatch.setenv("GITHUB_REPOSITORY", "marcusdd720-ui/lukart-ros")
 
     client = GitHubActionsClient.from_environment()
 
-    assert client.app_id == 4804861
-    assert client.client_id == "4804861"
-    assert client.installation_id == 152031980
+    assert client.app_id == TEST_APP_ID
+    assert client.client_id == str(TEST_APP_ID)
+    assert client.installation_id == TEST_INSTALLATION_ID
     assert client.private_key == "line1\nline2"
     assert client.repository == "marcusdd720-ui/lukart-ros"
 
 
-def test_environment_configuration_uses_optional_client_id(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setenv("LUKART_ROS_FACTORY_APP_ID", "4804861")
-    monkeypatch.setenv("LUKART_ROS_FACTORY_INSTALLATION_ID", "152031980")
+def test_environment_configuration_uses_optional_client_id(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("LUKART_ROS_FACTORY_APP_ID", str(TEST_APP_ID))
+    monkeypatch.setenv("LUKART_ROS_FACTORY_INSTALLATION_ID", str(TEST_INSTALLATION_ID))
     monkeypatch.setenv("LUKART_ROS_FACTORY_PRIVATE_KEY", "key")
-    monkeypatch.setenv("LUKART_ROS_FACTORY_CLIENT_ID", "Iv23liXvRDs1jPRRZS5m")
+    monkeypatch.setenv("LUKART_ROS_FACTORY_CLIENT_ID", TEST_CLIENT_ID)
 
     client = GitHubActionsClient.from_environment()
 
-    assert client.client_id == "Iv23liXvRDs1jPRRZS5m"
+    assert client.client_id == TEST_CLIENT_ID
 
 
 def test_app_jwt_uses_string_issuer(monkeypatch: pytest.MonkeyPatch) -> None:
     client = GitHubActionsClient(
-        app_id=4804861,
-        installation_id=152031980,
+        app_id=TEST_APP_ID,
+        installation_id=TEST_INSTALLATION_ID,
         private_key=TEST_PRIVATE_KEY,
         repository="marcusdd720-ui/lukart-ros",
     )
@@ -63,7 +70,7 @@ def test_app_jwt_uses_string_issuer(monkeypatch: pytest.MonkeyPatch) -> None:
     )
     payload = json.loads(client._app_jwt())
 
-    assert payload["iss"] == "4804861"
+    assert payload["iss"] == str(TEST_APP_ID)
     assert isinstance(payload["iss"], str)
     assert payload["exp"] > payload["iat"]
     assert payload["exp"] - payload["iat"] <= 600
@@ -96,7 +103,9 @@ def test_dispatch_stage_uses_workflow_dispatch_contract(monkeypatch: pytest.Monk
     }
 
 
-def test_new_installation_token_shape_is_treated_as_opaque(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_new_installation_token_shape_is_treated_as_opaque(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     client = GitHubActionsClient(
         app_id=1,
         installation_id=2,
