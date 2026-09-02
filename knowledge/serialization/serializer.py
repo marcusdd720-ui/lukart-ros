@@ -1,10 +1,4 @@
-"""
-Knowledge Operating System (KOS)
-
-Sprint GRAPH-011
-
-KnowledgeGraph serializer.
-"""
+"""KnowledgeGraph serializer."""
 
 from __future__ import annotations
 
@@ -12,16 +6,13 @@ from knowledge.graph import KnowledgeGraph
 
 
 class GraphSerializer:
-    """
-    Serialize KnowledgeGraph into a Python dictionary.
-    """
+    """Serialize a KnowledgeGraph into a versioned wire-format dictionary."""
 
-    def serialize(
-        self,
-        graph: KnowledgeGraph,
-    ) -> dict:
+    SCHEMA_VERSION = "1.0.0"
 
+    def serialize(self, graph: KnowledgeGraph) -> dict:
         return {
+            "schema_version": self.SCHEMA_VERSION,
             "nodes": [
                 {
                     "id": node.id,
