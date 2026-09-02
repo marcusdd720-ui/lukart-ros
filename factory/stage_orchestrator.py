@@ -314,9 +314,13 @@ def main() -> int:
             if state["status"] == "COMPLETE":
                 print("ORCHESTRATOR_RESULT=COMPLETE")
             else:
-                next_number = int(state["current_stage"])
-                print(f"NEXT_STAGE={next_number}")
-                dispatch_next_orchestrator(next_number)
+                next_value = state["current_stage"]
+                if not isinstance(next_value, int):
+                    raise OrchestratorError(
+                        "Orchestrator state next current_stage must be an integer"
+                    )
+                print(f"NEXT_STAGE={next_value}")
+                dispatch_next_orchestrator(next_value)
                 print("ORCHESTRATOR_RESULT=ADVANCED")
             return 0
         print("SMOKE_FAILURE_LOG_START")
