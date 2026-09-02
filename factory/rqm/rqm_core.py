@@ -45,15 +45,13 @@ class RQMCore:
         """Execute Release Quality Manager pipeline."""
         report: Report = self.engine.run()
 
-        previous_report = self.history.last()
-        trend = self.trend_engine.compute(report, previous_report)
+        previous_score = self.history.last_score()
+        trend = self.trend_engine.compute(report, previous_score)
+        report.metadata["trend"] = trend.direction.value
+        report.metadata["delta"] = trend.delta
 
-        quality_report = QualityReport.from_report(
-            report,
-            trend=trend,
-        )
-
-        self.history.save(quality_report)
+        self.history.save(report)
+        quality_report = QualityReport.from_report(report)
         self.reporter.render(quality_report)
 
         return self.exit_policy.exit_code(quality_report.decision)
