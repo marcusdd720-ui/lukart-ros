@@ -38,13 +38,16 @@ class Dijkstra:
         if not self._graph.has_node(target):
             return []
 
-        distances: dict[str, int] = {node: float("inf") for node in self._graph.nodes}
+        distances: dict[str, float] = {
+            node: float("inf") for node in self._graph.nodes
+        }
+        previous: dict[str, str | None] = {
+            node: None for node in self._graph.nodes
+        }
 
-        previous: dict[str, str | None] = {node: None for node in self._graph.nodes}
+        distances[source] = 0.0
 
-        distances[source] = 0
-
-        queue: list[tuple[int, str]] = [(0, source)]
+        queue: list[tuple[float, str]] = [(0.0, source)]
 
         while queue:
             current_distance, current = heapq.heappop(queue)
@@ -56,25 +59,20 @@ class Dijkstra:
                 continue
 
             for neighbor in self._graph.neighbors(current):
-                new_distance = current_distance + 1
+                new_distance = current_distance + 1.0
 
                 if new_distance < distances[neighbor.id]:
                     distances[neighbor.id] = new_distance
                     previous[neighbor.id] = current
-
                     heapq.heappush(
                         queue,
-                        (
-                            new_distance,
-                            neighbor.id,
-                        ),
+                        (new_distance, neighbor.id),
                     )
 
         if distances[target] == float("inf"):
             return []
 
         path: list[str] = []
-
         node: str | None = target
 
         while node is not None:
@@ -82,7 +80,6 @@ class Dijkstra:
             node = previous[node]
 
         path.reverse()
-
         return path
 
     def distance(
@@ -90,13 +87,7 @@ class Dijkstra:
         source: str,
         target: str,
     ) -> int | None:
-
-        path = self.shortest_path(
-            source,
-            target,
-        )
-
+        path = self.shortest_path(source, target)
         if not path:
             return None
-
         return len(path) - 1
