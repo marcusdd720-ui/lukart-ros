@@ -38,7 +38,7 @@ class GitHubActionsClient:
         self,
         *,
         app_id: int,
-        installation_id: int,
+        installation_id: int | None,
         private_key: str,
         repository: str,
         client_id: str | None = None,
@@ -63,7 +63,6 @@ class GitHubActionsClient:
 
         required = (
             "LUKART_ROS_FACTORY_APP_ID",
-            "LUKART_ROS_FACTORY_INSTALLATION_ID",
             "LUKART_ROS_FACTORY_PRIVATE_KEY",
         )
         missing = [name for name in required if not os.environ.get(name)]
@@ -71,12 +70,13 @@ class GitHubActionsClient:
             raise GitHubActionsError(
                 "Missing GitHub App configuration: " + ", ".join(missing)
             )
+        installation_raw = os.environ.get("LUKART_ROS_FACTORY_INSTALLATION_ID")
         return cls(
             app_id=int(os.environ[required[0]]),
-            installation_id=int(os.environ[required[1]]),
-            private_key=os.environ[required[2]].replace("\\n", "\n"),
+            installation_id=int(installation_raw) if installation_raw else None,
+            private_key=os.environ[required[1]].replace("\\n", "\n"),
             client_id=os.environ.get("LUKART_ROS_FACTORY_CLIENT_ID"),
-            repository=os.environ.get("GITHUB_REPOSITORY", "marcusdd720-ui/lukart-ros"),
+            repository=os.environ.get("GITHUB_REPOSITORY", "lukart-ros"),
         )
 
     def _app_jwt(self) -> str:
@@ -88,15 +88,23 @@ class GitHubActionsClient:
         }
         return str(jwt.encode(payload, self.private_key, algorithm="RS256"))
 
+    def _resolve_installation_id(self) -> int:
+        url = f"{self.api_base}/repos/{self.repository}/installation"
+        data = self._request("GET", url, token=self._app_jwt())
+        installation_id = data.get("id")
+        if not isinstance(installation_id, int):
+            raise GitHubActionsError("GitHub did not return a valid installation ID")
+        self.installation_id = installation_id
+        return installation_id
+
     def _installation_token(self) -> str:
         if self._token is not None and time.time() < self._token_expires_at:
             return self._token
 
-        url = f"{self.api_base}/app/installations/{self.installation_id}/access_tokens"
+        installation_id = self.installation_id or self._resolve_installation_id()
+        url = f"{self.api_base}/app/installations/{installation_id}/access_tokens"
         body = json.dumps(
-            {
-                "repositories": [self.repository.split("/", 1)[1]],
-            }
+            {"repositories": [self.repository.split("/", 1)[1]]}
         ).encode()
         data = self._request("POST", url, token=self._app_jwt(), body=body)
         token = data.get("token")
