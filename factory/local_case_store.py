@@ -20,8 +20,7 @@ def find_repo_root(start: Path | None = None) -> Path | None:
     if current.is_file():
         current = current.parent
     for candidate in (current, *current.parents):
-        marker = candidate / ".git"
-        if marker.exists():
+        if (candidate / ".git").exists():
             return candidate
     return None
 
@@ -35,7 +34,7 @@ def default_data_root() -> Path:
 
 def validate_data_root(data_root: Path, *, repo_root: Path | None = None) -> Path:
     root = data_root.expanduser().resolve()
-    repo = (repo_root or find_repo_root()).resolve() if (repo_root or find_repo_root()) else None
+    repo = repo_root.expanduser().resolve() if repo_root else find_repo_root()
 
     if repo is not None and (root == repo or repo in root.parents):
         raise PrivacyViolation(
