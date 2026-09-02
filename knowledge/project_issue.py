@@ -48,7 +48,7 @@ def project_legal_issue(
             "statute_refs": list(issue.statute_refs),
             "case_law_refs": list(issue.case_law_refs),
         },
-        tags={"issue", "legal_issue"},
+        tags=["issue", "legal_issue"],
     )
     node.validate()
     graph.ensure_node(node)
