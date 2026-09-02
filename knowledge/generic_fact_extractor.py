@@ -26,11 +26,30 @@ class FactPattern:
 
 
 DEFAULT_PATTERNS: tuple[FactPattern, ...] = (
-    FactPattern(EntityType.CASE_NUMBER, r"\b(?:Sygn\.?\s*akt|sygnatura)\s*[:.]?\s*[A-ZŁŚŻŹĆŃÓĘĄ0-9/-]+\b", re.IGNORECASE),
-    FactPattern(EntityType.DECISION_NUMBER, r"\b(?:znak|nr\s+decyzji)\s*[:.]?\s*[A-ZŁŚŻŹĆŃÓĘĄ0-9/-]+\b", re.IGNORECASE),
-    FactPattern(EntityType.DATE, r"\b(?:0?[1-9]|[12]\d|3[01])[.]\d{2}[.]\d{4}\b"),
-    FactPattern(EntityType.AMOUNT, r"\b\d{1,9}(?:[ .]\d{3})*(?:,\d{2})?\s*(?:zł|PLN)\b", re.IGNORECASE),
-    FactPattern(EntityType.LEGAL_BASIS, r"\bart\.\s*\d+[a-zA-Z]?\s*(?:§\s*\d+\s*)?(?:ust\.\s*\d+\s*)?(?:pkt\s*\d+\s*)?", re.IGNORECASE),
+    FactPattern(
+        EntityType.CASE_NUMBER,
+        r"\b(?:Sygn\.?\s*akt|sygnatura)\s*[:.]?\s*[A-ZŁŚŻŹĆŃÓĘĄ0-9/-]+\b",
+        re.IGNORECASE,
+    ),
+    FactPattern(
+        EntityType.DECISION_NUMBER,
+        r"\b(?:znak|nr\s+decyzji)\s*[:.]?\s*[A-ZŁŚŻŹĆŃÓĘĄ0-9/-]+\b",
+        re.IGNORECASE,
+    ),
+    FactPattern(
+        EntityType.DATE,
+        r"\b(?:0?[1-9]|[12]\d|3[01])[.]\d{2}[.]\d{4}\b",
+    ),
+    FactPattern(
+        EntityType.AMOUNT,
+        r"\b\d{1,9}(?:[ .]\d{3})*(?:,\d{2})?\s*(?:zł|PLN)\b",
+        re.IGNORECASE,
+    ),
+    FactPattern(
+        EntityType.LEGAL_BASIS,
+        r"\bart\.\s*\d+[a-zA-Z]?\s*(?:§\s*\d+\s*)?(?:ust\.\s*\d+\s*)?(?:pkt\s*\d+\s*)?",
+        re.IGNORECASE,
+    ),
 )
 
 
