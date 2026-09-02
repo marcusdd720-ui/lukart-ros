@@ -19,6 +19,18 @@ def test_state_round_trip_is_deterministic(tmp_path: Path) -> None:
     assert load_state(path) == expected
 
 
+def test_completed_terminal_state_is_valid(tmp_path: Path) -> None:
+    path = tmp_path / "state.json"
+    expected = {
+        "current_stage": 16,
+        "last_completed_stage": 16,
+        "last_result": "PASS",
+        "status": "COMPLETE",
+    }
+    write_state(path, expected)
+    assert load_state(path) == expected
+
+
 def test_state_rejects_inconsistent_stage_order(tmp_path: Path) -> None:
     path = tmp_path / "state.json"
     path.write_text(
@@ -28,6 +40,6 @@ def test_state_rejects_inconsistent_stage_order(tmp_path: Path) -> None:
     try:
         load_state(path)
     except RuntimeError as exc:
-        assert "inconsistent stage ordering" in str(exc)
+        assert "terminal status" in str(exc)
     else:
         raise AssertionError("invalid lifecycle state was accepted")

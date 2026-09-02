@@ -38,11 +38,14 @@ def load_state(path: Path) -> dict[str, object]:
         raise OrchestratorError("Orchestrator state must be a JSON object")
     current = state.get("current_stage")
     completed = state.get("last_completed_stage")
+    status = state.get("status")
     if not isinstance(current, int) or not isinstance(completed, int):
         raise OrchestratorError("Orchestrator state requires integer stage fields")
     get_stage(current)
-    if completed < -1 or completed >= current:
+    if completed < -1 or completed > current:
         raise OrchestratorError("Orchestrator state has inconsistent stage ordering")
+    if completed == current and status != "COMPLETE":
+        raise OrchestratorError("Orchestrator state has inconsistent terminal status")
     return state
 
 
