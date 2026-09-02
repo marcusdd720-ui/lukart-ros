@@ -41,10 +41,18 @@ _PATTERN_DEFINITIONS: dict[str, tuple[EntityType, str]] = {
     ),
 }
 
-_PARTY_PATTERN = re.compile(r"\bstron(?:ę|a)\s+([A-ZĄĆĘŁŃÓŚŹŻ][\wĄĆĘŁŃÓŚŹŻ-]*)")
+_PARTY_PATTERN = re.compile(
+    r"\bstron(?:ę|a)\s+([A-ZĄĆĘŁŃÓŚŹŻ][\wĄĆĘŁŃÓŚŹŻ-]*)"
+)
 
 _DOCUMENT_PATTERNS: dict[str, tuple[str, ...]] = {
-    "wyrok_sadowy": ("case_number", "decision_date", "amount", "legal_basis", "outcome"),
+    "wyrok_sadowy": (
+        "case_number",
+        "decision_date",
+        "amount",
+        "legal_basis",
+        "outcome",
+    ),
     "decyzja_zus": (
         "decision_number",
         "decision_date",
@@ -53,7 +61,12 @@ _DOCUMENT_PATTERNS: dict[str, tuple[str, ...]] = {
         "outcome",
     ),
     "umowa": ("contract_date", "amount", "contract_deadline"),
-    "pismo_procesowe": ("case_number", "decision_date", "legal_basis", "deadline_days"),
+    "pismo_procesowe": (
+        "case_number",
+        "decision_date",
+        "legal_basis",
+        "deadline_days",
+    ),
 }
 
 
@@ -78,7 +91,11 @@ def _make_fact(
     )
 
 
-def extract_facts(document_id: str, document_type: str, text: str) -> Iterable[ExtractedFact]:
+def extract_facts(
+    document_id: str,
+    document_type: str,
+    text: str,
+) -> Iterable[ExtractedFact]:
     """Extract typed facts with reproducible source spans from one document."""
 
     if document_type not in _DOCUMENT_PATTERNS:
@@ -110,4 +127,7 @@ def extract_facts(document_id: str, document_type: str, text: str) -> Iterable[E
                 )
             )
 
-    return sorted(matches, key=lambda fact: (fact.char_start, fact.char_end, fact.entity_type.value))
+    return sorted(
+        matches,
+        key=lambda fact: (fact.char_start, fact.char_end, fact.entity_type.value),
+    )
