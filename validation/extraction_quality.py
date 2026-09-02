@@ -13,6 +13,38 @@ import unicodedata
 from knowledge.provenance import EntityType, ExtractedFact
 
 
+CRITICAL_TYPES_BY_DOCUMENT_TYPE: dict[str, frozenset[EntityType]] = {
+    "wyrok_sadowy": frozenset(
+        {
+            EntityType.CASE_NUMBER,
+            EntityType.DECISION_OUTCOME,
+            EntityType.LEGAL_BASIS,
+            EntityType.DEADLINE,
+            EntityType.AMOUNT,
+        }
+    ),
+    "decyzja_zus": frozenset(
+        {
+            EntityType.DECISION_NUMBER,
+            EntityType.DECISION_OUTCOME,
+            EntityType.BENEFIT_AMOUNT,
+            EntityType.DEADLINE,
+        }
+    ),
+    "umowa": frozenset(
+        {EntityType.PARTY, EntityType.DATE, EntityType.AMOUNT}
+    ),
+    "pismo_procesowe": frozenset(
+        {
+            EntityType.CASE_NUMBER,
+            EntityType.PARTY,
+            EntityType.LEGAL_BASIS,
+            EntityType.DEADLINE,
+        }
+    ),
+}
+
+
 @dataclass(frozen=True, slots=True)
 class GoldFact:
     document_id: str
@@ -31,6 +63,7 @@ class ExtractionMetrics:
     recall: float
     f1: float
     critical_true_positive: int
+    critical_false_positive: int
     critical_false_negative: int
     critical_recall: float
     critical_precision: float
@@ -138,6 +171,7 @@ def evaluate(
     predicted_keys = {
         fact_key(f.source_document_id, f.entity_type, f.value) for f in prediction_list
     }
+    document_types = {fact.document_id: fact.document_type for fact in filtered_gold}
 
     gold_keys = set(gold_map)
     true_keys = gold_keys.intersection(predicted_keys)
@@ -155,10 +189,9 @@ def evaluate(
     critical_fp = sum(
         1
         for key in false_positive_keys
-        if any(
-            fact_key(pred.source_document_id, pred.entity_type, pred.value) == key
-            and pred.entity_type in {EntityType.CASE_NUMBER, EntityType.DECISION_NUMBER}
-            for pred in prediction_list
+        if key[0] in document_types
+        and EntityType(key[1]) in CRITICAL_TYPES_BY_DOCUMENT_TYPE.get(
+            document_types[key[0]], frozenset()
         )
     )
     critical_total = len(critical_keys)
@@ -209,6 +242,7 @@ def evaluate(
         recall=recall,
         f1=f1,
         critical_true_positive=critical_tp,
+        critical_false_positive=critical_fp,
         critical_false_negative=critical_fn,
         critical_recall=critical_recall,
         critical_precision=critical_precision,
