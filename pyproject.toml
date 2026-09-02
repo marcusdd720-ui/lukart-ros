@@ -1,6 +1,6 @@
 [project]
 name = "lukart-ros"
-version = "0.1.0"
+version = "1.0.0"
 description = "LukArt ROS – Knowledge Operating System and virtual chambers factory"
 readme = "README.md"
 requires-python = ">=3.11"
