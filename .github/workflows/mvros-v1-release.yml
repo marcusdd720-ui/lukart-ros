@@ -14,6 +14,11 @@ concurrency:
   group: mvros-v1-release
   cancel-in-progress: false
 
+env:
+  # v1.0.0 was published before the final operational/privacy changes landed.
+  # Reconciliation is intentionally limited to that pre-operational release.
+  ALLOW_STALE_V1_RECONCILIATION: "true"
+
 jobs:
   release:
     if: >-
@@ -63,29 +68,64 @@ jobs:
           echo "MVROS_VERSION=$VERSION"
           echo "MVROS_TAG=$TAG"
 
-      - name: Verify tag state
+      - name: Inspect existing release state
+        id: release_state
         env:
+          GH_TOKEN: ${{ github.token }}
           TAG: ${{ steps.version.outputs.tag }}
           VALIDATED_SHA: ${{ github.event.workflow_run.head_sha }}
+          VERSION: ${{ steps.version.outputs.version }}
         run: |
           set -euo pipefail
-          TAG_REF="$(git ls-remote origin "refs/tags/$TAG")"
-          if [ -z "$TAG_REF" ]; then
-            echo "Tag $TAG does not exist and will be created at $VALIDATED_SHA."
-            exit 0
+          TAG_COMMIT="$(git ls-remote origin "refs/tags/$TAG^{}" | awk '{print $1}')"
+          RELEASE_EXISTS="false"
+          RELEASE_IMMUTABLE="false"
+          RELEASE_TARGET=""
+          if RELEASE_JSON="$(gh release view "$TAG" --json targetCommitish,isImmutable 2>/dev/null)"; then
+            RELEASE_EXISTS="true"
+            RELEASE_IMMUTABLE="$(printf '%s' "$RELEASE_JSON" | python -c 'import json,sys; print(str(json.load(sys.stdin)["isImmutable"]).lower())')"
+            RELEASE_TARGET="$(printf '%s' "$RELEASE_JSON" | python -c 'import json,sys; print(json.load(sys.stdin)["targetCommitish"])')"
+          fi
+          echo "TAG_COMMIT=$TAG_COMMIT"
+          echo "RELEASE_EXISTS=$RELEASE_EXISTS"
+          echo "RELEASE_IMMUTABLE=$RELEASE_IMMUTABLE"
+          echo "RELEASE_TARGET=$RELEASE_TARGET"
+          echo "tag_commit=$TAG_COMMIT" >> "$GITHUB_OUTPUT"
+          echo "release_exists=$RELEASE_EXISTS" >> "$GITHUB_OUTPUT"
+          echo "release_immutable=$RELEASE_IMMUTABLE" >> "$GITHUB_OUTPUT"
+          echo "release_target=$RELEASE_TARGET" >> "$GITHUB_OUTPUT"
+
+          if [ "$RELEASE_IMMUTABLE" = "true" ] && [ "$TAG_COMMIT" != "$VALIDATED_SHA" ]; then
+            echo "Immutable release/tag conflict for $TAG; refusing to mutate it."
+            exit 1
           fi
 
-          TAG_COMMIT="$(git ls-remote origin "refs/tags/$TAG^{}" | awk '{print $1}')"
-          test -n "$TAG_COMMIT"
-          echo "Existing tag $TAG resolves to $TAG_COMMIT"
-          test "$TAG_COMMIT" = "$VALIDATED_SHA"
-          echo "Existing tag points to the validated SHA."
+          if [ "$TAG_COMMIT" != "" ] && [ "$TAG_COMMIT" != "$VALIDATED_SHA" ]; then
+            test "$VERSION" = "1.0.0"
+            test "$ALLOW_STALE_V1_RECONCILIATION" = "true"
+            echo "Stale pre-operational v1.0.0 state detected; reconciliation is permitted."
+          fi
 
       - name: Configure release git identity
         run: |
           set -euo pipefail
           git config user.name "lukart-ros-release[bot]"
           git config user.email "lukart-ros-release[bot]@users.noreply.github.com"
+
+      - name: Reconcile stale v1.0.0 release
+        if: steps.release_state.outputs.tag_commit != '' && steps.release_state.outputs.tag_commit != github.event.workflow_run.head_sha
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ steps.version.outputs.tag }}
+        run: |
+          set -euo pipefail
+          test "$TAG" = "v1.0.0"
+          if [ "${{ steps.release_state.outputs.release_exists }}" = "true" ]; then
+            test "${{ steps.release_state.outputs.release_immutable }}" = "false"
+            gh release delete "$TAG" --yes --cleanup-tag
+          else
+            git push origin ":refs/tags/$TAG"
+          fi
 
       - name: Create tag and GitHub Release
         env:
