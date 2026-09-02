@@ -43,7 +43,7 @@ def project_argument(
             "issue_id": argument.issue_id,
             "status": argument.status.name,
         },
-        tags={"argument"},
+        tags=["argument"],
     )
     node.validate()
     graph.ensure_node(node)
