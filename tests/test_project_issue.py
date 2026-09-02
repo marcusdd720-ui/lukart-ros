@@ -22,7 +22,7 @@ def test_project_creates_issue_node() -> None:
     assert "darowizna" in node.name.lower()
 
 
-def test_project_adds_raises_and_resolves() -> None:
+def test_project_adds_raises_and_relies_on() -> None:
     g = KnowledgeGraph()
 
     fact = KnowledgeNode(id="fact:1", type=NodeType.FACT, name="Fact 1")
@@ -45,12 +45,12 @@ def test_project_adds_raises_and_resolves() -> None:
     )
 
     raises = [e for e in g.edges if e.type == EdgeType.RAISES]
-    resolves = [e for e in g.edges if e.type == EdgeType.RESOLVES]
+    relies_on = [e for e in g.edges if e.type == EdgeType.RELIES_ON]
 
     assert len(raises) == 1
     assert raises[0].source == "fact:1"
     assert raises[0].target == issue_id
 
-    assert len(resolves) == 1
-    assert resolves[0].source == issue_id
-    assert resolves[0].target == "statute:kk:284:2"
+    assert len(relies_on) == 1
+    assert relies_on[0].source == issue_id
+    assert relies_on[0].target == "statute:kk:284:2"
