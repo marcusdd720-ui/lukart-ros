@@ -33,6 +33,15 @@ COMMANDS: dict[str, tuple[str, ...]] = {
         "python scripts/repository_audit.py",
         "python scripts/pii_scan.py",
     ),
+    "dedup": (
+        "python -m pytest tests/test_fact_identity.py -q",
+        "python -m pytest tests/test_fact_projection.py tests/test_pipeline_fact_e2e.py -q",
+        "python -m pytest -v",
+        "python -m ruff check .",
+        "python -m mypy .",
+        "python scripts/repository_audit.py",
+        "python scripts/pii_scan.py",
+    ),
 }
 
 
