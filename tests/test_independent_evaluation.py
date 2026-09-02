@@ -7,6 +7,7 @@ from validation.independent_evaluation import (
     ReviewOutcome,
 )
 from validation.measurement import MeasurementSnapshot
+
 MEASUREMENTS = MeasurementSnapshot({"precision": 0.95, "recall": 0.9})
 
 
