@@ -31,7 +31,7 @@ class FactContractValidator:
                 errors.append(f"{prefix}: char_end must be greater than char_start")
             if not fact.extractor_version.strip():
                 errors.append(f"{prefix}: extractor_version is required")
-            if not _SHA256_RE.fullmatch(fact.source_document_sha256.lower()):
+            if not _SHA256_RE.fullmatch(fact.source_document_sha256):
                 errors.append(
                     f"{prefix}: source_document_sha256 must be a 64-character lowercase hexadecimal SHA-256"
                 )
