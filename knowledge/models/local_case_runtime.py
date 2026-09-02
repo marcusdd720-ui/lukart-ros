@@ -41,8 +41,8 @@ def build_local_case_workspace(
 
     meta = _metadata(case_path)
     case_id = str(meta.get("id") or key)
-    working_title = str(meta.get("working_title") or meta.get("title") or key)
-    title = str(meta.get("title") or working_title)
+    title = str(meta.get("title") or "")
+    working_title = str(meta.get("title") or meta.get("working_title") or key)
     signature_value = meta.get("signature") or meta.get("case_number") or None
     signature = str(signature_value) if signature_value else None
 
