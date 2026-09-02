@@ -180,7 +180,9 @@ def auto_repair() -> bool:
     if status.returncode != 0:
         raise OrchestratorError(status.stderr.strip() or "Cannot inspect repair diff")
     source_changes = [
-        line for line in status.stdout.splitlines() if not line.endswith("factory/stage_state.json")
+        line
+        for line in status.stdout.splitlines()
+        if not line.endswith("factory/stage_state.json")
     ]
     if not source_changes:
         return False
