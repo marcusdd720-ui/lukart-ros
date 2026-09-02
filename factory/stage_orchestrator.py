@@ -230,6 +230,10 @@ def main() -> int:
     args = parser.parse_args()
 
     state = load_state(args.state_file)
+    if state.get("status") == "COMPLETE" and not args.stage:
+        print("ORCHESTRATOR_RESULT=COMPLETE")
+        return 0
+
     current_number = int(args.stage) if args.stage else state["current_stage"]
     if not isinstance(current_number, int):
         raise OrchestratorError("Orchestrator stage must be an integer")
