@@ -21,12 +21,20 @@ htmlcov/
 .DS_Store
 Thumbs.db
 
-# --- LukArt runtime noise ---
-# Immutable snapshots stay on disk; do not flood git
+# --- MVROS local runtime data: NEVER COMMIT REAL CASE DATA ---
+cases/*
+!cases/_TEMPLATE/
+!cases/_TEMPLATE/**
+output/cases/
+measurements/
+MVROS-DATA/
+.mvros-data/
+
+# --- Runtime noise ---
 output/**/snapshots/
 rqm_history.json
 reports/quality_report.md
 
-# Optional local env
+# --- Optional local env ---
 .env
 .env.local
