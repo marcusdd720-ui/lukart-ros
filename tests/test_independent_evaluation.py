@@ -3,8 +3,8 @@ import pytest
 from validation.independent_evaluation import (
     IndependentEvaluationError,
     IndependentEvaluator,
-    ReviewOutcome,
     ReviewerAssessment,
+    ReviewOutcome,
 )
 from validation.measurement import MeasurementSnapshot
 
