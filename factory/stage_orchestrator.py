@@ -9,6 +9,7 @@ import subprocess
 import time
 from pathlib import Path
 
+from factory.self_healing import repair_repository
 from factory.stage_registry import get_stage, next_stage
 
 DEFAULT_STATE = {
@@ -157,45 +158,9 @@ def capture_failure(run_id: int) -> str:
     return (result.stdout + result.stderr)[-20000:]
 
 
-def auto_repair() -> bool:
-    """Apply deterministic repairs and require a real source-tree change."""
-    state_file = Path("factory/stage_state.json")
-    state_backup = state_file.read_text(encoding="utf-8") if state_file.exists() else None
-    for command in (
-        ["python", "-m", "ruff", "check", ".", "--fix"],
-        ["python", "-m", "ruff", "format", "."],
-    ):
-        result = run(command, capture=True)
-        if result.returncode not in (0, 1):
-            print(result.stdout)
-            print(result.stderr)
-
-    if state_backup is not None:
-        state_file.write_text(state_backup, encoding="utf-8")
-    reset = run(["git", "checkout", "--", "factory/stage_state.json"])
-    if reset.returncode != 0:
-        raise OrchestratorError("Cannot restore lifecycle state after repair attempt")
-
-    status = run(["git", "status", "--porcelain"], capture=True)
-    if status.returncode != 0:
-        raise OrchestratorError(status.stderr.strip() or "Cannot inspect repair diff")
-    source_changes = [
-        line
-        for line in status.stdout.splitlines()
-        if not line.endswith("factory/stage_state.json")
-    ]
-    if not source_changes:
-        return False
-    add = run(["git", "add", "-A"])
-    if add.returncode != 0:
-        raise OrchestratorError("Cannot stage automatic repair")
-    commit = run(["git", "commit", "-m", "fix: automatic stage repair"])
-    if commit.returncode != 0:
-        raise OrchestratorError("Cannot commit automatic repair")
-    push = run(["git", "push", "origin", "HEAD:main"])
-    if push.returncode != 0:
-        raise OrchestratorError("Cannot publish automatic repair")
-    return True
+def auto_repair(failure_log: str) -> bool:
+    """Diagnose the failure and publish only a safe repair on a fresh SHA."""
+    return repair_repository(Path("."), failure_log)
 
 
 def advance_state(state: dict[str, object], current_number: int) -> None:
@@ -265,12 +230,13 @@ def main() -> int:
             return 0
 
         print("SMOKE_FAILURE_LOG_START")
-        print(capture_failure(run_id))
+        failure_log = capture_failure(run_id)
+        print(failure_log)
         print("SMOKE_FAILURE_LOG_END")
         state["last_result"] = "FAIL"
         state["failed_stage"] = current.number
         write_state(args.state_file, state)
-        if attempt == MAX_ATTEMPTS or not auto_repair():
+        if attempt == MAX_ATTEMPTS or not auto_repair(failure_log):
             raise OrchestratorError(
                 f"Stage {current.number} failed and automatic repair could not produce a new SHA"
             )
