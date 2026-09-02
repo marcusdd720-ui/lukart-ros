@@ -3,13 +3,16 @@
 from __future__ import annotations
 
 import json
-from collections.abc import Callable, Iterable
+from collections.abc import Callable, Iterable, Mapping
 from pathlib import Path
+
+import yaml
 
 from knowledge.provenance import ExtractedFact
 from validation.extraction_quality import (
     CorpusSplit,
     ExtractionMetrics,
+    GoldFact,
     evaluate,
     load_corpus_documents,
 )
@@ -26,11 +29,8 @@ class KQMRunner:
         self.corpus_path = corpus_path
         self.taxonomy_path = taxonomy_path
 
-    def load(self) -> tuple[list[object], dict[str, object]]:
+    def load(self) -> tuple[list[GoldFact], Mapping[str, object]]:
         corpus = json.loads(self.corpus_path.read_text(encoding="utf-8"))
-        taxonomy = json.loads("{}")
-        import yaml
-
         taxonomy = yaml.safe_load(self.taxonomy_path.read_text(encoding="utf-8"))
         validate_corpus(corpus, taxonomy)
         return load_corpus_documents(corpus), corpus
