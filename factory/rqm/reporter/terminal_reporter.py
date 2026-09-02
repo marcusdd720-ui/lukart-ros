@@ -16,10 +16,7 @@ class TerminalReporter:
     }
 
     def render(self, report: QualityReport) -> None:
-        """
-        Render the report.
-        """
-
+        """Render the report."""
         arrow = self.ARROWS.get(report.trend, "•")
 
         print("═" * 64)
@@ -28,12 +25,13 @@ class TerminalReporter:
         print(f" DECISION          {report.decision.value}")
         print("═" * 64)
 
-        for provider in report.providers:
+        for result in report.providers:
+            status = "PASS" if result.passed else "FAIL"
             print(
-                f" {provider.provider:<16}"
-                f"{provider.status.value:<10}"
-                f" findings={len(provider.findings):<3}"
-                f" time={provider.duration:.2f}s"
+                f" {result.name:<24}"
+                f"{status:<10}"
+                f"findings={len(result.findings):<3}"
+                f" time={result.duration:.2f}s"
             )
 
         print("═" * 64)
