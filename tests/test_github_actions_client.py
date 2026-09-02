@@ -12,9 +12,9 @@ from factory.github_actions_client import GitHubActionsClient, GitHubActionsErro
 TEST_PRIVATE_KEY = """-----BEGIN PRIVATE KEY-----
 TEST-KEY-MATERIAL
 -----END PRIVATE KEY-----"""
-TEST_APP_ID = 4_800_000 + 4_861
-TEST_INSTALLATION_ID = 152_000_000 + 31_980
-TEST_CLIENT_ID = "Iv23liXvRDs1jPRRZS5m"
+TEST_APP_ID = 42
+TEST_INSTALLATION_ID = 84
+TEST_CLIENT_ID = "test-client-id"
 
 
 def test_environment_configuration_requires_all_values(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -61,7 +61,7 @@ def test_app_jwt_uses_string_issuer(monkeypatch: pytest.MonkeyPatch) -> None:
         app_id=TEST_APP_ID,
         installation_id=TEST_INSTALLATION_ID,
         private_key=TEST_PRIVATE_KEY,
-        repository="marcusdd720-ui/lukart-ros",
+        repository="lukart/test",
     )
 
     monkeypatch.setattr(
