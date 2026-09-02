@@ -5,30 +5,273 @@
   "review_status": "not_reviewed",
   "document_count": 20,
   "documents": [
-    {"document_id":"SYN-WY-001","document_type":"wyrok_sadowy","text":"Sąd Rejonowy w Mieście Alfa rozpoznał sprawę SYN-CASE-001/26. Wyrok z dnia 11.03.2026 r. zasądza kwotę 1050,00 zł. Podstawa: art. 6 ustawy przykładowej. Wynik: uwzględniono.","entities":[{"value":"SYN-CASE-001/26","entity_type":"CASE_NUMBER","critical":true},{"value":"11.03.2026","entity_type":"DATE","critical":true},{"value":"1050,00 zł","entity_type":"AMOUNT","critical":true},{"value":"art. 6 ustawy przykładowej","entity_type":"LEGAL_BASIS","critical":true},{"value":"uwzględniono","entity_type":"DECISION_OUTCOME","critical":true}]},
-    {"document_id":"SYN-WY-002","document_type":"wyrok_sadowy","text":"Sąd Rejonowy w Mieście Alfa rozpoznał sprawę SYN-CASE-002/26. Wyrok z dnia 12.03.2026 r. zasądza kwotę 1100,00 zł. Podstawa: art. 7 ustawy przykładowej. Wynik: oddalono.","entities":[{"value":"SYN-CASE-002/26","entity_type":"CASE_NUMBER","critical":true},{"value":"12.03.2026","entity_type":"DATE","critical":true},{"value":"1100,00 zł","entity_type":"AMOUNT","critical":true},{"value":"art. 7 ustawy przykładowej","entity_type":"LEGAL_BASIS","critical":true},{"value":"oddalono","entity_type":"DECISION_OUTCOME","critical":true}]},
-    {"document_id":"SYN-WY-003","document_type":"wyrok_sadowy","text":"Sąd Rejonowy w Mieście Alfa rozpoznał sprawę SYN-CASE-003/26. Wyrok z dnia 13.03.2026 r. zasądza kwotę 1150,00 zł. Podstawa: art. 8 ustawy przykładowej. Wynik: uwzględniono.","entities":[{"value":"SYN-CASE-003/26","entity_type":"CASE_NUMBER","critical":true},{"value":"13.03.2026","entity_type":"DATE","critical":true},{"value":"1150,00 zł","entity_type":"AMOUNT","critical":true},{"value":"art. 8 ustawy przykładowej","entity_type":"LEGAL_BASIS","critical":true},{"value":"uwzględniono","entity_type":"DECISION_OUTCOME","critical":true}]},
-    {"document_id":"SYN-WY-004","document_type":"wyrok_sadowy","text":"Sąd Rejonowy w Mieście Alfa rozpoznał sprawę SYN-CASE-004/26. Wyrok z dnia 14.03.2026 r. zasądza kwotę 1200,00 zł. Podstawa: art. 9 ustawy przykładowej. Wynik: oddalono.","entities":[{"value":"SYN-CASE-004/26","entity_type":"CASE_NUMBER","critical":true},{"value":"14.03.2026","entity_type":"DATE","critical":true},{"value":"1200,00 zł","entity_type":"AMOUNT","critical":true},{"value":"art. 9 ustawy przykładowej","entity_type":"LEGAL_BASIS","critical":true},{"value":"oddalono","entity_type":"DECISION_OUTCOME","critical":true}]},
-    {"document_id":"SYN-WY-005","document_type":"wyrok_sadowy","text":"Sąd Rejonowy w Mieście Alfa rozpoznał sprawę SYN-CASE-005/26. Wyrok z dnia 15.03.2026 r. zasądza kwotę 1250,00 zł. Podstawa: art. 10 ustawy przykładowej. Wynik: uwzględniono.","entities":[{"value":"SYN-CASE-005/26","entity_type":"CASE_NUMBER","critical":true},{"value":"15.03.2026","entity_type":"DATE","critical":true},{"value":"1250,00 zł","entity_type":"AMOUNT","critical":true},{"value":"art. 10 ustawy przykładowej","entity_type":"LEGAL_BASIS","critical":true},{"value":"uwzględniono","entity_type":"DECISION_OUTCOME","critical":true}]},
-    {"document_id":"SYN-ZUS-001","document_type":"decyzja_zus","text":"Decyzja SYN-DEC-001/26 z dnia 11.04.2026 r. przyznaje świadczenie 840,00 zł za okres 01.01.2026-31.03.2026. Wynik: przyznano.","entities":[{"value":"SYN-DEC-001/26","entity_type":"DECISION_NUMBER","critical":true},{"value":"11.04.2026","entity_type":"DATE","critical":false},{"value":"840,00 zł","entity_type":"BENEFIT_AMOUNT","critical":true},{"value":"01.01.2026-31.03.2026","entity_type":"INSURED_PERIOD","critical":true},{"value":"przyznano","entity_type":"DECISION_OUTCOME","critical":true}]},
-    {"document_id":"SYN-ZUS-002","document_type":"decyzja_zus","text":"Decyzja SYN-DEC-002/26 z dnia 12.04.2026 r. przyznaje świadczenie 880,00 zł za okres 01.01.2026-31.03.2026. Wynik: odmówiono.","entities":[{"value":"SYN-DEC-002/26","entity_type":"DECISION_NUMBER","critical":true},{"value":"12.04.2026","entity_type":"DATE","critical":false},{"value":"880,00 zł","entity_type":"BENEFIT_AMOUNT","critical":true},{"value":"01.01.2026-31.03.2026","entity_type":"INSURED_PERIOD","critical":true},{"value":"odmówiono","entity_type":"DECISION_OUTCOME","critical":true}]},
-    {"document_id":"SYN-ZUS-003","document_type":"decyzja_zus","text":"Decyzja SYN-DEC-003/26 z dnia 13.04.2026 r. przyznaje świadczenie 920,00 zł za okres 01.01.2026-31.03.2026. Wynik: przyznano.","entities":[{"value":"SYN-DEC-003/26","entity_type":"DECISION_NUMBER","critical":true},{"value":"13.04.2026","entity_type":"DATE","critical":false},{"value":"920,00 zł","entity_type":"BENEFIT_AMOUNT","critical":true},{"value":"01.01.2026-31.03.2026","entity_type":"INSURED_PERIOD","critical":true},{"value":"przyznano","entity_type":"DECISION_OUTCOME","critical":true}]},
-    {"document_id":"SYN-ZUS-004","document_type":"decyzja_zus","text":"Decyzja SYN-DEC-004/26 z dnia 14.04.2026 r. przyznaje świadczenie 960,00 zł za okres 01.01.2026-31.03.2026. Wynik: odmówiono.","entities":[{"value":"SYN-DEC-004/26","entity_type":"DECISION_NUMBER","critical":true},{"value":"14.04.2026","entity_type":"DATE","critical":false},{"value":"960,00 zł","entity_type":"BENEFIT_AMOUNT","critical":true},{"value":"01.01.2026-31.03.2026","entity_type":"INSURED_PERIOD","critical":true},{"value":"odmówiono","entity_type":"DECISION_OUTCOME","critical":true}]},
-    {"document_id":"SYN-ZUS-005","document_type":"decyzja_zus","text":"Decyzja SYN-DEC-005/26 z dnia 15.04.2026 r. przyznaje świadczenie 1000,00 zł za okres 01.01.2026-31.03.2026. Wynik: przyznano.","entities":[{"value":"SYN-DEC-005/26","entity_type":"DECISION_NUMBER","critical":true},{"value":"15.04.2026","entity_type":"DATE","critical":false},{"value":"1000,00 zł","entity_type":"BENEFIT_AMOUNT","critical":true},{"value":"01.01.2026-31.03.2026","entity_type":"INSURED_PERIOD","critical":true},{"value":"przyznano","entity_type":"DECISION_OUTCOME","critical":true}]},
-    {"document_id":"SYN-UM-001","document_type":"umowa","text":"Umowa SYN-UM-001 zawarta 11.05.2026 r. przez stronę Gamma przewiduje kwotę 2600,00 zł i termin 30.06.2026 r.","entities":[{"value":"SYN-UM-001","entity_type":"OTHER","critical":false},{"value":"Gamma","entity_type":"PARTY","critical":true},{"value":"11.05.2026","entity_type":"DATE","critical":true},{"value":"2600,00 zł","entity_type":"AMOUNT","critical":true},{"value":"30.06.2026","entity_type":"DEADLINE","critical":false}]},
-    {"document_id":"SYN-UM-002","document_type":"umowa","text":"Umowa SYN-UM-002 zawarta 12.05.2026 r. przez stronę Hotel przewiduje kwotę 2700,00 zł i termin 30.06.2026 r.","entities":[{"value":"SYN-UM-002","entity_type":"OTHER","critical":false},{"value":"Hotel","entity_type":"PARTY","critical":true},{"value":"12.05.2026","entity_type":"DATE","critical":true},{"value":"2700,00 zł","entity_type":"AMOUNT","critical":true},{"value":"30.06.2026","entity_type":"DEADLINE","critical":false}]},
-    {"document_id":"SYN-UM-003","document_type":"umowa","text":"Umowa SYN-UM-003 zawarta 13.05.2026 r. przez stronę Irys przewiduje kwotę 2800,00 zł i termin 30.06.2026 r.","entities":[{"value":"SYN-UM-003","entity_type":"OTHER","critical":false},{"value":"Irys","entity_type":"PARTY","critical":true},{"value":"13.05.2026","entity_type":"DATE","critical":true},{"value":"2800,00 zł","entity_type":"AMOUNT","critical":true},{"value":"30.06.2026","entity_type":"DEADLINE","critical":false}]},
-    {"document_id":"SYN-UM-004","document_type":"umowa","text":"Umowa SYN-UM-004 zawarta 14.05.2026 r. przez stronę Jantar przewiduje kwotę 2900,00 zł i termin 30.06.2026 r.","entities":[{"value":"SYN-UM-004","entity_type":"OTHER","critical":false},{"value":"Jantar","entity_type":"PARTY","critical":true},{"value":"14.05.2026","entity_type":"DATE","critical":true},{"value":"2900,00 zł","entity_type":"AMOUNT","critical":true},{"value":"30.06.2026","entity_type":"DEADLINE","critical":false}]},
-    {"document_id":"SYN-UM-005","document_type":"umowa","text":"Umowa SYN-UM-005 zawarta 15.05.2026 r. przez stronę Koral przewiduje kwotę 3000,00 zł i termin 30.06.2026 r.","entities":[{"value":"SYN-UM-005","entity_type":"OTHER","critical":false},{"value":"Koral","entity_type":"PARTY","critical":true},{"value":"15.05.2026","entity_type":"DATE","critical":true},{"value":"3000,00 zł","entity_type":"AMOUNT","critical":true},{"value":"30.06.2026","entity_type":"DEADLINE","critical":false}]},
-    {"document_id":"SYN-PIS-001","document_type":"pismo_procesowe","text":"Pismo w sprawie SYN-CASE-001/26 z dnia 21.05.2026 r. złożone przez stronę Delta wskazuje art. 10 ustawy przykładowej. Termin procesowy: 14 dni.","entities":[{"value":"SYN-CASE-001/26","entity_type":"CASE_NUMBER","critical":true},{"value":"21.05.2026","entity_type":"DATE","critical":false},{"value":"Delta","entity_type":"PARTY","critical":true},{"value":"art. 10 ustawy przykładowej","entity_type":"LEGAL_BASIS","critical":true},{"value":"14 dni","entity_type":"DEADLINE","critical":true}]},
-    {"document_id":"SYN-PIS-002","document_type":"pismo_procesowe","text":"Pismo w sprawie SYN-CASE-002/26 z dnia 22.05.2026 r. złożone przez stronę Lumen wskazuje art. 11 ustawy przykładowej. Termin procesowy: 21 dni.","entities":[{"value":"SYN-CASE-002/26","entity_type":"CASE_NUMBER","critical":true},{"value":"22.05.2026","entity_type":"DATE","critical":false},{"value":"Lumen","entity_type":"PARTY","critical":true},{"value":"art. 11 ustawy przykładowej","entity_type":"LEGAL_BASIS","critical":true},{"value":"21 dni","entity_type":"DEADLINE","critical":true}]},
-    {"document_id":"SYN-PIS-003","document_type":"pismo_procesowe","text":"Pismo w sprawie SYN-CASE-003/26 z dnia 23.05.2026 r. złożone przez stronę Nova wskazuje art. 12 ustawy przykładowej. Termin procesowy: 7 dni.","entities":[{"value":"SYN-CASE-003/26","entity_type":"CASE_NUMBER","critical":true},{"value":"23.05.2026","entity_type":"DATE","critical":false},{"value":"Nova","entity_type":"PARTY","critical":true},{"value":"art. 12 ustawy przykładowej","entity_type":"LEGAL_BASIS","critical":true},{"value":"7 dni","entity_type":"DEADLINE","critical":true}]},
-    {"document_id":"SYN-PIS-004","document_type":"pismo_procesowe","text":"Pismo w sprawie SYN-CASE-004/26 z dnia 24.05.2026 r. złożone przez stronę Ostoja wskazuje art. 13 ustawy przykładowej. Termin procesowy: 30 dni.","entities":[{"value":"SYN-CASE-004/26","entity_type":"CASE_NUMBER","critical":true},{"value":"24.05.2026","entity_type":"DATE","critical":false},{"value":"Ostoja","entity_type":"PARTY","critical":true},{"value":"art. 13 ustawy przykładowej","entity_type":"LEGAL_BASIS","critical":true},{"value":"30 dni","entity_type":"DEADLINE","critical":true}]},
-    {"document_id":"SYN-PIS-005","document_type":"pismo_procesowe","text":"Pismo w sprawie SYN-CASE-005/26 z dnia 25.05.2026 r. złożone przez stronę Runo wskazuje art. 14 ustawy przykładowej. Termin procesowy: 10 dni.","entities":[{"value":"SYN-CASE-005/26","entity_type":"CASE_NUMBER","critical":true},{"value":"25.05.2026","entity_type":"DATE","critical":false},{"value":"Runo","entity_type":"PARTY","critical":true},{"value":"art. 14 ustawy przykładowej","entity_type":"LEGAL_BASIS","critical":true},{"value":"10 dni","entity_type":"DEADLINE","critical":true}]}
+    {
+      "document_id": "SYN-WY-001",
+      "document_type": "wyrok_sadowy",
+      "text": "Sąd Rejonowy w Mieście Alfa rozpoznał sprawę SYN-CASE-001/26. Wyrok z dnia 11.03.2026 r. zasądza kwotę 1050,00 zł. Podstawa: art. 6 ustawy przykładowej. Wynik: uwzględniono.",
+      "entities": [
+        {"value": "SYN-CASE-001/26", "entity_type": "CASE_NUMBER", "critical": true},
+        {"value": "11.03.2026", "entity_type": "DATE", "critical": true},
+        {"value": "1050,00 zł", "entity_type": "AMOUNT", "critical": true},
+        {"value": "art. 6 ustawy przykładowej", "entity_type": "LEGAL_BASIS", "critical": true},
+        {"value": "uwzględniono", "entity_type": "DECISION_OUTCOME", "critical": true}
+      ]
+    },
+    {
+      "document_id": "SYN-WY-002",
+      "document_type": "wyrok_sadowy",
+      "text": "Sąd Rejonowy w Mieście Alfa rozpoznał sprawę SYN-CASE-002/26. Wyrok z dnia 12.03.2026 r. zasądza kwotę 1100,00 zł. Podstawa: art. 7 ustawy przykładowej. Wynik: oddalono.",
+      "entities": [
+        {"value": "SYN-CASE-002/26", "entity_type": "CASE_NUMBER", "critical": true},
+        {"value": "12.03.2026", "entity_type": "DATE", "critical": true},
+        {"value": "1100,00 zł", "entity_type": "AMOUNT", "critical": true},
+        {"value": "art. 7 ustawy przykładowej", "entity_type": "LEGAL_BASIS", "critical": true},
+        {"value": "oddalono", "entity_type": "DECISION_OUTCOME", "critical": true}
+      ]
+    },
+    {
+      "document_id": "SYN-WY-003",
+      "document_type": "wyrok_sadowy",
+      "text": "Sąd Rejonowy w Mieście Alfa rozpoznał sprawę SYN-CASE-003/26. Wyrok z dnia 13.03.2026 r. zasądza kwotę 1150,00 zł. Podstawa: art. 8 ustawy przykładowej. Wynik: uwzględniono.",
+      "entities": [
+        {"value": "SYN-CASE-003/26", "entity_type": "CASE_NUMBER", "critical": true},
+        {"value": "13.03.2026", "entity_type": "DATE", "critical": true},
+        {"value": "1150,00 zł", "entity_type": "AMOUNT", "critical": true},
+        {"value": "art. 8 ustawy przykładowej", "entity_type": "LEGAL_BASIS", "critical": true},
+        {"value": "uwzględniono", "entity_type": "DECISION_OUTCOME", "critical": true}
+      ]
+    },
+    {
+      "document_id": "SYN-WY-004",
+      "document_type": "wyrok_sadowy",
+      "text": "Sąd Rejonowy w Mieście Alfa rozpoznał sprawę SYN-CASE-004/26. Wyrok z dnia 14.03.2026 r. zasądza kwotę 1200,00 zł. Podstawa: art. 9 ustawy przykładowej. Wynik: oddalono.",
+      "entities": [
+        {"value": "SYN-CASE-004/26", "entity_type": "CASE_NUMBER", "critical": true},
+        {"value": "14.03.2026", "entity_type": "DATE", "critical": true},
+        {"value": "1200,00 zł", "entity_type": "AMOUNT", "critical": true},
+        {"value": "art. 9 ustawy przykładowej", "entity_type": "LEGAL_BASIS", "critical": true},
+        {"value": "oddalono", "entity_type": "DECISION_OUTCOME", "critical": true}
+      ]
+    },
+    {
+      "document_id": "SYN-WY-005",
+      "document_type": "wyrok_sadowy",
+      "text": "Sąd Rejonowy w Mieście Alfa rozpoznał sprawę SYN-CASE-005/26. Wyrok z dnia 15.03.2026 r. zasądza kwotę 1250,00 zł. Podstawa: art. 10 ustawy przykładowej. Wynik: uwzględniono.",
+      "entities": [
+        {"value": "SYN-CASE-005/26", "entity_type": "CASE_NUMBER", "critical": true},
+        {"value": "15.03.2026", "entity_type": "DATE", "critical": true},
+        {"value": "1250,00 zł", "entity_type": "AMOUNT", "critical": true},
+        {"value": "art. 10 ustawy przykładowej", "entity_type": "LEGAL_BASIS", "critical": true},
+        {"value": "uwzględniono", "entity_type": "DECISION_OUTCOME", "critical": true}
+      ]
+    },
+    {
+      "document_id": "SYN-ZUS-001",
+      "document_type": "decyzja_zus",
+      "text": "Decyzja SYN-DEC-001/26 z dnia 11.04.2026 r. przyznaje świadczenie 840,00 zł za okres 01.01.2026-31.03.2026. Wynik: przyznano.",
+      "entities": [
+        {"value": "SYN-DEC-001/26", "entity_type": "DECISION_NUMBER", "critical": true},
+        {"value": "11.04.2026", "entity_type": "DATE", "critical": false},
+        {"value": "840,00 zł", "entity_type": "BENEFIT_AMOUNT", "critical": true},
+        {"value": "01.01.2026-31.03.2026", "entity_type": "INSURED_PERIOD", "critical": false},
+        {"value": "przyznano", "entity_type": "DECISION_OUTCOME", "critical": true}
+      ]
+    },
+    {
+      "document_id": "SYN-ZUS-002",
+      "document_type": "decyzja_zus",
+      "text": "Decyzja SYN-DEC-002/26 z dnia 12.04.2026 r. przyznaje świadczenie 880,00 zł za okres 01.01.2026-31.03.2026. Wynik: odmówiono.",
+      "entities": [
+        {"value": "SYN-DEC-002/26", "entity_type": "DECISION_NUMBER", "critical": true},
+        {"value": "12.04.2026", "entity_type": "DATE", "critical": false},
+        {"value": "880,00 zł", "entity_type": "BENEFIT_AMOUNT", "critical": true},
+        {"value": "01.01.2026-31.03.2026", "entity_type": "INSURED_PERIOD", "critical": false},
+        {"value": "odmówiono", "entity_type": "DECISION_OUTCOME", "critical": true}
+      ]
+    },
+    {
+      "document_id": "SYN-ZUS-003",
+      "document_type": "decyzja_zus",
+      "text": "Decyzja SYN-DEC-003/26 z dnia 13.04.2026 r. przyznaje świadczenie 920,00 zł za okres 01.01.2026-31.03.2026. Wynik: przyznano.",
+      "entities": [
+        {"value": "SYN-DEC-003/26", "entity_type": "DECISION_NUMBER", "critical": true},
+        {"value": "13.04.2026", "entity_type": "DATE", "critical": false},
+        {"value": "920,00 zł", "entity_type": "BENEFIT_AMOUNT", "critical": true},
+        {"value": "01.01.2026-31.03.2026", "entity_type": "INSURED_PERIOD", "critical": false},
+        {"value": "przyznano", "entity_type": "DECISION_OUTCOME", "critical": true}
+      ]
+    },
+    {
+      "document_id": "SYN-ZUS-004",
+      "document_type": "decyzja_zus",
+      "text": "Decyzja SYN-DEC-004/26 z dnia 14.04.2026 r. przyznaje świadczenie 960,00 zł za okres 01.01.2026-31.03.2026. Wynik: odmówiono.",
+      "entities": [
+        {"value": "SYN-DEC-004/26", "entity_type": "DECISION_NUMBER", "critical": true},
+        {"value": "14.04.2026", "entity_type": "DATE", "critical": false},
+        {"value": "960,00 zł", "entity_type": "BENEFIT_AMOUNT", "critical": true},
+        {"value": "01.01.2026-31.03.2026", "entity_type": "INSURED_PERIOD", "critical": false},
+        {"value": "odmówiono", "entity_type": "DECISION_OUTCOME", "critical": true}
+      ]
+    },
+    {
+      "document_id": "SYN-ZUS-005",
+      "document_type": "decyzja_zus",
+      "text": "Decyzja SYN-DEC-005/26 z dnia 15.04.2026 r. przyznaje świadczenie 1000,00 zł za okres 01.01.2026-31.03.2026. Wynik: przyznano.",
+      "entities": [
+        {"value": "SYN-DEC-005/26", "entity_type": "DECISION_NUMBER", "critical": true},
+        {"value": "15.04.2026", "entity_type": "DATE", "critical": false},
+        {"value": "1000,00 zł", "entity_type": "BENEFIT_AMOUNT", "critical": true},
+        {"value": "01.01.2026-31.03.2026", "entity_type": "INSURED_PERIOD", "critical": false},
+        {"value": "przyznano", "entity_type": "DECISION_OUTCOME", "critical": true}
+      ]
+    },
+    {
+      "document_id": "SYN-UM-001",
+      "document_type": "umowa",
+      "text": "Umowa SYN-UM-001 zawarta 11.05.2026 r. przez stronę Gamma przewiduje kwotę 2600,00 zł i termin 30.06.2026 r.",
+      "entities": [
+        {"value": "SYN-UM-001", "entity_type": "OTHER", "critical": false},
+        {"value": "Gamma", "entity_type": "PARTY", "critical": true},
+        {"value": "11.05.2026", "entity_type": "DATE", "critical": true},
+        {"value": "2600,00 zł", "entity_type": "AMOUNT", "critical": true},
+        {"value": "30.06.2026", "entity_type": "DEADLINE", "critical": false}
+      ]
+    },
+    {
+      "document_id": "SYN-UM-002",
+      "document_type": "umowa",
+      "text": "Umowa SYN-UM-002 zawarta 12.05.2026 r. przez stronę Hotel przewiduje kwotę 2700,00 zł i termin 30.06.2026 r.",
+      "entities": [
+        {"value": "SYN-UM-002", "entity_type": "OTHER", "critical": false},
+        {"value": "Hotel", "entity_type": "PARTY", "critical": true},
+        {"value": "12.05.2026", "entity_type": "DATE", "critical": true},
+        {"value": "2700,00 zł", "entity_type": "AMOUNT", "critical": true},
+        {"value": "30.06.2026", "entity_type": "DEADLINE", "critical": false}
+      ]
+    },
+    {
+      "document_id": "SYN-UM-003",
+      "document_type": "umowa",
+      "text": "Umowa SYN-UM-003 zawarta 13.05.2026 r. przez stronę Irys przewiduje kwotę 2800,00 zł i termin 30.06.2026 r.",
+      "entities": [
+        {"value": "SYN-UM-003", "entity_type": "OTHER", "critical": false},
+        {"value": "Irys", "entity_type": "PARTY", "critical": true},
+        {"value": "13.05.2026", "entity_type": "DATE", "critical": true},
+        {"value": "2800,00 zł", "entity_type": "AMOUNT", "critical": true},
+        {"value": "30.06.2026", "entity_type": "DEADLINE", "critical": false}
+      ]
+    },
+    {
+      "document_id": "SYN-UM-004",
+      "document_type": "umowa",
+      "text": "Umowa SYN-UM-004 zawarta 14.05.2026 r. przez stronę Jantar przewiduje kwotę 2900,00 zł i termin 30.06.2026 r.",
+      "entities": [
+        {"value": "SYN-UM-004", "entity_type": "OTHER", "critical": false},
+        {"value": "Jantar", "entity_type": "PARTY", "critical": true},
+        {"value": "14.05.2026", "entity_type": "DATE", "critical": true},
+        {"value": "2900,00 zł", "entity_type": "AMOUNT", "critical": true},
+        {"value": "30.06.2026", "entity_type": "DEADLINE", "critical": false}
+      ]
+    },
+    {
+      "document_id": "SYN-UM-005",
+      "document_type": "umowa",
+      "text": "Umowa SYN-UM-005 zawarta 15.05.2026 r. przez stronę Koral przewiduje kwotę 3000,00 zł i termin 30.06.2026 r.",
+      "entities": [
+        {"value": "SYN-UM-005", "entity_type": "OTHER", "critical": false},
+        {"value": "Koral", "entity_type": "PARTY", "critical": true},
+        {"value": "15.05.2026", "entity_type": "DATE", "critical": true},
+        {"value": "3000,00 zł", "entity_type": "AMOUNT", "critical": true},
+        {"value": "30.06.2026", "entity_type": "DEADLINE", "critical": false}
+      ]
+    },
+    {
+      "document_id": "SYN-PIS-001",
+      "document_type": "pismo_procesowe",
+      "text": "Pismo w sprawie SYN-CASE-001/26 z dnia 21.05.2026 r. złożone przez stronę Delta wskazuje art. 10 ustawy przykładowej. Termin procesowy: 14 dni.",
+      "entities": [
+        {"value": "SYN-CASE-001/26", "entity_type": "CASE_NUMBER", "critical": true},
+        {"value": "21.05.2026", "entity_type": "DATE", "critical": false},
+        {"value": "Delta", "entity_type": "PARTY", "critical": true},
+        {"value": "art. 10 ustawy przykładowej", "entity_type": "LEGAL_BASIS", "critical": true},
+        {"value": "14 dni", "entity_type": "DEADLINE", "critical": true}
+      ]
+    },
+    {
+      "document_id": "SYN-PIS-002",
+      "document_type": "pismo_procesowe",
+      "text": "Pismo w sprawie SYN-CASE-002/26 z dnia 22.05.2026 r. złożone przez stronę Lumen wskazuje art. 11 ustawy przykładowej. Termin procesowy: 21 dni.",
+      "entities": [
+        {"value": "SYN-CASE-002/26", "entity_type": "CASE_NUMBER", "critical": true},
+        {"value": "22.05.2026", "entity_type": "DATE", "critical": false},
+        {"value": "Lumen", "entity_type": "PARTY", "critical": true},
+        {"value": "art. 11 ustawy przykładowej", "entity_type": "LEGAL_BASIS", "critical": true},
+        {"value": "21 dni", "entity_type": "DEADLINE", "critical": true}
+      ]
+    },
+    {
+      "document_id": "SYN-PIS-003",
+      "document_type": "pismo_procesowe",
+      "text": "Pismo w sprawie SYN-CASE-003/26 z dnia 23.05.2026 r. złożone przez stronę Nova wskazuje art. 12 ustawy przykładowej. Termin procesowy: 7 dni.",
+      "entities": [
+        {"value": "SYN-CASE-003/26", "entity_type": "CASE_NUMBER", "critical": true},
+        {"value": "23.05.2026", "entity_type": "DATE", "critical": false},
+        {"value": "Nova", "entity_type": "PARTY", "critical": true},
+        {"value": "art. 12 ustawy przykładowej", "entity_type": "LEGAL_BASIS", "critical": true},
+        {"value": "7 dni", "entity_type": "DEADLINE", "critical": true}
+      ]
+    },
+    {
+      "document_id": "SYN-PIS-004",
+      "document_type": "pismo_procesowe",
+      "text": "Pismo w sprawie SYN-CASE-004/26 z dnia 24.05.2026 r. złożone przez stronę Ostoja wskazuje art. 13 ustawy przykładowej. Termin procesowy: 30 dni.",
+      "entities": [
+        {"value": "SYN-CASE-004/26", "entity_type": "CASE_NUMBER", "critical": true},
+        {"value": "24.05.2026", "entity_type": "DATE", "critical": false},
+        {"value": "Ostoja", "entity_type": "PARTY", "critical": true},
+        {"value": "art. 13 ustawy przykładowej", "entity_type": "LEGAL_BASIS", "critical": true},
+        {"value": "30 dni", "entity_type": "DEADLINE", "critical": true}
+      ]
+    },
+    {
+      "document_id": "SYN-PIS-005",
+      "document_type": "pismo_procesowe",
+      "text": "Pismo w sprawie SYN-CASE-005/26 z dnia 25.05.2026 r. złożone przez stronę Runo wskazuje art. 14 ustawy przykładowej. Termin procesowy: 10 dni.",
+      "entities": [
+        {"value": "SYN-CASE-005/26", "entity_type": "CASE_NUMBER", "critical": true},
+        {"value": "25.05.2026", "entity_type": "DATE", "critical": false},
+        {"value": "Runo", "entity_type": "PARTY", "critical": true},
+        {"value": "art. 14 ustawy przykładowej", "entity_type": "LEGAL_BASIS", "critical": true},
+        {"value": "10 dni", "entity_type": "DEADLINE", "critical": true}
+      ]
+    }
   ],
   "splits": {
-    "development": ["SYN-WY-001","SYN-WY-002","SYN-WY-003","SYN-WY-004","SYN-ZUS-001","SYN-ZUS-002","SYN-ZUS-003","SYN-ZUS-004","SYN-UM-001","SYN-UM-002","SYN-PIS-001","SYN-PIS-002"],
-    "validation": ["SYN-WY-005","SYN-ZUS-005","SYN-UM-003","SYN-PIS-003"],
-    "locked_evaluation": ["SYN-UM-004","SYN-UM-005","SYN-PIS-004","SYN-PIS-005"]
+    "development": [
+      "SYN-WY-001",
+      "SYN-WY-002",
+      "SYN-WY-003",
+      "SYN-WY-004",
+      "SYN-ZUS-001",
+      "SYN-ZUS-002",
+      "SYN-ZUS-003",
+      "SYN-ZUS-004",
+      "SYN-UM-001",
+      "SYN-UM-002",
+      "SYN-PIS-001",
+      "SYN-PIS-002"
+    ],
+    "validation": [
+      "SYN-WY-005",
+      "SYN-ZUS-005",
+      "SYN-UM-003",
+      "SYN-PIS-003"
+    ],
+    "locked_evaluation": [
+      "SYN-UM-004",
+      "SYN-UM-005",
+      "SYN-PIS-004",
+      "SYN-PIS-005"
+    ]
   }
 }
