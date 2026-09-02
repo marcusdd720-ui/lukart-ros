@@ -10,6 +10,7 @@ Purpose:
 Builds the first Knowledge Graph from Markdown documents.
 """
 
+from knowledge.document import Document
 from knowledge.graph import KnowledgeGraph
 from knowledge.loader import DocumentLoader
 from knowledge.node import KnowledgeNode
@@ -21,13 +22,14 @@ class GraphBuilder:
 
     def __init__(self, root: str = "."):
         self.loader = DocumentLoader(root)
+        self.documents: list[Document] = []
 
     def build(self) -> KnowledgeGraph:
         graph = KnowledgeGraph()
 
-        documents = self.loader.load_documents()
+        self.documents = self.loader.load_documents()
 
-        for document in documents:
+        for document in self.documents:
             node = KnowledgeNode(
                 name=document.name,
                 type=NodeType.DOCUMENT,
