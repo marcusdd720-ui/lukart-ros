@@ -7,13 +7,13 @@ def test_stage_registry_is_contiguous_and_ordered() -> None:
 
 
 def test_current_stage_has_an_executable_gate() -> None:
-    stage = get_stage(5)
+    stage = get_stage(6)
     assert stage.implemented is True
-    assert stage.gate == "audit"
+    assert stage.gate == "contract"
 
 
-def test_next_stage_is_contract_hardening() -> None:
-    stage = next_stage(5)
+def test_next_stage_is_fact_identity_and_deduplication() -> None:
+    stage = next_stage(6)
     assert stage is not None
-    assert stage.number == 6
-    assert stage.name == "Contract Hardening"
+    assert stage.number == 7
+    assert stage.name == "Fact Identity and Deduplication"
