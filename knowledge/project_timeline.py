@@ -62,7 +62,7 @@ def project_timeline_event(graph: KnowledgeGraph, event: TimelineEvent) -> str:
             "evidence_ids": list(getattr(event, "evidence_ids", None) or []),
             "fact_ids": list(getattr(event, "fact_ids", None) or []),
         },
-        tags={"timeline", "event"},
+        tags=["timeline", "event"],
     )
     node.validate()
     graph.ensure_node(node)
