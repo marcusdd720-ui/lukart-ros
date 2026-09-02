@@ -19,20 +19,18 @@ class FailureDiagnosis:
 
 
 def diagnose_failure(log: str) -> FailureDiagnosis:
-    """Classify a failure without guessing at application semantics."""
+    """Classify a failure from concrete diagnostics rather than generic exit text."""
     lowered = log.lower()
-    ruff_failure = "ruff" in lowered and (
-        "found" in lowered or "error" in lowered or "fix" in lowered
-    )
-    if "assertionerror" in lowered or "test failed" in lowered or "failed" in lowered:
-        return FailureDiagnosis("test", ruff_failure, True)
-    if "mypy" in lowered or "type error" in lowered:
-        return FailureDiagnosis("typing", ruff_failure, True)
-    if "importerror" in lowered or "modulenotfounderror" in lowered:
-        return FailureDiagnosis("import", ruff_failure, True)
-    if "ruff" in lowered:
+    ruff_markers = ("ruff", "e501", "f401", "i001", "e402")
+    if any(marker in lowered for marker in ruff_markers):
         return FailureDiagnosis("quality", True, False)
-    return FailureDiagnosis("unknown", ruff_failure, True)
+    if "mypy" in lowered or "type error" in lowered:
+        return FailureDiagnosis("typing", False, True)
+    if "importerror" in lowered or "modulenotfounderror" in lowered:
+        return FailureDiagnosis("import", False, True)
+    if "assertionerror" in lowered or "test failed" in lowered or "failed" in lowered:
+        return FailureDiagnosis("test", False, True)
+    return FailureDiagnosis("unknown", False, True)
 
 
 def _run(command: list[str]) -> subprocess.CompletedProcess[str]:
@@ -80,8 +78,19 @@ def _commit_and_push(message: str) -> None:
             raise RuntimeError(detail or f"Automatic repair command failed: {' '.join(command)}")
 
 
+def _candidate_is_safe_to_revert() -> bool:
+    """Never revert lifecycle-state commits; only revert explicit code candidates."""
+    result = _run(["git", "log", "-1", "--pretty=%s"])
+    if result.returncode != 0:
+        return False
+    message = result.stdout.strip().lower()
+    return not message.startswith(("chore: advance stage lifecycle state", "chore: restart full stage lifecycle verification"))
+
+
 def _revert_head_safely() -> bool:
     """Revert either a normal commit or a merge commit without guessing its parent."""
+    if not _candidate_is_safe_to_revert():
+        return False
     parents = _run(["git", "rev-list", "--parents", "-n", "1", "HEAD"])
     if parents.returncode != 0:
         return False
@@ -94,30 +103,28 @@ def _revert_head_safely() -> bool:
 
 
 def repair_repository(root: Path, failure_log: str) -> bool:
-    """Repair quality issues or rollback the failed candidate as a fresh SHA."""
+    """Repair quality issues automatically; otherwise only rollback a safe code candidate."""
     diagnosis = diagnose_failure(failure_log)
     before = semantic_fingerprint(root)
 
-    ruff_check = _run(["python", "-m", "ruff", "check", ".", "--fix"])
-    _run(["python", "-m", "ruff", "format", "."])
-    after = semantic_fingerprint(root)
-    status = _run(["git", "status", "--porcelain"])
-
-    if (
-        diagnosis.repairable_by_ruff
-        and ruff_check.returncode in (0, 1)
-        and status.returncode == 0
-        and status.stdout.strip()
-        and before == after
-    ):
-        _commit_and_push("fix: automatic stage repair")
-        return True
+    if diagnosis.repairable_by_ruff:
+        ruff_check = _run(["python", "-m", "ruff", "check", ".", "--fix"])
+        _run(["python", "-m", "ruff", "format", "."])
+        after = semantic_fingerprint(root)
+        status = _run(["git", "status", "--porcelain"])
+        if (
+            ruff_check.returncode in (0, 1)
+            and status.returncode == 0
+            and status.stdout.strip()
+            and before == after
+        ):
+            _commit_and_push("fix: automatic stage repair")
+            return True
 
     _discard_uncommitted_changes()
     if not diagnosis.semantic_failure:
         return False
     if not _revert_head_safely():
-        _run(["git", "revert", "--abort"])
         return False
     _commit_and_push("fix: automatic semantic rollback")
     return True
