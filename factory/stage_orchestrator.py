@@ -50,31 +50,18 @@ def write_state(path: Path, state: dict[str, object]) -> None:
 
 def run(command: list[str], *, capture: bool = False) -> subprocess.CompletedProcess[str]:
     print(f"[orchestrator] {' '.join(command)}")
-    return subprocess.run(
-        command,
-        check=False,
-        text=True,
-        capture_output=capture,
-    )
+    return subprocess.run(command, check=False, text=True, capture_output=capture)
 
 
 def dispatch_smoke(stage_number: int) -> int:
-    """Dispatch the GitHub App Smoke Test and return its workflow run id."""
+    """Dispatch the GitHub App Smoke Test against the current main SHA."""
     repository = os.environ.get("GITHUB_REPOSITORY", "")
     if not repository:
         raise OrchestratorError("GITHUB_REPOSITORY is required")
     result = run(
         [
-            "gh",
-            "workflow",
-            "run",
-            "github-app-smoke.yml",
-            "--repo",
-            repository,
-            "--ref",
-            "main",
-            "-f",
-            f"stage={stage_number}",
+            "gh", "workflow", "run", "github-app-smoke.yml",
+            "--repo", repository, "--ref", "main", "-f", f"stage={stage_number}",
         ],
         capture=True,
     )
@@ -83,17 +70,9 @@ def dispatch_smoke(stage_number: int) -> int:
     time.sleep(2)
     runs = run(
         [
-            "gh",
-            "run",
-            "list",
-            "--repo",
-            repository,
-            "--workflow",
-            "github-app-smoke.yml",
-            "--limit",
-            "20",
-            "--json",
-            "databaseId,headSha,status,conclusion,event",
+            "gh", "run", "list", "--repo", repository,
+            "--workflow", "github-app-smoke.yml", "--limit", "20",
+            "--json", "databaseId,headSha,status,conclusion,event",
         ],
         capture=True,
     )
@@ -115,14 +94,8 @@ def wait_for_run(run_id: int) -> tuple[bool, str]:
     for _ in range(180):
         result = run(
             [
-                "gh",
-                "run",
-                "view",
-                str(run_id),
-                "--repo",
-                repository,
-                "--json",
-                "status,conclusion,headSha",
+                "gh", "run", "view", str(run_id), "--repo", repository,
+                "--json", "status,conclusion,headSha",
             ],
             capture=True,
         )
@@ -138,22 +111,16 @@ def wait_for_run(run_id: int) -> tuple[bool, str]:
 def capture_failure(run_id: int) -> str:
     repository = os.environ.get("GITHUB_REPOSITORY", "")
     result = run(
-        [
-            "gh",
-            "run",
-            "view",
-            str(run_id),
-            "--repo",
-            repository,
-            "--log-failed",
-        ],
+        ["gh", "run", "view", str(run_id), "--repo", repository, "--log-failed"],
         capture=True,
     )
     return (result.stdout + result.stderr)[-20000:]
 
 
 def auto_repair() -> bool:
-    """Apply only deterministic, source-preserving repairs and require a changed tree."""
+    """Apply deterministic repairs and require a real source-tree change."""
+    state_file = Path("factory/stage_state.json")
+    state_backup = state_file.read_text(encoding="utf-8") if state_file.exists() else None
     changed = False
     for command in (
         ["python", "-m", "ruff", "check", ".", "--fix"],
@@ -163,10 +130,19 @@ def auto_repair() -> bool:
         if result.returncode not in (0, 1):
             print(result.stdout)
             print(result.stderr)
+
+    # Lifecycle bookkeeping is not a repair and must never manufacture a new SHA.
+    if state_backup is not None:
+        state_file.write_text(state_backup, encoding="utf-8")
+    reset = run(["git", "checkout", "--", "factory/stage_state.json"])
+    if reset.returncode != 0:
+        raise OrchestratorError("Cannot restore lifecycle state after repair attempt")
+
     status = run(["git", "status", "--porcelain"], capture=True)
     if status.returncode != 0:
         raise OrchestratorError(status.stderr.strip() or "Cannot inspect repair diff")
-    if status.stdout.strip():
+    source_changes = [line for line in status.stdout.splitlines() if not line.endswith("factory/stage_state.json")]
+    if source_changes:
         changed = True
         add = run(["git", "add", "-A"])
         if add.returncode != 0:
@@ -208,61 +184,56 @@ def main() -> int:
     args = parser.parse_args()
 
     state = load_state(args.state_file)
-    current_value = int(args.stage) if args.stage else state["current_stage"]
-    if not isinstance(current_value, int):
+    current_number = int(args.stage) if args.stage else state["current_stage"]
+    if not isinstance(current_number, int):
         raise OrchestratorError("Orchestrator stage must be an integer")
-    current_number = current_value
 
-    while current_number <= MAX_STAGE:
-        current = get_stage(current_number)
-        print(f"CURRENT_STAGE={current.number}")
-        print(f"CURRENT_STAGE_NAME={current.name}")
-        state["current_stage"] = current.number
-        state["status"] = "RUNNING"
-        write_state(args.state_file, state)
+    current = get_stage(current_number)
+    print(f"CURRENT_STAGE={current.number}")
+    print(f"CURRENT_STAGE_NAME={current.name}")
+    state["current_stage"] = current.number
+    state["status"] = "RUNNING"
+    write_state(args.state_file, state)
 
-        for attempt in range(1, MAX_ATTEMPTS + 1):
-            fresh_sha = git_sha()
-            print(f"VALIDATION_SHA={fresh_sha}")
-            run_id = dispatch_smoke(current.number)
-            passed, conclusion = wait_for_run(run_id)
-            print(f"SMOKE_RUN_ID={run_id}")
-            print(f"SMOKE_CONCLUSION={conclusion}")
-            if passed:
-                break
-            failure_log = capture_failure(run_id)
-            print("SMOKE_FAILURE_LOG_START")
-            print(failure_log)
-            print("SMOKE_FAILURE_LOG_END")
-            state["last_result"] = "FAIL"
-            state["failed_stage"] = current.number
+    for attempt in range(1, MAX_ATTEMPTS + 1):
+        fresh_sha = git_sha()
+        print(f"VALIDATION_SHA={fresh_sha}")
+        run_id = dispatch_smoke(current.number)
+        passed, conclusion = wait_for_run(run_id)
+        print(f"SMOKE_RUN_ID={run_id}")
+        print(f"SMOKE_CONCLUSION={conclusion}")
+        if passed:
+            advance_state(state, current.number)
             write_state(args.state_file, state)
-            if attempt == MAX_ATTEMPTS or not auto_repair():
-                raise OrchestratorError(
-                    f"Stage {current.number} failed and no deterministic repair produced a new SHA"
-                )
-            time.sleep(3)
-        else:
-            raise OrchestratorError(f"Stage {current.number} exhausted repair attempts")
-
-        print(f"STAGE {current.number}: PASS")
-        advance_state(state, current.number)
-        write_state(args.state_file, state)
-        current_number = int(state["current_stage"])
-        if state["status"] == "COMPLETE":
-            print("ORCHESTRATOR_RESULT=COMPLETE")
+            run(["git", "add", "factory/stage_state.json"])
+            run(["git", "commit", "-m", "chore: advance stage lifecycle state"])
+            push = run(["git", "push", "origin", "HEAD:main"])
+            if push.returncode != 0:
+                raise OrchestratorError("Cannot publish lifecycle state")
+            if state["status"] == "COMPLETE":
+                print("ORCHESTRATOR_RESULT=COMPLETE")
+            else:
+                print(f"NEXT_STAGE={state['current_stage']}")
+                print("ORCHESTRATOR_RESULT=ADVANCED")
             return 0
 
-        # Publish the state transition as a fresh commit so the next stage is
-        # always validated against a new SHA and starts a new workflow run.
-        run(["git", "add", "factory/stage_state.json"])
-        run(["git", "commit", "-m", "chore: advance stage lifecycle state"])
-        push = run(["git", "push", "origin", "HEAD:main"])
-        if push.returncode != 0:
-            raise OrchestratorError("Cannot publish lifecycle state")
-        return 0
+        print("SMOKE_FAILURE_LOG_START")
+        print(capture_failure(run_id))
+        print("SMOKE_FAILURE_LOG_END")
+        state["last_result"] = "FAIL"
+        state["failed_stage"] = current.number
+        write_state(args.state_file, state)
+        if attempt == MAX_ATTEMPTS or not auto_repair():
+            raise OrchestratorError(
+                f"Stage {current.number} failed and deterministic repair could not produce a new SHA"
+            )
+        time.sleep(3)
+        # The repair was pushed, therefore this run must never validate the old SHA again.
+        current_sha = git_sha()
+        if current_sha == fresh_sha:
+            raise OrchestratorError("Automatic repair did not produce a fresh SHA")
 
-    return 0
+    raise OrchestratorError(f"Stage {current.number} exhausted repair attempts")
 
 
 if __name__ == "__main__":
