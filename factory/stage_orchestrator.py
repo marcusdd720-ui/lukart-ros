@@ -177,17 +177,51 @@ def advance_state(state: dict[str, object], current_number: int) -> None:
         state["status"] = "READY"
 
 
+def _remote_state(path: Path) -> dict[str, object] | None:
+    result = run(["git", "show", f"origin/main:{path.as_posix()}"], capture=True)
+    if result.returncode != 0:
+        return None
+    try:
+        state = json.loads(result.stdout)
+    except json.JSONDecodeError:
+        return None
+    return state if isinstance(state, dict) else None
+
+
+def _remote_already_contains(state: dict[str, object]) -> bool:
+    remote = _remote_state(Path("factory/stage_state.json"))
+    if remote is None:
+        return False
+    desired_completed = state.get("last_completed_stage")
+    remote_completed = remote.get("last_completed_stage")
+    if not isinstance(desired_completed, int) or not isinstance(remote_completed, int):
+        return False
+    if remote_completed > desired_completed:
+        return True
+    if remote_completed == desired_completed:
+        return remote.get("last_result") == state.get("last_result") and remote.get("status") == state.get("status")
+    return False
+
+
 def publish_state(path: Path, state: dict[str, object]) -> None:
+    """Publish lifecycle state, tolerating a concurrent equivalent winner."""
     write_state(path, state)
     add = run(["git", "add", str(path)])
     if add.returncode != 0:
         raise OrchestratorError("Cannot stage lifecycle state")
-    commit = run(["git", "commit", "-m", "chore: advance stage lifecycle state"])
+    commit = run(["git", "commit", "m", "chore: advance stage lifecycle state"])
     if commit.returncode != 0:
         raise OrchestratorError("Cannot commit lifecycle state")
     push = run(["git", "push", "origin", "HEAD:main"])
-    if push.returncode != 0:
-        raise OrchestratorError("Cannot publish lifecycle state")
+    if push.returncode == 0:
+        return
+    fetch = run(["git", "fetch", "origin", "main"])
+    if fetch.returncode != 0:
+        raise OrchestratorError("Cannot refresh remote lifecycle state")
+    if _remote_already_contains(state):
+        print("[orchestrator] concurrent lifecycle publication already won")
+        return
+    raise OrchestratorError("Cannot publish lifecycle state after remote refresh")
 
 
 def main() -> int:
