@@ -68,37 +68,16 @@ def dispatch_smoke(stage_number: int, expected_sha: str) -> int:
     if not repository:
         raise OrchestratorError("GITHUB_REPOSITORY is required")
     result = run(
-        [
-            "gh",
-            "workflow",
-            "run",
-            "github-app-smoke.yml",
-            "--repo",
-            repository,
-            "--ref",
-            "main",
-            "-f",
-            f"stage={stage_number}",
-        ],
+        ["gh", "workflow", "run", "github-app-smoke.yml", "--repo", repository, "--ref", "main", "-f", f"stage={stage_number}"],
         capture=True,
     )
     if result.returncode != 0:
         raise OrchestratorError(result.stderr.strip() or "Smoke Test dispatch failed")
-
     for _ in range(SMOKE_DISCOVERY_ATTEMPTS):
         runs = run(
             [
-                "gh",
-                "run",
-                "list",
-                "--repo",
-                repository,
-                "--workflow",
-                "github-app-smoke.yml",
-                "--limit",
-                "50",
-                "--json",
-                "databaseId,headSha,status,conclusion,event,createdAt",
+                "gh", "run", "list", "--repo", repository, "--workflow", "github-app-smoke.yml",
+                "--limit", "50", "--json", "databaseId,headSha,status,conclusion,event,createdAt",
             ],
             capture=True,
         )
@@ -112,7 +91,6 @@ def dispatch_smoke(stage_number: int, expected_sha: str) -> int:
             if entry.get("event") == "workflow_dispatch" and entry.get("headSha") == expected_sha:
                 return int(entry["databaseId"])
         time.sleep(SMOKE_DISCOVERY_DELAY_SECONDS)
-
     raise OrchestratorError(f"Fresh-SHA Smoke Test run was not found for {expected_sha}")
 
 
@@ -120,16 +98,7 @@ def wait_for_run(run_id: int) -> tuple[bool, str]:
     repository = os.environ.get("GITHUB_REPOSITORY", "")
     for _ in range(180):
         result = run(
-            [
-                "gh",
-                "run",
-                "view",
-                str(run_id),
-                "--repo",
-                repository,
-                "--json",
-                "status,conclusion,headSha",
-            ],
+            ["gh", "run", "view", str(run_id), "--repo", repository, "--json", "status,conclusion,headSha"],
             capture=True,
         )
         if result.returncode != 0:
@@ -143,18 +112,7 @@ def wait_for_run(run_id: int) -> tuple[bool, str]:
 
 def capture_failure(run_id: int) -> str:
     repository = os.environ.get("GITHUB_REPOSITORY", "")
-    result = run(
-        [
-            "gh",
-            "run",
-            "view",
-            str(run_id),
-            "--repo",
-            repository,
-            "--log-failed",
-        ],
-        capture=True,
-    )
+    result = run(["gh", "run", "view", str(run_id), "--repo", repository, "--log-failed"], capture=True)
     return (result.stdout + result.stderr)[-20000:]
 
 
@@ -209,7 +167,7 @@ def publish_state(path: Path, state: dict[str, object]) -> None:
     add = run(["git", "add", str(path)])
     if add.returncode != 0:
         raise OrchestratorError("Cannot stage lifecycle state")
-    commit = run(["git", "commit", "m", "chore: advance stage lifecycle state"])
+    commit = run(["git", "commit", "-m", "chore: advance stage lifecycle state"])
     if commit.returncode != 0:
         raise OrchestratorError("Cannot commit lifecycle state")
     push = run(["git", "push", "origin", "HEAD:main"])
@@ -234,15 +192,12 @@ def main() -> int:
     if state.get("status") == "COMPLETE" and not args.stage:
         print("ORCHESTRATOR_RESULT=COMPLETE")
         return 0
-
     current_number = int(args.stage) if args.stage else state["current_stage"]
     if not isinstance(current_number, int):
         raise OrchestratorError("Orchestrator stage must be an integer")
-
     current = get_stage(current_number)
     print(f"CURRENT_STAGE={current.number}")
     print(f"CURRENT_STAGE_NAME={current.name}")
-
     for attempt in range(1, MAX_ATTEMPTS + 1):
         state["current_stage"] = current.number
         state["status"] = "RUNNING"
@@ -262,7 +217,6 @@ def main() -> int:
                 print(f"NEXT_STAGE={state['current_stage']}")
                 print("ORCHESTRATOR_RESULT=ADVANCED")
             return 0
-
         print("SMOKE_FAILURE_LOG_START")
         failure_log = capture_failure(run_id)
         print(failure_log)
@@ -271,14 +225,11 @@ def main() -> int:
         state["failed_stage"] = current.number
         write_state(args.state_file, state)
         if attempt == MAX_ATTEMPTS or not auto_repair(failure_log):
-            raise OrchestratorError(
-                f"Stage {current.number} failed and automatic repair could not produce a new SHA"
-            )
+            raise OrchestratorError(f"Stage {current.number} failed and automatic repair could not produce a new SHA")
         repaired_sha = git_sha()
         if repaired_sha == fresh_sha:
             raise OrchestratorError("Automatic repair did not produce a fresh SHA")
         time.sleep(3)
-
     raise OrchestratorError(f"Stage {current.number} exhausted repair attempts")
 
 
