@@ -7,6 +7,7 @@ import json
 import subprocess
 from pathlib import Path
 
+from factory.stage_gate import COMMANDS
 from factory.stage_registry import get_stage, next_stage
 
 DEFAULT_STATE = {
@@ -70,9 +71,7 @@ def main() -> int:
     print(f"CURRENT_STAGE={current.number}")
     print(f"CURRENT_STAGE_NAME={current.name}")
 
-    if not current.implemented or current.gate not in __import__(
-        "factory.stage_gate", fromlist=["COMMANDS"]
-    ).COMMANDS:
+    if not current.implemented or current.gate not in COMMANDS:
         state["status"] = "BLOCKED"
         state["block_reason"] = "gate_not_implemented"
         write_state(args.state_file, state)
