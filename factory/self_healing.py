@@ -75,7 +75,9 @@ def _commit_and_push(message: str) -> None:
         result = _run(command)
         if result.returncode != 0:
             detail = result.stderr.strip()
-            raise RuntimeError(detail or f"Automatic repair command failed: {' '.join(command)}")
+            raise RuntimeError(
+                detail or f"Automatic repair command failed: {' '.join(command)}"
+            )
 
 
 def _candidate_is_safe_to_revert() -> bool:
@@ -84,7 +86,11 @@ def _candidate_is_safe_to_revert() -> bool:
     if result.returncode != 0:
         return False
     message = result.stdout.strip().lower()
-    return not message.startswith(("chore: advance stage lifecycle state", "chore: restart full stage lifecycle verification"))
+    protected_prefixes = (
+        "chore: advance stage lifecycle state",
+        "chore: restart full stage lifecycle verification",
+    )
+    return not message.startswith(protected_prefixes)
 
 
 def _revert_head_safely() -> bool:
