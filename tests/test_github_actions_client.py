@@ -15,108 +15,135 @@ TEST_INSTALLATION_ID = 84
 TEST_CLIENT_ID = "test-client-id"
 
 
-def client(monkeypatch: pytest.MonkeyPatch) -> GitHubActionsClient:
-    monkeypatch.setenv("LUKART_ROS_FACTORY_APP_ID", str(TEST_APP_ID))
-    monkeypatch.setenv("LUKART_ROS_FACTORY_PRIVATE_KEY", TEST_PRIVATE_KEY)
-    monkeypatch.setenv("LUKART_ROS_FACTORY_CLIENT_ID", TEST_CLIENT_ID)
-    monkeypatch.setenv("LUKART_ROS_FACTORY_INSTALLATION_ID", str(TEST_INSTALLATION_ID))
-    monkeypatch.setenv("GITHUB_REPOSITORY", "owner/repository")
-    return GitHubActionsClient.from_environment()
-
-
-def test_environment_configuration_requires_all_values(monkeypatch: pytest.MonkeyPatch):
+def test_environment_configuration_requires_all_values(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.delenv("LUKART_ROS_FACTORY_APP_ID", raising=False)
+    monkeypatch.delenv("LUKART_ROS_FACTORY_INSTALLATION_ID", raising=False)
     monkeypatch.delenv("LUKART_ROS_FACTORY_PRIVATE_KEY", raising=False)
 
-    with pytest.raises(GitHubActionsError):
+    with pytest.raises(GitHubActionsError, match="Missing GitHub App configuration"):
         GitHubActionsClient.from_environment()
 
 
-def test_environment_configuration_normalizes_private_key(monkeypatch: pytest.MonkeyPatch):
+def test_environment_configuration_normalizes_private_key(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     monkeypatch.setenv("LUKART_ROS_FACTORY_APP_ID", str(TEST_APP_ID))
-    monkeypatch.setenv("LUKART_ROS_FACTORY_PRIVATE_KEY", TEST_PRIVATE_KEY.replace("\n", "\\n"))
+    monkeypatch.setenv("LUKART_ROS_FACTORY_INSTALLATION_ID", str(TEST_INSTALLATION_ID))
+    monkeypatch.setenv("LUKART_ROS_FACTORY_PRIVATE_KEY", "line1\\nline2")
+    monkeypatch.setenv("GITHUB_REPOSITORY", "marcusdd720-ui/lukart-ros")
 
-    result = GitHubActionsClient.from_environment()
+    client = GitHubActionsClient.from_environment()
 
-    assert result.private_key == TEST_PRIVATE_KEY
-
-
-def test_environment_configuration_uses_optional_client_id(monkeypatch: pytest.MonkeyPatch):
-    result = client(monkeypatch)
-
-    assert result.client_id == TEST_CLIENT_ID
+    assert client.app_id == TEST_APP_ID
+    assert client.client_id == str(TEST_APP_ID)
+    assert client.installation_id == TEST_INSTALLATION_ID
+    assert client.private_key == "line1\nline2"
+    assert client.repository == "marcusdd720-ui/lukart-ros"
 
 
-def test_app_jwt_uses_string_issuer(monkeypatch: pytest.MonkeyPatch):
-    result = client(monkeypatch)
+def test_environment_configuration_uses_optional_client_id(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("LUKART_ROS_FACTORY_APP_ID", str(TEST_APP_ID))
+    monkeypatch.setenv("LUKART_ROS_FACTORY_INSTALLATION_ID", str(TEST_INSTALLATION_ID))
+    monkeypatch.setenv("LUKART_ROS_FACTORY_PRIVATE_KEY", "key")
+    monkeypatch.setenv("LUKART_ROS_FACTORY_CLIENT_ID", TEST_CLIENT_ID)
 
-    token = result._app_jwt()
-    payload = result._token_decode_for_test(token)
+    client = GitHubActionsClient.from_environment()
 
-    assert payload["iss"] == TEST_CLIENT_ID
+    assert client.client_id == TEST_CLIENT_ID
+
+
+def test_app_jwt_uses_string_issuer(monkeypatch: pytest.MonkeyPatch) -> None:
+    client = GitHubActionsClient(
+        app_id=TEST_APP_ID,
+        installation_id=TEST_INSTALLATION_ID,
+        private_key=TEST_PRIVATE_KEY,
+        repository="lukart/test",
+    )
+
+    monkeypatch.setattr(
+        "factory.github_actions_client.jwt.encode",
+        lambda payload, key, algorithm: json.dumps(payload),
+    )
+    payload = json.loads(client._app_jwt())
+
+    assert payload["iss"] == str(TEST_APP_ID)
     assert isinstance(payload["iss"], str)
+    assert payload["exp"] > payload["iat"]
+    assert payload["exp"] - payload["iat"] <= 600
 
 
-def test_dispatch_stage_uses_workflow_dispatch_contract(monkeypatch: pytest.MonkeyPatch):
-    result = client(monkeypatch)
+def test_dispatch_stage_uses_workflow_dispatch_contract(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    client = GitHubActionsClient(
+        app_id=1,
+        installation_id=2,
+        private_key=TEST_PRIVATE_KEY,
+        repository="owner/repo",
+    )
     captured: dict[str, Any] = {}
+    monkeypatch.setattr(
+        client,
+        "_api",
+        lambda method, path, body=None: captured.update(
+            {"method": method, "path": path, "body": body}
+        )
+        or {},
+    )
+    monkeypatch.setattr(client, "_installation_token", lambda: "ghs_example")
 
-    def fake_api(method: str, path: str, *, body: dict[str, Any] | None = None):
-        captured.update(method=method, path=path, body=body)
-        return {}
-
-    monkeypatch.setattr(result, "_api", fake_api)
-    result.dispatch_stage(7)
+    client.dispatch_stage(6)
 
     assert captured == {
         "method": "POST",
-        "path": "/repos/owner/repository/actions/workflows/stage-gate.yml/dispatches",
-        "body": {"ref": "main", "inputs": {"stage": "7"}},
+        "path": "/repos/owner/repo/actions/workflows/stage-gate.yml/dispatches",
+        "body": {"ref": "main", "inputs": {"stage": "6"}},
     }
 
 
-def test_new_installation_token_shape_is_treated_as_opaque(monkeypatch: pytest.MonkeyPatch):
-    result = client(monkeypatch)
-    calls: list[tuple[str, str, str]] = []
-
-    def fake_request(method: str, url: str, *, token: str, body=None):
-        calls.append((method, url, token))
-        return {"token": "opaque-installation-token"}
-
-    monkeypatch.setattr(result, "_request", fake_request)
-
-    token = result._installation_token()
-
-    assert token == "opaque-installation-token"
-    assert calls[0][0] == "POST"
-
-
-def test_workflow_result_parses_completed_success(monkeypatch: pytest.MonkeyPatch):
-    result = client(monkeypatch)
-
+def test_new_installation_token_shape_is_treated_as_opaque(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    client = GitHubActionsClient(
+        app_id=1,
+        installation_id=2,
+        private_key=TEST_PRIVATE_KEY,
+        repository="owner/repo",
+    )
+    token = "ghs_" + base64.urlsafe_b64encode(b"x" * 390).decode().rstrip("=")
+    monkeypatch.setattr(client, "_app_jwt", lambda: "jwt")
     monkeypatch.setattr(
-        result,
-        "_api",
-        lambda *args, **kwargs: {
-            "id": 123,
-            "status": "completed",
-            "conclusion": "success",
-            "html_url": "https://github.com/example/run/123",
+        client,
+        "_request",
+        lambda method, url, **kwargs: {
+            "token": token,
+            "expires_at": "2099-01-01T00:00:00Z",
         },
     )
 
-    workflow = result.get_run(123)
-
-    assert workflow.run_id == 123
-    assert workflow.status == "completed"
-    assert workflow.conclusion == "success"
+    assert client._installation_token() == token
 
 
-# Kept as a small test-only helper by replacing jwt.decode in the module.
-def _token_decode_for_test(self, token: str) -> dict[str, Any]:
-    import jwt
+def test_workflow_result_parses_completed_success() -> None:
+    client = GitHubActionsClient(
+        app_id=1,
+        installation_id=2,
+        private_key=TEST_PRIVATE_KEY,
+        repository="owner/repo",
+    )
 
-    return jwt.decode(token, options={"verify_signature": False})
+    monkeypatch_data = {
+        "status": "completed",
+        "conclusion": "success",
+        "html_url": "https://github.com/owner/repo/actions/runs/123",
+    }
 
+    client._api = lambda method, path, body=None: monkeypatch_data  # type: ignore[method-assign]
+    result = client.get_run(123)
 
-GitHubActionsClient._token_decode_for_test = _token_decode_for_test
+    assert result.run_id == 123
+    assert result.status == "completed"
+    assert result.conclusion == "success"
+    assert result.html_url.endswith("/123")
