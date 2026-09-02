@@ -1,6 +1,6 @@
 """Tests for the dependency-injected KQM benchmark runner."""
 
-import json
+import json  # noqa: I001
 from pathlib import Path
 
 from knowledge.provenance import EntityType, ExtractedFact
