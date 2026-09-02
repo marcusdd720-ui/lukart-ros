@@ -7,7 +7,7 @@ on:
     branches: [main]
 
 jobs:
-  quality:
+  stage-gate:
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -24,17 +24,5 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           python -m pip install ".[dev]"
-      - name: Ruff
-        run: python -m ruff check .
-      - name: MyPy
-        run: python -m mypy .
-      - name: Pytest
-        run: python -m pytest -v
-      - name: Synthetic KQM fact-extraction experiment
-        run: python -m validation.kqm_experiment
-      - name: Repository audit
-        if: matrix.python-version == '3.11'
-        run: python scripts/repository_audit.py
-      - name: PII and confidentiality gate
-        if: matrix.python-version == '3.11'
-        run: python scripts/pii_scan.py
+      - name: Automated stage 5 gate
+        run: python -m factory.stage_gate --stage 5
