@@ -2,6 +2,10 @@ name: GitHub App Smoke Test
 
 on:
   push:
+    branches:
+      - main
+      - 'stage-*'
+  pull_request:
     branches: [main]
   workflow_dispatch:
     inputs:
@@ -61,9 +65,10 @@ jobs:
           from factory.github_actions_client import GitHubActionsClient, GitHubActionsError
 
           stage = int(os.environ["STAGE"])
+          ref = os.environ.get("GITHUB_HEAD_REF") or os.environ.get("GITHUB_REF_NAME", "main")
           try:
               client = GitHubActionsClient.from_environment()
-              run_id = client.dispatch_stage_and_find_run(stage)
+              run_id = client.dispatch_stage_and_find_run(stage, ref=ref)
               result = client.wait_for_run(run_id)
           except (GitHubActionsError, ValueError) as exc:
               print(f"GitHub App smoke test failed: {exc}")
@@ -71,6 +76,7 @@ jobs:
 
           print("APP_AUTH=PASS")
           print(f"DISPATCHED_STAGE={stage}")
+          print(f"DISPATCH_REF={ref}")
           print(f"RUN_ID={result.run_id}")
           print(f"RUN_STATUS={result.status}")
           print(f"RUN_CONCLUSION={result.conclusion}")
