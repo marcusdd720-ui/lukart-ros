@@ -20,11 +20,17 @@ def main() -> int:
     )
     parser.add_argument("--case", required=False, help="Private local case key")
     parser.add_argument("--data-root", default=None, help="Private local MVROS data root")
-    parser.add_argument("--list", action="store_true", help="List local/registered case keys and exit")
+    parser.add_argument(
+        "--list",
+        action="store_true",
+        help="List local/registered case keys and exit",
+    )
     parser.add_argument(
         "--stage", default=None, help=f"Run single stage only: {', '.join(STAGES)}"
     )
-    parser.add_argument("--list-stages", action="store_true", help="List available stages and exit")
+    parser.add_argument(
+        "--list-stages", action="store_true", help="List available stages and exit"
+    )
     args = parser.parse_args()
 
     data_root = Path(args.data_root).expanduser() if args.data_root else None
