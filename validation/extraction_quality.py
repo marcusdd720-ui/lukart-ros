@@ -6,9 +6,9 @@ measurement stable while extractors and adapters evolve.
 
 from __future__ import annotations
 
+import unicodedata
 from collections.abc import Iterable, Mapping, Sequence
 from dataclasses import dataclass
-import unicodedata
 
 from knowledge.provenance import EntityType, ExtractedFact
 
@@ -240,9 +240,10 @@ def evaluate(
         for item in filtered_gold
         if item.entity_type is EntityType.CASE_NUMBER
     }
-    documents_without_case_number = {
-        item.document_id for item in filtered_gold
-    } - documents_with_case_number
+    documents_without_case_number = (
+        {item.document_id for item in filtered_gold}
+        - documents_with_case_number
+    )
 
     case_fp_documents = {
         item.source_document_id
