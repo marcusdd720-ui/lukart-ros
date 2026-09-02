@@ -65,7 +65,10 @@ def main() -> int:
     args = parser.parse_args()
 
     state = load_state(args.state_file)
-    current_number = int(state["current_stage"])
+    current_value = state["current_stage"]
+    if not isinstance(current_value, int):
+        raise OrchestratorError("Orchestrator state current_stage must be an integer")
+    current_number = current_value
     current = get_stage(current_number)
 
     print(f"CURRENT_STAGE={current.number}")

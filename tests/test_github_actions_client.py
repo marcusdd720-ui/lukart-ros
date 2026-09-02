@@ -61,9 +61,12 @@ def test_app_jwt_uses_string_issuer(monkeypatch: pytest.MonkeyPatch) -> None:
         repository="lukart/test",
     )
 
+    def fake_jwt_encode(payload: dict[str, Any], key: str, algorithm: str) -> str:
+        return json.dumps(payload)
+
     monkeypatch.setattr(
         "factory.github_actions_client.jwt.encode",
-        lambda payload, key, algorithm: json.dumps(payload),
+        fake_jwt_encode,
     )
     payload = json.loads(client._app_jwt())
 
@@ -139,7 +142,10 @@ def test_workflow_result_parses_completed_success() -> None:
         "html_url": "https://github.com/owner/repo/actions/runs/123",
     }
 
-    client._api = lambda method, path, body=None: monkeypatch_data  # type: ignore[method-assign]
+    def fake_api(method: str, path: str, body: dict[str, Any] | None = None) -> dict[str, Any]:
+        return monkeypatch_data
+
+    client._api = fake_api  # type: ignore[method-assign]
     result = client.get_run(123)
 
     assert result.run_id == 123

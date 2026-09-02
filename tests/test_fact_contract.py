@@ -1,4 +1,5 @@
 import types
+from typing import cast
 
 import pytest
 
@@ -9,7 +10,7 @@ _VALID_SHA256 = "a" * 64
 
 
 def _fact(**overrides: object) -> ExtractedFact:
-    values: dict[str, object] = {
+    values = {
         "value": "01.09.2026",
         "entity_type": EntityType.DATE,
         "source_document_id": "DOC-1",
@@ -21,11 +22,11 @@ def _fact(**overrides: object) -> ExtractedFact:
         "extraction_method": "deterministic_regex",
     }
     values.update(overrides)
-    return ExtractedFact(**values)
+    return ExtractedFact(**cast(dict[str, object], values))
 
 
-def _contract_fact(**overrides: object) -> object:
-    values: dict[str, object] = {
+def _contract_fact(**overrides: object) -> ExtractedFact:
+    values = {
         "value": "01.09.2026",
         "entity_type": EntityType.DATE,
         "source_document_id": "DOC-1",
@@ -37,7 +38,7 @@ def _contract_fact(**overrides: object) -> object:
         "extraction_method": "deterministic_regex",
     }
     values.update(overrides)
-    return types.SimpleNamespace(**values)
+    return ExtractedFact(**cast(dict[str, object], values))
 
 
 def test_fact_contract_accepts_complete_provenance() -> None:
