@@ -63,20 +63,23 @@ jobs:
           echo "MVROS_VERSION=$VERSION"
           echo "MVROS_TAG=$TAG"
 
-      - name: Verify tag does not already point elsewhere
+      - name: Verify tag state
         env:
           TAG: ${{ steps.version.outputs.tag }}
           VALIDATED_SHA: ${{ github.event.workflow_run.head_sha }}
         run: |
           set -euo pipefail
-          if git show-ref --verify --quiet "refs/tags/$TAG"; then
-            EXISTING_SHA="$(git rev-list -n 1 "$TAG")"
-            echo "Existing tag $TAG points to $EXISTING_SHA"
-            test "$EXISTING_SHA" = "$VALIDATED_SHA"
-            echo "Tag already exists at validated SHA; release is already established."
-          else
+          TAG_REF="$(git ls-remote origin "refs/tags/$TAG")"
+          if [ -z "$TAG_REF" ]; then
             echo "Tag $TAG does not exist and will be created at $VALIDATED_SHA."
+            exit 0
           fi
+
+          TAG_COMMIT="$(git ls-remote origin "refs/tags/$TAG^{}" | awk '{print $1}')"
+          test -n "$TAG_COMMIT"
+          echo "Existing tag $TAG resolves to $TAG_COMMIT"
+          test "$TAG_COMMIT" = "$VALIDATED_SHA"
+          echo "Existing tag points to the validated SHA."
 
       - name: Create tag and GitHub Release
         env:
@@ -86,7 +89,8 @@ jobs:
           VERSION: ${{ steps.version.outputs.version }}
         run: |
           set -euo pipefail
-          if ! git show-ref --verify --quiet "refs/tags/$TAG"; then
+          TAG_REF="$(git ls-remote origin "refs/tags/$TAG")"
+          if [ -z "$TAG_REF" ]; then
             git tag -a "$TAG" "$VALIDATED_SHA" -m "MVROS $VERSION"
             git push origin "$TAG"
           fi
@@ -105,14 +109,13 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           TAG: ${{ steps.version.outputs.tag }}
           VALIDATED_SHA: ${{ github.event.workflow_run.head_sha }}
+          VERSION: ${{ steps.version.outputs.version }}
         run: |
           set -euo pipefail
-          TAG_SHA="$(git ls-remote origin "refs/tags/$TAG" | awk '{print $1}')"
-          echo "REMOTE_TAG_SHA=$TAG_SHA"
-          test -n "$TAG_SHA"
-          if [ "${TAG_SHA}^{ }" = "" ]; then
-            exit 1
-          fi
+          TAG_COMMIT="$(git ls-remote origin "refs/tags/$TAG^{}" | awk '{print $1}')"
+          echo "REMOTE_TAG_COMMIT=$TAG_COMMIT"
+          test "$TAG_COMMIT" = "$VALIDATED_SHA"
+
           RELEASE_TARGET="$(gh release view "$TAG" --json targetCommitish --jq '.targetCommitish')"
           echo "RELEASE_TARGET=$RELEASE_TARGET"
           test "$RELEASE_TARGET" = "$VALIDATED_SHA" || test "$RELEASE_TARGET" = "main"
