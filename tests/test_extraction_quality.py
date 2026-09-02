@@ -1,6 +1,6 @@
 """Tests for the extraction-quality benchmark contract."""
 
-import json
+import json  # noqa: I001
 from pathlib import Path
 
 import pytest
