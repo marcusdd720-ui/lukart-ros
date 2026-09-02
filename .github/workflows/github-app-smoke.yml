@@ -1,6 +1,8 @@
 name: GitHub App Smoke Test
 
 on:
+  push:
+    branches: [main]
   workflow_dispatch:
     inputs:
       stage:
@@ -8,6 +10,9 @@ on:
         required: true
         default: "6"
         type: string
+
+env:
+  STAGE: ${{ inputs.stage || '6' }}
 
 permissions:
   contents: read
@@ -34,7 +39,6 @@ jobs:
           LUKART_ROS_FACTORY_APP_ID: ${{ vars.LUKART_ROS_FACTORY_APP_ID }}
           LUKART_ROS_FACTORY_CLIENT_ID: ${{ vars.LUKART_ROS_FACTORY_CLIENT_ID }}
           LUKART_ROS_FACTORY_PRIVATE_KEY: ${{ secrets.LUKART_ROS_FACTORY_PRIVATE_KEY }}
-          STAGE: ${{ inputs.stage }}
         run: |
           python - <<'PY'
           import os
