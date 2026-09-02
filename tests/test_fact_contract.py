@@ -1,5 +1,5 @@
 import types
-from typing import cast
+from typing import TypedDict, cast
 
 import pytest
 
@@ -9,8 +9,20 @@ from knowledge.provenance import EntityType, ExtractedFact
 _VALID_SHA256 = "a" * 64
 
 
+class FactData(TypedDict):
+    value: str
+    entity_type: EntityType
+    source_document_id: str
+    page: int
+    char_start: int
+    char_end: int
+    extractor_version: str
+    source_document_sha256: str
+    extraction_method: str
+
+
 def _fact(**overrides: object) -> ExtractedFact:
-    values = {
+    values: FactData = {
         "value": "01.09.2026",
         "entity_type": EntityType.DATE,
         "source_document_id": "DOC-1",
@@ -21,12 +33,12 @@ def _fact(**overrides: object) -> ExtractedFact:
         "source_document_sha256": _VALID_SHA256,
         "extraction_method": "deterministic_regex",
     }
-    values.update(overrides)
-    return ExtractedFact(**cast(dict[str, object], values))
+    values.update(cast(FactData, overrides))
+    return ExtractedFact(**values)
 
 
 def _contract_fact(**overrides: object) -> ExtractedFact:
-    values = {
+    values: FactData = {
         "value": "01.09.2026",
         "entity_type": EntityType.DATE,
         "source_document_id": "DOC-1",
@@ -37,7 +49,7 @@ def _contract_fact(**overrides: object) -> ExtractedFact:
         "source_document_sha256": _VALID_SHA256,
         "extraction_method": "deterministic_regex",
     }
-    values.update(overrides)
+    values.update(cast(FactData, overrides))
     return cast(ExtractedFact, types.SimpleNamespace(**values))
 
 
