@@ -6,11 +6,7 @@ from pathlib import Path
 import pytest
 
 from knowledge.provenance import EntityType, ExtractedFact
-from validation.extraction_quality import (
-    build_split,
-    evaluate,
-    load_corpus_documents,
-)
+from validation.extraction_quality import build_split, evaluate, load_corpus_documents
 
 
 CORPUS_PATH = Path("data/quality/extraction_gold_v1.json")
