@@ -13,7 +13,6 @@ from typing import Any
 
 import jwt
 
-
 GITHUB_API = "https://api.github.com"
 TOKEN_TTL_SECONDS = 540
 POLL_INTERVAL_SECONDS = 5

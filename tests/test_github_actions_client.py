@@ -6,7 +6,6 @@ import pytest
 
 from factory.github_actions_client import GitHubActionsClient, GitHubActionsError
 
-
 TEST_PRIVATE_KEY = """-----BEGIN PRIVATE KEY-----
 TEST-KEY-MATERIAL
 -----END PRIVATE KEY-----"""

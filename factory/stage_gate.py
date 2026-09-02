@@ -6,7 +6,6 @@ import subprocess
 
 from factory.stage_registry import get_stage, next_stage
 
-
 COMMANDS: dict[str, tuple[str, ...]] = {
     "quality": (
         "python -m ruff check .",

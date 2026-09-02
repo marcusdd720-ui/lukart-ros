@@ -6,7 +6,6 @@ from knowledge.fact_identity import (
 )
 from knowledge.provenance import EntityType, ExtractedFact
 
-
 _SHA = "a" * 64
 
 
