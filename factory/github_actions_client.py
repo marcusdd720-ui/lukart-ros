@@ -41,6 +41,7 @@ class GitHubActionsClient:
         installation_id: int,
         private_key: str,
         repository: str,
+        client_id: str | None = None,
         api_base: str = GITHUB_API,
     ) -> None:
         if not private_key.strip():
@@ -48,6 +49,7 @@ class GitHubActionsClient:
         if "/" not in repository:
             raise ValueError("repository must use owner/name form")
         self.app_id = app_id
+        self.client_id = client_id.strip() if client_id else str(app_id)
         self.installation_id = installation_id
         self.private_key = private_key
         self.repository = repository
@@ -73,15 +75,16 @@ class GitHubActionsClient:
             app_id=int(os.environ[required[0]]),
             installation_id=int(os.environ[required[1]]),
             private_key=os.environ[required[2]].replace("\\n", "\n"),
+            client_id=os.environ.get("LUKART_ROS_FACTORY_CLIENT_ID"),
             repository=os.environ.get("GITHUB_REPOSITORY", "marcusdd720-ui/lukart-ros"),
         )
 
     def _app_jwt(self) -> str:
         now = datetime.now(timezone.utc)
         payload = {
-            "iat": int((now - timedelta(seconds=30)).timestamp()),
+            "iat": int((now - timedelta(seconds=60)).timestamp()),
             "exp": int((now + timedelta(minutes=9)).timestamp()),
-            "iss": self.app_id,
+            "iss": self.client_id,
         }
         return str(jwt.encode(payload, self.private_key, algorithm="RS256"))
 
@@ -90,9 +93,11 @@ class GitHubActionsClient:
             return self._token
 
         url = f"{self.api_base}/app/installations/{self.installation_id}/access_tokens"
-        body = json.dumps({
-            "repositories": [self.repository.split("/", 1)[1]],
-        }).encode()
+        body = json.dumps(
+            {
+                "repositories": [self.repository.split("/", 1)[1]],
+            }
+        ).encode()
         data = self._request("POST", url, token=self._app_jwt(), body=body)
         token = data.get("token")
         expires_at = data.get("expires_at")
