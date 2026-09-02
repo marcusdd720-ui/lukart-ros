@@ -193,12 +193,22 @@ class KnowledgeGraph:
     def successors(self, node_id: str) -> list[KnowledgeNode]:
         if node_id not in self._node_index:
             raise NodeNotFound(f"Unknown node: {node_id}")
-        return [node for target in self.adjacency.get(node_id, []) if (node := self.get_node(target))]
+        result: list[KnowledgeNode] = []
+        for target in self.adjacency.get(node_id, []):
+            node = self.get_node(target)
+            if node is not None:
+                result.append(node)
+        return result
 
     def predecessors(self, node_id: str) -> list[KnowledgeNode]:
         if node_id not in self._node_index:
             raise NodeNotFound(f"Unknown node: {node_id}")
-        return [node for source in self.reverse_adjacency.get(node_id, []) if (node := self.get_node(source))]
+        result: list[KnowledgeNode] = []
+        for source in self.reverse_adjacency.get(node_id, []):
+            node = self.get_node(source)
+            if node is not None:
+                result.append(node)
+        return result
 
     def bfs(self, start: str) -> list[KnowledgeNode]:
         if start not in self._node_index:
