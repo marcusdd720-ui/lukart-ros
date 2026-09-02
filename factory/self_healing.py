@@ -80,6 +80,19 @@ def _commit_and_push(message: str) -> None:
             raise RuntimeError(detail or f"Automatic repair command failed: {' '.join(command)}")
 
 
+def _revert_head_safely() -> bool:
+    """Revert either a normal commit or a merge commit without guessing its parent."""
+    parents = _run(["git", "rev-list", "--parents", "-n", "1", "HEAD"])
+    if parents.returncode != 0:
+        return False
+    parent_count = len(parents.stdout.strip().split()) - 1
+    command = ["git", "revert", "--no-edit"]
+    if parent_count > 1:
+        command.extend(["-m", "1"])
+    command.append("HEAD")
+    return _run(command).returncode == 0
+
+
 def repair_repository(root: Path, failure_log: str) -> bool:
     """Repair quality issues or rollback the failed candidate as a fresh SHA."""
     diagnosis = diagnose_failure(failure_log)
@@ -103,9 +116,7 @@ def repair_repository(root: Path, failure_log: str) -> bool:
     _discard_uncommitted_changes()
     if not diagnosis.semantic_failure:
         return False
-
-    revert = _run(["git", "revert", "--no-edit", "HEAD"])
-    if revert.returncode != 0:
+    if not _revert_head_safely():
         _run(["git", "revert", "--abort"])
         return False
     _commit_and_push("fix: automatic semantic rollback")
