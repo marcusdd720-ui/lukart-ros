@@ -36,7 +36,7 @@ def _statute(
             "article": article,
             "jurisdiction": "PL",
         },
-        tags={"law", "statute", code.lower()},
+        tags=["law", "statute", code.lower()],
     )
 
 
@@ -60,7 +60,7 @@ def _case_law(
             "signature": signature,
             "jurisdiction": "PL",
         },
-        tags={"law", "case_law", "sn"},
+        tags=["law", "case_law", "sn"],
     )
 
 
