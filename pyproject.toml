@@ -50,3 +50,7 @@ select = ["E", "F", "I", "UP"]
 python_version = "3.11"
 explicit_package_bases = true
 exclude = "^(build|dist|.*\\.egg-info|validation/test_graph\\.py)(/|$)"
+
+[[tool.mypy.overrides]]
+module = ["langdetect", "langdetect.lang_detect_exception"]
+ignore_missing_imports = true
