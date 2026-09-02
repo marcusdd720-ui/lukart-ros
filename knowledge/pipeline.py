@@ -2,8 +2,8 @@
 Knowledge Operating System (KOS)
 
 File: knowledge/pipeline.py
-Version: 3.3
-Sprint: FACT-002 / CONTRACT-001
+Version: 3.4
+Sprint: FACT-003 / DEDUP-001
 """
 
 from __future__ import annotations
@@ -11,6 +11,7 @@ from __future__ import annotations
 from knowledge.builder import GraphBuilder
 from knowledge.extraction_stage import FactExtractionStage, FactExtractor
 from knowledge.fact_contract import FactContractValidator
+from knowledge.fact_identity import deduplicate_facts
 from knowledge.fact_projection import FactProjection
 from knowledge.provenance import ExtractedFact
 from knowledge.relation_engine import RelationEngine
@@ -39,25 +40,34 @@ class KnowledgePipeline:
         print("Pipeline")
         print("=" * 60)
 
-        print("[1/6] Building Graph...")
+        print("[1/7] Building Graph...")
         graph = self.builder.build()
         print(f"      Nodes : {graph.node_count()}")
 
-        print("[2/6] Fact Extraction...")
+        print("[2/7] Fact Extraction...")
         if self.extraction is None:
             print("      SKIPPED (no extractor configured)")
         else:
             self.extracted_facts = self.extraction.run(self.builder.documents)
             print(f"      Facts : {len(self.extracted_facts)}")
 
-        print("[3/6] Fact Contract...")
+        print("[3/7] Fact Contract...")
         if not self.extracted_facts:
             print("      SKIPPED (no extracted facts)")
         else:
             self.fact_contract.validate_or_raise(self.extracted_facts)
             print("      PASSED")
 
-        print("[4/6] Fact Projection...")
+        print("[4/7] Fact Identity + Deduplication...")
+        if not self.extracted_facts:
+            print("      SKIPPED (no extracted facts)")
+        else:
+            before = len(self.extracted_facts)
+            self.extracted_facts = deduplicate_facts(self.extracted_facts)
+            print(f"      Unique Facts : {len(self.extracted_facts)}")
+            print(f"      Duplicates Removed : {before - len(self.extracted_facts)}")
+
+        print("[5/7] Fact Projection...")
         if not self.extracted_facts:
             print("      SKIPPED (no extracted facts)")
         else:
@@ -68,7 +78,7 @@ class KnowledgePipeline:
             )
             print(f"      Fact Nodes : {len(projected)}")
 
-        print("[5/6] Building Relations + Validation...")
+        print("[6/7] Building Relations + Validation...")
         self.relations.run(graph)
         print(f"      Edges : {graph.edge_count()}")
         errors = self.validator.validate(graph)
@@ -79,7 +89,7 @@ class KnowledgePipeline:
         else:
             print("      PASSED")
 
-        print("[6/6] Report")
+        print("[7/7] Report")
         print()
         print(self.report.generate(graph))
         return graph
