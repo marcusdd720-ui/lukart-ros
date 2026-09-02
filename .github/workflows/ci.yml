@@ -30,6 +30,8 @@ jobs:
         run: python -m mypy .
       - name: Pytest
         run: python -m pytest -v
+      - name: Synthetic KQM fact-extraction experiment
+        run: python -m validation.kqm_experiment
       - name: Repository audit
         if: matrix.python-version == '3.11'
         run: python scripts/repository_audit.py
