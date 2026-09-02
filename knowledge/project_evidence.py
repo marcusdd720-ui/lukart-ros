@@ -54,7 +54,7 @@ def project_evidence(graph: KnowledgeGraph, item: EvidenceItem) -> str:
             "source_ref": getattr(item, "source_ref", "") or "",
             "weight": weight_name,
         },
-        tags={"evidence"},
+        tags=["evidence"],
     )
     node.validate()
     graph.ensure_node(node)
