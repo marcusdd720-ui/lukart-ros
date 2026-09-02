@@ -7,15 +7,15 @@ on:
     inputs:
       stage:
         description: "Stage to dispatch through GitHub App"
-        required: true
-        default: "7"
+        required: false
+        default: ""
         type: string
-
-env:
-  STAGE: ${{ inputs.stage || '7' }}
 
 permissions:
   contents: read
+
+env:
+  STAGE: ${{ inputs.stage || '' }}
 
 jobs:
   smoke-test:
@@ -33,6 +33,21 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           python -m pip install ".[dev]"
+
+      - name: Resolve stage
+        run: |
+          if [ -z "$STAGE" ]; then
+            STAGE="$(python - <<'PY'
+          import json
+          from pathlib import Path
+
+          state = json.loads(Path("factory/stage_state.json").read_text(encoding="utf-8"))
+          print(state["current_stage"])
+          PY
+            )"
+            echo "STAGE=$STAGE" >> "$GITHUB_ENV"
+          fi
+          echo "RESOLVED_STAGE=$STAGE"
 
       - name: Authenticate GitHub App and dispatch stage
         env:
