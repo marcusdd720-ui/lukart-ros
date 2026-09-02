@@ -48,8 +48,4 @@ select = ["E", "F", "I", "UP"]
 [tool.mypy]
 python_version = "3.11"
 explicit_package_bases = true
-exclude = [
-  "^build/",
-  "^dist/",
-  ".*\.egg-info/",
-]
+exclude = "^(build|dist|.*\\.egg-info)(/|$)"
