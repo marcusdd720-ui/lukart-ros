@@ -40,22 +40,26 @@ class StateManager:
 
             ts = datetime.now(UTC).isoformat()
 
-        score = getattr(report, "overall_score", None)
-        if score is None:
-            score = getattr(report, "score", 0.0)
+        score_raw = getattr(report, "overall_score", None)
+        if score_raw is None:
+            score_raw = getattr(report, "score", 0.0)
+        score = float(score_raw) if isinstance(score_raw, (int, float)) else 0.0
 
         decision = getattr(report, "decision", None)
         decision_val = getattr(decision, "value", decision)
         if decision_val is None:
             decision_val = "UNKNOWN"
 
+        delta_raw = getattr(report, "delta", 0.0)
+        delta = float(delta_raw) if isinstance(delta_raw, (int, float)) else 0.0
+
         history.append(
             {
                 "timestamp": ts,
-                "overall_score": float(score),
+                "overall_score": score,
                 "decision": str(decision_val),
                 "trend": getattr(report, "trend", "NEW"),
-                "delta": float(getattr(report, "delta", 0.0) or 0.0),
+                "delta": delta,
             }
         )
 
