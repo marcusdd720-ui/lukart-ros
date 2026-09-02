@@ -1,6 +1,6 @@
 """Reproducible runner for Knowledge Quality Model benchmark experiments."""
 
-from __future__ import annotations
+from __future__ import annotations  # noqa: I001
 
 import json
 from collections.abc import Callable, Iterable, Mapping
