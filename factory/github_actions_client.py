@@ -4,14 +4,13 @@ from __future__ import annotations
 
 import json
 import time
+import urllib.error
+import urllib.request
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
-from pathlib import Path
 from typing import Any
 
 import jwt
-import urllib.error
-import urllib.request
 
 
 GITHUB_API = "https://api.github.com"
@@ -32,7 +31,7 @@ class WorkflowResult:
 
 
 class GitHubActionsClient:
-    """Small, dependency-light GitHub App client for one repository."""
+    """GitHub App client for one repository."""
 
     def __init__(
         self,
@@ -89,18 +88,11 @@ class GitHubActionsClient:
         if self._token is not None and time.time() < self._token_expires_at:
             return self._token
 
-        url = (
-            f"{self.api_base}/app/installations/"
-            f"{self.installation_id}/access_tokens"
-        )
-        body = json.dumps({"repositories": [self.repository.split("/", 1)[1]]}).encode()
-        data = self._request(
-            "POST",
-            url,
-            token=self._app_jwt(),
-            body=body,
-            accept="application/vnd.github+json",
-        )
+        url = f"{self.api_base}/app/installations/{self.installation_id}/access_tokens"
+        body = json.dumps({
+            "repositories": [self.repository.split("/", 1)[1]],
+        }).encode()
+        data = self._request("POST", url, token=self._app_jwt(), body=body)
         token = data.get("token")
         expires_at = data.get("expires_at")
         if not isinstance(token, str) or not token:
@@ -120,11 +112,10 @@ class GitHubActionsClient:
         *,
         token: str,
         body: bytes | None = None,
-        accept: str = "application/vnd.github+json",
     ) -> dict[str, Any]:
         request = urllib.request.Request(url, method=method, data=body)
         request.add_header("Authorization", f"Bearer {token}")
-        request.add_header("Accept", accept)
+        request.add_header("Accept", "application/vnd.github+json")
         request.add_header("X-GitHub-Api-Version", "2022-11-28")
         if body is not None:
             request.add_header("Content-Type", "application/json")
@@ -164,18 +155,17 @@ class GitHubActionsClient:
         )
 
     def dispatch_stage(self, stage: int, *, ref: str = "main") -> None:
-        workflow = "stage-gate.yml"
         self._api(
             "POST",
-            f"/repos/{self.repository}/actions/workflows/{workflow}/dispatches",
+            f"/repos/{self.repository}/actions/workflows/stage-gate.yml/dispatches",
             body={"ref": ref, "inputs": {"stage": str(stage)}},
         )
 
     def list_runs(self, *, branch: str = "main", event: str | None = None) -> list[dict[str, Any]]:
-        params = f"?branch={branch}&per_page=20"
+        path = f"/repos/{self.repository}/actions/runs?branch={branch}&per_page=20"
         if event:
-            params += f"&event={event}"
-        data = self._api("GET", f"/repos/{self.repository}/actions/runs{params}")
+            path += f"&event={event}"
+        data = self._api("GET", path)
         runs = data.get("workflow_runs", [])
         if not isinstance(runs, list):
             raise GitHubActionsError("GitHub returned invalid workflow_runs")
