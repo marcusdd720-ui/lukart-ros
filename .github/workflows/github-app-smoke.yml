@@ -8,11 +8,11 @@ on:
       stage:
         description: "Stage to dispatch through GitHub App"
         required: true
-        default: "6"
+        default: "7"
         type: string
 
 env:
-  STAGE: ${{ inputs.stage || '6' }}
+  STAGE: ${{ inputs.stage || '7' }}
 
 permissions:
   contents: read
