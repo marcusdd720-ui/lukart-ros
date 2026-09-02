@@ -76,7 +76,8 @@ def _commit_and_push(message: str) -> None:
     ):
         result = _run(command)
         if result.returncode != 0:
-            raise RuntimeError(result.stderr.strip() or f"Automatic repair command failed: {' '.join(command)}")
+            detail = result.stderr.strip()
+            raise RuntimeError(detail or f"Automatic repair command failed: {' '.join(command)}")
 
 
 def repair_repository(root: Path, failure_log: str) -> bool:
