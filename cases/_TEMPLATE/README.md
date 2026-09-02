@@ -1,47 +1,30 @@
-# Sprawa: [NAZWA_ROBOCZA]
+# Prywatna sprawa: [NAZWA_ROBOCZA]
+
+> Ten katalog jest szablonem. Rzeczywiste sprawy muszą być przechowywane poza repozytorium Git, w prywatnym `MVROS_DATA_ROOT`.
 
 ## Status obiegu
-- [ ] INTAKE (zarys / bez sygnatury)
+- [ ] INTAKE
 - [ ] FACTS
 - [ ] ANALYSIS
 - [ ] DRAFT
 - [ ] FILED
 - [ ] CLOSED
 
-## Sygnatury
-- Sąd / prokuratura: _brak / do uzupełnienia_
-- Sygn. akt: _—_
-- Sygn. prokuratorska: _—_
+## Identyfikatory lokalne
+- Nazwa robocza:
+- Identyfikator lokalny:
+- Sygnatury i numery spraw: wyłącznie lokalnie
 
-## Strony
-- Wnioskodawca / strona:
-- Organ / przeciwnik:
+## Przedmiot
+_Wprowadź wyłącznie lokalnie. Nie kopiuj treści do repozytorium._
 
-## Przedmiot (1–3 zdania)
-_Opisz, czego dotyczy sprawa i czego NIE dotyczy._
-
-## Linia procesowa
-_Główna teza (np. brak znamion / sposób pouczenia / umorzenie)._
-
-## Korespondencja wychodząca
-| Data | Co | Sposób | Nr nadania R | Plik w outbound |
-|------|-----|--------|--------------|-----------------|
-| | | | | |
-
-## Korespondencja przychodząca
-| Data | Od | Co | Plik w inbound |
-|------|-----|-----|----------------|
-| | | | |
-
-## Evidence (skrót)
-| Id | Dokument | Co potwierdza | Uwagi |
-|----|----------|---------------|-------|
-| | | | |
+## Evidence
+_Dokumenty i dowody pozostają w lokalnym magazynie case'u._
 
 ## Pipeline LUKART
-- Builder: `scripts/build_case_....py` _(gdy powstanie)_
-- Output: `output/cases/...`
-- Matryca / notatki: `notes/`
+- Runtime: lokalny MVROS
+- Output: prywatny lokalny magazyn
+- Snapshots: prywatne lokalnie
 
-## Uwagi
-_Daty graniczne, terminy, ryzyka._
+## Ważne
+Nie umieszczaj w repozytorium danych osobowych, sygnatur, numerów spraw, treści dokumentów ani wygenerowanych materiałów dotyczących rzeczywistej sprawy.
