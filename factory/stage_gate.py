@@ -11,9 +11,11 @@ COMMANDS: dict[str, tuple[str, ...]] = {
         "python -m ruff check .",
         "python -m mypy .",
         "python -m pytest -v",
+        "python scripts/repository_audit.py",
+        "python scripts/pii_scan.py",
     ),
     "kqm": ("python -m validation.kqm_experiment",),
-    "extraction": ("python -m pytest tests/test_fact_projection.py -q",),
+    "extraction": ("python -m pytest tests/test_fact_extraction.py -q",),
     "projection": ("python -m pytest tests/test_fact_projection.py -q",),
     "e2e": ("python -m pytest tests/test_pipeline_fact_e2e.py -q",),
     "audit": (
@@ -25,7 +27,7 @@ COMMANDS: dict[str, tuple[str, ...]] = {
         "python scripts/pii_scan.py",
     ),
     "contract": (
-        "python -m pytest tests/test_fact_contract.py -q",
+        "python -m pytest tests/test_fact_contract.py tests/test_fact_schema.py -q",
         "python -m pytest -v",
         "python scripts/repository_audit.py",
         "python scripts/pii_scan.py",
@@ -91,6 +93,7 @@ COMMANDS: dict[str, tuple[str, ...]] = {
             "python -m pytest tests/test_fact_contract.py tests/test_fact_identity.py "
             "tests/test_pipeline_fact_e2e.py -q"
         ),
+        "python -m pytest -v",
         "python -m ruff check .",
         "python -m mypy .",
         "python scripts/repository_audit.py",
@@ -106,7 +109,7 @@ COMMANDS: dict[str, tuple[str, ...]] = {
         "python scripts/pii_scan.py",
     ),
     "self-healing": (
-        "python -m pytest tests/test_stage_orchestrator.py -q",
+        "python -m pytest tests/test_stage_orchestrator.py tests/test_self_healing.py -q",
         "python -m pytest tests/test_github_actions_client.py -q",
         "python -m pytest -v",
         "python -m ruff check .",
