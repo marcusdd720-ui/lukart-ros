@@ -8,12 +8,7 @@ U = TypeVar("U")
 
 
 class Result(Generic[T]):
-    """
-    Generic result container for success/failure flows.
-
-    The class is intentionally lightweight and framework-agnostic.
-    It can represent successful values or failures with exceptions.
-    """
+    """Generic result container for success/failure flows."""
 
     __slots__ = ("_error", "_is_success", "_value")
 
@@ -43,47 +38,35 @@ class Result(Generic[T]):
         return Success(value)
 
     @classmethod
-    def fail(cls, error: BaseException | str) -> Failure[Any]:
+    def fail(cls, error: BaseException | str) -> Failure:
         """Create a failed Result."""
         return Failure(error)
 
     @property
     def is_success(self) -> bool:
-        """Return True if the result represents success."""
         return self._is_success
 
     @property
     def is_failure(self) -> bool:
-        """Return True if the result represents failure."""
         return not self._is_success
 
     @property
     def value(self) -> T | None:
-        """Return the wrapped value or None for failures."""
         return self._value
 
     @property
     def error(self) -> BaseException | None:
-        """Return the wrapped error or None for successes."""
         return self._error
 
     def map(self, fn: Callable[[T], U]) -> Result[U]:
-        """
-        Apply a transformation function to a successful result.
-
-        Failures are propagated unchanged.
-        """
+        """Apply a transformation to a successful result."""
         if self.is_failure:
             return Failure(self._error or RuntimeError("Unknown error"))
 
         return Success(fn(cast(T, self._value)))
 
     def bind(self, fn: Callable[[T], Result[U]]) -> Result[U]:
-        """
-        Chain a function returning a Result.
-
-        Failures are propagated unchanged.
-        """
+        """Chain a function returning a Result."""
         if self.is_failure:
             return Failure(self._error or RuntimeError("Unknown error"))
 
