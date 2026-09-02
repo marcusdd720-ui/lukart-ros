@@ -4,6 +4,7 @@ from pathlib import Path
 
 from factory.rqm.audit.rule import AuditRule
 from factory.rqm.model.finding import Finding
+from factory.rqm.model.severity import Severity
 
 
 class LicenseRule(AuditRule):
@@ -11,7 +12,7 @@ class LicenseRule(AuditRule):
     name = "LICENSE exists"
     description = "Repository should contain LICENSE"
     category = "documentation"
-    severity = "WARNING"
+    severity = Severity.WARNING
 
     def check(self, root: Path) -> list[Finding]:
 
