@@ -36,8 +36,8 @@ addopts = "-q"
 
 [tool.ruff]
 line-length = 100
-target-version = "py313"
-exclude = ["build"]
+target-version = "py311"
+extend-exclude = ["build", "dist", "*.egg-info"]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP"]
