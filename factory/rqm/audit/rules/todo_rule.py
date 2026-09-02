@@ -4,6 +4,7 @@ from pathlib import Path
 
 from factory.rqm.audit.rule import AuditRule
 from factory.rqm.model.finding import Finding
+from factory.rqm.model.severity import Severity
 
 
 class TodoRule(AuditRule):
@@ -11,7 +12,7 @@ class TodoRule(AuditRule):
     name = "TODO / FIXME comments"
     description = "Find pending TODO or FIXME comments in source files"
     category = "code_quality"
-    severity = "INFO"
+    severity = Severity.INFO
 
     def check(self, root: Path) -> list[Finding]:
 
