@@ -71,7 +71,10 @@ class PluginManager:
             raise ValueError(f"Plugin '{name}' not registered")
 
         if name not in self._instances:
-            self._instances[name] = self._plugins[name].class_ref()
+            class_ref = self._plugins[name].class_ref
+            if class_ref is None:
+                raise RuntimeError(f"Plugin '{name}' has no class reference")
+            self._instances[name] = class_ref()
 
         return self._instances[name]
 
@@ -81,7 +84,10 @@ class PluginManager:
         if name not in self._plugins:
             raise ValueError(f"Plugin '{name}' not registered")
 
-        return self._plugins[name].class_ref()
+        class_ref = self._plugins[name].class_ref
+        if class_ref is None:
+            raise RuntimeError(f"Plugin '{name}' has no class reference")
+        return class_ref()
 
     def clear_instances(self):
         """Czyści cache singletonów."""
