@@ -67,7 +67,12 @@ def validate_case_key(case_key: str) -> str:
     return key
 
 
-def case_dir(case_key: str, data_root: Path | None = None, *, repo_root: Path | None = None) -> Path:
+def case_dir(
+    case_key: str,
+    data_root: Path | None = None,
+    *,
+    repo_root: Path | None = None,
+) -> Path:
     root = ensure_data_root(data_root, repo_root=repo_root)
     return root / "cases" / validate_case_key(case_key)
 
