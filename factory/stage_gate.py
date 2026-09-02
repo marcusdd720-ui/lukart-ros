@@ -75,6 +75,15 @@ COMMANDS: dict[str, tuple[str, ...]] = {
         "python scripts/repository_audit.py",
         "python scripts/pii_scan.py",
     ),
+    "production-contract": (
+        "python -m pytest tests/test_production_extraction_contract.py -q",
+        "python -m pytest tests/test_fact_contract.py tests/test_fact_identity.py -q",
+        "python -m pytest -v",
+        "python -m ruff check .",
+        "python -m mypy .",
+        "python scripts/repository_audit.py",
+        "python scripts/pii_scan.py",
+    ),
 }
 
 
