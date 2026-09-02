@@ -286,6 +286,10 @@ class Decision:
     def validate(self) -> None:
         if not (self.summary or "").strip():
             raise ValueError("Decision.summary cannot be empty")
+        if not self.fact_ids:
+            raise ValueError("Decision.fact_ids must contain at least one fact id")
+        if not self.legal_basis_ids:
+            raise ValueError("Decision.legal_basis_ids must contain at least one legal basis id")
 
 
 @dataclass(slots=True)
@@ -359,6 +363,8 @@ class Case:
     def add_evidence(self, item: EvidenceItem) -> None:
         item.validate()
         self.evidence_items.append(item)
+        if self.status in (CaseStatus.NEW, CaseStatus.INTAKE):
+            self.status = CaseStatus.ANALYSIS
         self.touch()
 
     def add_timeline_event(self, event: TimelineEvent) -> None:
