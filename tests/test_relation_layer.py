@@ -1,7 +1,7 @@
 from knowledge.edge import KnowledgeEdge
 from knowledge.graph import KnowledgeGraph
-from knowledge.relation_layer import RelationLayer, RelationLayerError
 from knowledge.node import KnowledgeNode
+from knowledge.relation_layer import RelationLayer, RelationLayerError
 from knowledge.types import EdgeType, NodeType
 
 
