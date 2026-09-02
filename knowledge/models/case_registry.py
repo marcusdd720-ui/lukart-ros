@@ -1,5 +1,8 @@
 """
 Registry of case workspace openers and presentation defaults.
+
+Case registrations are provided explicitly by callers. The registry does not
+ship with case-specific builders or dossier data.
 """
 
 from __future__ import annotations
@@ -34,7 +37,9 @@ class CaseSpec:
             "author_name": self.author_name,
             "place": self.place,
             "subject": self.subject,
-            "recipient_lines": list(self.recipient_lines) if self.recipient_lines else None,
+            "recipient_lines": list(self.recipient_lines)
+            if self.recipient_lines
+            else None,
         }
 
 
@@ -64,50 +69,3 @@ def open_case(case_key: str) -> CaseWorkspace:
 
 def registered_keys() -> list[str]:
     return sorted(_REGISTRY)
-
-
-def _bootstrap() -> None:
-    if _REGISTRY:
-        return
-    from knowledge.models.case_workspace import open_ds_3960, open_ii_kp_459_26
-
-    register(
-        CaseSpec(
-            key="DS_3960_2025",
-            opener=open_ds_3960,
-            author_name="Mariusz Brodziszewski",
-            place="Poznań",
-            subject=(
-                "Stanowisko procesowe wraz z analizą materiału dowodowego "
-                "— pojazd Volkswagen Transporter"
-            ),
-            recipient_lines=("Prokuratura Rejonowa Poznań-Wilda",),
-            meta={"signature": "DS.3960.2025"},
-        )
-    )
-    register(
-        CaseSpec(
-            key="II_Kp_459_26",
-            opener=open_ii_kp_459_26,
-            author_name="Arkadiusz Mielewczyk",
-            place="Wejherowo",
-            subject=(
-                "Wniosek o ponowne rozpoznanie skargi z 22.06.2026 r. "
-                "— odpowiedź na pismo Prezesa z 23.07.2026 r."
-            ),
-            recipient_lines=(
-                "Prezes Sądu Rejonowego w Wejherowie",
-                "SSR Beata Czabotar-Magulska",
-                "Sąd Rejonowy w Wejherowie",
-                "ul. Wniebowstąpienia 4",
-                "84-200 Wejherowo",
-            ),
-            meta={
-                "signature": "II Kp 459/26",
-                "prosecutor_ref": "4057-0.Ds.2517.2025",
-            },
-        )
-    )
-
-
-_bootstrap()
