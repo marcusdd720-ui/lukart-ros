@@ -2,12 +2,8 @@
 Knowledge Operating System (KOS)
 
 File: knowledge/models/case.py
-Version: 1.6.0
+Version: 1.6.1
 Sprint: CASE-012
-
-Compat for render/dossier: timeline, evidence, ordered_timeline(), has_signature().
-LegalIssue between Fact and Law — closed contract.
-Argument between LegalIssue and Decision.
 """
 
 from __future__ import annotations
@@ -109,6 +105,9 @@ class EvidenceItem:
             )
         else:
             self.weight = EvidenceWeight.SUPPORTING
+        self.proves: list[str] = list(kwargs.pop("proves", None) or [])
+        self.does_not: list[str] = list(kwargs.pop("does_not", None) or [])
+        self.open_questions: list[str] = list(kwargs.pop("open_questions", None) or [])
         self.date = kwargs.pop("date", None)
         self.date_label: str = str(kwargs.pop("date_label", "") or "")
         self.kind: str = str(kwargs.pop("kind", "") or "")
@@ -230,8 +229,6 @@ class LegalBasis:
 
 @dataclass(slots=True)
 class LegalIssue:
-    """Obligatory bridge between Fact and Law."""
-
     id: str = field(default_factory=lambda: str(uuid4()))
     question: str = ""
     status: IssueStatus = IssueStatus.OPEN
@@ -252,8 +249,6 @@ class LegalIssue:
 
 @dataclass(slots=True)
 class Argument:
-    """Bridge between LegalIssue and Decision."""
-
     id: str = field(default_factory=lambda: str(uuid4()))
     issue_id: str = ""
     claim: str = ""
@@ -336,8 +331,6 @@ class Case:
         return self.evidence_items
 
     def ordered_timeline(self) -> list[TimelineEvent]:
-        """Chronological order for renderers."""
-
         def _key(ev: TimelineEvent) -> tuple:
             d = getattr(ev, "when", None) or getattr(ev, "date", None) or date.min
             sk = str(getattr(ev, "sort_key", "") or "")
