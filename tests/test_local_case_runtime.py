@@ -1,3 +1,5 @@
+"""Regression tests for dynamic private local case discovery."""
+
 from __future__ import annotations
 
 import subprocess
