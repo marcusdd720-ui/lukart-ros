@@ -1,19 +1,26 @@
 """Tests for the extraction-quality benchmark contract."""
 
-import json  # noqa: I001
+import json
 from pathlib import Path
 
 import pytest
+import yaml
 
 from knowledge.provenance import EntityType, ExtractedFact
 from validation.extraction_quality import build_split, evaluate, load_corpus_documents
+from validation.gold_corpus import validate_corpus
 
 
 CORPUS_PATH = Path("data/quality/extraction_gold_v1.json")
+TAXONOMY_PATH = Path("docs/quality/critical_facts_schema.yaml")
 
 
 def load_payload() -> dict[str, object]:
     return json.loads(CORPUS_PATH.read_text(encoding="utf-8"))
+
+
+def load_taxonomy() -> dict[str, object]:
+    return yaml.safe_load(TAXONOMY_PATH.read_text(encoding="utf-8"))
 
 
 def fact(
@@ -34,6 +41,10 @@ def fact(
         source_document_sha256="synthetic",
         extraction_method="fixture",
     )
+
+
+def test_gold_corpus_matches_normative_taxonomy() -> None:
+    validate_corpus(load_payload(), load_taxonomy())
 
 
 def test_corpus_has_research_charter_split() -> None:
@@ -138,3 +149,16 @@ def test_provenance_is_measured_for_predictions() -> None:
 
     assert metrics.provenance_completeness == pytest.approx(1.0)
     assert metrics.complete
+
+
+def test_validator_rejects_taxonomy_criticality_drift() -> None:
+    corpus = load_payload()
+    taxonomy = load_taxonomy()
+    documents = corpus["documents"]
+    assert isinstance(documents, list)
+    entities = documents[5]["entities"]
+    assert isinstance(entities, list)
+    entities[3]["critical"] = True
+
+    with pytest.raises(ValueError, match="criticality mismatch"):
+        validate_corpus(corpus, taxonomy)
