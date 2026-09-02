@@ -17,6 +17,7 @@ def test_project_creates_issue_node() -> None:
 
     assert g.has_node(node_id)
     node = g.get_node(node_id)
+    assert node is not None
     assert node.type == NodeType.ISSUE
     assert "darowizna" in node.name.lower()
 
@@ -43,7 +44,6 @@ def test_project_adds_raises_and_resolves() -> None:
         statute_node_ids=["statute:kk:284:2"],
     )
 
-    # check edges exist
     raises = [e for e in g.edges if e.type == EdgeType.RAISES]
     resolves = [e for e in g.edges if e.type == EdgeType.RESOLVES]
 
