@@ -1,0 +1,119 @@
+name: MVROS v1 Release
+
+on:
+  workflow_run:
+    workflows:
+      - GitHub App Smoke Test
+    types:
+      - completed
+
+permissions:
+  contents: write
+
+concurrency:
+  group: mvros-v1-release
+  cancel-in-progress: false
+
+jobs:
+  release:
+    if: >-
+      ${{ github.event.workflow_run.conclusion == 'success' &&
+          github.event.workflow_run.event == 'push' &&
+          github.event.workflow_run.head_branch == 'main' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout validated main SHA
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
+          fetch-depth: 0
+
+      - name: Verify validated SHA is current main
+        env:
+          VALIDATED_SHA: ${{ github.event.workflow_run.head_sha }}
+        run: |
+          set -euo pipefail
+          git fetch origin main --no-tags
+          CURRENT_MAIN_SHA="$(git rev-parse origin/main)"
+          echo "VALIDATED_SHA=$VALIDATED_SHA"
+          echo "CURRENT_MAIN_SHA=$CURRENT_MAIN_SHA"
+          test "$VALIDATED_SHA" = "$CURRENT_MAIN_SHA"
+
+      - name: Resolve project version
+        id: version
+        run: |
+          set -euo pipefail
+          VERSION="$(python - <<'PY'
+          import tomllib
+          from pathlib import Path
+
+          data = tomllib.loads(Path("pyproject.toml").read_text(encoding="utf-8"))
+          print(data["project"]["version"])
+          PY
+          )"
+          case "$VERSION" in
+            ''|*[!0-9.]*|.*|*.)
+              echo "Invalid project version: $VERSION"
+              exit 1
+              ;;
+          esac
+          TAG="v$VERSION"
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+          echo "MVROS_VERSION=$VERSION"
+          echo "MVROS_TAG=$TAG"
+
+      - name: Verify tag does not already point elsewhere
+        env:
+          TAG: ${{ steps.version.outputs.tag }}
+          VALIDATED_SHA: ${{ github.event.workflow_run.head_sha }}
+        run: |
+          set -euo pipefail
+          if git show-ref --verify --quiet "refs/tags/$TAG"; then
+            EXISTING_SHA="$(git rev-list -n 1 "$TAG")"
+            echo "Existing tag $TAG points to $EXISTING_SHA"
+            test "$EXISTING_SHA" = "$VALIDATED_SHA"
+            echo "Tag already exists at validated SHA; release is already established."
+          else
+            echo "Tag $TAG does not exist and will be created at $VALIDATED_SHA."
+          fi
+
+      - name: Create tag and GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ steps.version.outputs.tag }}
+          VALIDATED_SHA: ${{ github.event.workflow_run.head_sha }}
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          set -euo pipefail
+          if ! git show-ref --verify --quiet "refs/tags/$TAG"; then
+            git tag -a "$TAG" "$VALIDATED_SHA" -m "MVROS $VERSION"
+            git push origin "$TAG"
+          fi
+
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            echo "Release $TAG already exists."
+          else
+            gh release create "$TAG" \
+              --target "$VALIDATED_SHA" \
+              --title "MVROS $VERSION" \
+              --generate-notes
+          fi
+
+      - name: Verify release state
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ steps.version.outputs.tag }}
+          VALIDATED_SHA: ${{ github.event.workflow_run.head_sha }}
+        run: |
+          set -euo pipefail
+          TAG_SHA="$(git ls-remote origin "refs/tags/$TAG" | awk '{print $1}')"
+          echo "REMOTE_TAG_SHA=$TAG_SHA"
+          test -n "$TAG_SHA"
+          if [ "${TAG_SHA}^{ }" = "" ]; then
+            exit 1
+          fi
+          RELEASE_TARGET="$(gh release view "$TAG" --json targetCommitish --jq '.targetCommitish')"
+          echo "RELEASE_TARGET=$RELEASE_TARGET"
+          test "$RELEASE_TARGET" = "$VALIDATED_SHA" || test "$RELEASE_TARGET" = "main"
+          echo "MVROS v$VERSION release verification complete."
