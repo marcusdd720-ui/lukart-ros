@@ -1,0 +1,31 @@
+name: MVROS v1 Operations
+
+on:
+  workflow_dispatch:
+    inputs:
+      root:
+        description: "Document root to process"
+        required: true
+        default: "."
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  run-mvros-v1:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install MVROS v1
+        run: python -m pip install --upgrade pip && pip install -e ".[dev]"
+
+      - name: Run MVROS v1
+        run: python scripts/mvros_v1.py --root "${{ inputs.root }}"
