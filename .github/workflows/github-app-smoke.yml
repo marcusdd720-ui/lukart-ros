@@ -65,7 +65,7 @@ jobs:
           from factory.github_actions_client import GitHubActionsClient, GitHubActionsError
 
           stage = int(os.environ["STAGE"])
-          ref = os.environ.get("GITHUB_REF_NAME", "main")
+          ref = os.environ.get("GITHUB_HEAD_REF") or os.environ.get("GITHUB_REF_NAME", "main")
           try:
               client = GitHubActionsClient.from_environment()
               run_id = client.dispatch_stage_and_find_run(stage, ref=ref)
