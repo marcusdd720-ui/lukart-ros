@@ -38,7 +38,7 @@ def _contract_fact(**overrides: object) -> ExtractedFact:
         "extraction_method": "deterministic_regex",
     }
     values.update(overrides)
-    return ExtractedFact(**cast(dict[str, object], values))
+    return cast(ExtractedFact, types.SimpleNamespace(**values))
 
 
 def test_fact_contract_accepts_complete_provenance() -> None:
