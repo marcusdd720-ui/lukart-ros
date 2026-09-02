@@ -8,7 +8,11 @@ from pathlib import Path
 import pytest
 
 from knowledge.provenance import EntityType, ExtractedFact
-from validation.extraction_quality import build_split, evaluate, load_corpus_documents
+from validation.extraction_quality import (
+    build_split,
+    evaluate,
+    load_corpus_documents,
+)
 
 
 CORPUS_PATH = Path("data/quality/extraction_gold_v1.json")
@@ -54,14 +58,19 @@ def test_corpus_has_research_charter_split() -> None:
     assert set(development.document_ids).isdisjoint(validation.document_ids)
     assert set(development.document_ids).isdisjoint(locked.document_ids)
     assert set(validation.document_ids).isdisjoint(locked.document_ids)
-    assert set(development.document_ids) | set(validation.document_ids) | set(locked.document_ids) == {
-        item["document_id"] for item in documents
-    }
+
+    split_ids = (
+        set(development.document_ids)
+        | set(validation.document_ids)
+        | set(locked.document_ids)
+    )
+    corpus_ids = {item["document_id"] for item in documents}
+    assert split_ids == corpus_ids
 
 
 def test_corpus_facts_are_versioned_and_typed() -> None:
     facts = load_corpus_documents(load_payload())
-    assert len(facts) > 0
+    assert facts
     assert all(isinstance(item.entity_type, EntityType) for item in facts)
     assert all(item.document_id.startswith("SYN-") for item in facts)
 
@@ -70,7 +79,11 @@ def test_perfect_predictions_reach_full_metrics() -> None:
     payload = load_payload()
     gold = load_corpus_documents(payload)
     locked = build_split(payload, "locked_evaluation")
-    predictions = [fact(item.document_id, item.entity_type, item.value) for item in gold if locked.contains(item.document_id)]
+    predictions = [
+        fact(item.document_id, item.entity_type, item.value)
+        for item in gold
+        if locked.contains(item.document_id)
+    ]
 
     metrics = evaluate(gold, predictions, split=locked)
 
@@ -92,7 +105,11 @@ def test_critical_recall_detects_a_missing_material_fact() -> None:
     locked = build_split(payload, "locked_evaluation")
     locked_gold = [item for item in gold if locked.contains(item.document_id)]
     missing = next(item for item in locked_gold if item.critical)
-    predictions = [fact(item.document_id, item.entity_type, item.value) for item in locked_gold if item is not missing]
+    predictions = [
+        fact(item.document_id, item.entity_type, item.value)
+        for item in locked_gold
+        if item is not missing
+    ]
 
     metrics = evaluate(gold, predictions, split=locked)
 
@@ -119,7 +136,11 @@ def test_provenance_is_measured_for_predictions() -> None:
     payload = load_payload()
     gold = load_corpus_documents(payload)
     locked = build_split(payload, "locked_evaluation")
-    metrics = evaluate(gold, [fact("SYN-UM-004", EntityType.PARTY, "Jantar")], split=locked)
+    metrics = evaluate(
+        gold,
+        [fact("SYN-UM-004", EntityType.PARTY, "Jantar")],
+        split=locked,
+    )
 
     assert metrics.provenance_completeness == pytest.approx(1.0)
     assert metrics.complete
