@@ -1,0 +1,18 @@
+name: Ruff I001 Diagnostic
+
+on:
+  push:
+    branches:
+      - "diag/ruff-i001-stage7"
+
+jobs:
+  diagnose:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.11"
+      - run: python -m pip install "ruff==0.16.5"
+      - name: Show Ruff autofix diff
+        run: python -m ruff check . --select I001 --fix --diff
