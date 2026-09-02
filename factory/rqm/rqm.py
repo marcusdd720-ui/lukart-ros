@@ -47,15 +47,16 @@ def main() -> int:
     print("=" * 60)
     print("Release Quality Manager")
     print("=" * 60)
-    score = getattr(report, "overall_score", None)
-    if score is None:
-        score = getattr(report, "score", 0)
+    score_raw = getattr(report, "overall_score", None)
+    if score_raw is None:
+        score_raw = getattr(report, "score", 0.0)
+    score = float(score_raw) if isinstance(score_raw, (int, float)) else 0.0
     decision = getattr(report, "decision", None)
     decision_val = getattr(decision, "value", decision)
     providers = getattr(report, "providers", None)
     if providers is None:
         providers = getattr(report, "results", [])
-    print(f"Score    : {float(score):.1f}")
+    print(f"Score    : {score:.1f}")
     print(f"Decision : {decision_val}")
     print(f"Providers: {len(providers)}")
     print("=" * 60)
