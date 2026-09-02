@@ -4,6 +4,7 @@ from pathlib import Path
 
 from factory.rqm.audit.rule import AuditRule
 from factory.rqm.model.finding import Finding
+from factory.rqm.model.severity import Severity
 
 
 class PyprojectRule(AuditRule):
@@ -11,7 +12,7 @@ class PyprojectRule(AuditRule):
     name = "pyproject.toml exists"
     description = "Repository should contain pyproject.toml"
     category = "python"
-    severity = "ERROR"
+    severity = Severity.ERROR
 
     def check(self, root: Path) -> list[Finding]:
 
