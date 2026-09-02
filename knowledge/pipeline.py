@@ -2,14 +2,15 @@
 Knowledge Operating System (KOS)
 
 File: knowledge/pipeline.py
-Version: 3.2
-Sprint: F-013 / FACT-001
+Version: 3.3
+Sprint: FACT-002 / CONTRACT-001
 """
 
 from __future__ import annotations
 
 from knowledge.builder import GraphBuilder
 from knowledge.extraction_stage import FactExtractionStage, FactExtractor
+from knowledge.fact_contract import FactContractValidator
 from knowledge.fact_projection import FactProjection
 from knowledge.provenance import ExtractedFact
 from knowledge.relation_engine import RelationEngine
@@ -29,6 +30,7 @@ class KnowledgePipeline:
         self.report = GraphReport()
         self.extraction = FactExtractionStage(extractor) if extractor else None
         self.projection = FactProjection()
+        self.fact_contract = FactContractValidator()
         self.extracted_facts: list[ExtractedFact] = []
 
     def run(self):
@@ -48,7 +50,14 @@ class KnowledgePipeline:
             self.extracted_facts = self.extraction.run(self.builder.documents)
             print(f"      Facts : {len(self.extracted_facts)}")
 
-        print("[3/6] Fact Projection...")
+        print("[3/6] Fact Contract...")
+        if not self.extracted_facts:
+            print("      SKIPPED (no extracted facts)")
+        else:
+            self.fact_contract.validate_or_raise(self.extracted_facts)
+            print("      PASSED")
+
+        print("[4/6] Fact Projection...")
         if not self.extracted_facts:
             print("      SKIPPED (no extracted facts)")
         else:
@@ -59,11 +68,9 @@ class KnowledgePipeline:
             )
             print(f"      Fact Nodes : {len(projected)}")
 
-        print("[4/6] Building Relations...")
+        print("[5/6] Building Relations + Validation...")
         self.relations.run(graph)
         print(f"      Edges : {graph.edge_count()}")
-
-        print("[5/6] Validation...")
         errors = self.validator.validate(graph)
         if errors:
             print(f"      FAILED ({len(errors)})")
