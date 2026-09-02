@@ -247,6 +247,37 @@ def publish_state(path: Path, state: dict[str, object]) -> None:
     raise OrchestratorError("Cannot publish lifecycle state after remote refresh")
 
 
+def dispatch_next_orchestrator(next_stage_number: int) -> None:
+    """Explicitly start the next lifecycle controller after state publication.
+
+    Pushes made with the workflow GITHUB_TOKEN do not recursively trigger a
+    new workflow run, so stage progression must use workflow_dispatch.
+    """
+    repository = os.environ.get("GITHUB_REPOSITORY", "")
+    if not repository:
+        raise OrchestratorError("GITHUB_REPOSITORY is required")
+    result = run(
+        [
+            "gh",
+            "workflow",
+            "run",
+            "stage-orchestrator.yml",
+            "--repo",
+            repository,
+            "--ref",
+            "main",
+            "-f",
+            f"stage={next_stage_number}",
+        ],
+        capture=True,
+    )
+    if result.returncode != 0:
+        raise OrchestratorError(
+            result.stderr.strip() or "Next Stage Orchestrator dispatch failed"
+        )
+    print(f"NEXT_ORCHESTRATOR_DISPATCHED={next_stage_number}")
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--state-file", type=Path, default=Path("factory/stage_state.json"))
@@ -279,7 +310,9 @@ def main() -> int:
             if state["status"] == "COMPLETE":
                 print("ORCHESTRATOR_RESULT=COMPLETE")
             else:
-                print(f"NEXT_STAGE={state['current_stage']}")
+                next_number = int(state["current_stage"])
+                print(f"NEXT_STAGE={next_number}")
+                dispatch_next_orchestrator(next_number)
                 print("ORCHESTRATOR_RESULT=ADVANCED")
             return 0
         print("SMOKE_FAILURE_LOG_START")
