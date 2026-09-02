@@ -1,0 +1,63 @@
+name: GitHub App Smoke Test
+
+on:
+  workflow_dispatch:
+    inputs:
+      stage:
+        description: "Stage to dispatch through GitHub App"
+        required: true
+        default: "6"
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  smoke-test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install project
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install ".[dev]"
+
+      - name: Authenticate GitHub App and dispatch stage
+        env:
+          LUKART_ROS_FACTORY_APP_ID: ${{ vars.LUKART_ROS_FACTORY_APP_ID }}
+          LUKART_ROS_FACTORY_INSTALLATION_ID: ${{ vars.LUKART_ROS_FACTORY_INSTALLATION_ID }}
+          LUKART_ROS_FACTORY_PRIVATE_KEY: ${{ secrets.LUKART_ROS_FACTORY_PRIVATE_KEY }}
+          STAGE: ${{ inputs.stage }}
+        run: |
+          python - <<'PY'
+          import os
+          import sys
+
+          from factory.github_actions_client import GitHubActionsClient, GitHubActionsError
+
+          stage = int(os.environ["STAGE"])
+          try:
+              client = GitHubActionsClient.from_environment()
+              run_id = client.dispatch_stage_and_find_run(stage)
+              result = client.wait_for_run(run_id)
+          except (GitHubActionsError, ValueError) as exc:
+              print(f"GitHub App smoke test failed: {exc}")
+              raise SystemExit(1) from exc
+
+          print(f"APP_AUTH=PASS")
+          print(f"DISPATCHED_STAGE={stage}")
+          print(f"RUN_ID={result.run_id}")
+          print(f"RUN_STATUS={result.status}")
+          print(f"RUN_CONCLUSION={result.conclusion}")
+          print(f"RUN_URL={result.html_url}")
+
+          if result.conclusion != "success":
+              raise SystemExit(1)
+          PY
