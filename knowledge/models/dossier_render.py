@@ -68,12 +68,13 @@ class DossierRenderer:
         lines.append("STANOWISKO PROCESOWE")
         lines.append("WRAZ Z ANALIZĄ MATERIAŁU DOWODOWEGO")
         lines.append("")
-        if case.has_signature():
-            lines.append(f"Sygnatura: {case.signature.strip()}")
+        signature = case.signature
+        if case.has_signature() and signature is not None:
+            lines.append(f"Sygnatura: {signature.strip()}")
         else:
             lines.append(f"Sprawa: {case.display_title()}")
         pros = str(case.metadata.get("prosecutor_ref", "") or "").strip()
-        if pros and pros != (case.signature or "").strip():
+        if pros and pros != (signature or "").strip():
             lines.append(f"Sygn. prokuratorska: {pros}")
         lines.append(f"Tytuł: {case.display_title()}")
         lines.append("")
@@ -108,13 +109,13 @@ class DossierRenderer:
         lines.append("")
         if dec.scope_not_challenged:
             lines.append("Nie jest kwestionowane:")
-            for i, item in enumerate(dec.scope_not_challenged, start=1):
-                lines.append(f"{i}. {item}")
+            for i, scope_item in enumerate(dec.scope_not_challenged, start=1):
+                lines.append(f"{i}. {scope_item}")
             lines.append("")
         if dec.issues:
             lines.append("Przedmiotem analizy jest:")
-            for i, item in enumerate(dec.issues, start=1):
-                lines.append(f"{i}. {item}")
+            for i, issue_item in enumerate(dec.issues, start=1):
+                lines.append(f"{i}. {issue_item}")
             lines.append("")
         if not dec.scope_not_challenged and not dec.issues:
             lines.append(dec.summary)
@@ -124,21 +125,21 @@ class DossierRenderer:
         if case.legal_issues:
             lines.append("II.A. ZAGADNIENIA PRAWNE")
             lines.append("")
-            for i, issue in enumerate(case.legal_issues, start=1):
-                lines.append(f"{i}. {issue.question}")
-                if issue.hypothesis.strip():
-                    lines.append(f"   Hipoteza robocza: {issue.hypothesis.strip()}")
-                if issue.statute_refs:
+            for i, legal_issue in enumerate(case.legal_issues, start=1):
+                lines.append(f"{i}. {legal_issue.question}")
+                if legal_issue.hypothesis.strip():
+                    lines.append(f"   Hipoteza robocza: {legal_issue.hypothesis.strip()}")
+                if legal_issue.statute_refs:
                     lines.append(
-                        f"   Przepisy: {', '.join(issue.statute_refs)}"
+                        f"   Przepisy: {', '.join(legal_issue.statute_refs)}"
                     )
-                if issue.case_law_refs:
+                if legal_issue.case_law_refs:
                     lines.append(
-                        f"   Orzecznictwo: {', '.join(issue.case_law_refs)}"
+                        f"   Orzecznictwo: {', '.join(legal_issue.case_law_refs)}"
                     )
                 linked_facts = [
                     fact_map[fid].statement[:100]
-                    for fid in issue.fact_ids
+                    for fid in legal_issue.fact_ids
                     if fid in fact_map
                 ]
                 if linked_facts:
@@ -154,9 +155,9 @@ class DossierRenderer:
             for i, arg in enumerate(case.arguments, start=1):
                 lines.append(f"{i}. {arg.claim}")
                 lines.append(f"   Status: {arg.status.name}")
-                issue = issue_map.get(arg.issue_id)
-                if issue is not None:
-                    lines.append(f"   Zagadnienie: {issue.question[:120]}")
+                arg_issue = issue_map.get(arg.issue_id)
+                if arg_issue is not None:
+                    lines.append(f"   Zagadnienie: {arg_issue.question[:120]}")
                 if arg.legal_basis_ids:
                     refs = [
                         law_map[bid].reference
@@ -220,21 +221,21 @@ class DossierRenderer:
         if not case.evidence:
             lines.append("(brak pozycji evidence)")
         else:
-            for i, item in enumerate(case.evidence, start=1):
-                lines.append(f"{i}. {item.label}")
-                lines.append(f"   Źródło: {item.source_ref}")
-                lines.append(f"   Waga: {item.weight.name}")
-                if item.proves:
+            for i, evidence_item in enumerate(case.evidence, start=1):
+                lines.append(f"{i}. {evidence_item.label}")
+                lines.append(f"   Źródło: {evidence_item.source_ref}")
+                lines.append(f"   Waga: {evidence_item.weight.name}")
+                if evidence_item.proves:
                     lines.append("   Potwierdza:")
-                    for p in item.proves:
+                    for p in evidence_item.proves:
                         lines.append(f"   - {p}")
-                if item.does_not:
+                if evidence_item.does_not:
                     lines.append("   Nie potwierdza:")
-                    for p in item.does_not:
+                    for p in evidence_item.does_not:
                         lines.append(f"   - {p}")
-                if item.open_questions:
+                if evidence_item.open_questions:
                     lines.append("   Pytania otwarte:")
-                    for q in item.open_questions:
+                    for q in evidence_item.open_questions:
                         lines.append(f"   - {q}")
                 lines.append("")
         lines.append("Wniosek z rozdziału V")
@@ -286,11 +287,11 @@ class DossierRenderer:
         )
         lines.append("")
         if case.evidence:
-            for i, item in enumerate(case.evidence, start=1):
-                lines.append(f"{i}. {item.label} ({item.source_ref})")
+            for i, evidence_item in enumerate(case.evidence, start=1):
+                lines.append(f"{i}. {evidence_item.label} ({evidence_item.source_ref})")
         else:
-            for i, name in enumerate(dec.attachments, start=1):
-                lines.append(f"{i}. {name}")
+            for i, attachment in enumerate(dec.attachments, start=1):
+                lines.append(f"{i}. {attachment}")
         lines.append("")
         lines.append(
             "Dowody te powinny służyć ustaleniu kolejności zdarzeń, podstaw "
@@ -304,8 +305,8 @@ class DossierRenderer:
         if not dec.outcomes:
             lines.append("1. Przyjęcie niniejszego stanowiska do akt.")
         else:
-            for i, item in enumerate(dec.outcomes, start=1):
-                lines.append(f"{i}. {item}")
+            for i, outcome in enumerate(dec.outcomes, start=1):
+                lines.append(f"{i}. {outcome}")
         lines.append("")
         if dec.closing_statement.strip():
             lines.append(dec.closing_statement.strip())
@@ -316,8 +317,8 @@ class DossierRenderer:
         if not dec.attachments:
             lines.append("(brak wykazu)")
         else:
-            for i, name in enumerate(dec.attachments, start=1):
-                lines.append(f"{i}. {name}")
+            for i, attachment in enumerate(dec.attachments, start=1):
+                lines.append(f"{i}. {attachment}")
         lines.append("")
 
         if ctx.author_name:

@@ -278,9 +278,9 @@ class GraphQuery:
             try:
                 result = dijkstra(source, target)
                 if isinstance(result, tuple) and result:
-                    path = result[0]
-                    if path:
-                        return [self._as_id(item) for item in path]
+                    candidate_path = result[0]
+                    if candidate_path:
+                        return [self._as_id(item) for item in candidate_path]
                     return None
                 if isinstance(result, list):
                     return [self._as_id(item) for item in result] or None
@@ -295,13 +295,13 @@ class GraphQuery:
         while queue:
             current = queue.popleft()
             if current == target:
-                path: list[str] = []
+                fallback_path: list[str] = []
                 node: str | None = target
                 while node is not None:
-                    path.append(node)
+                    fallback_path.append(node)
                     node = parent[node]
-                path.reverse()
-                return path
+                fallback_path.reverse()
+                return fallback_path
             for nxt in self.graph.adjacency.get(current, []):
                 nxt_id = self._as_id(nxt)
                 if nxt_id not in parent:

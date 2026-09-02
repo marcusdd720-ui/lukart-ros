@@ -5,6 +5,7 @@ from pathlib import Path
 
 from factory.rqm.audit.rule import AuditRule
 from factory.rqm.model.finding import Finding
+from factory.rqm.model.severity import Severity
 
 
 class DuplicateFileRule(AuditRule):
@@ -12,7 +13,7 @@ class DuplicateFileRule(AuditRule):
     name = "No duplicate files"
     description = "Detect exact duplicate files in repository"
     category = "duplication"
-    severity = "WARNING"
+    severity = Severity.WARNING
 
     def _hash_file(self, path: Path) -> str:
 

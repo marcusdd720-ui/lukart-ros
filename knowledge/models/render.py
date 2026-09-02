@@ -64,7 +64,8 @@ class CaseLetterRenderer:
             lines.extend(recipient)
 
         lines.append("")
-        sig = case.signature.strip() if case.has_signature() else ""
+        signature = case.signature
+        sig = signature.strip() if signature is not None and case.has_signature() else ""
         pros = (
             ctx.prosecutor_ref.strip()
             if ctx.prosecutor_ref and ctx.prosecutor_ref.strip()
@@ -90,13 +91,13 @@ class CaseLetterRenderer:
         lines.append("")
         if dec.scope_not_challenged:
             lines.append("Nie jest kwestionowane:")
-            for i, item in enumerate(dec.scope_not_challenged, start=1):
-                lines.append(f"{i}. {item}")
+            for i, scope_item in enumerate(dec.scope_not_challenged, start=1):
+                lines.append(f"{i}. {scope_item}")
             lines.append("")
         if dec.issues:
             lines.append("Przedmiotem stanowiska jest:")
-            for i, item in enumerate(dec.issues, start=1):
-                lines.append(f"{i}. {item}")
+            for i, issue_item in enumerate(dec.issues, start=1):
+                lines.append(f"{i}. {issue_item}")
             lines.append("")
         if not dec.scope_not_challenged and not dec.issues:
             lines.append(dec.summary)
@@ -134,20 +135,22 @@ class CaseLetterRenderer:
         if case.evidence:
             lines.append("II.B. Analiza materiału dowodowego")
             lines.append("")
-            for i, item in enumerate(case.evidence, start=1):
-                lines.append(f"{i}. {item.label} (źródło: {item.source_ref})")
-                lines.append(f"   Waga: {item.weight.name}")
-                if item.proves:
+            for i, evidence_item in enumerate(case.evidence, start=1):
+                lines.append(
+                    f"{i}. {evidence_item.label} (źródło: {evidence_item.source_ref})"
+                )
+                lines.append(f"   Waga: {evidence_item.weight.name}")
+                if evidence_item.proves:
                     lines.append("   Potwierdza:")
-                    for p in item.proves:
+                    for p in evidence_item.proves:
                         lines.append(f"   - {p}")
-                if item.does_not:
+                if evidence_item.does_not:
                     lines.append("   Nie potwierdza:")
-                    for p in item.does_not:
+                    for p in evidence_item.does_not:
                         lines.append(f"   - {p}")
-                if item.open_questions:
+                if evidence_item.open_questions:
                     lines.append("   Pytania otwarte:")
-                    for q in item.open_questions:
+                    for q in evidence_item.open_questions:
                         lines.append(f"   - {q}")
                 lines.append("")
 
@@ -179,8 +182,8 @@ class CaseLetterRenderer:
         if not dec.outcomes:
             lines.append("1. Przyjęcie niniejszego pisma do akt.")
         else:
-            for i, item in enumerate(dec.outcomes, start=1):
-                lines.append(f"{i}. {item}")
+            for i, outcome in enumerate(dec.outcomes, start=1):
+                lines.append(f"{i}. {outcome}")
         lines.append("")
 
         if dec.closing_statement.strip():
@@ -198,8 +201,8 @@ class CaseLetterRenderer:
         if dec.attachments:
             lines.append("")
             lines.append("Załączniki:")
-            for i, name in enumerate(dec.attachments, start=1):
-                lines.append(f"{i}. {name}")
+            for i, attachment in enumerate(dec.attachments, start=1):
+                lines.append(f"{i}. {attachment}")
 
         return "\n".join(lines).rstrip() + "\n"
 

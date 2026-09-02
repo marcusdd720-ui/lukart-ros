@@ -2,12 +2,8 @@
 Knowledge Operating System (KOS)
 
 File: knowledge/models/case.py
-Version: 1.5.0
+Version: 1.6.1
 Sprint: CASE-012
-
-Compat for render/dossier: timeline, evidence, ordered_timeline(), has_signature().
-LegalIssue between Fact and Law — closed contract.
-Argument between LegalIssue and Decision.
 """
 
 from __future__ import annotations
@@ -20,6 +16,7 @@ from uuid import uuid4
 
 
 class CaseStatus(StrEnum):
+    PRE_CASE = auto()
     NEW = auto()
     INTAKE = auto()
     FACTS = auto()
@@ -108,6 +105,9 @@ class EvidenceItem:
             )
         else:
             self.weight = EvidenceWeight.SUPPORTING
+        self.proves: list[str] = list(kwargs.pop("proves", None) or [])
+        self.does_not: list[str] = list(kwargs.pop("does_not", None) or [])
+        self.open_questions: list[str] = list(kwargs.pop("open_questions", None) or [])
         self.date = kwargs.pop("date", None)
         self.date_label: str = str(kwargs.pop("date_label", "") or "")
         self.kind: str = str(kwargs.pop("kind", "") or "")
@@ -159,6 +159,7 @@ class TimelineEvent:
         self.description: str = str(kwargs.pop("description", "") or "")
         self.summary: str = str(kwargs.pop("summary", "") or "")
         self.source: str = str(kwargs.pop("source", "") or "")
+        self.procedural_meaning: str = str(kwargs.pop("procedural_meaning", "") or "")
         self.evidence_ids: list[str] = list(kwargs.pop("evidence_ids", None) or [])
         self.fact_ids: list[str] = list(kwargs.pop("fact_ids", None) or [])
         self.sort_key: str = str(kwargs.pop("sort_key", "") or "")
@@ -228,18 +229,6 @@ class LegalBasis:
 
 @dataclass(slots=True)
 class LegalIssue:
-    """
-    Obligatory bridge between Fact and Law.
-
-    Contract (closed):
-    - question          – required, non-empty
-    - fact_ids          – required, at least one, all must exist in Case.facts
-    - legal_basis_ids   – optional at creation, validated when present
-    - status            – lifecycle
-    - hypothesis        – free-text working hypothesis
-    - statute_refs      – soft string refs (legacy / quick notes)
-    - case_law_refs     – soft string refs (legacy / quick notes)
-    """
     id: str = field(default_factory=lambda: str(uuid4()))
     question: str = ""
     status: IssueStatus = IssueStatus.OPEN
@@ -260,16 +249,6 @@ class LegalIssue:
 
 @dataclass(slots=True)
 class Argument:
-    """
-    Bridge between LegalIssue and Decision.
-
-    Contract:
-    - issue_id           – required, must exist in Case.legal_issues
-    - claim              – required, non-empty
-    - support_fact_ids   – optional, validated when present
-    - legal_basis_ids    – optional, validated when present
-    - status             – DRAFT | ADVANCED | REJECTED
-    """
     id: str = field(default_factory=lambda: str(uuid4()))
     issue_id: str = ""
     claim: str = ""
@@ -296,7 +275,6 @@ class Decision:
     issue_ids: list[str] = field(default_factory=list)
     argument_ids: list[str] = field(default_factory=list)
     scope_not_challenged: list[str] = field(default_factory=list)
-    # legacy residual – do not use in new code; kept for snapshot compatibility
     issues: list[str] = field(default_factory=list)
     assessment_points: list[str] = field(default_factory=list)
     outcomes: list[str] = field(default_factory=list)
@@ -308,6 +286,10 @@ class Decision:
     def validate(self) -> None:
         if not (self.summary or "").strip():
             raise ValueError("Decision.summary cannot be empty")
+        if not self.fact_ids:
+            raise ValueError("Decision.fact_ids must contain at least one fact id")
+        if not self.legal_basis_ids:
+            raise ValueError("Decision.legal_basis_ids must contain at least one legal basis id")
 
 
 @dataclass(slots=True)
@@ -315,7 +297,7 @@ class Case:
     id: str = field(default_factory=lambda: str(uuid4()))
     title: str = ""
     working_title: str = ""
-    signature: str = ""
+    signature: str | None = None
     status: CaseStatus = CaseStatus.NEW
     parties: list[Party] = field(default_factory=list)
     evidence_items: list[EvidenceItem] = field(default_factory=list)
@@ -335,6 +317,15 @@ class Case:
     def has_signature(self) -> bool:
         return bool((self.signature or "").strip())
 
+    def assign_signature(self, signature: str, ref_key: str | None = None) -> None:
+        value = signature.strip()
+        if not value:
+            raise ValueError("Case signature cannot be empty")
+        self.signature = value
+        if ref_key:
+            self.metadata[ref_key] = value
+        self.touch()
+
     @property
     def timeline(self) -> list[TimelineEvent]:
         return self.timeline_events
@@ -344,8 +335,6 @@ class Case:
         return self.evidence_items
 
     def ordered_timeline(self) -> list[TimelineEvent]:
-        """Chronological order for renderers (render.py / dossier_render.py)."""
-
         def _key(ev: TimelineEvent) -> tuple:
             d = getattr(ev, "when", None) or getattr(ev, "date", None) or date.min
             sk = str(getattr(ev, "sort_key", "") or "")
@@ -374,6 +363,8 @@ class Case:
     def add_evidence(self, item: EvidenceItem) -> None:
         item.validate()
         self.evidence_items.append(item)
+        if self.status in (CaseStatus.NEW, CaseStatus.INTAKE):
+            self.status = CaseStatus.ANALYSIS
         self.touch()
 
     def add_timeline_event(self, event: TimelineEvent) -> None:
@@ -409,15 +400,12 @@ class Case:
         issue.validate()
         known_facts = {f.id for f in self.facts}
         known_bases = {b.id for b in self.legal_bases}
-
         missing_facts = [fid for fid in issue.fact_ids if fid not in known_facts]
         if missing_facts:
             raise ValueError(f"LegalIssue references unknown facts: {missing_facts}")
-
         missing_bases = [bid for bid in issue.legal_basis_ids if bid not in known_bases]
         if missing_bases:
             raise ValueError(f"LegalIssue references unknown legal bases: {missing_bases}")
-
         self.legal_issues.append(issue)
         if self.status in (CaseStatus.NEW, CaseStatus.INTAKE, CaseStatus.FACTS):
             self.status = CaseStatus.ANALYSIS
@@ -428,18 +416,14 @@ class Case:
         known_issues = {i.id for i in self.legal_issues}
         known_facts = {f.id for f in self.facts}
         known_bases = {b.id for b in self.legal_bases}
-
         if argument.issue_id not in known_issues:
             raise ValueError(f"Argument references unknown issue: {argument.issue_id}")
-
         missing_facts = [fid for fid in argument.support_fact_ids if fid not in known_facts]
         if missing_facts:
             raise ValueError(f"Argument references unknown facts: {missing_facts}")
-
         missing_bases = [bid for bid in argument.legal_basis_ids if bid not in known_bases]
         if missing_bases:
             raise ValueError(f"Argument references unknown legal bases: {missing_bases}")
-
         self.arguments.append(argument)
         self.touch()
 

@@ -1,11 +1,11 @@
 from __future__ import annotations
 
-from enum import Enum
+from enum import StrEnum
 
 from factory.rqm.model.decision import Decision
 
 
-class ReleaseDecision(str, Enum):
+class ReleaseDecision(StrEnum):
     """
     Legacy compatibility layer.
 

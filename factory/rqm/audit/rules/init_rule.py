@@ -4,6 +4,7 @@ from pathlib import Path
 
 from factory.rqm.audit.rule import AuditRule
 from factory.rqm.model.finding import Finding
+from factory.rqm.model.severity import Severity
 
 
 class InitRule(AuditRule):
@@ -11,10 +12,9 @@ class InitRule(AuditRule):
     name = "__init__.py in package directories"
     description = "Directories containing Python files should have __init__.py"
     category = "python"
-    severity = "WARNING"
+    severity = Severity.WARNING
 
     def check(self, root: Path) -> list[Finding]:
-
         findings: list[Finding] = []
         ignored_dirs = {
             ".git",
@@ -42,7 +42,10 @@ class InitRule(AuditRule):
                         Finding(
                             rule_id=self.rule_id,
                             severity=self.severity,
-                            message=f"Missing __init__.py in Python package directory '{rel_parent}'.",
+                            message=(
+                                f"Missing __init__.py in Python package "
+                                f"directory '{rel_parent}'."
+                            ),
                             file=str(rel_parent),
                             line=None,
                         )

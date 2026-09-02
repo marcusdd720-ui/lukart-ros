@@ -24,7 +24,10 @@ class ComplexityRule(BaseRule):
                         Finding(
                             rule_id="COMP001",
                             severity=Severity.WARNING,
-                            message=f"Zbyt wysoka złożoność cyklomatyczna ({complexity}) w funkcji '{node.name}'",
+                            message=(
+                                f"Zbyt wysoka złożoność cyklomatyczna "
+                                f"({complexity}) w funkcji '{node.name}'"
+                            ),
                             file=str(file_path),
                             line=node.lineno,
                             symbol=node.name,

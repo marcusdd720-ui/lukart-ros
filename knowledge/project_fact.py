@@ -43,7 +43,7 @@ def project_fact(graph: KnowledgeGraph, fact: Fact) -> str:
             "confidence": fact.confidence,
             "source_refs": list(fact.source_refs),
         },
-        tags={"fact"},
+        tags=["fact"],
     )
     node.validate()
     graph.ensure_node(node)

@@ -13,14 +13,14 @@ Every entity has:
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from .ids import EntityId, new_entity_id
 
 
 def utc_now() -> datetime:
     """Return current UTC timestamp."""
-    return datetime.now(timezone.utc)
+    return datetime.now(UTC)
 
 
 @dataclass(slots=True, kw_only=True)

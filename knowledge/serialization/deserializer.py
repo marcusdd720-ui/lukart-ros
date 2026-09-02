@@ -128,8 +128,6 @@ class GraphDeserializer:
             "name": data.get("name", "") or "",
             "source": data.get("source", "") or "",
             "description": data.get("description", "") or "",
-            "version": int(data.get("version", 1) or 1),
-            "content_hash": data.get("content_hash", "") or "",
             "confidence": float(
                 data.get("confidence", 1.0)
                 if data.get("confidence") is not None
@@ -148,9 +146,9 @@ class GraphDeserializer:
         created = _parse_dt(data.get("created_at"))
         updated = _parse_dt(data.get("updated_at"))
         if created is not None:
-            kwargs["created_at"] = created
+            kwargs["metadata"]["created_at"] = created.isoformat()
         if updated is not None:
-            kwargs["updated_at"] = updated
+            kwargs["metadata"]["updated_at"] = updated.isoformat()
 
         return KnowledgeNode(**kwargs)
 
@@ -177,28 +175,31 @@ class GraphDeserializer:
             "target": str(target),
             "type": _parse_enum(EdgeType, data.get("type"), EdgeType.REFERENCES),
             "description": data.get("description", "") or "",
-            "version": int(data.get("version", 1) or 1),
             "confidence": float(
                 data.get("confidence", 1.0)
                 if data.get("confidence") is not None
                 else 1.0
             ),
-            "weight": float(
-                data.get("weight", 1.0) if data.get("weight") is not None else 1.0
-            ),
-            "status": data.get("status", "ACTIVE") or "ACTIVE",
-            "metadata": dict(data.get("metadata") or {}),
         }
 
         edge_id = data.get("id")
         if edge_id is not None and str(edge_id).strip() != "":
             kwargs["id"] = str(edge_id)
 
+        metadata = dict(data.get("metadata") or {})
+        weight = data.get("weight")
+        if weight is not None:
+            metadata["weight"] = float(weight)
+        status = data.get("status")
+        if status is not None:
+            metadata["status"] = status
         created = _parse_dt(data.get("created_at"))
         updated = _parse_dt(data.get("updated_at"))
         if created is not None:
-            kwargs["created_at"] = created
+            metadata["created_at"] = created.isoformat()
         if updated is not None:
-            kwargs["updated_at"] = updated
+            metadata["updated_at"] = updated.isoformat()
+        if metadata:
+            kwargs["metadata"] = metadata
 
         return KnowledgeEdge(**kwargs)

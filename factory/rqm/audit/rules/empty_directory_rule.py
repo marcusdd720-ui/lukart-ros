@@ -4,6 +4,7 @@ from pathlib import Path
 
 from factory.rqm.audit.rule import AuditRule
 from factory.rqm.model.finding import Finding
+from factory.rqm.model.severity import Severity
 
 
 class EmptyDirectoryRule(AuditRule):
@@ -11,7 +12,7 @@ class EmptyDirectoryRule(AuditRule):
     name = "No empty directories"
     description = "Repository should not contain empty directories"
     category = "structure"
-    severity = "INFO"
+    severity = Severity.INFO
 
     def check(self, root: Path) -> list[Finding]:
 

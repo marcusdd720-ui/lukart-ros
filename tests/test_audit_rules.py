@@ -119,4 +119,6 @@ def test_large_file_rule(tmp_path: Path):
 
     findings = rule.check(tmp_path)
     assert len(findings) == 1
-    assert "large.txt" in findings[0].file
+    finding_file = findings[0].file
+    assert finding_file is not None
+    assert "large.txt" in finding_file

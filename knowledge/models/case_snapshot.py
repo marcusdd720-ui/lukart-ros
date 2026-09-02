@@ -237,23 +237,3 @@ def save_workspace_snapshot(
         encoding="utf-8",
     )
     return path.resolve()
-
-
-def main() -> int:
-    from knowledge.models.case_workspace import open_ds_3960
-
-    ws = open_ds_3960()
-    open_path = save_workspace_snapshot(ws, phase="OPEN")
-    print("OPEN:", open_path)
-    s = CaseSnapshot.load(open_path)
-    print("legal_issue_count:", s.legal_issue_count)
-    print("argument_count:", s.argument_count)
-    print("fact_node_count:", s.fact_node_count)
-    print("raises_count:", s.raises_count)
-    print("advances_count:", s.advances_count)
-    print("resolves_count:", s.resolves_count)
-    return 0
-
-
-if __name__ == "__main__":
-    raise SystemExit(main())

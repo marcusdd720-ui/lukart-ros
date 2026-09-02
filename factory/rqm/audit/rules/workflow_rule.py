@@ -4,6 +4,7 @@ from pathlib import Path
 
 from factory.rqm.audit.rule import AuditRule
 from factory.rqm.model.finding import Finding
+from factory.rqm.model.severity import Severity
 
 
 class WorkflowRule(AuditRule):
@@ -11,7 +12,7 @@ class WorkflowRule(AuditRule):
     name = "GitHub Actions"
     description = "Repository should contain GitHub Actions workflow"
     category = "ci"
-    severity = "WARNING"
+    severity = Severity.WARNING
 
     def check(self, root: Path) -> list[Finding]:
 

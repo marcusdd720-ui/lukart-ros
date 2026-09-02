@@ -8,13 +8,26 @@ authors = [
   { name = "LukArt" }
 ]
 
-dependencies = []
+dependencies = [
+  "PyYAML>=6.0",
+  "langdetect>=1.0.9",
+  "python-docx>=1.1",
+]
 
 [project.optional-dependencies]
 dev = [
   "pytest>=8.0",
   "ruff>=0.6",
   "mypy>=1.11",
+  "types-PyYAML>=6.0",
+]
+
+[tool.setuptools.packages.find]
+include = [
+  "core*",
+  "factory*",
+  "knowledge*",
+  "validation*",
 ]
 
 [tool.pytest.ini_options]
@@ -25,6 +38,19 @@ addopts = "-q"
 [tool.ruff]
 line-length = 100
 target-version = "py311"
+extend-exclude = ["build", "dist", "*.egg-info"]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP"]
+
+[tool.ruff.lint.per-file-ignores]
+"scripts/**/*.py" = ["E402"]
+
+[tool.mypy]
+python_version = "3.11"
+explicit_package_bases = true
+exclude = "^(build|dist|.*\\.egg-info|validation/test_graph\\.py)(/|$)"
+
+[[tool.mypy.overrides]]
+module = ["langdetect", "langdetect.lang_detect_exception"]
+ignore_missing_imports = true
