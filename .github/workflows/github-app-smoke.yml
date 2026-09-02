@@ -32,13 +32,12 @@ jobs:
       - name: Authenticate GitHub App and dispatch stage
         env:
           LUKART_ROS_FACTORY_APP_ID: ${{ vars.LUKART_ROS_FACTORY_APP_ID }}
-          LUKART_ROS_FACTORY_INSTALLATION_ID: ${{ vars.LUKART_ROS_FACTORY_INSTALLATION_ID }}
+          LUKART_ROS_FACTORY_CLIENT_ID: ${{ vars.LUKART_ROS_FACTORY_CLIENT_ID }}
           LUKART_ROS_FACTORY_PRIVATE_KEY: ${{ secrets.LUKART_ROS_FACTORY_PRIVATE_KEY }}
           STAGE: ${{ inputs.stage }}
         run: |
           python - <<'PY'
           import os
-          import sys
 
           from factory.github_actions_client import GitHubActionsClient, GitHubActionsError
 
@@ -51,7 +50,7 @@ jobs:
               print(f"GitHub App smoke test failed: {exc}")
               raise SystemExit(1) from exc
 
-          print(f"APP_AUTH=PASS")
+          print("APP_AUTH=PASS")
           print(f"DISPATCHED_STAGE={stage}")
           print(f"RUN_ID={result.run_id}")
           print(f"RUN_STATUS={result.status}")
