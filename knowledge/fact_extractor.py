@@ -12,17 +12,21 @@ from collections.abc import Iterable
 
 from knowledge.provenance import EntityType, ExtractedFact
 
-
 _PATTERN_DEFINITIONS: dict[str, tuple[EntityType, str]] = {
     "case_number": (EntityType.CASE_NUMBER, r"\bSYN-CASE-\d{3}/\d{2}\b"),
     "decision_number": (EntityType.DECISION_NUMBER, r"\bSYN-DEC-\d{3}/\d{2}\b"),
-    "date": (EntityType.DATE, r"\b\d{2}\.\d{2}\.\d{4}\b"),
+    "decision_date": (EntityType.DATE, r"(?<=z dnia )\d{2}\.\d{2}\.\d{4}"),
+    "contract_date": (EntityType.DATE, r"(?<=zawarta )\d{2}\.\d{2}\.\d{4}"),
     "amount": (EntityType.AMOUNT, r"\b\d{3,5},\d{2}\s+zł\b"),
     "legal_basis": (
         EntityType.LEGAL_BASIS,
         r"art\.\s+\d+\s+ustawy\s+przykładowej",
     ),
     "deadline_days": (EntityType.DEADLINE, r"\b\d+\s+dni\b"),
+    "contract_deadline": (
+        EntityType.DEADLINE,
+        r"(?<=termin )\d{2}\.\d{2}\.\d{4}",
+    ),
     "insured_period": (
         EntityType.INSURED_PERIOD,
         r"\b\d{2}\.\d{2}\.\d{4}-\d{2}\.\d{2}\.\d{4}\b",
@@ -33,23 +37,23 @@ _PATTERN_DEFINITIONS: dict[str, tuple[EntityType, str]] = {
     ),
     "outcome": (
         EntityType.DECISION_OUTCOME,
-        r"(?<=Wynik:\s)(?:uwzględniono|oddalono|przyznano|odmówiono)",
+        r"(?<=Wynik: )(?:uwzględniono|oddalono|przyznano|odmówiono)",
     ),
 }
 
 _PARTY_PATTERN = re.compile(r"\bstron(?:ę|a)\s+([A-ZĄĆĘŁŃÓŚŹŻ][\wĄĆĘŁŃÓŚŹŻ-]*)")
 
 _DOCUMENT_PATTERNS: dict[str, tuple[str, ...]] = {
-    "wyrok_sadowy": ("case_number", "date", "amount", "legal_basis", "outcome"),
+    "wyrok_sadowy": ("case_number", "decision_date", "amount", "legal_basis", "outcome"),
     "decyzja_zus": (
         "decision_number",
-        "date",
+        "decision_date",
         "benefit_amount",
         "insured_period",
         "outcome",
     ),
-    "umowa": ("date", "amount", "deadline_days"),
-    "pismo_procesowe": ("case_number", "date", "legal_basis", "deadline_days"),
+    "umowa": ("contract_date", "amount", "contract_deadline"),
+    "pismo_procesowe": ("case_number", "decision_date", "legal_basis", "deadline_days"),
 }
 
 
