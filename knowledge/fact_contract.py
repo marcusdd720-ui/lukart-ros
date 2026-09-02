@@ -33,7 +33,8 @@ class FactContractValidator:
                 errors.append(f"{prefix}: extractor_version is required")
             if not _SHA256_RE.fullmatch(fact.source_document_sha256):
                 errors.append(
-                    f"{prefix}: source_document_sha256 must be a 64-character lowercase hexadecimal SHA-256"
+                    f"{prefix}: source_document_sha256 must be a 64-character "
+                    "lowercase hexadecimal SHA-256"
                 )
             if not fact.extraction_method.strip():
                 errors.append(f"{prefix}: extraction_method is required")
