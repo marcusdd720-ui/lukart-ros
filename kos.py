@@ -32,8 +32,8 @@ def main() -> None:
     command = sys.argv[1]
 
     if command == "new-case":
-        manager = CaseManager()
-        case_path = manager.create_case()
+        case_manager = CaseManager()
+        case_path = case_manager.create_case()
         print(f"Created local private case: {case_path.name}")
         print(f"Location: {case_path}")
 
@@ -43,8 +43,8 @@ def main() -> None:
             return
         case_id = sys.argv[2]
         source_directory = sys.argv[3]
-        manager = ImportManager()
-        files, folders = manager.import_directory(case_id, source_directory)
+        import_manager = ImportManager()
+        files, folders = import_manager.import_directory(case_id, source_directory)
         print("Import completed")
         print(f"CASE        : {case_id}")
         print(f"Files       : {files}")
@@ -77,7 +77,7 @@ def main() -> None:
         documents = scanner.scan(sys.argv[2])
         print("Processing documents")
         for document in documents:
-            processor = pipeline.process(document, document.document_type)
+            processor = pipeline.process(str(document.path), document.document_type)
             print(f"{document.path:<50} -> {processor}")
         print(f"Processed documents: {len(documents)}")
 
