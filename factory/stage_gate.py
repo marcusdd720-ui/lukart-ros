@@ -66,6 +66,15 @@ COMMANDS: dict[str, tuple[str, ...]] = {
         "python scripts/repository_audit.py",
         "python scripts/pii_scan.py",
     ),
+    "independent-evaluation": (
+        "python -m pytest tests/test_independent_evaluation.py -q",
+        "python -m pytest tests/test_measurement.py tests/test_validation_v2.py -q",
+        "python -m pytest -v",
+        "python -m ruff check .",
+        "python -m mypy .",
+        "python scripts/repository_audit.py",
+        "python scripts/pii_scan.py",
+    ),
 }
 
 
