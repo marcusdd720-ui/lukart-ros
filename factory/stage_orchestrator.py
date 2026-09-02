@@ -5,6 +5,7 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import re
 import subprocess
 import time
 from pathlib import Path
@@ -140,6 +141,7 @@ def wait_for_run(run_id: int) -> tuple[bool, str]:
 
 
 def capture_failure(run_id: int) -> str:
+    """Collect outer Smoke and nested Stage Gate diagnostics for repair classification."""
     repository = os.environ.get("GITHUB_REPOSITORY", "")
     result = run(
         [
@@ -153,7 +155,25 @@ def capture_failure(run_id: int) -> str:
         ],
         capture=True,
     )
-    return (result.stdout + result.stderr)[-20000:]
+    outer_log = result.stdout + result.stderr
+    nested_ids = re.findall(r"\bRUN_ID=(\d+)\b", outer_log)
+    nested_logs: list[str] = []
+    for nested_id in dict.fromkeys(nested_ids):
+        nested = run(
+            [
+                "gh",
+                "run",
+                "view",
+                nested_id,
+                "--repo",
+                repository,
+                "--log-failed",
+            ],
+            capture=True,
+        )
+        nested_logs.append(nested.stdout + nested.stderr)
+    combined = outer_log + "\n" + "\n".join(nested_logs)
+    return combined[-30000:]
 
 
 def auto_repair(failure_log: str) -> bool:
