@@ -2,8 +2,8 @@
 Knowledge Operating System (KOS)
 
 File: knowledge/pipeline.py
-Version: 3.4
-Sprint: FACT-003 / DEDUP-001
+Version: 3.5
+Sprint: MVROS-V1 / operational-entrypoint
 """
 
 from __future__ import annotations
@@ -11,6 +11,7 @@ from __future__ import annotations
 from knowledge.builder import GraphBuilder
 from knowledge.extraction_stage import FactExtractionStage, FactExtractor
 from knowledge.fact_contract import FactContractValidator
+from knowledge.fact_extractor import extract_facts
 from knowledge.fact_identity import deduplicate_facts
 from knowledge.fact_projection import FactProjection
 from knowledge.provenance import ExtractedFact
@@ -23,7 +24,7 @@ class KnowledgePipeline:
     def __init__(
         self,
         root: str = ".",
-        extractor: FactExtractor | None = None,
+        extractor: FactExtractor | None = extract_facts,
     ):
         self.builder = GraphBuilder(root)
         self.relations = RelationEngine()
@@ -86,8 +87,8 @@ class KnowledgePipeline:
             print(f"      FAILED ({len(errors)})")
             for error in errors:
                 print("      -", error)
-        else:
-            print("      PASSED")
+            raise RuntimeError(f"Knowledge pipeline validation failed: {len(errors)} error(s)")
+        print("      PASSED")
 
         print("[7/7] Report")
         print()
