@@ -288,9 +288,13 @@ def main() -> int:
     if state.get("status") == "COMPLETE" and not args.stage:
         print("ORCHESTRATOR_RESULT=COMPLETE")
         return 0
-    current_number = int(args.stage) if args.stage else state["current_stage"]
-    if not isinstance(current_number, int):
-        raise OrchestratorError("Orchestrator stage must be an integer")
+    if args.stage:
+        current_number = int(args.stage)
+    else:
+        current_value = state["current_stage"]
+        if not isinstance(current_value, int):
+            raise OrchestratorError("Orchestrator state current_stage must be an integer")
+        current_number = current_value
     current = get_stage(current_number)
     print(f"CURRENT_STAGE={current.number}")
     print(f"CURRENT_STAGE_NAME={current.name}")
