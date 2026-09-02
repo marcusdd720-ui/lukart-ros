@@ -28,6 +28,11 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Configure Git identity
+        run: |
+          git config user.name "lukart-ros-factory[bot]"
+          git config user.email "4804861+lukart-ros-factory[bot]@users.noreply.github.com"
+
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
