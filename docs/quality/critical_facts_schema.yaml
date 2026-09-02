@@ -1,0 +1,65 @@
+schema_version: "1.0.0"
+description: >-
+  Normative classification of facts used to construct the Ground Truth Corpus.
+  Critical facts are release-blocking when missing or incorrectly extracted.
+
+weights:
+  critical: 10
+  important: 5
+  ordinary: 1
+
+document_types:
+  wyrok_sadowy:
+    critical:
+      - CASE_NUMBER
+      - DECISION_OUTCOME
+      - LEGAL_BASIS
+      - DEADLINE
+      - AMOUNT
+    important:
+      - PARTY
+      - COURT_NAME
+      - DATE
+    ordinary:
+      - OTHER
+  decyzja_zus:
+    critical:
+      - DECISION_NUMBER
+      - DECISION_OUTCOME
+      - BENEFIT_AMOUNT
+      - DEADLINE
+    important:
+      - LEGAL_BASIS
+      - INSURED_PERIOD
+      - PARTY
+      - DATE
+    ordinary:
+      - OTHER
+  umowa:
+    critical:
+      - PARTY
+      - DATE
+      - AMOUNT
+    important:
+      - DEADLINE
+      - LEGAL_BASIS
+    ordinary:
+      - OTHER
+  pismo_procesowe:
+    critical:
+      - CASE_NUMBER
+      - PARTY
+      - LEGAL_BASIS
+      - DEADLINE
+    important:
+      - COURT_NAME
+      - DATE
+      - AMOUNT
+      - DECISION_OUTCOME
+    ordinary:
+      - OTHER
+
+rules:
+  - A fact may have only one severity for a given document type.
+  - Criticality is defined before annotation and must not be changed to improve an observed evaluation score.
+  - If a document contains a material fact not covered by this schema, the corpus build is blocked until the taxonomy is amended and versioned.
