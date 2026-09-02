@@ -1,4 +1,9 @@
-from knowledge.fact_identity import FactIdentity, FactIdentityConflict, deduplicate_facts, duplicate_count
+from knowledge.fact_identity import (
+    FactIdentity,
+    FactIdentityConflict,
+    deduplicate_facts,
+    duplicate_count,
+)
 from knowledge.provenance import EntityType, ExtractedFact
 
 
