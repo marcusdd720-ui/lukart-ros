@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 import time
 import urllib.error
+import urllib.parse
 import urllib.request
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
@@ -161,11 +162,30 @@ class GitHubActionsClient:
             body={"ref": ref, "inputs": {"stage": str(stage)}},
         )
 
+    def dispatch_stage_and_find_run(self, stage: int, *, ref: str = "main") -> int:
+        started_at = datetime.now(timezone.utc)
+        self.dispatch_stage(stage, ref=ref)
+        deadline = time.monotonic() + 60
+        while time.monotonic() < deadline:
+            for run in self.list_runs(branch=ref, event="workflow_dispatch"):
+                path = run.get("path")
+                created_at = run.get("created_at")
+                run_id = run.get("id")
+                if path != ".github/workflows/stage-gate.yml" or not isinstance(run_id, int):
+                    continue
+                if not isinstance(created_at, str):
+                    continue
+                created = datetime.fromisoformat(created_at.replace("Z", "+00:00"))
+                if created >= started_at - timedelta(seconds=5):
+                    return run_id
+            time.sleep(POLL_INTERVAL_SECONDS)
+        raise GitHubActionsError("Dispatched Stage Gate run was not found")
+
     def list_runs(self, *, branch: str = "main", event: str | None = None) -> list[dict[str, Any]]:
-        path = f"/repos/{self.repository}/actions/runs?branch={branch}&per_page=20"
+        query = urllib.parse.urlencode({"branch": branch, "per_page": 20})
         if event:
-            path += f"&event={event}"
-        data = self._api("GET", path)
+            query += "&" + urllib.parse.urlencode({"event": event})
+        data = self._api("GET", f"/repos/{self.repository}/actions/runs?{query}")
         runs = data.get("workflow_runs", [])
         if not isinstance(runs, list):
             raise GitHubActionsError("GitHub returned invalid workflow_runs")
