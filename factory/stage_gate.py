@@ -1,7 +1,5 @@
 """Automated stage gate runner for the LukArt ROS Factory."""
 
-from __future__ import annotations
-
 import argparse
 import platform
 import subprocess
