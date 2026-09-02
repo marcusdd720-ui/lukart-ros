@@ -24,5 +24,6 @@ def test_github_mvros_workflow_has_no_user_supplied_document_root() -> None:
 def test_publish_cannot_push_case_data() -> None:
     publish = (repo_root() / "scripts" / "publish.py").read_text(encoding="utf-8")
     assert "subprocess" not in publish
-    assert 'git push' in publish
-    assert 'PUBLISH BLOCKED: real case data is local-only; Git commit/push is disabled' in publish
+    assert "git push" not in publish
+    assert "git commit" not in publish
+    assert "PUBLISH BLOCKED: real case data is local-only" in publish
