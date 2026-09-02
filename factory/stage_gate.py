@@ -96,6 +96,32 @@ COMMANDS: dict[str, tuple[str, ...]] = {
         "python scripts/repository_audit.py",
         "python scripts/pii_scan.py",
     ),
+    "benchmark": (
+        "python -m validation.kqm_experiment",
+        "python -m pytest tests/test_extraction_quality.py -q",
+        "python -m pytest tests/test_measurement.py tests/test_independent_evaluation.py -q",
+        "python -m ruff check .",
+        "python -m mypy .",
+        "python scripts/repository_audit.py",
+        "python scripts/pii_scan.py",
+    ),
+    "self-healing": (
+        "python -m pytest tests/test_stage_orchestrator.py -q",
+        "python -m pytest tests/test_github_actions_client.py -q",
+        "python -m pytest -v",
+        "python -m ruff check .",
+        "python -m mypy .",
+        "python scripts/repository_audit.py",
+        "python scripts/pii_scan.py",
+    ),
+    "release": (
+        "python -m pytest -v",
+        "python -m ruff check .",
+        "python -m mypy .",
+        "python -m pip wheel . --no-deps -w dist",
+        "python scripts/repository_audit.py",
+        "python scripts/pii_scan.py",
+    ),
 }
 
 
