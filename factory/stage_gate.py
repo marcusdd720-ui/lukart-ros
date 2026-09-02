@@ -5,13 +5,16 @@ from __future__ import annotations
 import argparse
 import platform
 import subprocess
-import sys
 
 from factory.stage_registry import get_stage, next_stage
 
 
 COMMANDS: dict[str, tuple[str, ...]] = {
-    "quality": ("python -m ruff check .", "python -m mypy .", "python -m pytest -v"),
+    "quality": (
+        "python -m ruff check .",
+        "python -m mypy .",
+        "python -m pytest -v",
+    ),
     "kqm": ("python -m validation.kqm_experiment",),
     "extraction": ("python -m pytest tests/test_fact_projection.py -q",),
     "projection": ("python -m pytest tests/test_fact_projection.py -q",),
@@ -24,7 +27,12 @@ COMMANDS: dict[str, tuple[str, ...]] = {
         "python scripts/repository_audit.py",
         "python scripts/pii_scan.py",
     ),
-    "contract": ("python -m pytest tests/test_fact_contract.py -q",),
+    "contract": (
+        "python -m pytest tests/test_fact_contract.py -q",
+        "python -m pytest -v",
+        "python scripts/repository_audit.py",
+        "python scripts/pii_scan.py",
+    ),
 }
 
 
@@ -50,9 +58,12 @@ def main() -> int:
     print(f"Stage {stage.number}: {stage.name}")
     print(f"Gate: {stage.gate}")
     for command in commands:
-        if command.startswith("python") and platform.python_version_tuple()[:2] != ("3", "11"):
-            if "scripts/repository_audit.py" in command or "scripts/pii_scan.py" in command:
-                continue
+        is_python_311_only = any(
+            marker in command
+            for marker in ("scripts/repository_audit.py", "scripts/pii_scan.py")
+        )
+        if is_python_311_only and platform.python_version_tuple()[:2] != ("3", "11"):
+            continue
         if run(command) != 0:
             print(f"STAGE {stage.number}: FAIL")
             return 1
