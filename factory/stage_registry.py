@@ -27,7 +27,7 @@ STAGES: tuple[Stage, ...] = (
     Stage(10, "Measurement Framework", "measurement", True),
     Stage(11, "Independent Evaluation", "independent-evaluation", True),
     Stage(12, "Production Extraction Contract", "production-contract", True),
-    Stage(13, "Production Pipeline", "production-pipeline", False),
+    Stage(13, "Production Pipeline", "production-pipeline", True),
     Stage(14, "Benchmark Expansion", "benchmark", False),
     Stage(15, "Self-Healing and Change Propagation", "self-healing", False),
     Stage(16, "MVROS v1", "release", False),
