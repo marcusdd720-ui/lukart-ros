@@ -1,7 +1,6 @@
-"""
-RQM Audit Rules Library
-"""
+"""RQM Audit Rules Library."""
 
+from factory.rqm.audit.rule import AuditRule
 from factory.rqm.audit.rules.duplicate_file_rule import DuplicateFileRule
 from factory.rqm.audit.rules.empty_directory_rule import EmptyDirectoryRule
 from factory.rqm.audit.rules.gitignore_rule import GitignoreRule
@@ -13,7 +12,7 @@ from factory.rqm.audit.rules.readme_rule import ReadmeRule
 from factory.rqm.audit.rules.todo_rule import TodoRule
 from factory.rqm.audit.rules.workflow_rule import WorkflowRule
 
-ALL_RULES = [
+ALL_RULES: list[type[AuditRule]] = [
     ReadmeRule,
     LicenseRule,
     GitignoreRule,
