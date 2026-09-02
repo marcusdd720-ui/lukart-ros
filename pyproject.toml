@@ -21,6 +21,14 @@ dev = [
   "types-PyYAML>=6.0",
 ]
 
+[tool.setuptools.packages.find]
+include = [
+  "core*",
+  "factory*",
+  "knowledge*",
+  "validation*",
+]
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 pythonpath = ["."]
