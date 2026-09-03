@@ -1,0 +1,73 @@
+name: Production Validation Program
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: lukart-ros-production-validation-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  program-gate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install project and development tools
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install ".[dev]"
+
+      - name: Evaluate program until first blocker
+        shell: bash
+        run: |
+          for attempt in $(seq 1 20); do
+            python -m factory.production_validation_orchestrator
+            status=$(python - <<'PY'
+          import json
+          from pathlib import Path
+
+          state = json.loads(Path("factory/production_validation_state.json").read_text())
+          print(state["status"])
+          PY
+          )
+            echo "PROGRAM_STATUS=${status}"
+            if [[ "${status}" == "BLOCKED" || "${status}" == "COMPLETE" ]]; then
+              break
+            fi
+          done
+
+      - name: Publish program summary
+        shell: bash
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          state = json.loads(Path("factory/production_validation_state.json").read_text())
+          lines = [
+              "## Production Validation Program",
+              "",
+              f"- current step: {state['current_step']}",
+              f"- last completed step: {state['last_completed_step']}",
+              f"- status: {state['status']}",
+              f"- last result: {state['last_result']}",
+          ]
+          if "block_code" in state:
+              lines.append(f"- blocker: {state['block_code']}")
+              lines.append(f"- reason: {state['block_reason']}")
+          with open(Path("$GITHUB_STEP_SUMMARY"), "a", encoding="utf-8") as handle:
+              handle.write("\n".join(lines) + "\n")
+          PY
