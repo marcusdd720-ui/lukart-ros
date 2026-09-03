@@ -200,34 +200,60 @@ def _safe_repo_artifact(root: Path, raw_path: object) -> tuple[Path | None, Gate
         return None, GateDecision(False, "ARTIFACT_PATH_INVALID", "artifact_path must be relative")
     candidate = Path(raw_path)
     if candidate.is_absolute() or ".." in candidate.parts:
-        return None, GateDecision(False, "ARTIFACT_PATH_INVALID", "artifact_path escapes repository")
+        return None, GateDecision(
+            False,
+            "ARTIFACT_PATH_INVALID",
+            "artifact_path escapes repository",
+        )
     root_resolved = root.resolve()
     resolved = (root / candidate).resolve()
     try:
         resolved.relative_to(root_resolved)
     except ValueError:
-        return None, GateDecision(False, "ARTIFACT_PATH_INVALID", "artifact_path escapes repository")
+        return None, GateDecision(
+            False,
+            "ARTIFACT_PATH_INVALID",
+            "artifact_path escapes repository",
+        )
     if not resolved.is_file():
-        return None, GateDecision(False, "ARTIFACT_REQUIRED", "bound validation artifact is missing")
+        return None, GateDecision(
+            False,
+            "ARTIFACT_REQUIRED",
+            "bound validation artifact is missing",
+        )
     if resolved.suffix.lower() != ".json":
         return None, GateDecision(False, "ARTIFACT_FORMAT_INVALID", "bound artifact must be JSON")
     return resolved, None
 
 
-def _validated_checks(artifact: dict[str, object]) -> tuple[dict[str, str] | None, GateDecision | None]:
+def _validated_checks(
+    artifact: dict[str, object],
+) -> tuple[dict[str, str] | None, GateDecision | None]:
     raw_checks = artifact.get("checks")
     if not isinstance(raw_checks, list) or not raw_checks:
         return None, GateDecision(False, "ARTIFACT_CHECKS_REQUIRED", "artifact checks are required")
     checks: dict[str, str] = {}
     for item in raw_checks:
         if not isinstance(item, dict):
-            return None, GateDecision(False, "ARTIFACT_CHECK_INVALID", "artifact check must be an object")
+            return None, GateDecision(
+                False,
+                "ARTIFACT_CHECK_INVALID",
+                "artifact check must be an object",
+            )
         name = item.get("name")
         status = item.get("status")
         if not isinstance(name, str) or not name.strip() or not isinstance(status, str):
-            return None, GateDecision(False, "ARTIFACT_CHECK_INVALID", "artifact check is malformed")
+            return None, GateDecision(
+                False,
+                "ARTIFACT_CHECK_INVALID",
+                "artifact check is malformed",
+            )
         if name in checks:
-            return None, GateDecision(False, "ARTIFACT_CHECK_DUPLICATE", f"duplicate check: {name}")
+            return None, GateDecision(
+                False,
+                "ARTIFACT_CHECK_DUPLICATE",
+                f"duplicate check: {name}",
+            )
         checks[name] = status
     failed = sorted(name for name, status in checks.items() if status != "PASS")
     if failed:
@@ -250,7 +276,11 @@ def evaluate_generic_evidence(root: Path, step_number: int) -> GateDecision:
         )
     evidence = load_json(path)
     if evidence.get("schema_version") != "2.0":
-        return GateDecision(False, "STEP_EVIDENCE_SCHEMA_INVALID", "step evidence schema must be 2.0")
+        return GateDecision(
+            False,
+            "STEP_EVIDENCE_SCHEMA_INVALID",
+            "step evidence schema must be 2.0",
+        )
     if evidence.get("step") != step_number or evidence.get("status") != "PASS":
         return GateDecision(False, "STEP_EVIDENCE_INVALID", "step evidence does not declare PASS")
     validated_sha = evidence.get("validated_sha")
@@ -275,7 +305,11 @@ def evaluate_generic_evidence(root: Path, step_number: int) -> GateDecision:
     if not isinstance(expected_digest, str) or not SHA256_RE.fullmatch(expected_digest):
         return GateDecision(False, "ARTIFACT_DIGEST_INVALID", "artifact_sha256 must be SHA-256")
     if sha256_file(artifact_path) != expected_digest:
-        return GateDecision(False, "ARTIFACT_HASH_MISMATCH", "step evidence is not bound to artifact bytes")
+        return GateDecision(
+            False,
+            "ARTIFACT_HASH_MISMATCH",
+            "step evidence is not bound to artifact bytes",
+        )
 
     artifact = load_json(artifact_path)
     required_artifact_fields = {
