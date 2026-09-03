@@ -1,0 +1,33 @@
+{
+  "attestation_sha256": "c434defa26c7d4db701cb622e6b00690a0aa8474718f6fda845825c923de4028",
+  "checks": [
+    {
+      "name": "local_only_execution_attested",
+      "status": "PASS"
+    },
+    {
+      "name": "pii_not_committed",
+      "status": "PASS"
+    },
+    {
+      "name": "private_evidence_not_committed",
+      "status": "PASS"
+    },
+    {
+      "name": "pilot_results_recorded",
+      "status": "PASS"
+    }
+  ],
+  "evidence_kind": "local_private_case_attestation",
+  "gate_kind": "privacy",
+  "locked_evaluation_used_for_tuning": false,
+  "pilot_stage": "OPEN",
+  "private_data_committed": false,
+  "private_document_count": 8,
+  "result_sha256": "64fec4671fe1306ea184bbb56263bac423408ba725d4bb5e5c685414e7e867fc",
+  "schema_version": "1.0",
+  "stages_executed": 1,
+  "status": "PASS",
+  "step": 15,
+  "validated_sha": "67b550aa0fea6421bf8fffa91fba6a4ca6d51979"
+}
