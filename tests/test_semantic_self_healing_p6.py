@@ -438,7 +438,7 @@ def test_semantic_self_healing_gate_rejects_missing_planned_pass() -> None:
 def test_p6_cannot_use_locked_evaluation_as_repair_experiment_input() -> None:
     _, _, candidate, _ = candidate_and_plan()
 
-    with pytest.raises(ValueError, match="development/validation"):
+    with pytest.raises(ValueError, match="unsupported learning experiment split"):
         ExperimentContract(
             experiment_id="EXP-LOCKED",
             candidate_digest=candidate.digest(),
