@@ -4,10 +4,13 @@ from __future__ import annotations
 
 import hashlib
 import json
+import math
 from dataclasses import dataclass
 from enum import StrEnum
 
 from learning.models import LearningCandidate, MetricValue
+
+_ALLOWED_LEARNING_SPLITS = frozenset({"development", "validation"})
 
 
 class MetricDirection(StrEnum):
@@ -25,8 +28,8 @@ class MetricGuardrail:
         name = self.name.strip()
         if not name:
             raise ValueError("guardrail metric name cannot be blank")
-        if self.max_regression < 0:
-            raise ValueError("max_regression cannot be negative")
+        if not math.isfinite(self.max_regression) or self.max_regression < 0:
+            raise ValueError("max_regression must be finite and non-negative")
         object.__setattr__(self, "name", name)
 
 
@@ -45,24 +48,28 @@ class ExperimentContract:
     max_runs: int = 1
 
     def __post_init__(self) -> None:
-        required = {
-            "experiment_id": self.experiment_id,
-            "candidate_digest": self.candidate_digest,
-            "target_component": self.target_component,
-            "baseline_revision": self.baseline_revision,
-            "candidate_revision": self.candidate_revision,
-            "sandbox_id": self.sandbox_id,
-        }
-        for name, value in required.items():
-            if not value.strip():
-                raise ValueError(f"{name} cannot be blank")
+        for field_name in (
+            "experiment_id",
+            "candidate_digest",
+            "target_component",
+            "baseline_revision",
+            "candidate_revision",
+            "sandbox_id",
+        ):
+            value = str(getattr(self, field_name)).strip()
+            if not value:
+                raise ValueError(f"{field_name} cannot be blank")
+            object.__setattr__(self, field_name, value)
+        if self.baseline_revision == self.candidate_revision:
+            raise ValueError("candidate revision must differ from baseline revision")
         if not self.allowed_splits:
             raise ValueError("experiment requires at least one allowed split")
         normalized_splits = tuple(split.strip() for split in self.allowed_splits)
         if not all(normalized_splits):
             raise ValueError("experiment split cannot be blank")
-        if "locked_evaluation" in normalized_splits:
-            raise ValueError("locked_evaluation is forbidden for learning experiments")
+        unsupported = sorted(set(normalized_splits) - _ALLOWED_LEARNING_SPLITS)
+        if unsupported:
+            raise ValueError(f"unsupported learning experiment split(s): {', '.join(unsupported)}")
         if len(normalized_splits) != len(set(normalized_splits)):
             raise ValueError("experiment splits must be unique")
         if not self.guardrails:
@@ -110,13 +117,15 @@ class ExperimentMeasurement:
     metrics: tuple[MetricValue, ...]
 
     def __post_init__(self) -> None:
-        if not self.revision.strip():
+        revision = self.revision.strip()
+        if not revision:
             raise ValueError("measurement revision cannot be blank")
         if not self.metrics:
             raise ValueError("experiment measurement requires metrics")
         names = [metric.name for metric in self.metrics]
         if len(names) != len(set(names)):
             raise ValueError("experiment measurement metrics must be unique")
+        object.__setattr__(self, "revision", revision)
 
     def metric_map(self) -> dict[str, float]:
         return {metric.name: metric.value for metric in self.metrics}
@@ -130,10 +139,12 @@ class ExperimentResult:
     run_count: int
 
     def __post_init__(self) -> None:
-        if not self.contract_digest.strip():
-            raise ValueError("experiment result requires contract digest")
+        digest = self.contract_digest.strip().lower()
+        if len(digest) != 64 or any(character not in "0123456789abcdef" for character in digest):
+            raise ValueError("experiment result requires a SHA-256 contract digest")
         if self.run_count < 1:
             raise ValueError("run_count must be >= 1")
+        object.__setattr__(self, "contract_digest", digest)
 
 
 def contract_for_candidate(
