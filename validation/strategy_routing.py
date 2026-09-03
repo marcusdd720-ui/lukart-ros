@@ -3,9 +3,12 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from string import hexdigits
 
 from learning.experiment import MetricDirection
 from learning.models import MetricValue
+
+_HEX_DIGITS = frozenset(hexdigits.lower())
 
 
 @dataclass(frozen=True, slots=True)
@@ -25,7 +28,7 @@ class StrategyBenchmark:
                 raise ValueError(f"{field_name} cannot be blank")
             object.__setattr__(self, field_name, value)
         digest = self.benchmark_digest.strip().lower()
-        if len(digest) != 64 or any(char not in "0123456789abcdef" for char in digest):
+        if len(digest) != 64 or any(char not in _HEX_DIGITS for char in digest):
             raise ValueError("benchmark_digest must be a lowercase SHA-256 digest")
         object.__setattr__(self, "benchmark_digest", digest)
         names = [metric.name for metric in self.metrics]
