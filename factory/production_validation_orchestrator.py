@@ -216,8 +216,11 @@ def _git_changed() -> bool:
 def publish_changes() -> None:
     if not _git_changed():
         return
+    paths = [str(STATE_PATH)]
+    if EXTRACTION_FREEZE.exists():
+        paths.append(str(EXTRACTION_FREEZE))
     commands = (
-        ["git", "add", str(STATE_PATH), str(EXTRACTION_FREEZE)],
+        ["git", "add", *paths],
         ["git", "commit", "-m", "chore: advance production validation program"],
         ["git", "push", "origin", "HEAD:main"],
     )
