@@ -1,0 +1,11 @@
+{
+  "schema_version": "2.0",
+  "step": 12,
+  "status": "PASS",
+  "validated_sha": "7e8e65b331caf6840a9245d61f69a9d7687e2f3c",
+  "gate_kind": "measurement",
+  "evidence_kind": "controlled_learning_experiment",
+  "artifact_path": "reports/production_validation/step_12.json",
+  "artifact_sha256": "df7e4829a8ec0b4b6e409e3d5eae9ea594f8097323ecd1dc2ebd3a67599cf5a2",
+  "critical_gates_passed": true
+}
