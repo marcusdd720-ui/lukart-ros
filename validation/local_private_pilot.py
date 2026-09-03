@@ -1,6 +1,6 @@
 """Local-only Step 15 pilot contracts for real private Case validation.
 
-This module never reads private result text into a public report.  A pilot result
+This module never reads private result text into a public report. A pilot result
 may remain anywhere inside the validated local data root; only its SHA-256 digest
 and non-sensitive execution flags enter the attestation.
 """
@@ -137,7 +137,7 @@ def prepare_local_private_pilot(
     repo_root: Path,
     validated_sha: str,
 ) -> LocalPrivatePilotAttestation:
-    """Prepare a non-claiming attestation before a real local pilot is executed."""
+    """Validate local placement without claiming that the pilot has run."""
 
     key, root, _ = _validated_local_context(
         case_key=case_key,
@@ -149,9 +149,9 @@ def prepare_local_private_pilot(
         case_fingerprint=_sha256_text(key),
         data_root_fingerprint=_sha256_text(str(root)),
         status=LocalPilotStatus.READY_FOR_LOCAL_EXECUTION,
-        local_only_execution_attested=True,
-        pii_not_committed=True,
-        private_evidence_not_committed=True,
+        local_only_execution_attested=False,
+        pii_not_committed=False,
+        private_evidence_not_committed=False,
         pilot_results_recorded=False,
     )
 
@@ -165,8 +165,8 @@ def attest_local_private_pilot(
     result_path: Path,
     pipeline_exit_code: int,
     stages_executed: int,
-    pii_committed: bool = False,
-    private_evidence_committed: bool = False,
+    pii_committed: bool,
+    private_evidence_committed: bool,
 ) -> LocalPrivatePilotAttestation:
     """Bind Step 15 to a real local result file without exposing its path or contents."""
 
