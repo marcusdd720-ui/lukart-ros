@@ -27,7 +27,9 @@ def test_audit_context_blocks_path_escape(repository_root: Path) -> None:
         context.path("../outside")
 
 
-def test_current_sha_prefers_github_sha(monkeypatch: pytest.MonkeyPatch, repository_root: Path) -> None:
+def test_current_sha_prefers_github_sha(
+    monkeypatch: pytest.MonkeyPatch, repository_root: Path
+) -> None:
     monkeypatch.setenv("GITHUB_SHA", "abc123")
     assert current_sha(repository_root) == "abc123"
 
