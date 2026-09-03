@@ -9,6 +9,7 @@ from dataclasses import dataclass
 from enum import StrEnum
 
 from agents.certification import AgentCertificationReport, AgentCertificationStatus
+from core.models.ids import AgentId
 from validation.independent_evaluation import ReviewOutcome
 
 _SHA256_RE = re.compile(r"^[0-9a-f]{64}$")
@@ -134,3 +135,21 @@ class AgentCertificationProgram:
             status=status,
             failures=hard_failures,
         )
+
+
+def router_certification_update(
+    agent_id: AgentId,
+    report: CertificationProgramReport,
+) -> dict[tuple[str, str], AgentCertificationStatus]:
+    """Return router eligibility only for a fully certified program outcome.
+
+    The function deliberately returns an ordinary mapping instead of mutating a router or
+    registry. A caller may apply the mapping at the controlled routing boundary after the
+    certification evidence itself has been accepted.
+    """
+
+    if report.status is not CertificationProgramStatus.CERTIFIED:
+        return {}
+    return {
+        (str(agent_id), report.agent_version): AgentCertificationStatus.CERTIFIED,
+    }
