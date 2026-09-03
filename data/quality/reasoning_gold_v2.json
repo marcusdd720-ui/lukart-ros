@@ -1,0 +1,415 @@
+{
+  "schema_version": "1.0.0",
+  "corpus_id": "reasoning-gold-v2",
+  "version": "2.0.0",
+  "status": "candidate_pending_independent_review",
+  "review_status": "not_reviewed",
+  "splits": {
+    "development": [
+      "SYN-R-201",
+      "SYN-R-202",
+      "SYN-R-203",
+      "SYN-R-204",
+      "SYN-R-205",
+      "SYN-R-206",
+      "SYN-R-207",
+      "SYN-R-208"
+    ],
+    "validation": ["SYN-R-209", "SYN-R-210", "SYN-R-211", "SYN-R-212"],
+    "locked_evaluation": ["SYN-R-213", "SYN-R-214", "SYN-R-215", "SYN-R-216"]
+  },
+  "cases": [
+    {
+      "case_id": "SYN-R-201",
+      "conclusion_id": "C201",
+      "expected_outcome": "CONCLUDE",
+      "expected_min_open_questions": 0,
+      "artifacts": [
+        {
+          "artifact_id": "F201",
+          "statement": "Synthetic delivery record states a service date.",
+          "status": "FACT",
+          "evidence_refs": ["SYN-E-201"],
+          "support_ids": [],
+          "rationale": "Direct synthetic evidence."
+        },
+        {
+          "artifact_id": "C201",
+          "statement": "The synthetic service date is documented.",
+          "status": "CONCLUSION",
+          "evidence_refs": [],
+          "support_ids": ["F201"],
+          "rationale": "Directly derived from an evidenced fact."
+        }
+      ]
+    },
+    {
+      "case_id": "SYN-R-202",
+      "conclusion_id": "C202",
+      "expected_outcome": "ABSTAIN",
+      "expected_min_open_questions": 1,
+      "artifacts": [
+        {
+          "artifact_id": "F202",
+          "statement": "Synthetic payment was completed.",
+          "status": "FACT",
+          "evidence_refs": [],
+          "support_ids": [],
+          "rationale": "Intentionally unsupported FACT."
+        },
+        {
+          "artifact_id": "C202",
+          "statement": "The synthetic payment is established.",
+          "status": "CONCLUSION",
+          "evidence_refs": [],
+          "support_ids": ["F202"],
+          "rationale": "Must abstain because FACT has no evidence."
+        }
+      ]
+    },
+    {
+      "case_id": "SYN-R-203",
+      "conclusion_id": "C203",
+      "expected_outcome": "ABSTAIN",
+      "expected_min_open_questions": 1,
+      "artifacts": [
+        {
+          "artifact_id": "U203",
+          "statement": "Synthetic filing date is unknown.",
+          "status": "UNKNOWN",
+          "evidence_refs": [],
+          "support_ids": [],
+          "rationale": "No evidence establishes the date."
+        },
+        {
+          "artifact_id": "C203",
+          "statement": "The synthetic filing date is established.",
+          "status": "CONCLUSION",
+          "evidence_refs": [],
+          "support_ids": ["U203"],
+          "rationale": "UNKNOWN support requires abstention."
+        }
+      ]
+    },
+    {
+      "case_id": "SYN-R-204",
+      "conclusion_id": "C204",
+      "expected_outcome": "ABSTAIN",
+      "expected_min_open_questions": 1,
+      "artifacts": [
+        {
+          "artifact_id": "C204",
+          "statement": "An absent support establishes a synthetic conclusion.",
+          "status": "CONCLUSION",
+          "evidence_refs": [],
+          "support_ids": ["F-MISSING-204"],
+          "rationale": "Deliberately references missing support."
+        }
+      ]
+    },
+    {
+      "case_id": "SYN-R-205",
+      "conclusion_id": "C205",
+      "expected_outcome": "CONCLUDE",
+      "expected_min_open_questions": 0,
+      "artifacts": [
+        {
+          "artifact_id": "CL205",
+          "statement": "Synthetic witness claims a document was received.",
+          "status": "CLAIM",
+          "evidence_refs": ["SYN-E-205"],
+          "support_ids": [],
+          "rationale": "Evidence establishes only that the claim exists."
+        },
+        {
+          "artifact_id": "C205",
+          "statement": "There is an evidenced synthetic claim of receipt.",
+          "status": "CONCLUSION",
+          "evidence_refs": [],
+          "support_ids": ["CL205"],
+          "rationale": "Conclusion is limited to the existence of the claim."
+        }
+      ]
+    },
+    {
+      "case_id": "SYN-R-206",
+      "conclusion_id": "C206",
+      "expected_outcome": "ABSTAIN",
+      "expected_min_open_questions": 1,
+      "artifacts": [
+        {
+          "artifact_id": "R206",
+          "statement": "Synthetic proposition was rejected by validation.",
+          "status": "REJECTED",
+          "evidence_refs": [],
+          "support_ids": [],
+          "rationale": "Rejected support is intentionally blocking."
+        },
+        {
+          "artifact_id": "C206",
+          "statement": "The rejected proposition establishes the conclusion.",
+          "status": "CONCLUSION",
+          "evidence_refs": [],
+          "support_ids": ["R206"],
+          "rationale": "REJECTED support cannot establish a conclusion."
+        }
+      ]
+    },
+    {
+      "case_id": "SYN-R-207",
+      "conclusion_id": "C207",
+      "expected_outcome": "ABSTAIN",
+      "expected_min_open_questions": 1,
+      "artifacts": [
+        {
+          "artifact_id": "C207",
+          "statement": "Synthetic conclusion has no support.",
+          "status": "CONCLUSION",
+          "evidence_refs": [],
+          "support_ids": [],
+          "rationale": "Derived result deliberately lacks support."
+        }
+      ]
+    },
+    {
+      "case_id": "SYN-R-208",
+      "conclusion_id": "C208",
+      "expected_outcome": "CONCLUDE",
+      "expected_min_open_questions": 0,
+      "artifacts": [
+        {
+          "artifact_id": "F208",
+          "statement": "Synthetic record contains a signed timestamp.",
+          "status": "FACT",
+          "evidence_refs": ["SYN-E-208"],
+          "support_ids": [],
+          "rationale": "Direct synthetic evidence."
+        },
+        {
+          "artifact_id": "I208",
+          "statement": "The timestamp is interpretable as a recorded signing time.",
+          "status": "INTERPRETATION",
+          "evidence_refs": [],
+          "support_ids": ["F208"],
+          "rationale": "Interpretation remains linked to the fact."
+        },
+        {
+          "artifact_id": "C208",
+          "statement": "A documented signing time exists in the synthetic record.",
+          "status": "CONCLUSION",
+          "evidence_refs": [],
+          "support_ids": ["I208"],
+          "rationale": "Evidence lineage passes through an explicit interpretation."
+        }
+      ]
+    },
+    {
+      "case_id": "SYN-R-209",
+      "conclusion_id": "C209",
+      "expected_outcome": "CONCLUDE",
+      "expected_min_open_questions": 0,
+      "artifacts": [
+        {
+          "artifact_id": "F209A",
+          "statement": "Synthetic agreement states an amount.",
+          "status": "FACT",
+          "evidence_refs": ["SYN-E-209-A"],
+          "support_ids": [],
+          "rationale": "Synthetic source A."
+        },
+        {
+          "artifact_id": "F209B",
+          "statement": "Synthetic agreement states a date.",
+          "status": "FACT",
+          "evidence_refs": ["SYN-E-209-B"],
+          "support_ids": [],
+          "rationale": "Synthetic source B."
+        },
+        {
+          "artifact_id": "C209",
+          "statement": "The synthetic agreement has documented amount and date.",
+          "status": "CONCLUSION",
+          "evidence_refs": [],
+          "support_ids": ["F209A", "F209B"],
+          "rationale": "Both material elements are evidenced."
+        }
+      ]
+    },
+    {
+      "case_id": "SYN-R-210",
+      "conclusion_id": "C210",
+      "expected_outcome": "ABSTAIN",
+      "expected_min_open_questions": 1,
+      "artifacts": [
+        {
+          "artifact_id": "F210",
+          "statement": "Synthetic record establishes one material fact.",
+          "status": "FACT",
+          "evidence_refs": ["SYN-E-210"],
+          "support_ids": [],
+          "rationale": "One branch is evidenced."
+        },
+        {
+          "artifact_id": "U210",
+          "statement": "A second material fact remains disputed.",
+          "status": "UNRESOLVED",
+          "evidence_refs": [],
+          "support_ids": [],
+          "rationale": "The second branch remains unresolved."
+        },
+        {
+          "artifact_id": "C210",
+          "statement": "Both synthetic material facts are established.",
+          "status": "CONCLUSION",
+          "evidence_refs": [],
+          "support_ids": ["F210", "U210"],
+          "rationale": "Mixed support must abstain while one branch is unresolved."
+        }
+      ]
+    },
+    {
+      "case_id": "SYN-R-211",
+      "conclusion_id": "C211",
+      "expected_outcome": "ABSTAIN",
+      "expected_min_open_questions": 1,
+      "artifacts": [
+        {
+          "artifact_id": "H211",
+          "statement": "Synthetic hypothesis depends on an interpretation.",
+          "status": "HYPOTHESIS",
+          "evidence_refs": [],
+          "support_ids": ["I211"],
+          "rationale": "First edge of deliberate cycle."
+        },
+        {
+          "artifact_id": "I211",
+          "statement": "Synthetic interpretation depends on the hypothesis.",
+          "status": "INTERPRETATION",
+          "evidence_refs": [],
+          "support_ids": ["H211"],
+          "rationale": "Second edge of deliberate cycle."
+        },
+        {
+          "artifact_id": "C211",
+          "statement": "Circular synthetic reasoning is sufficient.",
+          "status": "CONCLUSION",
+          "evidence_refs": [],
+          "support_ids": ["H211"],
+          "rationale": "Cycle must prevent conclusion."
+        }
+      ]
+    },
+    {
+      "case_id": "SYN-R-212",
+      "conclusion_id": "REC212",
+      "expected_outcome": "ABSTAIN",
+      "expected_min_open_questions": 1,
+      "artifacts": [
+        {
+          "artifact_id": "F212",
+          "statement": "Synthetic fact is evidenced.",
+          "status": "FACT",
+          "evidence_refs": ["SYN-E-212"],
+          "support_ids": [],
+          "rationale": "Direct evidence."
+        },
+        {
+          "artifact_id": "REC212",
+          "statement": "Synthetic recommendation is requested as a conclusion.",
+          "status": "RECOMMENDATION",
+          "evidence_refs": [],
+          "support_ids": ["F212"],
+          "rationale": "Engine must not silently treat RECOMMENDATION as CONCLUSION."
+        }
+      ]
+    },
+    {
+      "case_id": "SYN-R-213",
+      "conclusion_id": "C213",
+      "expected_outcome": "CONCLUDE",
+      "expected_min_open_questions": 0,
+      "artifacts": [
+        {
+          "artifact_id": "F213",
+          "statement": "Locked synthetic record contains explicit evidence.",
+          "status": "FACT",
+          "evidence_refs": ["SYN-E-213"],
+          "support_ids": [],
+          "rationale": "Locked case; not for tuning."
+        },
+        {
+          "artifact_id": "C213",
+          "statement": "The locked synthetic fact is documented.",
+          "status": "CONCLUSION",
+          "evidence_refs": [],
+          "support_ids": ["F213"],
+          "rationale": "Locked valid-conclusion case."
+        }
+      ]
+    },
+    {
+      "case_id": "SYN-R-214",
+      "conclusion_id": "C214-MISSING",
+      "expected_outcome": "ABSTAIN",
+      "expected_min_open_questions": 1,
+      "artifacts": [
+        {
+          "artifact_id": "F214",
+          "statement": "Locked synthetic fact exists but target conclusion does not.",
+          "status": "FACT",
+          "evidence_refs": ["SYN-E-214"],
+          "support_ids": [],
+          "rationale": "Tests explicit missing-target abstention."
+        }
+      ]
+    },
+    {
+      "case_id": "SYN-R-215",
+      "conclusion_id": "C215",
+      "expected_outcome": "ABSTAIN",
+      "expected_min_open_questions": 1,
+      "artifacts": [
+        {
+          "artifact_id": "R215",
+          "statement": "Locked synthetic support was rejected.",
+          "status": "REJECTED",
+          "evidence_refs": [],
+          "support_ids": [],
+          "rationale": "Rejected knowledge remains blocking."
+        },
+        {
+          "artifact_id": "C215",
+          "statement": "Rejected locked support establishes the conclusion.",
+          "status": "CONCLUSION",
+          "evidence_refs": [],
+          "support_ids": ["R215"],
+          "rationale": "Locked negative case."
+        }
+      ]
+    },
+    {
+      "case_id": "SYN-R-216",
+      "conclusion_id": "C216",
+      "expected_outcome": "CONCLUDE",
+      "expected_min_open_questions": 0,
+      "artifacts": [
+        {
+          "artifact_id": "CL216",
+          "statement": "Locked synthetic source records a party claim.",
+          "status": "CLAIM",
+          "evidence_refs": ["SYN-E-216"],
+          "support_ids": [],
+          "rationale": "Evidence establishes existence of the claim only."
+        },
+        {
+          "artifact_id": "C216",
+          "statement": "An evidenced locked synthetic claim exists.",
+          "status": "CONCLUSION",
+          "evidence_refs": [],
+          "support_ids": ["CL216"],
+          "rationale": "Limited conclusion about claim existence."
+        }
+      ]
+    }
+  ]
+}
