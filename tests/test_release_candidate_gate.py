@@ -1,7 +1,7 @@
 import json
 from pathlib import Path
 
-from factory import production_validation_orchestrator as pvo
+import factory.production_validation_orchestrator as pvo
 
 
 VALIDATED_SHA = "a" * 40
