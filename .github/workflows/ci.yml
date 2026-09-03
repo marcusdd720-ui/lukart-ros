@@ -28,6 +28,8 @@ jobs:
         run: python scripts/dependency_boundary_check.py
       - name: Secret-scanning gate
         run: python scripts/secret_scan.py
+      - name: PII/confidentiality gate
+        run: python scripts/pii_scan.py
       - name: Model usage audit
         run: python scripts/model_usage_audit.py
       - name: Dead-code inventory gate
