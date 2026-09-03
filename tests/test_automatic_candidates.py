@@ -7,7 +7,15 @@ from learning.automatic_candidates import (
     CandidateGenerationRule,
     CandidateGenerationStatus,
 )
-from learning.models import ChangeKind, LearningSource, MeasuredFailure
+from learning.experiment import (
+    ExperimentMeasurement,
+    ExperimentResult,
+    MetricDirection,
+    MetricGuardrail,
+    contract_for_candidate,
+)
+from learning.models import ChangeKind, LearningSource, MeasuredFailure, MetricValue
+from learning.promotion import PromotionGate, PromotionStatus
 
 
 def _failure(code: str = "DECISION_MISMATCH") -> MeasuredFailure:
@@ -86,3 +94,42 @@ def test_generated_candidate_has_no_patch_or_deployment_authority_fields() -> No
     assert not hasattr(candidate, "merge")
     assert not hasattr(candidate, "deploy")
     assert not hasattr(candidate, "production_write")
+
+
+def test_generated_candidate_requires_bound_experiment_before_promotion() -> None:
+    decision = AutomaticCandidateGenerator((_rule(),)).generate(_failure())
+    candidate = decision.candidate
+    assert candidate is not None
+
+    contract = contract_for_candidate(
+        candidate,
+        experiment_id="AUTO-EXP-1",
+        baseline_revision="baseline-sha",
+        candidate_revision="candidate-sha",
+        sandbox_id="automatic-candidate-sandbox",
+        allowed_splits=("development", "validation"),
+        guardrails=(
+            MetricGuardrail(
+                name="decision_accuracy",
+                direction=MetricDirection.HIGHER_IS_BETTER,
+            ),
+        ),
+    )
+    unbound_result = ExperimentResult(
+        contract_digest="d" * 64,
+        baseline=ExperimentMeasurement(
+            revision="baseline-sha",
+            metrics=(MetricValue("decision_accuracy", 0.8),),
+        ),
+        candidate=ExperimentMeasurement(
+            revision="candidate-sha",
+            metrics=(MetricValue("decision_accuracy", 0.9),),
+        ),
+        run_count=1,
+    )
+
+    promotion = PromotionGate().evaluate(contract, unbound_result)
+
+    assert contract.candidate_digest == candidate.digest()
+    assert promotion.status is PromotionStatus.REJECTED
+    assert promotion.reason == "experiment result is not bound to this contract"

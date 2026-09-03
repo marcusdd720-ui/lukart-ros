@@ -1,0 +1,50 @@
+{
+  "schema_version": "1.0",
+  "step": 14,
+  "status": "PASS",
+  "validated_sha": "f2391a46073aa6093ccc234e603e374dd5662611",
+  "gate_kind": "implementation",
+  "evidence_kind": "automatic_candidate_generation",
+  "locked_evaluation_used_for_tuning": false,
+  "private_data_committed": false,
+  "implementation_summary": {
+    "suite": "tests/test_automatic_candidates.py",
+    "generator": "AutomaticCandidateGenerator",
+    "exact_curated_rule_required": true,
+    "unknown_failure_abstains": true,
+    "ambiguous_rule_table_rejected": true,
+    "source_failure_digest_bound": true,
+    "patch_authority_absent": true,
+    "merge_authority_absent": true,
+    "deployment_authority_absent": true,
+    "production_write_authority_absent": true,
+    "experiment_contract_bound_to_candidate_digest": true,
+    "unbound_promotion_result_rejected": true
+  },
+  "source_evidence": [
+    "learning/automatic_candidates.py",
+    "learning/candidates.py",
+    "learning/experiment.py",
+    "learning/promotion.py",
+    "tests/test_automatic_candidates.py"
+  ],
+  "checks": [
+    {
+      "name": "candidate_generator_bounded",
+      "status": "PASS"
+    },
+    {
+      "name": "provenance_bound",
+      "status": "PASS"
+    },
+    {
+      "name": "deployment_authority_absent",
+      "status": "PASS"
+    },
+    {
+      "name": "promotion_path_required",
+      "status": "PASS"
+    }
+  ],
+  "report_revision": "1.0.2"
+}
