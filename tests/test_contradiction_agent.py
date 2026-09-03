@@ -1,5 +1,5 @@
-from agents.contradiction import CONTRADICTION_AGENT_ID, ContradictionAgent
 from agents.contract import AgentRequest
+from agents.contradiction import CONTRADICTION_AGENT_ID, ContradictionAgent
 from agents.registry import AgentRegistry
 from agents.runner import AgentRunner, AgentRunStatus
 from knowledge.provenance import EpistemicStatus
