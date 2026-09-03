@@ -185,21 +185,44 @@ or permission to use locked evaluation as teaching material.
 
 ## P6 — Semantic Self-Healing and Change Propagation
 
-Status: **PLANNED**
+Status: **VALIDATED IMPLEMENTATION / FINAL MERGE GATE PENDING** on
+`feat/semantic-self-healing-p6`.
 
-Dependency: trustworthy measurement and learning-event diagnosis.
+Implemented scope:
 
-Planned scope:
+1. evidence-bound semantic KQM failure diagnosis tied to exact `MeasuredFailure` digests;
+2. explicit `INCONCLUSIVE`/`UNKNOWN` abstention when no curated diagnosis rule exists;
+3. immutable semantic component dependency graph with cycle and unknown-node rejection;
+4. completeness evidence required before selective dependency-aware propagation is permitted;
+5. selective revalidation as target + transitive downstream closure only for a complete graph;
+6. fail-closed `BROAD_REVALIDATION_REQUIRED` fallback for inconclusive diagnosis, missing target,
+   or incomplete graph;
+7. repair hypotheses reuse the existing P4 `LearningCandidate` contract rather than creating a
+   parallel repair authority;
+8. fresh-SHA validation evidence bound to exact baseline/repair revisions and Case Replay records;
+9. expected replay drift must exactly match observed replay drift;
+10. every planned validator must execute and pass before P6 readiness;
+11. existing P4 PromotionGate remains authoritative and cannot be bypassed;
+12. Product runtime remains isolated from `factory/self_healing.py` by the dependency boundary.
 
-- semantic KQM failure diagnosis;
-- dependency-aware change impact graph;
-- selective downstream revalidation;
-- candidate repair generation;
-- fresh-SHA replay and KQM regression comparison;
-- promotion only through existing gates.
+Target loop:
 
-Change Propagation must not be represented as dependency-aware while it is merely `run all`.
-Safe broad validation remains preferable until the dependency model is trustworthy.
+`Measured Failure -> Semantic Diagnosis -> Impact Graph -> Revalidation Plan -> P4 Learning Candidate -> Experiment -> Fresh-SHA Replay/KQM Evidence -> P4 Promotion Decision -> P6 Readiness`
+
+P6 readiness is an evidence artifact, not mutation or deployment authority. The existing Factory
+self-healing implementation remains responsible for operational CI/stage repair; P6 does not
+import or replace it.
+
+Initial feature head `986e267d97f5c32afeea614c2b33531c237f8be1` exposed one test assertion
+mismatch: the existing P4 contract correctly rejected `locked_evaluation`, but one P6 test expected
+a different exception-message regex. The minimal repair changed only the test assertion.
+
+Fresh repair head `86ce620782b0093f812243394401ab84799397f3` passed CI Foundation on
+Python 3.11/3.12/3.13, Architectural Audit 1.0, GitHub App Smoke Test, and smoke-dispatched
+Stage Gate #226. This SSoT update creates a newer docs+code head, which must pass the same exact-head
+merge gates before merge.
+
+P6 becomes COMPLETE only after exact-head merge and post-merge validation on `main`.
 
 ## P7 — Controlled Self-Learning / Adversarial Verification
 
