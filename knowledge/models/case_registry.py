@@ -7,7 +7,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
-from factory.local_case_store import case_dir, ensure_data_root, validate_case_key
+from core.local_case_store import case_dir, ensure_data_root, validate_case_key
 
 if TYPE_CHECKING:
     from knowledge.models.case_workspace import CaseWorkspace

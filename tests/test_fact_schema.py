@@ -3,7 +3,7 @@ from dataclasses import fields
 import pytest
 
 from knowledge.fact_contract import FactContractValidator
-from knowledge.provenance import EntityType, ExtractedFact
+from knowledge.provenance import EntityType, EpistemicStatus, ExtractedFact
 
 EXPECTED_FACT_FIELDS = (
     "value",
@@ -15,6 +15,8 @@ EXPECTED_FACT_FIELDS = (
     "extractor_version",
     "source_document_sha256",
     "extraction_method",
+    "confidence",
+    "epistemic_status",
 )
 
 
@@ -33,6 +35,13 @@ def test_extracted_fact_schema_is_stable() -> None:
         EntityType.COURT_NAME,
         EntityType.INSURED_PERIOD,
         EntityType.OTHER,
+    }
+    assert set(EpistemicStatus) == {
+        EpistemicStatus.EXTRACTED,
+        EpistemicStatus.VERIFIED,
+        EpistemicStatus.INFERRED,
+        EpistemicStatus.DISPUTED,
+        EpistemicStatus.REJECTED,
     }
 
 

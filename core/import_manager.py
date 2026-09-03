@@ -5,7 +5,7 @@ from __future__ import annotations
 import shutil
 from pathlib import Path
 
-from factory.local_case_store import case_dir, ensure_data_root, validate_case_key
+from core.local_case_store import case_dir, ensure_data_root, validate_case_key
 
 
 class ImportManager:
@@ -39,8 +39,12 @@ class ImportManager:
             counter += 1
 
     def import_directory(self, case_id: str, source_directory: str) -> tuple[int, int]:
-        """Import all files and folders into the local CASE/original directory."""
-        destination = self.get_original_folder(case_id)
+        """Import regular files into the local CASE/original directory.
+
+        Symlinks are rejected so an import cannot follow an external filesystem
+        object into an unintended location.
+        """
+        destination = self.get_original_folder(case_id).resolve()
         source = Path(source_directory).expanduser().resolve()
         if not source.exists():
             raise FileNotFoundError(f"Source directory '{source}' does not exist.")
@@ -50,12 +54,16 @@ class ImportManager:
         files_count = 0
         folders_count = 0
         for item in source.rglob("*"):
+            if item.is_symlink():
+                raise ValueError(f"Symlink input is not allowed: {item}")
             relative = item.relative_to(source)
-            target = destination / relative
+            target = (destination / relative).resolve()
+            if destination != target and destination not in target.parents:
+                raise ValueError(f"Import target escapes case directory: {relative}")
             if item.is_dir():
                 target.mkdir(parents=True, exist_ok=True)
                 folders_count += 1
-            else:
+            elif item.is_file():
                 target.parent.mkdir(parents=True, exist_ok=True)
                 shutil.copy2(item, self._unique_target(target))
                 files_count += 1

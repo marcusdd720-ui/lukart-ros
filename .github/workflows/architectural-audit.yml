@@ -1,0 +1,36 @@
+name: Architectural Audit 1.0
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  AUDIT_HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: python -m pip install -e .
+      - name: Run A1-A25 audit
+        run: |
+          OUTPUT_DIR="${RUNNER_TEMP}/architectural-audit"
+          python scripts/architectural_audit_final.py --output-dir "$OUTPUT_DIR"
+          echo "AUDIT_REPORT_START"
+          cat "$OUTPUT_DIR/audit-report.md"
+          echo "AUDIT_REPORT_END"
+      - name: Upload audit report
+        uses: actions/upload-artifact@v4
+        with:
+          name: architectural-audit-report
+          path: ${{ runner.temp }}/architectural-audit/
