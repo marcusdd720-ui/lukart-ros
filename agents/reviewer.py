@@ -6,6 +6,7 @@ from uuid import UUID
 
 from agents.contract import AgentArtifact, AgentContract, AgentRequest, AgentResourceLimits
 from core.models.ids import AgentId
+from knowledge.provenance import EpistemicStatus
 from scripts.review_dossier import review_text
 
 REVIEWER_AGENT_ID = AgentId(UUID("66666666-6666-4666-8666-666666666666"))
@@ -30,7 +31,7 @@ class ReviewerAgent:
                 "promote_epistemic_status",
                 "approve_unsupported_conclusion",
             ),
-            allowed_epistemic_statuses=(),
+            allowed_epistemic_statuses=(EpistemicStatus.EXTRACTED,),
             validation_gates=("contract", "review-only"),
             resource_limits=AgentResourceLimits(max_runtime_seconds=1.0),
             provenance_required=False,
@@ -54,12 +55,13 @@ class ReviewerAgent:
             }
             for finding in findings
         )
+        statuses = (EpistemicStatus.EXTRACTED,) if payload else ()
         return AgentArtifact(
             agent_id=self.contract.agent_id,
             agent_version=self.contract.version,
             artifact_type=self.contract.output_schema,
             payload=payload,
-            epistemic_statuses=(),
+            epistemic_statuses=statuses,
             metadata={
                 "model_calls": 0,
                 "cost_units": 0.0,
