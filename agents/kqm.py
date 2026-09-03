@@ -26,7 +26,7 @@ class AgentKQMExecutionError(RuntimeError):
 class AgentFactExtractorAdapter:
     """Expose a controlled fact agent through the existing KQM extractor interface."""
 
-    def __init__(self, runner: AgentRunner, *, agent_version: str = "1.0.0") -> None:
+    def __init__(self, runner: AgentRunner, *, agent_version: str) -> None:
         self.runner = runner
         self.agent_version = agent_version
 
@@ -86,7 +86,9 @@ def run_reference_agent_kqm(
     registry = AgentRegistry()
     agent = ReferenceFactAgent()
     registry.register(agent)
-    adapter = AgentFactExtractorAdapter(AgentRunner(registry))
+    adapter = AgentFactExtractorAdapter(
+        AgentRunner(registry), agent_version=agent.contract.version
+    )
 
     development_metrics = kqm.run(adapter, development_split)
     validation_metrics = kqm.run(adapter, validation_split)

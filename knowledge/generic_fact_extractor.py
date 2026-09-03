@@ -1,8 +1,8 @@
-"""Conservative, domain-neutral regex fact extractor.
+"""Conservative, context-aware regex fact extractor.
 
-This module is independent from the synthetic KQM benchmark. Patterns are
-configuration-driven so production integrations can add domain-specific rules
-without coupling the runtime pipeline to benchmark fixtures.
+The default rules remain deterministic and model-free. They extract values only when
+an explicit textual cue establishes the entity role, which reduces false positives
+while keeping the runtime independent from benchmark-specific literal values.
 """
 
 from __future__ import annotations
@@ -25,30 +25,90 @@ class FactPattern:
     group: int = 0
 
 
+_NAME_CHARS = "A-Za-zĄĆĘŁŃÓŚŹŻąćęłńóśźż"
+_TOKEN_CHARS = "A-ZŁŚŻŹĆŃÓĘĄ0-9"
+
 DEFAULT_PATTERNS: tuple[FactPattern, ...] = (
     FactPattern(
         EntityType.CASE_NUMBER,
-        r"\b(?:Sygn\.?\s*akt|sygnatura)\s*[:.]?\s*[A-ZŁŚŻŹĆŃÓĘĄ0-9/-]+\b",
+        rf"\b(?:Sygn\.?\s*akt|sygnatura|spraw(?:a|ie|ę))\s*[:.]?\s*"
+        rf"((?:[IVXLCDM]+\s+[{_NAME_CHARS}]{{1,5}}\s+\d+(?:/\d+)?)|"
+        rf"(?:[{_TOKEN_CHARS}][{_TOKEN_CHARS}-]*(?:/[{_TOKEN_CHARS}-]+)+))\b",
         re.IGNORECASE,
+        group=1,
     ),
     FactPattern(
         EntityType.DECISION_NUMBER,
-        r"\b(?:znak|nr\s+decyzji)\s*[:.]?\s*[A-ZŁŚŻŹĆŃÓĘĄ0-9/-]+\b",
+        rf"\b(?:decyzja|znak|nr\s+decyzji)\s*[:.]?\s*"
+        rf"([{_TOKEN_CHARS}][{_TOKEN_CHARS}-]*(?:/[{_TOKEN_CHARS}-]+)+)\b",
         re.IGNORECASE,
+        group=1,
+    ),
+    FactPattern(
+        EntityType.INSURED_PERIOD,
+        r"\b(?:za\s+okres|okres)\s+"
+        r"((?:0?[1-9]|[12]\d|3[01])[.]\d{2}[.]\d{4}\s*[-–]\s*"
+        r"(?:0?[1-9]|[12]\d|3[01])[.]\d{2}[.]\d{4})\b",
+        re.IGNORECASE,
+        group=1,
     ),
     FactPattern(
         EntityType.DATE,
-        r"\b(?:0?[1-9]|[12]\d|3[01])[.]\d{2}[.]\d{4}\b",
+        r"\b(?:z\s+dnia|zawarta|data|sporządzono\s+dnia)\s+"
+        r"((?:0?[1-9]|[12]\d|3[01])[.]\d{2}[.]\d{4})\b",
+        re.IGNORECASE,
+        group=1,
+    ),
+    FactPattern(
+        EntityType.BENEFIT_AMOUNT,
+        r"\b(?:świadczenie|zasiłek|świadczenia|zasiłku)\s+"
+        r"(\d{1,9}(?:[ .]\d{3})*(?:,\d{2})?\s*(?:zł|PLN))\b",
+        re.IGNORECASE,
+        group=1,
     ),
     FactPattern(
         EntityType.AMOUNT,
-        r"\b\d{1,9}(?:[ .]\d{3})*(?:,\d{2})?\s*(?:zł|PLN)\b",
+        r"\b(?:kwot(?:a|ę|y)|należność|wartość)\s+"
+        r"(\d{1,9}(?:[ .]\d{3})*(?:,\d{2})?\s*(?:zł|PLN))\b",
         re.IGNORECASE,
+        group=1,
     ),
     FactPattern(
         EntityType.LEGAL_BASIS,
-        r"\bart\.\s*\d+[a-zA-Z]?\s*(?:§\s*\d+\s*)?(?:ust\.\s*\d+\s*)?(?:pkt\s*\d+\s*)?",
+        rf"\bart\.\s*\d+[a-zA-Z]?\s*"
+        rf"(?:§\s*\d+\s*)?(?:ust\.\s*\d+\s*)?(?:pkt\s*\d+\s*)?"
+        rf"(?:ustawy\s+[{_NAME_CHARS}-]+(?:\s+[{_NAME_CHARS}-]+)*)?",
         re.IGNORECASE,
+    ),
+    FactPattern(
+        EntityType.DECISION_OUTCOME,
+        rf"\bwynik\s*:\s*([{_NAME_CHARS}-]+)\b",
+        re.IGNORECASE,
+        group=1,
+    ),
+    FactPattern(
+        EntityType.PARTY,
+        rf"\bprzez\s+stronę\s+"
+        rf"([A-ZŁŚŻŹĆŃÓĘĄ][{_NAME_CHARS}'-]*(?:\s+[A-ZŁŚŻŹĆŃÓĘĄ][{_NAME_CHARS}'-]*){{0,3}})\b",
+        group=1,
+    ),
+    FactPattern(
+        EntityType.DEADLINE,
+        r"\btermin(?:\s+procesowy)?\s*:\s*(\d+\s*dni)\b",
+        re.IGNORECASE,
+        group=1,
+    ),
+    FactPattern(
+        EntityType.DEADLINE,
+        r"\btermin\s+((?:0?[1-9]|[12]\d|3[01])[.]\d{2}[.]\d{4})\b",
+        re.IGNORECASE,
+        group=1,
+    ),
+    FactPattern(
+        EntityType.OTHER,
+        rf"\bumowa\s+([{_TOKEN_CHARS}][{_TOKEN_CHARS}-]+)\b",
+        re.IGNORECASE,
+        group=1,
     ),
 )
 
@@ -56,7 +116,7 @@ DEFAULT_PATTERNS: tuple[FactPattern, ...] = (
 class GenericRegexFactExtractor:
     """Extract high-precision, source-bound facts using configured rules."""
 
-    version = "regex-generic-v1"
+    version = "regex-generic-v2"
 
     def __init__(self, patterns: Iterable[FactPattern] = DEFAULT_PATTERNS):
         self.patterns = tuple(patterns)

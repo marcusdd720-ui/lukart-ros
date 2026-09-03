@@ -108,7 +108,7 @@ def test_full_evidence_can_produce_program_certification_and_router_eligibility(
     assert report.failures == ()
     assert len(report.digest()) == 64
     assert eligibility == {
-        (str(REFERENCE_FACT_AGENT_ID), "1.0.0"): AgentCertificationStatus.CERTIFIED,
+        (str(REFERENCE_FACT_AGENT_ID), ReferenceFactAgent().contract.version): AgentCertificationStatus.CERTIFIED,
     }
 
 

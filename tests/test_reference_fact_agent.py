@@ -9,12 +9,13 @@ from knowledge.provenance import EntityType, EpistemicStatus, ExtractedFact
 
 def test_reference_fact_agent_runs_through_controlled_runtime() -> None:
     registry = AgentRegistry()
-    registry.register(ReferenceFactAgent())
+    agent = ReferenceFactAgent()
+    registry.register(agent)
     runner = AgentRunner(registry)
 
     result = runner.run(
         REFERENCE_FACT_AGENT_ID,
-        "1.0.0",
+        agent.contract.version,
         AgentRequest(
             schema="lukart.document_text.v1",
             payload={
