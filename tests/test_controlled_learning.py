@@ -271,5 +271,8 @@ def test_promotion_gate_rejects_wrong_contract_and_run_budget() -> None:
         run_count=3,
     )
 
-    assert PromotionGate().evaluate(contract, wrong_contract_result).status is PromotionStatus.REJECTED
-    assert PromotionGate().evaluate(contract, over_budget).status is PromotionStatus.REJECTED
+    wrong_contract_decision = PromotionGate().evaluate(contract, wrong_contract_result)
+    over_budget_decision = PromotionGate().evaluate(contract, over_budget)
+
+    assert wrong_contract_decision.status is PromotionStatus.REJECTED
+    assert over_budget_decision.status is PromotionStatus.REJECTED
