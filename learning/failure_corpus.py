@@ -37,6 +37,7 @@ def reasoning_report_digest(report: ReasoningKQMReport) -> str:
         "corpus_id": report.corpus_id,
         "corpus_version": report.corpus_version,
         "engine_version": report.engine_version,
+        "evaluator_version": report.evaluator_version,
         "failures": [
             {
                 "actual": failure.actual,
@@ -101,7 +102,7 @@ def failure_corpus_from_reasoning(
                 corpus_id=report.corpus_id,
                 corpus_version=report.corpus_version,
                 split=report.split.value,
-                evaluator_version=report.engine_version,
+                evaluator_version=report.evaluator_version,
                 source_sha=source_sha,
                 case_id=failure.case_id,
                 code=failure.code,
