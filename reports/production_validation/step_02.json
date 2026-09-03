@@ -1,0 +1,77 @@
+{
+  "schema_version": "1.0",
+  "step": 2,
+  "status": "PASS",
+  "validated_sha": "2f23052de6739a7d1dea3082e4a1614ac4f18cf7",
+  "gate_kind": "implementation",
+  "evidence_kind": "reference_fact_agent_improvement",
+  "locked_evaluation_used_for_tuning": false,
+  "private_data_committed": false,
+  "implementation": {
+    "agent": "ReferenceFactAgent",
+    "agent_version": "1.1.0",
+    "extractor_version": "regex-generic-v2"
+  },
+  "thresholds": {
+    "min_precision": 0.95,
+    "min_recall": 0.9,
+    "min_f1": 0.92,
+    "min_critical_recall": 0.95
+  },
+  "development": {
+    "true_positive": 60,
+    "false_positive": 0,
+    "false_negative": 0,
+    "precision": 1.0,
+    "recall": 1.0,
+    "f1": 1.0,
+    "critical_true_positive": 42,
+    "critical_false_positive": 0,
+    "critical_false_negative": 0,
+    "critical_recall": 1.0,
+    "critical_precision": 1.0,
+    "critical_fact_loss": 0,
+    "case_number_false_positive_rate": 0.0,
+    "provenance_completeness": 1.0
+  },
+  "validation": {
+    "true_positive": 20,
+    "false_positive": 0,
+    "false_negative": 0,
+    "precision": 1.0,
+    "recall": 1.0,
+    "f1": 1.0,
+    "critical_true_positive": 14,
+    "critical_false_positive": 0,
+    "critical_false_negative": 0,
+    "critical_recall": 1.0,
+    "critical_precision": 1.0,
+    "critical_fact_loss": 0,
+    "case_number_false_positive_rate": 0.0,
+    "provenance_completeness": 1.0
+  },
+  "certification_status": "PENDING_EXTERNAL_REVIEW",
+  "source_evidence": [
+    "tests/test_agent_kqm_vertical_slice.py",
+    "agents/reference_fact.py",
+    "knowledge/generic_fact_extractor.py"
+  ],
+  "checks": [
+    {
+      "name": "agent_version_changed",
+      "status": "PASS"
+    },
+    {
+      "name": "development_metrics_recorded",
+      "status": "PASS"
+    },
+    {
+      "name": "validation_metrics_recorded",
+      "status": "PASS"
+    },
+    {
+      "name": "locked_evaluation_untouched",
+      "status": "PASS"
+    }
+  ]
+}
