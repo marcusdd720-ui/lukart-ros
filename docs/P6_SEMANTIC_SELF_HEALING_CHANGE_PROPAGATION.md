@@ -1,6 +1,6 @@
 # P6 — Semantic Self-Healing & Change Propagation
 
-Status: IMPLEMENTED / VALIDATION PENDING
+Status: VALIDATED IMPLEMENTATION / FINAL MERGE GATE PENDING
 
 ## Decision need
 
@@ -118,6 +118,28 @@ through already-governed promotion/release mechanisms.
 `factory/self_healing.py` remains the operational lifecycle mechanism for concrete CI/stage
 failures. P6 does not replace it and does not import it. A future integration may allow Factory to
 consume P6 readiness/impact artifacts, but the runtime/factory dependency boundary remains intact.
+
+## Validation evidence
+
+Initial feature head `986e267d97f5c32afeea614c2b33531c237f8be1` correctly exposed one test-contract
+mismatch during CI. Ruff, MyPy, dependency boundaries, security/repository gates, Architectural
+Audit, and 466 of 467 pytest tests were successful. The sole failing test expected a different
+error-message regex even though the existing P4 contract correctly rejected `locked_evaluation`.
+
+The minimal repair changed only that test assertion. No P6 implementation semantics and no P4
+contract semantics were changed.
+
+Fresh repair head `86ce620782b0093f812243394401ab84799397f3` then passed:
+
+- CI Foundation on Python 3.11, 3.12, and 3.13;
+- Ruff, MyPy, pytest, dependency boundary, secret scan, model usage audit, and repository gates;
+- Architectural Audit 1.0;
+- GitHub App Smoke Test;
+- smoke-dispatched Stage Gate #226.
+
+This SSoT update creates a newer docs+code feature head. That exact final head must pass the same
+merge gates before merge. P6 remains incomplete until exact-head merge and post-merge validation
+succeed.
 
 ## Non-goals
 
