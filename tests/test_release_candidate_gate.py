@@ -1,0 +1,180 @@
+from __future__ import annotations
+
+import json
+from pathlib import Path
+
+from factory.production_validation_orchestrator import (
+    EXTRACTION_CORPUS,
+    EXTRACTION_FREEZE,
+    EXTRACTION_REVIEW,
+    REASONING_CORPUS_V2,
+    REASONING_FREEZE_V2,
+    REASONING_REVIEW_V2,
+    evaluate_release_candidate,
+    evidence_path,
+    freeze_extraction_corpus,
+    freeze_reasoning_corpus,
+    production_validation_chain_digest,
+    sha256_file,
+)
+from factory.production_validation_registry import get_program_step
+
+
+VALIDATED_SHA = "a" * 40
+
+
+def _write_json(path: Path, value: object) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(value, sort_keys=True), encoding="utf-8")
+
+
+def _approved_review(corpus_id: str, corpus_sha256: str) -> dict[str, object]:
+    return {
+        "schema_version": "1.0",
+        "corpus_id": corpus_id,
+        "corpus_sha256": corpus_sha256,
+        "reviewer_id": "independent-reviewer-one",
+        "reviewer_independent": True,
+        "decision": "APPROVED",
+        "annotation_review": "APPROVED",
+        "criticality_review": "APPROVED",
+        "freeze_approved": True,
+        "iaa_required": False,
+        "iaa_status": "NOT_REQUIRED",
+    }
+
+
+def _artifact_for_step(step_number: int) -> dict[str, object]:
+    spec = get_program_step(step_number)
+    return {
+        "schema_version": "1.0",
+        "step": step_number,
+        "status": "PASS",
+        "validated_sha": VALIDATED_SHA,
+        "gate_kind": spec.gate_kind.value,
+        "evidence_kind": spec.evidence_kind,
+        "locked_evaluation_used_for_tuning": False,
+        "private_data_committed": False,
+        "checks": [{"name": name, "status": "PASS"} for name in spec.required_checks],
+    }
+
+
+def _write_bound_evidence(
+    root: Path,
+    step_number: int,
+    *,
+    artifact: dict[str, object] | None = None,
+) -> Path:
+    spec = get_program_step(step_number)
+    report_path = Path(f"reports/production_validation/step_{step_number:02d}.json")
+    report = root / report_path
+    _write_json(report, artifact or _artifact_for_step(step_number))
+    envelope = root / evidence_path(step_number)
+    _write_json(
+        envelope,
+        {
+            "schema_version": "2.0",
+            "step": step_number,
+            "status": "PASS",
+            "validated_sha": VALIDATED_SHA,
+            "gate_kind": spec.gate_kind.value,
+            "evidence_kind": spec.evidence_kind,
+            "artifact_path": report_path.as_posix(),
+            "artifact_sha256": sha256_file(report),
+            "critical_gates_passed": True,
+        },
+    )
+    return report
+
+
+def _seed_reviewed_and_frozen_corpora(root: Path) -> None:
+    extraction = root / EXTRACTION_CORPUS
+    _write_json(extraction, {"corpus_id": "extraction-gold-v1", "items": []})
+    _write_json(
+        root / EXTRACTION_REVIEW,
+        _approved_review("extraction-gold-v1", sha256_file(extraction)),
+    )
+    freeze_extraction_corpus(root)
+
+    reasoning = root / REASONING_CORPUS_V2
+    _write_json(reasoning, {"corpus_id": "reasoning-gold-v2", "cases": []})
+    _write_json(
+        root / REASONING_REVIEW_V2,
+        _approved_review("reasoning-gold-v2", sha256_file(reasoning)),
+    )
+    freeze_reasoning_corpus(root)
+
+
+def _seed_steps_1_through_19(root: Path) -> None:
+    _seed_reviewed_and_frozen_corpora(root)
+    for step_number in (*range(2, 5), *range(6, 20)):
+        _write_bound_evidence(root, step_number)
+
+
+def _write_release_candidate(root: Path, chain_digest: str) -> None:
+    artifact = _artifact_for_step(20)
+    artifact["steps_1_19_digest"] = chain_digest
+    _write_bound_evidence(root, 20, artifact=artifact)
+
+
+def test_release_candidate_rejects_when_external_review_is_missing(tmp_path: Path) -> None:
+    extraction = tmp_path / EXTRACTION_CORPUS
+    _write_json(extraction, {"corpus_id": "extraction-gold-v1"})
+
+    decision = evaluate_release_candidate(tmp_path)
+
+    assert decision.code == "PRIOR_STEP_NOT_COMPLETE"
+    assert "step 1" in decision.reason
+
+
+def test_release_candidate_rejects_stale_freeze_manifest(tmp_path: Path) -> None:
+    _seed_steps_1_through_19(tmp_path)
+    freeze = json.loads((tmp_path / EXTRACTION_FREEZE).read_text(encoding="utf-8"))
+    freeze["reviewer_id"] = "different-reviewer"
+    _write_json(tmp_path / EXTRACTION_FREEZE, freeze)
+
+    decision = evaluate_release_candidate(tmp_path)
+
+    assert decision.code == "FREEZE_MANIFEST_MISMATCH"
+
+
+def test_release_candidate_rejects_when_prior_evidence_changes(tmp_path: Path) -> None:
+    _seed_steps_1_through_19(tmp_path)
+    chain_digest, chain_decision = production_validation_chain_digest(tmp_path)
+    assert chain_decision is None
+    assert chain_digest is not None
+    _write_release_candidate(tmp_path, chain_digest)
+
+    changed = _artifact_for_step(10)
+    changed["revision"] = 2
+    _write_bound_evidence(tmp_path, 10, artifact=changed)
+
+    decision = evaluate_release_candidate(tmp_path)
+
+    assert decision.code == "RELEASE_CHAIN_DIGEST_MISMATCH"
+
+
+def test_release_candidate_accepts_exact_live_steps_1_through_19_chain(tmp_path: Path) -> None:
+    _seed_steps_1_through_19(tmp_path)
+    chain_digest, chain_decision = production_validation_chain_digest(tmp_path)
+    assert chain_decision is None
+    assert chain_digest is not None
+    _write_release_candidate(tmp_path, chain_digest)
+
+    decision = evaluate_release_candidate(tmp_path)
+
+    assert decision.passed is True
+    assert decision.code == "PASS"
+
+
+def test_chain_digest_is_deterministic_for_unchanged_evidence(tmp_path: Path) -> None:
+    _seed_steps_1_through_19(tmp_path)
+
+    first, first_decision = production_validation_chain_digest(tmp_path)
+    second, second_decision = production_validation_chain_digest(tmp_path)
+
+    assert first_decision is None
+    assert second_decision is None
+    assert first == second
+    assert first is not None
+    assert (tmp_path / REASONING_FREEZE_V2).is_file()
