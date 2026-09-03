@@ -1,10 +1,10 @@
+import importlib
 from dataclasses import FrozenInstanceError
 
 import pytest
 
-import validation.corpus_review as corpus_review
 
-
+corpus_review = importlib.import_module("validation.corpus_review")
 RESERVED = frozenset({"system", "automated", "factory", "lukart", "agent"})
 CORPUS_SHA = "a" * 64
 
@@ -40,7 +40,7 @@ def test_external_review_is_deterministic_and_immutable() -> None:
 
     assert first.digest() == second.digest()
     with pytest.raises(FrozenInstanceError):
-        first.reviewer_id = "changed"  # type: ignore[misc]
+        first.reviewer_id = "changed"
 
 
 def test_external_review_cannot_upgrade_rejected_decision() -> None:
