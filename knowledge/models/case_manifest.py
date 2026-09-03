@@ -44,7 +44,7 @@ class CaseManifest:
         return path
 
     @classmethod
-    def load(cls, case_dir: Path) -> "CaseManifest":
+    def load(cls, case_dir: Path) -> CaseManifest:
         path = case_dir.expanduser().resolve() / "case_manifest.json"
         data = json.loads(path.read_text(encoding="utf-8"))
         return cls(
