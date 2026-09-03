@@ -1,0 +1,60 @@
+{
+  "schema_version": "1.0",
+  "step": 9,
+  "status": "PASS",
+  "validated_sha": "af8042eb33076b3da4002ad77a59962e20e51735",
+  "gate_kind": "measurement",
+  "evidence_kind": "adversarial_gold_measurement",
+  "locked_evaluation_used_for_tuning": false,
+  "private_data_committed": false,
+  "corpus": {
+    "path": "data/quality/adversarial_gold_v1.json",
+    "corpus_id": "adversarial-gold-v1",
+    "version": "1.0.0",
+    "status": "candidate_pending_independent_review",
+    "review_status": "not_reviewed",
+    "development_cases": 4,
+    "validation_cases": 2,
+    "locked_evaluation_cases": 2,
+    "locked_evaluation_executed": false
+  },
+  "development_metrics": {
+    "total_cases": 4,
+    "passed_cases": 4,
+    "evidence_veto_accuracy": 1.0,
+    "required_abstention_accuracy": 1.0,
+    "unresolved_challenge_accuracy": 1.0,
+    "unsafe_fact_promotion_count": 0
+  },
+  "validation_metrics": {
+    "total_cases": 2,
+    "passed_cases": 2,
+    "evidence_veto_accuracy": 1.0,
+    "required_abstention_accuracy": 1.0,
+    "unresolved_challenge_accuracy": 1.0,
+    "unsafe_fact_promotion_count": 0
+  },
+  "source_evidence": [
+    "data/quality/adversarial_gold_v1.json",
+    "validation/adversarial_gold.py",
+    "tests/test_adversarial_gold.py"
+  ],
+  "checks": [
+    {
+      "name": "adversarial_cases_versioned",
+      "status": "PASS"
+    },
+    {
+      "name": "evidence_veto_tested",
+      "status": "PASS"
+    },
+    {
+      "name": "abstention_tested",
+      "status": "PASS"
+    },
+    {
+      "name": "unresolved_challenge_tested",
+      "status": "PASS"
+    }
+  ]
+}
