@@ -1,0 +1,62 @@
+{
+  "schema_version": "1.0.0",
+  "corpus_id": "adversarial-gold-v1",
+  "version": "1.0.0",
+  "status": "candidate_pending_independent_review",
+  "review_status": "not_reviewed",
+  "splits": {
+    "development": ["SYN-ADV-A", "SYN-ADV-B", "SYN-ADV-C", "SYN-ADV-D"],
+    "validation": ["SYN-ADV-E", "SYN-ADV-F"],
+    "locked_evaluation": ["SYN-ADV-G", "SYN-ADV-H"]
+  },
+  "cases": [
+    {
+      "case_id": "SYN-ADV-A",
+      "kind": "evidence_veto",
+      "expected_verification": "rejected",
+      "expected_reasoning": "ABSTAIN"
+    },
+    {
+      "case_id": "SYN-ADV-B",
+      "kind": "abstention_required",
+      "expected_verification": "inconclusive",
+      "expected_reasoning": "ABSTAIN"
+    },
+    {
+      "case_id": "SYN-ADV-C",
+      "kind": "unresolved_challenge",
+      "expected_verification": "inconclusive",
+      "expected_reasoning": "ABSTAIN"
+    },
+    {
+      "case_id": "SYN-ADV-D",
+      "kind": "verified_control",
+      "expected_verification": "verified",
+      "expected_reasoning": "CONCLUDE"
+    },
+    {
+      "case_id": "SYN-ADV-E",
+      "kind": "evidence_veto",
+      "expected_verification": "rejected",
+      "expected_reasoning": "ABSTAIN"
+    },
+    {
+      "case_id": "SYN-ADV-F",
+      "kind": "unresolved_challenge",
+      "expected_verification": "inconclusive",
+      "expected_reasoning": "ABSTAIN"
+    },
+    {
+      "case_id": "SYN-ADV-G",
+      "kind": "abstention_required",
+      "expected_verification": "inconclusive",
+      "expected_reasoning": "ABSTAIN"
+    },
+    {
+      "case_id": "SYN-ADV-H",
+      "kind": "verified_control",
+      "expected_verification": "verified",
+      "expected_reasoning": "CONCLUDE"
+    }
+  ]
+}
