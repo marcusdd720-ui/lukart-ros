@@ -87,7 +87,9 @@ class AuditContext:
             result = set()
             for node in ast.walk(tree):
                 if isinstance(node, ast.Import):
-                    result.update(alias.name.split(".")[0] for alias in node.names)
+                    result.update(
+                        alias.name.split(".")[0] for alias in node.names
+                    )
                 elif isinstance(node, ast.ImportFrom) and node.module:
                     result.add(node.module.split(".")[0])
         self._imports[key] = result
@@ -150,7 +152,6 @@ def build_items(ctx: AuditContext) -> list[AuditItem]:
     case_store = ctx.read("factory/local_case_store.py")
     orchestrator = ctx.read("factory/stage_orchestrator.py")
     fact_contract = ctx.read("knowledge/fact_contract.py")
-    fact_extractor = ctx.read("knowledge/fact_extractor.py")
     provenance = ctx.read("knowledge/provenance.py")
     workflow_text = "\n".join(ctx.read(path) for path in workflows)
     test_text = "\n".join(ctx.read(path) for path in tests)
@@ -196,7 +197,8 @@ def build_items(ctx: AuditContext) -> list[AuditItem]:
         ("sha256", "content_hash"),
     )
     canonical_ids = all(
-        token in ctx.read("core/models/ids.py") for token in ("DocumentId", "FactId")
+        token in ctx.read("core/models/ids.py")
+        for token in ("DocumentId", "FactId")
     )
     entrypoints = all(
         ctx.exists(path)
@@ -218,17 +220,28 @@ def build_items(ctx: AuditContext) -> list[AuditItem]:
             "Factory ↔ MVROS boundary",
             "FAIL" if runtime_imports else "PASS",
             ("factory/", "core/", "knowledge/"),
-            "Runtime code does not import factory modules."
-            if not runtime_imports
-            else f"Runtime imports factory modules: {runtime_imports}.",
-            "Build infrastructure can leak into runtime." if runtime_imports else "No current direct coupling found.",
+            (
+                "Runtime code does not import factory modules."
+                if not runtime_imports
+                else f"Runtime imports factory modules: {runtime_imports}."
+            ),
+            (
+                "Build infrastructure can leak into runtime."
+                if runtime_imports
+                else "No current direct coupling found."
+            ),
             "Keep dependency direction as a CI invariant.",
         ),
         make_item(
             "A2",
             "Private-data boundary",
             "PASS" if root_guard else "FAIL",
-            ("README.md", "core/case_manager.py", "factory/local_case_store.py", "scripts/publish.py"),
+            (
+                "README.md",
+                "core/case_manager.py",
+                "factory/local_case_store.py",
+                "scripts/publish.py",
+            ),
             "Private local storage and publication restrictions are implemented."
             if root_guard
             else "Private data-root handling is not proven.",
@@ -250,7 +263,11 @@ def build_items(ctx: AuditContext) -> list[AuditItem]:
             "A4",
             "Canonical source of truth",
             "RISK",
-            ("core/case_manager.py", "knowledge/models/case_workspace.py", "scripts/run_case_pipeline.py"),
+            (
+                "core/case_manager.py",
+                "knowledge/models/case_workspace.py",
+                "scripts/run_case_pipeline.py",
+            ),
             "Case state is distributed across runtime components without a single enforced manifest.",
             "Representations can drift.",
             "Introduce a canonical manifest only when real-case measurement shows the need.",
@@ -259,7 +276,11 @@ def build_items(ctx: AuditContext) -> list[AuditItem]:
             "A5",
             "Traceability",
             "PASS" if canonical_ids and source_reference else "RISK",
-            ("core/models/ids.py", "knowledge/fact_contract.py", "knowledge/provenance.py"),
+            (
+                "core/models/ids.py",
+                "knowledge/fact_contract.py",
+                "knowledge/provenance.py",
+            ),
             "Canonical IDs and source-document identity/integrity fields are present."
             if canonical_ids and source_reference
             else "End-to-end source linkage is not fully proven.",
@@ -270,7 +291,11 @@ def build_items(ctx: AuditContext) -> list[AuditItem]:
             "A6",
             "Idempotency",
             "RISK",
-            ("factory/stage_orchestrator.py", "scripts/run_case_pipeline.py", "knowledge/project_timeline.py"),
+            (
+                "factory/stage_orchestrator.py",
+                "scripts/run_case_pipeline.py",
+                "knowledge/project_timeline.py",
+            ),
             "Some operations are explicitly repeat-safe, but full CASE-stage equivalence is not a contract.",
             "Reruns may duplicate or change derived artifacts.",
             "Add repeated-run equivalence tests for material stages.",
@@ -310,7 +335,11 @@ def build_items(ctx: AuditContext) -> list[AuditItem]:
             "A10",
             "Public CLI/API contracts",
             "PASS" if entrypoints else "FAIL",
-            ("scripts/new_case.py", "scripts/run_case_pipeline.py", "scripts/mvros_v1.py"),
+            (
+                "scripts/new_case.py",
+                "scripts/run_case_pipeline.py",
+                "scripts/mvros_v1.py",
+            ),
             "Primary operational entrypoints exist."
             if entrypoints
             else "A primary entrypoint is missing.",
@@ -354,7 +383,11 @@ def build_items(ctx: AuditContext) -> list[AuditItem]:
             "A14",
             "Missing-evidence detection",
             "PASS" if evidence_readiness else "NOT IMPLEMENTED",
-            ("core/case_manager.py", "knowledge/models/case_workspace.py", "scripts/run_case_pipeline.py"),
+            (
+                "core/case_manager.py",
+                "knowledge/models/case_workspace.py",
+                "scripts/run_case_pipeline.py",
+            ),
             "A dedicated evidence-readiness gate is present."
             if evidence_readiness
             else "No dedicated evidence-readiness gate was identified.",
@@ -376,7 +409,11 @@ def build_items(ctx: AuditContext) -> list[AuditItem]:
             "A16",
             "PII leakage scanning",
             "PASS" if has_pii_scan and has_repo_scan else "FAIL",
-            ("scripts/pii_scan.py", "scripts/repository_audit.py", "factory/stage_gate.py"),
+            (
+                "scripts/pii_scan.py",
+                "scripts/repository_audit.py",
+                "factory/stage_gate.py",
+            ),
             "PII and repository scanners exist and are part of the quality gate."
             if has_pii_scan and has_repo_scan
             else "Required repository/PII scanning is incomplete.",
@@ -533,7 +570,11 @@ def write_reports(output_dir: Path, sha: str, items: list[AuditItem]) -> None:
             entry.risk,
             entry.recommendation,
         )
-        lines.append("| " + " | ".join(value.replace("|", "\\|") for value in values) + " |")
+        lines.append(
+            "| "
+            + " | ".join(value.replace("|", "\\|") for value in values)
+            + " |"
+        )
     lines.extend(["", "## Status counts", ""])
     lines.extend(f"- {status}: {counts[status]}" for status in STATUSES)
     (output_dir / "audit-report.md").write_text(
@@ -557,7 +598,9 @@ def main() -> int:
     write_reports(output_dir, sha, items)
     source_paths = [
         path.relative_to(root).as_posix()
-        for path in ctx.files("core") + ctx.files("knowledge") + ctx.files("factory")
+        for path in ctx.files("core")
+        + ctx.files("knowledge")
+        + ctx.files("factory")
     ]
     print(f"AUDIT_SHA={sha}")
     print(f"AUDIT_ITEMS={len(items)}")
