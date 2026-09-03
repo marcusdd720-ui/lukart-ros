@@ -1,0 +1,26 @@
+name: Architectural Audit 1.0
+
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install project
+        run: python -m pip install -e .
+      - name: Run A1-A25 audit
+        run: python scripts/architectural_audit.py
+      - name: Show machine-readable result
+        run: cat audit-report.json
