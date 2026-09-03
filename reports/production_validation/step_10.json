@@ -1,0 +1,42 @@
+{
+  "schema_version": "1.0",
+  "step": 10,
+  "status": "PASS",
+  "validated_sha": "7eb38db1664f634fa24b36a9b84b6af3b66d060b",
+  "gate_kind": "validation",
+  "evidence_kind": "case_replay_regression",
+  "locked_evaluation_used_for_tuning": false,
+  "private_data_committed": false,
+  "validation_summary": {
+    "suite": "tests/test_replay_regression_suite.py",
+    "scenarios": 4,
+    "passed_scenarios": 4,
+    "baseline_replay_case": "SYN-REPLAY-1",
+    "candidate_replay_recorded": true,
+    "accepted_no_drift_unexpected_drift_count": 0,
+    "declared_drift_case": "renderer_version",
+    "unexpected_drift_rejection_case": "graph_sha256",
+    "missing_expected_drift_rejection_case": "renderer_version"
+  },
+  "source_evidence": [
+    "knowledge/case_replay.py",
+    "validation/replay_regression.py",
+    "tests/test_case_replay.py",
+    "tests/test_replay_regression_suite.py"
+  ],
+  "checks": [
+    {
+      "name": "baseline_replay_recorded",
+      "status": "PASS"
+    },
+    {
+      "name": "candidate_replay_recorded",
+      "status": "PASS"
+    },
+    {
+      "name": "unexpected_drift_zero",
+      "status": "PASS"
+    }
+  ],
+  "report_revision": "1.0.2"
+}

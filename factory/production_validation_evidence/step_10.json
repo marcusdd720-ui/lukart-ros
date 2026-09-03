@@ -1,0 +1,11 @@
+{
+  "schema_version": "2.0",
+  "step": 10,
+  "status": "PASS",
+  "validated_sha": "7eb38db1664f634fa24b36a9b84b6af3b66d060b",
+  "gate_kind": "validation",
+  "evidence_kind": "case_replay_regression",
+  "artifact_path": "reports/production_validation/step_10.json",
+  "artifact_sha256": "14204df01483ca90aa2da33f8909e89a4abf3a5dd1ec24f7de6d53261e0b44f5",
+  "critical_gates_passed": true
+}
