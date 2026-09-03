@@ -1,0 +1,214 @@
+{
+  "schema_version": "1.0.0",
+  "corpus_id": "reasoning-gold-v1",
+  "version": "1.0.0",
+  "status": "candidate_pending_independent_review",
+  "review_status": "not_reviewed",
+  "splits": {
+    "development": ["SYN-R-001", "SYN-R-002", "SYN-R-003", "SYN-R-004"],
+    "validation": ["SYN-R-005", "SYN-R-006"],
+    "locked_evaluation": ["SYN-R-007", "SYN-R-008"]
+  },
+  "cases": [
+    {
+      "case_id": "SYN-R-001",
+      "conclusion_id": "C1",
+      "expected_outcome": "CONCLUDE",
+      "expected_min_open_questions": 0,
+      "artifacts": [
+        {
+          "artifact_id": "F1",
+          "statement": "Synthetic notice was served on 2026-01-10.",
+          "status": "FACT",
+          "evidence_refs": ["SYN-E-001"],
+          "support_ids": [],
+          "rationale": "Directly stated in synthetic evidence."
+        },
+        {
+          "artifact_id": "C1",
+          "statement": "The synthetic notice has a documented service date.",
+          "status": "CONCLUSION",
+          "evidence_refs": [],
+          "support_ids": ["F1"],
+          "rationale": "Derived only from the evidenced fact."
+        }
+      ]
+    },
+    {
+      "case_id": "SYN-R-002",
+      "conclusion_id": "C2",
+      "expected_outcome": "ABSTAIN",
+      "expected_min_open_questions": 1,
+      "artifacts": [
+        {
+          "artifact_id": "F2",
+          "statement": "Synthetic payment was made.",
+          "status": "FACT",
+          "evidence_refs": [],
+          "support_ids": [],
+          "rationale": "Intentionally unsupported benchmark fact."
+        },
+        {
+          "artifact_id": "C2",
+          "statement": "The synthetic payment is established.",
+          "status": "CONCLUSION",
+          "evidence_refs": [],
+          "support_ids": ["F2"],
+          "rationale": "Must abstain because the supporting FACT lacks evidence."
+        }
+      ]
+    },
+    {
+      "case_id": "SYN-R-003",
+      "conclusion_id": "C3",
+      "expected_outcome": "ABSTAIN",
+      "expected_min_open_questions": 1,
+      "artifacts": [
+        {
+          "artifact_id": "U3",
+          "statement": "Synthetic party identity remains disputed.",
+          "status": "UNRESOLVED",
+          "evidence_refs": [],
+          "support_ids": [],
+          "rationale": "Conflict deliberately remains unresolved."
+        },
+        {
+          "artifact_id": "C3",
+          "statement": "The disputed identity is established.",
+          "status": "CONCLUSION",
+          "evidence_refs": [],
+          "support_ids": ["U3"],
+          "rationale": "Must not conclude from unresolved support."
+        }
+      ]
+    },
+    {
+      "case_id": "SYN-R-004",
+      "conclusion_id": "C4",
+      "expected_outcome": "ABSTAIN",
+      "expected_min_open_questions": 1,
+      "artifacts": [
+        {
+          "artifact_id": "C4",
+          "statement": "A missing synthetic support establishes the conclusion.",
+          "status": "CONCLUSION",
+          "evidence_refs": [],
+          "support_ids": ["F404"],
+          "rationale": "References a deliberately absent support artifact."
+        }
+      ]
+    },
+    {
+      "case_id": "SYN-R-005",
+      "conclusion_id": "C5",
+      "expected_outcome": "CONCLUDE",
+      "expected_min_open_questions": 0,
+      "artifacts": [
+        {
+          "artifact_id": "F5A",
+          "statement": "Synthetic contract amount is 1000 PLN.",
+          "status": "FACT",
+          "evidence_refs": ["SYN-E-005-A"],
+          "support_ids": [],
+          "rationale": "Synthetic source A."
+        },
+        {
+          "artifact_id": "F5B",
+          "statement": "Synthetic contract date is 2026-02-01.",
+          "status": "FACT",
+          "evidence_refs": ["SYN-E-005-B"],
+          "support_ids": [],
+          "rationale": "Synthetic source B."
+        },
+        {
+          "artifact_id": "C5",
+          "statement": "The synthetic contract has documented amount and date.",
+          "status": "CONCLUSION",
+          "evidence_refs": [],
+          "support_ids": ["F5A", "F5B"],
+          "rationale": "Both material elements have evidenced support."
+        }
+      ]
+    },
+    {
+      "case_id": "SYN-R-006",
+      "conclusion_id": "C6",
+      "expected_outcome": "ABSTAIN",
+      "expected_min_open_questions": 1,
+      "artifacts": [
+        {
+          "artifact_id": "U6",
+          "statement": "Synthetic deadline is not known.",
+          "status": "UNKNOWN",
+          "evidence_refs": [],
+          "support_ids": [],
+          "rationale": "No source establishes the deadline."
+        },
+        {
+          "artifact_id": "C6",
+          "statement": "The synthetic deadline is established.",
+          "status": "CONCLUSION",
+          "evidence_refs": [],
+          "support_ids": ["U6"],
+          "rationale": "Must abstain because the only support is UNKNOWN."
+        }
+      ]
+    },
+    {
+      "case_id": "SYN-R-007",
+      "conclusion_id": "C7",
+      "expected_outcome": "ABSTAIN",
+      "expected_min_open_questions": 1,
+      "artifacts": [
+        {
+          "artifact_id": "H7",
+          "statement": "Synthetic hypothesis A depends on interpretation B.",
+          "status": "HYPOTHESIS",
+          "evidence_refs": [],
+          "support_ids": ["I7"],
+          "rationale": "Locked synthetic cycle case."
+        },
+        {
+          "artifact_id": "I7",
+          "statement": "Synthetic interpretation B depends on hypothesis A.",
+          "status": "INTERPRETATION",
+          "evidence_refs": [],
+          "support_ids": ["H7"],
+          "rationale": "Locked synthetic cycle case."
+        },
+        {
+          "artifact_id": "C7",
+          "statement": "The circular synthetic reasoning is sufficient.",
+          "status": "CONCLUSION",
+          "evidence_refs": [],
+          "support_ids": ["H7"],
+          "rationale": "Locked case; must not be executed before authorization."
+        }
+      ]
+    },
+    {
+      "case_id": "SYN-R-008",
+      "conclusion_id": "C8",
+      "expected_outcome": "CONCLUDE",
+      "expected_min_open_questions": 0,
+      "artifacts": [
+        {
+          "artifact_id": "CL8",
+          "statement": "Synthetic claimant states that notice was received.",
+          "status": "CLAIM",
+          "evidence_refs": ["SYN-E-008"],
+          "support_ids": [],
+          "rationale": "Evidence proves that the claim exists, not that it is a FACT."
+        },
+        {
+          "artifact_id": "C8",
+          "statement": "There is an evidenced synthetic claim of receipt.",
+          "status": "CONCLUSION",
+          "evidence_refs": [],
+          "support_ids": ["CL8"],
+          "rationale": "Conclusion is limited to the existence of the evidenced claim."
+        }
+      ]
+    }
+  ]
+}
