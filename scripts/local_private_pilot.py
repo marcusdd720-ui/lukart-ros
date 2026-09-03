@@ -36,9 +36,34 @@ def _case_fingerprint(case_key: str) -> str:
     return hashlib.sha256(case_key.encode()).hexdigest()
 
 
+def _pii_or_confidentiality_finding_present() -> bool:
+    result = subprocess.run(
+        [sys.executable, str(ROOT / "scripts" / "pii_scan.py")],
+        cwd=ROOT,
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+    return result.returncode != 0
+
+
+def _private_case_file_tracked() -> bool:
+    result = subprocess.run(
+        ["git", "ls-files", "--", "cases"],
+        cwd=ROOT,
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+    tracked = tuple(item.strip().replace("\\", "/") for item in result.stdout.splitlines())
+    return any(path and not path.startswith("cases/_TEMPLATE/") for path in tracked)
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(
-        description="Run a real private Case locally and record a privacy-safe Step 15 attestation"
+        description=(
+            "Run a real private Case locally and record a privacy-safe Step 15 attestation"
+        )
     )
     parser.add_argument("--case", required=True, help="Private local Case key")
     parser.add_argument(
@@ -91,8 +116,8 @@ def main() -> int:
         result_path=result_path,
         pipeline_exit_code=exit_code,
         stages_executed=completed_stages,
-        pii_committed=False,
-        private_evidence_committed=False,
+        pii_committed=_pii_or_confidentiality_finding_present(),
+        private_evidence_committed=_private_case_file_tracked(),
     )
     attestation_path = write_local_pilot_attestation(
         attestation,
