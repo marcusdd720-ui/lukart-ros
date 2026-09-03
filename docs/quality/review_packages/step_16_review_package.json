@@ -1,0 +1,71 @@
+{
+  "schema_version": "1.0",
+  "package_id": "step16-renderer-dossier-review",
+  "step": 16,
+  "status": "READY_FOR_INDEPENDENT_REVIEW",
+  "reviewed_sha": "32da9ed623c193ff234da5c0afa273b944e52390",
+  "review_issue": 62,
+  "decision_authority": "external_human_only",
+  "private_data_included": false,
+  "locked_evaluation_used_for_tuning": false,
+  "purpose": "Provide a fixed, public, non-PII review scope for the independent human review required by Production Validation Step 16.",
+  "materials": [
+    {
+      "path": "renderer/contract.py",
+      "purpose": "Renderer contract, kinds, source binding, and result interface."
+    },
+    {
+      "path": "renderer/reasoning.py",
+      "purpose": "JSON, Markdown, and evidence-list rendering behavior."
+    },
+    {
+      "path": "renderer/registry.py",
+      "purpose": "Renderer registration and selection behavior."
+    },
+    {
+      "path": "validation/renderer_quality.py",
+      "purpose": "Automated final-report quality and traceability gate."
+    },
+    {
+      "path": "tests/test_renderer_quality.py",
+      "purpose": "Positive and negative renderer-quality scenarios, including lossy-output rejection."
+    },
+    {
+      "path": "tests/test_e2e_gold.py",
+      "purpose": "End-to-end product path assertions including source binding and evidence coverage."
+    },
+    {
+      "path": "reasoning/models.py",
+      "purpose": "Canonical ReasoningRunResult and epistemic artifact representation consumed by renderers."
+    }
+  ],
+  "review_questions": [
+    "Is factual and evidence traceability understandable to a human reader?",
+    "Are epistemic statuses visible and non-misleading?",
+    "Are decisions, abstentions, and open questions clearly presented?",
+    "Is the final dossier usable as a professional human-facing output rather than only a machine artifact?",
+    "Is any material information silently lost between ReasoningRunResult and the final JSON or Markdown report?",
+    "Does the reviewed revision merit PASS or FAIL for the Step 16 human-review requirement?"
+  ],
+  "required_review_artifact": {
+    "suggested_path": "docs/quality/reviews/step_16_independent_review.json",
+    "required_fields": [
+      "schema_version",
+      "step",
+      "reviewed_sha",
+      "reviewed_artifact_path",
+      "reviewed_artifact_sha256",
+      "reviewer_id",
+      "reviewer_independent",
+      "reviewer_kind",
+      "decision",
+      "review_summary"
+    ],
+    "reviewer_kind": "human",
+    "decision_values": [
+      "PASS",
+      "FAIL"
+    ]
+  },
+  "gate_note": "This package is review input only. Its existence, commit, or merge does not constitute human review and must never be interpreted as Step 16 PASS."
+}
