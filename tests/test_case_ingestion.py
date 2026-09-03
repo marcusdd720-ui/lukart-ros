@@ -12,7 +12,9 @@ from knowledge.models.case_manifest import CaseManifest
 from knowledge.models.local_case_runtime import build_local_case_workspace
 
 
-def test_ingest_text_document_creates_original_extract_inventory_and_manifest(tmp_path: Path) -> None:
+def test_ingest_text_document_creates_original_extract_inventory_and_manifest(
+    tmp_path: Path,
+) -> None:
     source = tmp_path / "source"
     source.mkdir()
     payload = "Pierwszy dokument sprawy.\n"
