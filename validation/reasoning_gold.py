@@ -1,4 +1,4 @@
-"""Contracts and loader for the synthetic reasoning gold corpus."""
+"""Contracts and loader for synthetic reasoning gold corpora."""
 
 from __future__ import annotations
 
@@ -18,11 +18,21 @@ class ReasoningGoldSplit(StrEnum):
     LOCKED_EVALUATION = "locked_evaluation"
 
 
-EXPECTED_SPLIT_SIZES = {
-    ReasoningGoldSplit.DEVELOPMENT: 4,
-    ReasoningGoldSplit.VALIDATION: 2,
-    ReasoningGoldSplit.LOCKED_EVALUATION: 2,
+EXPECTED_SPLIT_SIZES_BY_VERSION: dict[str, dict[ReasoningGoldSplit, int]] = {
+    "1.0.0": {
+        ReasoningGoldSplit.DEVELOPMENT: 4,
+        ReasoningGoldSplit.VALIDATION: 2,
+        ReasoningGoldSplit.LOCKED_EVALUATION: 2,
+    },
+    "2.0.0": {
+        ReasoningGoldSplit.DEVELOPMENT: 8,
+        ReasoningGoldSplit.VALIDATION: 4,
+        ReasoningGoldSplit.LOCKED_EVALUATION: 4,
+    },
 }
+
+# Compatibility alias for callers that still refer to the v1 contract explicitly.
+EXPECTED_SPLIT_SIZES = EXPECTED_SPLIT_SIZES_BY_VERSION["1.0.0"]
 
 
 class LockedReasoningEvaluationError(RuntimeError):
@@ -88,7 +98,7 @@ def _parse_artifact(raw: Mapping[str, object]) -> ReasoningArtifact:
 
 
 def load_reasoning_gold_corpus(path: Path) -> ReasoningGoldCorpus:
-    """Load and fail-closed validate the candidate reasoning benchmark."""
+    """Load and fail-closed validate a supported candidate reasoning benchmark."""
 
     payload = _mapping(json.loads(path.read_text(encoding="utf-8")), "corpus")
     if payload.get("schema_version") != "1.0.0":
@@ -103,9 +113,13 @@ def load_reasoning_gold_corpus(path: Path) -> ReasoningGoldCorpus:
     if not corpus_id.startswith("reasoning-gold-") or not version:
         raise ValueError("reasoning corpus id/version is invalid")
 
+    expected_split_sizes = EXPECTED_SPLIT_SIZES_BY_VERSION.get(version)
+    if expected_split_sizes is None:
+        raise ValueError(f"unsupported reasoning corpus version: {version}")
+
     split_payload = _mapping(payload.get("splits"), "splits")
     split_by_case: dict[str, ReasoningGoldSplit] = {}
-    for split, expected_size in EXPECTED_SPLIT_SIZES.items():
+    for split, expected_size in expected_split_sizes.items():
         ids = _string_tuple(split_payload.get(split.value), f"splits.{split.value}")
         if len(ids) != expected_size or len(set(ids)) != len(ids):
             raise ValueError(f"split {split.value!r} has invalid size or duplicate ids")
