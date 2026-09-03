@@ -5,9 +5,9 @@ from pathlib import Path
 import pytest
 
 from validation.reasoning_gold import (
+    load_reasoning_gold_corpus,
     LockedReasoningEvaluationError,
     ReasoningGoldSplit,
-    load_reasoning_gold_corpus,
 )
 from validation.reasoning_kqm import evaluate_reasoning_split
 
