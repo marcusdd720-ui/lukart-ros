@@ -74,7 +74,10 @@ def _coverage(tokens: tuple[str, ...], content: str) -> float:
     return present / len(unique)
 
 
-def _markdown_metrics(result: ReasoningRunResult, content: str) -> tuple[bool, float, float, float, float]:
+def _markdown_metrics(
+    result: ReasoningRunResult,
+    content: str,
+) -> tuple[bool, float, float, float, float]:
     decision_tokens = [result.decision.outcome.value, result.decision.reason]
     if result.decision.artifact_id:
         decision_tokens.append(result.decision.artifact_id)
