@@ -13,7 +13,7 @@ from typing import cast
 from agents.contract import AgentRequest
 from agents.reference_fact import REFERENCE_FACT_AGENT_ID, ReferenceFactAgent
 from agents.registry import AgentRegistry
-from agents.runner import AgentRunStatus, AgentRunner
+from agents.runner import AgentRunner, AgentRunStatus
 from knowledge.epistemic import KnowledgeStatus
 from knowledge.provenance import EntityType, ExtractedFact
 from reasoning.engine import ReasoningEngine
@@ -267,7 +267,10 @@ def _runner() -> tuple[ReferenceFactAgent, AgentRunner]:
 
 
 def _facts_from_run_payload(payload: object) -> tuple[ExtractedFact, ...]:
-    if not isinstance(payload, tuple) or not all(isinstance(item, ExtractedFact) for item in payload):
+    valid_payload = isinstance(payload, tuple) and all(
+        isinstance(item, ExtractedFact) for item in payload
+    )
+    if not valid_payload:
         raise TypeError("ReferenceFactAgent returned an invalid fact payload")
     return cast(tuple[ExtractedFact, ...], payload)
 
