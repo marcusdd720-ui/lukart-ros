@@ -28,8 +28,23 @@ from learning.promotion import (
     PromotionGate,
     PromotionStatus,
 )
+from learning.teaching import (
+    AgentTeachingPackage,
+    AgentTeachingReleaseGate,
+    TeachingApproval,
+    TeachingExample,
+    TeachingExampleKind,
+    TeachingReleaseDecision,
+    TeachingReleaseStatus,
+    distill_agent_teaching_package,
+    failure_teaching_example,
+    gold_teaching_example,
+    promotion_decision_digest,
+)
 
 __all__ = [
+    "AgentTeachingPackage",
+    "AgentTeachingReleaseGate",
     "ChangeKind",
     "ExperimentContract",
     "ExperimentMeasurement",
@@ -46,8 +61,17 @@ __all__ = [
     "PromotionDecision",
     "PromotionGate",
     "PromotionStatus",
+    "TeachingApproval",
+    "TeachingExample",
+    "TeachingExampleKind",
+    "TeachingReleaseDecision",
+    "TeachingReleaseStatus",
     "candidate_from_failure",
     "contract_for_candidate",
+    "distill_agent_teaching_package",
     "failure_corpus_from_reasoning",
+    "failure_teaching_example",
+    "gold_teaching_example",
+    "promotion_decision_digest",
     "reasoning_report_digest",
 ]
