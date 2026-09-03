@@ -8,6 +8,8 @@ from reasoning.engine import ReasoningEngine
 from reasoning.models import ReasoningOutcome
 from validation.reasoning_gold import ReasoningGoldCorpus, ReasoningGoldSplit
 
+REASONING_KQM_EVALUATOR_VERSION = "reasoning-kqm-v1"
+
 
 @dataclass(frozen=True, slots=True)
 class ReasoningEvaluationFailure:
@@ -43,6 +45,7 @@ class ReasoningKQMReport:
     failures: tuple[ReasoningEvaluationFailure, ...]
     result_digests: tuple[tuple[str, str], ...]
     locked_evaluation_executed: bool
+    evaluator_version: str = REASONING_KQM_EVALUATOR_VERSION
 
 
 def _ratio(numerator: int, denominator: int, *, empty_value: float = 1.0) -> float:
@@ -54,6 +57,7 @@ def evaluate_reasoning_split(
     split: ReasoningGoldSplit,
     *,
     engine_version: str = "reasoning-engine-v1",
+    evaluator_version: str = REASONING_KQM_EVALUATOR_VERSION,
     allow_locked: bool = False,
 ) -> ReasoningKQMReport:
     """Evaluate expected decisions without allowing locked use by default."""
@@ -136,4 +140,5 @@ def evaluate_reasoning_split(
         failures=tuple(failures),
         result_digests=tuple(result_digests),
         locked_evaluation_executed=split is ReasoningGoldSplit.LOCKED_EVALUATION,
+        evaluator_version=evaluator_version,
     )

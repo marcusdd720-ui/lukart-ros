@@ -67,9 +67,9 @@ P2 engineering completion does not by itself certify real-world reasoning qualit
 
 ## P3 — Measured Result Layer
 
-Status: **VALIDATED ON FEATURE HEAD / MERGE GATE PENDING**.
+Status: **COMPLETE**
 
-Delivered on the feature branch:
+Delivered:
 
 1. Reasoning Renderer Contract.
 2. deterministic JSON renderer.
@@ -78,19 +78,15 @@ Delivered on the feature branch:
 5. protected synthetic Reasoning Gold Corpus v1 candidate.
 6. Reasoning KQM evaluator and failure records.
 7. generic measurement hook for reasoning metrics.
-8. `FOUNDATION.md` and this roadmap populated from verified repository state.
-9. focused and repository-wide validation.
+8. populated `FOUNDATION.md` and this roadmap from verified repository state.
+9. feature and post-merge CI/Audit/Smoke/Stage validation.
 
-Verified contract-conformance baseline on SHA
-`d8406f4c4edc5ec457228a5bead2efa3bacbb826`:
+Verified contract-conformance baseline:
 
 - development 4 cases: decision accuracy `1.0`, valid-conclusion recall `1.0`, abstention
   recall `1.0`, unsafe-conclusion rate `0.0`, Open Question coverage `1.0`, failures `0`;
 - validation 2 cases: the same metric values, failures `0`;
 - locked evaluation: **NOT EXECUTED**.
-
-P3 does not implement a fake timeline from reasoning support order. Timeline semantics remain
-with actual Case/event chronology until a typed temporal contract is available.
 
 P3 does not claim production reasoning certification. The reasoning corpus remains a candidate
 until independent review/freeze requirements are satisfied, and its locked split remains
@@ -98,29 +94,43 @@ unexecuted during development/validation.
 
 ## P4 — Controlled Learning Foundation
 
-Status: **PLANNED**
+Status: **VALIDATED IMPLEMENTATION / FINAL MERGE GATE PENDING** on
+`feat/controlled-learning-p4`.
 
-Dependency: P3 measured result loop must be COMPLETE.
+Implemented scope:
 
-Planned scope:
-
-1. typed Learning Event / Learning Candidate contract;
-2. failure corpus generated only from measured, traceable outcomes;
-3. lesson/hypothesis representation separated from trusted knowledge;
-4. experiment contract and sandbox boundary;
-5. promotion/rejection gate based on measured deltas;
-6. agent/version comparison against development/validation corpora;
-7. no automatic canonical mutation from raw production outcomes.
+1. immutable Measured Failure contract with evaluator/result/report/SHA provenance;
+2. Failure Corpus generated only from measured, traceable evaluator failures;
+3. Learning Candidate / hypothesis representation separated from trusted knowledge;
+4. bounded Experiment Contract with sandbox, split, revision, metric, and run-budget binding;
+5. fail-closed Promotion Gate based on measured deltas and metric guardrails;
+6. explicit `ELIGIBLE_FOR_PROMOTION`, `REJECTED`, and `INCONCLUSIVE` decision states;
+7. locked evaluation prohibited as learning/tuning input;
+8. runtime dependency boundary extended to `learning/`;
+9. adversarial tests for provenance, locked data, revision binding, non-finite metrics,
+   malformed digests, guardrail regression, contract mismatch, and run-budget violations;
+10. Reasoning KQM evaluator provenance separated from Reasoning Engine provenance.
 
 Target loop:
 
-`Measured Failure -> Learning Candidate -> Experiment -> KQM Delta -> Promote/Reject`
+`Measured Failure -> Failure Corpus -> Learning Candidate -> Experiment -> KQM Delta -> Promotion Decision`
+
+A promotion decision is an immutable eligibility artifact only. P4 intentionally provides no
+API for directly mutating canonical knowledge, prompts, rules, routing, code, models, agent
+certification, or production release state.
+
+Validated implementation head `434b97ce26c70b82f07cee5da5d1fd5de657fa21` passed CI Foundation
+on Python 3.11/3.12/3.13, Architectural Audit, GitHub App Smoke Test, and the smoke-dispatched
+Stage Gate. Because this SSoT update creates a newer docs-only head, that exact final head must
+pass the same merge gates before merge.
+
+P4 becomes COMPLETE only after exact-head merge and post-merge validation on `main`.
 
 ## P5 — Agent Teaching and Distillation
 
 Status: **PLANNED**
 
-Dependency: P4 learning events and experiment/promotion gates must be validated.
+Dependency: P4 learning events and experiment/promotion gates must be validated and complete.
 
 Planned scope:
 
@@ -177,9 +187,9 @@ quality improvement on development/validation only, and later authorized locked 
 
 ### Reasoning production KQM
 
-Will remain BLOCKED after the P3 technical baseline until its synthetic reasoning corpus is
-independently reviewed/frozen and the benchmark is broadened beyond contract-conformance cases
-to domain-representative reasoning tasks.
+Still BLOCKED until the synthetic reasoning corpus is independently reviewed/frozen and the
+benchmark is broadened beyond contract-conformance cases to domain-representative reasoning
+tasks.
 
 ### Real private cases
 

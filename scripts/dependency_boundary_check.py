@@ -5,7 +5,7 @@ from __future__ import annotations
 import ast
 from pathlib import Path
 
-RUNTIME_ROOTS = ("core", "knowledge", "reasoning", "renderer")
+RUNTIME_ROOTS = ("core", "knowledge", "learning", "reasoning", "renderer")
 
 
 def runtime_factory_imports(root: Path) -> list[str]:
