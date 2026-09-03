@@ -268,7 +268,10 @@ def build_items(ctx: AuditContext) -> list[AuditItem]:
                 "knowledge/models/case_workspace.py",
                 "scripts/run_case_pipeline.py",
             ),
-            "Case state is distributed across runtime components without a single enforced manifest.",
+            (
+                "Case state is distributed across runtime components without a "
+                "single enforced manifest."
+            ),
             "Representations can drift.",
             "Introduce a canonical manifest only when real-case measurement shows the need.",
         ),
@@ -296,7 +299,10 @@ def build_items(ctx: AuditContext) -> list[AuditItem]:
                 "scripts/run_case_pipeline.py",
                 "knowledge/project_timeline.py",
             ),
-            "Some operations are explicitly repeat-safe, but full CASE-stage equivalence is not a contract.",
+            (
+                "Some operations are explicitly repeat-safe, but full "
+                "CASE-stage equivalence is not a contract."
+            ),
             "Reruns may duplicate or change derived artifacts.",
             "Add repeated-run equivalence tests for material stages.",
         ),
@@ -478,7 +484,10 @@ def build_items(ctx: AuditContext) -> list[AuditItem]:
             "Model usage / dead code",
             "RISK",
             ("validation/code_audit/", "factory/stage_gate.py"),
-            "Dead-code analysis exists in the repository, but it is not established as a universal lifecycle gate.",
+            (
+                "Dead-code analysis exists in the repository, but it is not "
+                "established as a universal lifecycle gate."
+            ),
             "Stale abstractions can accumulate silently.",
             "Use the existing code-audit capability to build a measured dead-code inventory.",
         ),
