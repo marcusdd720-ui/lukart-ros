@@ -6,6 +6,6 @@
   "gate_kind": "validation",
   "evidence_kind": "case_replay_regression",
   "artifact_path": "reports/production_validation/step_10.json",
-  "artifact_sha256": "ff4afe63cf4497275169ac2d6478ba2031cc60a1e5f7f260e90ee676b72a5688",
+  "artifact_sha256": "14204df01483ca90aa2da33f8909e89a4abf3a5dd1ec24f7de6d53261e0b44f5",
   "critical_gates_passed": true
 }
