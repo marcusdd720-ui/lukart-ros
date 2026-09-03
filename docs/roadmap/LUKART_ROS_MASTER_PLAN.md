@@ -244,20 +244,62 @@ or P7 controlled self-learning.
 
 ## P7 — Controlled Self-Learning / Adversarial Verification
 
-Status: **PLANNED**
+Status: **COMPLETE**
 
-Dependency: P4-P6 must demonstrate safe measured improvement.
+Delivered:
 
-Possible scope:
+1. immutable Generator proposal, Challenger assessment, Evidence Verification, and independent
+   Review artifacts bound to exact digests;
+2. mandatory identity independence across Generator, every Challenger, Evidence Verifier, and
+   Reviewer;
+3. Evidence Verifier asymmetric veto over rejected provenance and unsupported claims;
+4. explicit rule that agent count, consensus, or majority vote cannot override source evidence;
+5. evidence-bound resolution states for blocking challenges: `RESOLVED`, `UPHELD`, and
+   `INCONCLUSIVE`;
+6. calibrated abstention when evidence is incomplete or a blocking challenge remains unresolved;
+7. fail-closed rejection of unknown claims, unknown challenge resolutions, unchecked resolution
+   evidence, duplicate challenge codes, and self-review/self-verification;
+8. `ControlledSelfLearningGate` binding an adversarially VERIFIED `MeasuredFailure` to the exact
+   existing P4 LearningCandidate, ExperimentContract, PromotionDecision, and P6 RepairReadiness;
+9. `SUSPENDED` state when measured regression exceeds a P4 metric guardrail;
+10. `locked_evaluation` remains prohibited for learning/tuning through the reused P4 experiment
+    contract;
+11. adversarial tests covering majority-vote resistance, evidence veto, role independence,
+    blocking-challenge handling, abstention, exact P4/P6 bindings, regression suspension, and
+    locked-split safety.
 
-- Generator / Challenger / Evidence Verifier / Reviewer roles;
-- multi-agent verification for high-risk reasoning;
-- calibrated strategy/model routing;
-- automatic bounded improvement experiments;
-- promotion of only measured improvements;
-- suspension/rollback when regressions exceed policy.
+Target loops:
 
-No debate or majority vote can replace source evidence.
+`Generator -> Challenger(s) -> Evidence Verifier -> Reviewer -> Adversarial Verification Decision`
+
+`VERIFIED MeasuredFailure -> P4 LearningCandidate -> Experiment -> P4 Promotion -> P6 Fresh-SHA Readiness -> P7 Self-Learning Cycle Decision`
+
+Final feature head `945a741b2659ea965f11d67f151f9f8fdc6726a3` passed CI Foundation on
+Python 3.11/3.12/3.13, Architectural Audit 1.0, GitHub App Smoke Test, and smoke-dispatched Stage
+Gate #236, and was merged without further feature changes.
+
+Implementation merge `dc6b59c60ea05471d44eabb56750f98614389e4a` then passed post-merge:
+
+- CI Foundation on Python 3.11, 3.12, and 3.13;
+- Architectural Audit 1.0;
+- Stage Orchestrator;
+- GitHub App Smoke Test;
+- smoke-dispatched Stage Gate #237.
+
+During implementation, P7 also produced two fail-closed learning events without weakening gates:
+first a Ruff line-length failure repaired by formatting only, then a PII scanner false positive
+caused by decimal runs inside documented Git hashes. The second repair abbreviated public SSoT hash
+references while leaving the confidentiality scanner unchanged and exact hashes auditable in Git.
+
+Core result: a learning trigger can now be independently challenged, evidence-verified, reviewed,
+and bound to the existing measured P4/P6 improvement path. Agreement among agents is never truth,
+unresolved evidence causes abstention, and measured regression can suspend a candidate before any
+controlled release path is reached.
+
+P7 does not claim automatic source patch generation/application, autonomous prompt/model rewriting,
+direct fine-tuning, production deployment authority, or production certification of domain reasoning
+quality. Calibrated model/strategy routing and autonomous candidate implementation remain future
+extensions subject to the same Evidence/KQM/fresh-SHA gates.
 
 ## Cross-program blockers that remain explicit
 
