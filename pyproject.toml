@@ -29,6 +29,7 @@ include = [
   "core*",
   "factory*",
   "knowledge*",
+  "reasoning*",
   "validation*",
 ]
 
