@@ -2,6 +2,7 @@ from agents.contract import AgentRequest
 from agents.registry import AgentRegistry
 from agents.reviewer import REVIEWER_AGENT_ID, ReviewerAgent
 from agents.runner import AgentRunner, AgentRunStatus
+from knowledge.provenance import EpistemicStatus
 
 
 def test_reviewer_agent_runs_through_controlled_runtime() -> None:
@@ -21,7 +22,7 @@ def test_reviewer_agent_runs_through_controlled_runtime() -> None:
     assert result.status is AgentRunStatus.PASS
     assert result.artifact is not None
     assert result.artifact.artifact_type == "review-findings.v1"
-    assert result.artifact.epistemic_statuses == ()
+    assert result.artifact.epistemic_statuses == (EpistemicStatus.EXTRACTED,)
     error_count = result.artifact.metadata["error_count"]
     assert isinstance(error_count, int)
     assert error_count > 0
@@ -34,7 +35,7 @@ def test_reviewer_contract_is_review_only() -> None:
     assert "persist_case" in contract.forbidden_operations
     assert "promote_epistemic_status" in contract.forbidden_operations
     assert "approve_unsupported_conclusion" in contract.forbidden_operations
-    assert contract.allowed_epistemic_statuses == ()
+    assert contract.allowed_epistemic_statuses == (EpistemicStatus.EXTRACTED,)
 
 
 def test_reviewer_emits_findings_without_rewriting_input() -> None:
