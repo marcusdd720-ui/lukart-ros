@@ -1,0 +1,11 @@
+{
+  "schema_version": "2.0",
+  "step": 13,
+  "status": "PASS",
+  "validated_sha": "7a317eaf681e919d415542293382f9947094a0a5",
+  "gate_kind": "measurement",
+  "evidence_kind": "strategy_routing_benchmark",
+  "artifact_path": "reports/production_validation/step_13.json",
+  "artifact_sha256": "a75f9085e5359fb41c0de960f9a0413b26fc0514c93d3250be70577d8476989a",
+  "critical_gates_passed": true
+}
