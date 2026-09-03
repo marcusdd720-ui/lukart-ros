@@ -1,0 +1,70 @@
+{
+  "schema_version": "1.0",
+  "step": 7,
+  "status": "PASS",
+  "validated_sha": "52990da5f27b22dc7c371a428fbd5193a150dab7",
+  "gate_kind": "measurement",
+  "evidence_kind": "end_to_end_gold_measurement",
+  "locked_evaluation_used_for_tuning": false,
+  "private_data_committed": false,
+  "corpus": {
+    "path": "data/quality/e2e_gold_v1.json",
+    "corpus_id": "e2e-gold-v1",
+    "version": "1.0.1",
+    "status": "candidate_pending_independent_review",
+    "review_status": "not_reviewed",
+    "development_cases": 4,
+    "validation_cases": 2,
+    "locked_evaluation_cases": 2,
+    "locked_evaluation_executed": false
+  },
+  "development_metrics": {
+    "total_cases": 4,
+    "passed_cases": 4,
+    "agent_acceptance_rate": 1.0,
+    "extraction_expectation_accuracy": 1.0,
+    "reasoning_decision_accuracy": 1.0,
+    "renderer_quality_rate": 1.0,
+    "unsafe_fact_promotion_count": 0
+  },
+  "validation_metrics": {
+    "total_cases": 2,
+    "passed_cases": 2,
+    "agent_acceptance_rate": 1.0,
+    "extraction_expectation_accuracy": 1.0,
+    "reasoning_decision_accuracy": 1.0,
+    "renderer_quality_rate": 1.0,
+    "unsafe_fact_promotion_count": 0
+  },
+  "traceability": {
+    "source_document_binding": true,
+    "source_document_sha256_binding": true,
+    "character_span_binding": true,
+    "renderer_evidence_coverage": 1.0,
+    "unsafe_extracted_to_fact_promotion": 0
+  },
+  "source_evidence": [
+    "data/quality/e2e_gold_v1.json",
+    "validation/e2e_gold.py",
+    "validation/renderer_quality.py",
+    "tests/test_e2e_gold.py"
+  ],
+  "checks": [
+    {
+      "name": "gold_cases_versioned",
+      "status": "PASS"
+    },
+    {
+      "name": "full_pipeline_executed",
+      "status": "PASS"
+    },
+    {
+      "name": "evidence_traceability_verified",
+      "status": "PASS"
+    },
+    {
+      "name": "product_kqm_recorded",
+      "status": "PASS"
+    }
+  ]
+}
