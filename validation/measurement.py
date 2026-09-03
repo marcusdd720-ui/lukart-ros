@@ -37,8 +37,10 @@ class MeasurementCollector:
         )
 
     @staticmethod
-    def _from_dataclass(metrics: object) -> MeasurementSnapshot:
-        raw: dict[str, Any] = asdict(metrics)  # type: ignore[arg-type]
+    def _from_dataclass(
+        metrics: ExtractionMetrics | ReasoningKQMMetrics,
+    ) -> MeasurementSnapshot:
+        raw: dict[str, Any] = asdict(metrics)
         measured = {
             key: value
             for key, value in raw.items()
