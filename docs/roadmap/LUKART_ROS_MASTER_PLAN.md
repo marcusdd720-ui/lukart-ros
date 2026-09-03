@@ -139,20 +139,37 @@ does not authorize locked evaluation for tuning.
 
 ## P5 — Agent Teaching and Distillation
 
-Status: **PLANNED**
+Status: **VALIDATED IMPLEMENTATION / FINAL MERGE GATE PENDING** on
+`feat/agent-teaching-p5`.
 
-Dependency: P4 learning events and experiment/promotion gates must be validated and complete.
+Implemented scope:
 
-Planned scope:
+1. immutable Gold and measured-Failure Teaching Example manifests;
+2. digest-bound source, input, expected-output, and evidence provenance;
+3. teaching input restricted to `development` and `validation` splits;
+4. locked evaluation, production, and arbitrary test splits rejected fail-closed;
+5. independent Teaching Approval for every exact example digest;
+6. automated/system/factory reviewer identities prohibited;
+7. P4 Learning Candidate + Experiment Contract + eligible Promotion Decision binding;
+8. P5 distillation limited to prompt/retrieval/rule/model changes;
+9. deterministic semver Agent Teaching Package bound to exact Agent Contract SHA-256;
+10. mandatory exact-contract recertification before agent release eligibility;
+11. adversarial tests for locked data, approval failure, provenance mismatch, unsupported
+    change kinds, immutable artifacts, and recertification mismatch.
 
-- validated Case/example distillation;
-- Gold examples and Failure examples;
-- specialist-agent teaching packages;
-- prompt/retrieval/rule/model candidate improvement;
-- versioned agent training/distillation artifacts;
-- recertification before production use.
+Target loop:
 
-Raw unchecked Case output must never become training truth automatically.
+`Approved Gold/Failure Example + Eligible P4 Candidate -> Teaching Package -> Agent Contract -> Recertification -> Release Eligibility`
+
+The package is a teaching manifest, not mutation authority. It intentionally exposes no API for
+fine-tuning, prompt/model replacement, registry mutation, deployment, or production release.
+
+Validated implementation head `c887edf5030f4012b85e4949fcc6200c38352217` passed CI Foundation
+on Python 3.11/3.12/3.13, Architectural Audit 1.0, GitHub App Smoke Test, and smoke-dispatched
+Stage Gate #219. Because this SSoT update creates a newer docs+code head, that exact final head
+must pass the same merge gates before merge.
+
+P5 becomes COMPLETE only after exact-head merge and post-merge validation on `main`.
 
 ## P6 — Semantic Self-Healing and Change Propagation
 
