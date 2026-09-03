@@ -5,10 +5,13 @@ from __future__ import annotations
 import hashlib
 import json
 from dataclasses import dataclass
+from string import hexdigits
 
 from learning.models import LearningSource, MeasuredFailure
 from validation.reasoning_gold import ReasoningGoldSplit
 from validation.reasoning_kqm import ReasoningKQMReport
+
+_HEX_DIGITS = frozenset(hexdigits.lower())
 
 
 class LockedLearningSourceError(RuntimeError):
@@ -23,13 +26,19 @@ class FailureCorpus:
     failures: tuple[MeasuredFailure, ...]
 
     def __post_init__(self) -> None:
-        if not self.corpus_id.strip() or not self.version.strip():
+        corpus_id = self.corpus_id.strip()
+        version = self.version.strip()
+        digest = self.source_report_digest.strip().lower()
+        if not corpus_id or not version:
             raise ValueError("failure corpus id/version cannot be blank")
-        if not self.source_report_digest.strip():
-            raise ValueError("failure corpus requires source report digest")
+        if len(digest) != 64 or any(character not in _HEX_DIGITS for character in digest):
+            raise ValueError("failure corpus source report digest must be SHA-256")
         ids = [failure.failure_id for failure in self.failures]
         if len(ids) != len(set(ids)):
             raise ValueError("failure corpus contains duplicate failure ids")
+        object.__setattr__(self, "corpus_id", corpus_id)
+        object.__setattr__(self, "version", version)
+        object.__setattr__(self, "source_report_digest", digest)
 
 
 def reasoning_report_digest(report: ReasoningKQMReport) -> str:
