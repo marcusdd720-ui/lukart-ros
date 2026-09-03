@@ -1,6 +1,6 @@
 # P3 — Measured Result Layer
 
-Status: IMPLEMENTED / release validation pending
+Status: VALIDATED ON FEATURE HEAD / MERGE GATE PENDING
 
 ## Decision need
 
@@ -73,6 +73,17 @@ locked cases.
 - explicit evaluation failure records.
 
 The evaluator is separate from `ReasoningEngine`; Product code does not import its evaluator.
+
+Verified contract-conformance baseline on feature SHA
+`d8406f4c4edc5ec457228a5bead2efa3bacbb826`:
+
+- development 4 cases: accuracy `1.0`, valid-conclusion recall `1.0`, abstention recall `1.0`,
+  unsafe-conclusion rate `0.0`, Open Question coverage `1.0`, failures `0`;
+- validation 2 cases: the same metric values, failures `0`;
+- locked evaluation: **NOT EXECUTED**.
+
+This proves conformance to the small synthetic benchmark contract only. It does not constitute
+production/legal reasoning certification.
 
 ## P3.8 — Measurement hook
 
