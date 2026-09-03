@@ -1,9 +1,9 @@
 from __future__ import annotations
 
 from agents.certification import (
+    AgentCertificationStatus,
     AgentCertificationThresholds,
     AgentCertifier,
-    AgentCertificationStatus,
     contract_sha256,
 )
 from agents.certification_program import (
