@@ -4,8 +4,34 @@ from __future__ import annotations
 
 import hashlib
 import json
+import math
+import re
 from dataclasses import dataclass
 from enum import StrEnum
+
+_SHA256_RE = re.compile(r"^[0-9a-f]{64}$")
+_GIT_SHA_RE = re.compile(r"^[0-9a-f]{40,64}$")
+
+
+def _required_text(name: str, value: str) -> str:
+    normalized = value.strip()
+    if not normalized:
+        raise ValueError(f"{name} cannot be blank")
+    return normalized
+
+
+def _require_sha256(name: str, value: str) -> str:
+    normalized = _required_text(name, value).lower()
+    if not _SHA256_RE.fullmatch(normalized):
+        raise ValueError(f"{name} must be a 64-character SHA-256 digest")
+    return normalized
+
+
+def _require_git_sha(value: str) -> str:
+    normalized = _required_text("source_sha", value).lower()
+    if not _GIT_SHA_RE.fullmatch(normalized):
+        raise ValueError("source_sha must be a 40-64 character hexadecimal commit SHA")
+    return normalized
 
 
 class LearningSource(StrEnum):
@@ -29,10 +55,9 @@ class MetricValue:
     value: float
 
     def __post_init__(self) -> None:
-        name = self.name.strip()
-        if not name:
-            raise ValueError("metric name cannot be blank")
-        object.__setattr__(self, "name", name)
+        object.__setattr__(self, "name", _required_text("metric name", self.name))
+        if not math.isfinite(self.value):
+            raise ValueError("metric value must be finite")
 
 
 @dataclass(frozen=True, slots=True)
@@ -54,23 +79,33 @@ class MeasuredFailure:
     report_digest: str
 
     def __post_init__(self) -> None:
-        required = {
-            "failure_id": self.failure_id,
-            "corpus_id": self.corpus_id,
-            "corpus_version": self.corpus_version,
-            "split": self.split,
-            "evaluator_version": self.evaluator_version,
-            "source_sha": self.source_sha,
-            "case_id": self.case_id,
-            "code": self.code,
-            "expected": self.expected,
-            "actual": self.actual,
-            "result_digest": self.result_digest,
-            "report_digest": self.report_digest,
-        }
-        for name, value in required.items():
-            if not value.strip():
-                raise ValueError(f"{name} cannot be blank")
+        for field_name in (
+            "failure_id",
+            "corpus_id",
+            "corpus_version",
+            "split",
+            "evaluator_version",
+            "case_id",
+            "code",
+            "expected",
+            "actual",
+        ):
+            object.__setattr__(
+                self,
+                field_name,
+                _required_text(field_name, str(getattr(self, field_name))),
+            )
+        object.__setattr__(self, "source_sha", _require_git_sha(self.source_sha))
+        object.__setattr__(
+            self,
+            "result_digest",
+            _require_sha256("result_digest", self.result_digest),
+        )
+        object.__setattr__(
+            self,
+            "report_digest",
+            _require_sha256("report_digest", self.report_digest),
+        )
 
     def canonical_dict(self) -> dict[str, object]:
         return {
@@ -112,18 +147,28 @@ class LearningCandidate:
     success_criteria: tuple[str, ...]
 
     def __post_init__(self) -> None:
-        required = {
-            "candidate_id": self.candidate_id,
-            "source_failure_digest": self.source_failure_digest,
-            "target_component": self.target_component,
-            "problem_statement": self.problem_statement,
-            "hypothesis": self.hypothesis,
-        }
-        for name, value in required.items():
-            if not value.strip():
-                raise ValueError(f"{name} cannot be blank")
-        if not self.success_criteria or not all(item.strip() for item in self.success_criteria):
+        for field_name in (
+            "candidate_id",
+            "target_component",
+            "problem_statement",
+            "hypothesis",
+        ):
+            object.__setattr__(
+                self,
+                field_name,
+                _required_text(field_name, str(getattr(self, field_name))),
+            )
+        object.__setattr__(
+            self,
+            "source_failure_digest",
+            _require_sha256("source_failure_digest", self.source_failure_digest),
+        )
+        criteria = tuple(item.strip() for item in self.success_criteria)
+        if not criteria or not all(criteria):
             raise ValueError("learning candidate requires explicit success criteria")
+        if len(criteria) != len(set(criteria)):
+            raise ValueError("learning candidate success criteria must be unique")
+        object.__setattr__(self, "success_criteria", criteria)
 
     def canonical_dict(self) -> dict[str, object]:
         return {
