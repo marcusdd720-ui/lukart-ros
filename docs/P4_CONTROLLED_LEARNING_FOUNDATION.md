@@ -1,6 +1,6 @@
 # P4 — Controlled Learning Foundation
 
-Status: IMPLEMENTED / release validation pending
+Status: VALIDATED IMPLEMENTATION / final merge gate pending
 
 ## Decision need
 
@@ -35,6 +35,7 @@ Raw model output or an unmeasured production observation is not a valid `Measure
 
 `failure_corpus_from_reasoning` converts only traceable `ReasoningKQMReport` failures into a
 versioned Failure Corpus. Every failure must have a corresponding deterministic result digest.
+The public `FailureCorpus` contract also validates its source report digest as SHA-256.
 
 Locked evaluation is fail-closed: a report from `locked_evaluation`, or a report marked as
 having executed locked evaluation, raises `LockedLearningSourceError` and cannot become learning
@@ -55,7 +56,7 @@ Candidate identity is deterministic for the same measured failure and hypothesis
 
 ## P4.4 — Bounded Experiment contract
 
-An `ExperimentContract` binds the candidate digest to:
+An `ExperimentContract` binds a validated SHA-256 candidate digest to:
 
 - baseline revision;
 - distinct candidate revision;
@@ -110,8 +111,25 @@ P4 preserves these invariants:
 4. no experiment may silently change its baseline, candidate revision, or run budget;
 5. no metric regression beyond a declared guardrail may be promoted;
 6. no positive experiment result directly mutates production state;
-7. all material learning artifacts are immutable and digest-bound where source contracts allow;
+7. material provenance links are validated and digest-bound;
 8. engineering PASS is not analytical certification.
+
+## Feature validation evidence
+
+Implementation head `434b97ce26c70b82f07cee5da5d1fd5de657fa21` passed:
+
+- CI Foundation on Python 3.11, 3.12, and 3.13;
+- Ruff, MyPy, pytest, repository audit, PII/confidentiality gate, and dependency boundary;
+- Architectural Audit 1.0;
+- GitHub App Smoke Test;
+- smoke-dispatched Stage Gate.
+
+Earlier validation failures were repaired on fresh SHAs rather than rerunning stale commits:
+Ruff formatting/style issues and a PII-scanner false positive caused by a hexadecimal-character
+literal. The PII gate itself was not weakened or bypassed.
+
+This documentation update creates a newer docs-only feature head, so the exact final merge head
+must pass the same gates again before merge.
 
 ## Non-goals
 
