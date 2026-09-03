@@ -38,6 +38,11 @@ def test_e2e_development_loop_passes_without_fact_promotion() -> None:
     assert report.metrics.renderer_quality_rate == 1.0
     assert report.metrics.unsafe_fact_promotion_count == 0
     assert report.locked_evaluation_executed is False
+    assert all(item.renderer_quality.metrics.source_binding for item in report.case_results)
+    assert all(
+        item.renderer_quality.metrics.evidence_coverage == 1.0
+        for item in report.case_results
+    )
     assert len(report.digest()) == 64
 
 
@@ -50,3 +55,8 @@ def test_e2e_validation_loop_passes_without_locked_execution() -> None:
     assert report.metrics.passed_cases == 2
     assert report.metrics.unsafe_fact_promotion_count == 0
     assert report.locked_evaluation_executed is False
+    assert all(item.renderer_quality.metrics.source_binding for item in report.case_results)
+    assert all(
+        item.renderer_quality.metrics.evidence_coverage == 1.0
+        for item in report.case_results
+    )
