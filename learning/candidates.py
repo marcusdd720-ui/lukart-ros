@@ -22,7 +22,7 @@ def candidate_from_failure(
     if not target or not hypothesis_text:
         raise ValueError("target component and hypothesis are required")
 
-    seed = f"{failure.digest()}:{target}:{change_kind.value}:{hypothesis_text}".encode("utf-8")
+    seed = f"{failure.digest()}:{target}:{change_kind.value}:{hypothesis_text}".encode()
     candidate_id = f"LC-{hashlib.sha256(seed).hexdigest()[:16]}"
     problem_statement = (
         f"Measured {failure.code} on {failure.case_id}: "
