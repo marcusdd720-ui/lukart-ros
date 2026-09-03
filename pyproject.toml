@@ -30,6 +30,7 @@ include = [
   "factory*",
   "knowledge*",
   "reasoning*",
+  "renderer*",
   "validation*",
 ]
 
