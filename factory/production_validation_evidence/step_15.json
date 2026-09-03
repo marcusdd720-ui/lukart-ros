@@ -1,0 +1,11 @@
+{
+  "artifact_path": "reports/production_validation/step_15.json",
+  "artifact_sha256": "cfc4a37c6fbca78dc6896963bc5e4f1422a879e5b9b7bebd0c779c9a4fd2cedc",
+  "critical_gates_passed": true,
+  "evidence_kind": "local_private_case_attestation",
+  "gate_kind": "privacy",
+  "schema_version": "2.0",
+  "status": "PASS",
+  "step": 15,
+  "validated_sha": "67b550aa0fea6421bf8fffa91fba6a4ca6d51979"
+}
