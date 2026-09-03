@@ -149,6 +149,8 @@ def validate_independent_step_review(
     *,
     expected_step: int,
     expected_validated_sha: str,
+    expected_artifact_path: str,
+    expected_artifact_sha256: str,
     reserved_reviewer_ids: frozenset[str],
 ) -> IndependentStepReview:
     """Validate already supplied human review evidence for Step 16 or Step 18."""
@@ -163,11 +165,15 @@ def validate_independent_step_review(
             "REVIEW_SHA_MISMATCH",
             "expected validated SHA is malformed",
         )
+    if not _SHA256_RE.fullmatch(expected_artifact_sha256):
+        raise IndependentStepReviewError(
+            "REVIEW_ARTIFACT_MISMATCH",
+            "expected Step report SHA-256 is malformed",
+        )
 
     subject_path = _safe_subject_path(root, evidence.get("review_subject_path"))
     subject_relative = str(evidence["review_subject_path"])
-    report_relative = evidence.get("artifact_path")
-    if subject_relative == report_relative:
+    if subject_relative == expected_artifact_path:
         raise IndependentStepReviewError(
             "REVIEW_SUBJECT_SELF_REFERENCE",
             "human review must bind to a pre-existing review subject, not the Step PASS report",
