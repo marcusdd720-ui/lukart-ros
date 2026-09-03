@@ -1,0 +1,46 @@
+{
+  "schema_version": "1.0",
+  "step": 13,
+  "status": "PASS",
+  "validated_sha": "7a317eaf681e919d415542293382f9947094a0a5",
+  "gate_kind": "measurement",
+  "evidence_kind": "strategy_routing_benchmark",
+  "locked_evaluation_used_for_tuning": false,
+  "private_data_committed": false,
+  "measurement_summary": {
+    "suite": "tests/test_strategy_routing.py",
+    "scenarios": 6,
+    "passed_scenarios": 6,
+    "strategy_version": "1.0.0",
+    "benchmark_id": "reasoning-gold-v2-validation",
+    "primary_metric": "decision_accuracy",
+    "guardrail_metric": "unsafe_conclusion_rate",
+    "different_benchmark_digest_rejected": true,
+    "ineligible_strategy_excluded": true,
+    "metric_tie_rejected": true,
+    "locked_tuning_rejected": true
+  },
+  "source_evidence": [
+    "validation/strategy_routing.py",
+    "tests/test_strategy_routing.py"
+  ],
+  "checks": [
+    {
+      "name": "strategies_versioned",
+      "status": "PASS"
+    },
+    {
+      "name": "same_gold_cases_used",
+      "status": "PASS"
+    },
+    {
+      "name": "routing_policy_metric_bound",
+      "status": "PASS"
+    },
+    {
+      "name": "locked_tuning_absent",
+      "status": "PASS"
+    }
+  ],
+  "report_revision": "1.0.1"
+}
