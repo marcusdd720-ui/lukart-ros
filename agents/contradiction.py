@@ -74,8 +74,12 @@ class ContradictionAgent:
             predicate = item.get("predicate")
             value = item.get("value")
             source_document_id = item.get("source_document_id", "")
-            if not all(isinstance(part, str) for part in (subject, predicate, value)):
-                raise ValueError("claim subject, predicate and value must be strings")
+            if not isinstance(subject, str):
+                raise ValueError("claim subject must be a string")
+            if not isinstance(predicate, str):
+                raise ValueError("claim predicate must be a string")
+            if not isinstance(value, str):
+                raise ValueError("claim value must be a string")
             if not isinstance(source_document_id, str):
                 raise ValueError("source_document_id must be a string")
             claims.append(
