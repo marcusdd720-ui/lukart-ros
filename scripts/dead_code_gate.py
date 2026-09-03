@@ -5,17 +5,25 @@ from __future__ import annotations
 import ast
 from pathlib import Path
 
+EXCLUDED_DIRS = {".git", ".venv", "venv", "__pycache__", ".pytest_cache", "build", "dist"}
+
+
+def should_scan(path: Path) -> bool:
+    return not any(part in EXCLUDED_DIRS for part in path.parts)
+
 
 def module_name(root: Path, path: Path) -> str:
     relative = path.relative_to(root).with_suffix("")
     return ".".join(relative.parts)
 
 
+def python_files(root: Path) -> list[Path]:
+    return [path for path in sorted(root.rglob("*.py")) if should_scan(path)]
+
+
 def referenced_modules(root: Path) -> set[str]:
     refs: set[str] = set()
-    for path in sorted(root.rglob("*.py")):
-        if any(part in {".git", ".venv", "venv", "__pycache__"} for part in path.parts):
-            continue
+    for path in python_files(root):
         try:
             tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
         except SyntaxError:
@@ -32,9 +40,8 @@ def unreferenced_modules(root: Path) -> list[str]:
     refs = referenced_modules(root)
     modules = {
         module_name(root, path)
-        for path in root.rglob("*.py")
+        for path in python_files(root)
         if path.name != "__init__.py"
-        and not any(part in {".git", ".venv", "venv", "__pycache__"} for part in path.parts)
     }
     return sorted(module for module in modules if module not in refs)
 
