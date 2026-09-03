@@ -11,6 +11,10 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from factory.production_validation_registry import get_program_step, next_program_step
+from validation.corpus_review import (
+    ExternalCorpusReviewError,
+    validate_external_corpus_review,
+)
 
 STATE_PATH = Path("factory/production_validation_state.json")
 EVIDENCE_DIR = Path("factory/production_validation_evidence")
@@ -20,7 +24,7 @@ EXTRACTION_FREEZE = Path("data/quality/extraction_gold_v1.freeze.json")
 REASONING_CORPUS_V2 = Path("data/quality/reasoning_gold_v2.json")
 REASONING_REVIEW_V2 = Path("docs/quality/reviews/reasoning_gold_v2_review.json")
 REASONING_FREEZE_V2 = Path("data/quality/reasoning_gold_v2.freeze.json")
-RESERVED_REVIEWERS = {"system", "automated", "factory", "lukart", "agent"}
+RESERVED_REVIEWERS = frozenset({"system", "automated", "factory", "lukart", "agent"})
 SHA256_RE = re.compile(r"^[0-9a-f]{64}$")
 GIT_SHA_RE = re.compile(r"^[0-9a-f]{40}$")
 
@@ -78,14 +82,9 @@ def write_state(path: Path, state: dict[str, object]) -> None:
     path.write_text(json.dumps(state, indent=2, sort_keys=True) + "\n", encoding="utf-8")
 
 
-def _reviewer_is_independent(review: dict[str, object]) -> bool:
-    reviewer = review.get("reviewer_id")
-    if not isinstance(reviewer, str) or not reviewer.strip():
-        return False
-    normalized = reviewer.strip().lower()
-    if normalized in RESERVED_REVIEWERS:
-        return False
-    return review.get("reviewer_independent") is True
+def _review_digest(review: dict[str, object]) -> str:
+    encoded = json.dumps(review, sort_keys=True, separators=(",", ":")).encode()
+    return hashlib.sha256(encoded).hexdigest()
 
 
 def _evaluate_independent_review(
@@ -99,30 +98,24 @@ def _evaluate_independent_review(
     corpus = root / corpus_path
     review_file = root / review_path
     if not corpus.exists():
-        return GateDecision(False, "CORPUS_REQUIRED", f"corpus artifact is missing: {corpus_path}")
+        return GateDecision(
+            False,
+            "CORPUS_REQUIRED",
+            f"corpus artifact is missing: {corpus_path}",
+        )
     if not review_file.exists():
         return GateDecision(False, "EXTERNAL_REVIEW_REQUIRED", missing_review_reason)
+
     review = load_json(review_file)
-    if review.get("corpus_id") != corpus_id:
-        return GateDecision(False, "REVIEW_CORPUS_MISMATCH", "review corpus id mismatch")
-    expected_hash = sha256_file(corpus)
-    if review.get("corpus_sha256") != expected_hash:
-        return GateDecision(False, "REVIEW_HASH_MISMATCH", "review is not bound to corpus bytes")
-    if not _reviewer_is_independent(review):
-        return GateDecision(False, "REVIEW_NOT_INDEPENDENT", "independent reviewer required")
-    required = {
-        "decision": "APPROVED",
-        "annotation_review": "APPROVED",
-        "criticality_review": "APPROVED",
-        "freeze_approved": True,
-    }
-    for key, value in required.items():
-        if review.get(key) != value:
-            return GateDecision(False, "REVIEW_NOT_APPROVED", f"review field {key} not approved")
-    iaa_required = review.get("iaa_required")
-    iaa_status = review.get("iaa_status")
-    if iaa_required is True and iaa_status != "PASS":
-        return GateDecision(False, "IAA_REQUIRED", "required inter-annotator agreement not passed")
+    try:
+        validate_external_corpus_review(
+            review,
+            expected_corpus_id=corpus_id,
+            expected_corpus_sha256=sha256_file(corpus),
+            reserved_reviewer_ids=RESERVED_REVIEWERS,
+        )
+    except ExternalCorpusReviewError as exc:
+        return GateDecision(False, exc.code, exc.reason)
     return GateDecision(True, "PASS", "independent review accepted; corpus may be frozen")
 
 
@@ -162,9 +155,7 @@ def _freeze_corpus(
         "corpus_sha256": corpus_hash,
         "status": "FROZEN",
         "reviewer_id": review["reviewer_id"],
-        "review_digest": hashlib.sha256(
-            json.dumps(review, sort_keys=True, separators=(",", ":")).encode()
-        ).hexdigest(),
+        "review_digest": _review_digest(review),
     }
     path = root / freeze_path
     path.parent.mkdir(parents=True, exist_ok=True)
@@ -195,9 +186,16 @@ def evidence_path(step_number: int) -> Path:
     return EVIDENCE_DIR / f"step_{step_number:02d}.json"
 
 
-def _safe_repo_artifact(root: Path, raw_path: object) -> tuple[Path | None, GateDecision | None]:
+def _safe_repo_artifact(
+    root: Path,
+    raw_path: object,
+) -> tuple[Path | None, GateDecision | None]:
     if not isinstance(raw_path, str) or not raw_path.strip():
-        return None, GateDecision(False, "ARTIFACT_PATH_INVALID", "artifact_path must be relative")
+        return None, GateDecision(
+            False,
+            "ARTIFACT_PATH_INVALID",
+            "artifact_path must be relative",
+        )
     candidate = Path(raw_path)
     if candidate.is_absolute() or ".." in candidate.parts:
         return None, GateDecision(
@@ -222,7 +220,11 @@ def _safe_repo_artifact(root: Path, raw_path: object) -> tuple[Path | None, Gate
             "bound validation artifact is missing",
         )
     if resolved.suffix.lower() != ".json":
-        return None, GateDecision(False, "ARTIFACT_FORMAT_INVALID", "bound artifact must be JSON")
+        return None, GateDecision(
+            False,
+            "ARTIFACT_FORMAT_INVALID",
+            "bound artifact must be JSON",
+        )
     return resolved, None
 
 
@@ -231,7 +233,11 @@ def _validated_checks(
 ) -> tuple[dict[str, str] | None, GateDecision | None]:
     raw_checks = artifact.get("checks")
     if not isinstance(raw_checks, list) or not raw_checks:
-        return None, GateDecision(False, "ARTIFACT_CHECKS_REQUIRED", "artifact checks are required")
+        return None, GateDecision(
+            False,
+            "ARTIFACT_CHECKS_REQUIRED",
+            "artifact checks are required",
+        )
     checks: dict[str, str] = {}
     for item in raw_checks:
         if not isinstance(item, dict):
@@ -282,16 +288,32 @@ def evaluate_generic_evidence(root: Path, step_number: int) -> GateDecision:
             "step evidence schema must be 2.0",
         )
     if evidence.get("step") != step_number or evidence.get("status") != "PASS":
-        return GateDecision(False, "STEP_EVIDENCE_INVALID", "step evidence does not declare PASS")
+        return GateDecision(
+            False,
+            "STEP_EVIDENCE_INVALID",
+            "step evidence does not declare PASS",
+        )
     validated_sha = evidence.get("validated_sha")
     if not isinstance(validated_sha, str) or not GIT_SHA_RE.fullmatch(validated_sha):
-        return GateDecision(False, "VALIDATED_SHA_INVALID", "validated_sha must be a full Git SHA")
+        return GateDecision(
+            False,
+            "VALIDATED_SHA_INVALID",
+            "validated_sha must be a full Git SHA",
+        )
     if evidence.get("gate_kind") != spec.gate_kind.value:
         return GateDecision(False, "GATE_KIND_MISMATCH", "step evidence gate kind mismatch")
     if evidence.get("evidence_kind") != spec.evidence_kind:
-        return GateDecision(False, "EVIDENCE_KIND_MISMATCH", "step evidence kind mismatch")
+        return GateDecision(
+            False,
+            "EVIDENCE_KIND_MISMATCH",
+            "step evidence kind mismatch",
+        )
     if evidence.get("critical_gates_passed") is not True:
-        return GateDecision(False, "CRITICAL_GATES_INCOMPLETE", "critical gates must be explicit")
+        return GateDecision(
+            False,
+            "CRITICAL_GATES_INCOMPLETE",
+            "critical gates must be explicit",
+        )
 
     artifact_path, path_decision = _safe_repo_artifact(root, evidence.get("artifact_path"))
     if path_decision is not None:
@@ -299,11 +321,19 @@ def evaluate_generic_evidence(root: Path, step_number: int) -> GateDecision:
     if artifact_path is None:
         raise ProductionValidationError("artifact path validation returned no result")
     if artifact_path == path.resolve():
-        return GateDecision(False, "ARTIFACT_SELF_REFERENCE", "step evidence cannot bind to itself")
+        return GateDecision(
+            False,
+            "ARTIFACT_SELF_REFERENCE",
+            "step evidence cannot bind to itself",
+        )
 
     expected_digest = evidence.get("artifact_sha256")
     if not isinstance(expected_digest, str) or not SHA256_RE.fullmatch(expected_digest):
-        return GateDecision(False, "ARTIFACT_DIGEST_INVALID", "artifact_sha256 must be SHA-256")
+        return GateDecision(
+            False,
+            "ARTIFACT_DIGEST_INVALID",
+            "artifact_sha256 must be SHA-256",
+        )
     if sha256_file(artifact_path) != expected_digest:
         return GateDecision(
             False,
@@ -342,7 +372,171 @@ def evaluate_generic_evidence(root: Path, step_number: int) -> GateDecision:
             "REQUIRED_CHECKS_MISSING",
             f"required step checks are missing: {', '.join(missing)}",
         )
-    return GateDecision(True, "PASS", f"step {step_number} evidence accepted and artifact verified")
+    return GateDecision(
+        True,
+        "PASS",
+        f"step {step_number} evidence accepted and artifact verified",
+    )
+
+
+def _validate_freeze_manifest(
+    root: Path,
+    *,
+    corpus_path: Path,
+    review_path: Path,
+    freeze_path: Path,
+    corpus_id: str,
+) -> GateDecision:
+    corpus = root / corpus_path
+    review_file = root / review_path
+    freeze_file = root / freeze_path
+    if not freeze_file.is_file():
+        return GateDecision(
+            False,
+            "FREEZE_MANIFEST_REQUIRED",
+            f"frozen corpus manifest is missing: {freeze_path}",
+        )
+    review = load_json(review_file)
+    freeze = load_json(freeze_file)
+    expected = {
+        "schema_version": "1.0",
+        "corpus_id": corpus_id,
+        "corpus_sha256": sha256_file(corpus),
+        "status": "FROZEN",
+        "reviewer_id": review.get("reviewer_id"),
+        "review_digest": _review_digest(review),
+    }
+    for name, value in expected.items():
+        if freeze.get(name) != value:
+            return GateDecision(
+                False,
+                "FREEZE_MANIFEST_MISMATCH",
+                f"freeze manifest field {name} is stale or invalid",
+            )
+    return GateDecision(True, "PASS", f"freeze manifest verified: {freeze_path}")
+
+
+def _generic_chain_entry(
+    root: Path,
+    step_number: int,
+) -> tuple[dict[str, object] | None, GateDecision | None]:
+    envelope = root / evidence_path(step_number)
+    evidence = load_json(envelope)
+    artifact_path, path_decision = _safe_repo_artifact(root, evidence.get("artifact_path"))
+    if path_decision is not None:
+        return None, path_decision
+    if artifact_path is None:
+        raise ProductionValidationError("artifact path validation returned no result")
+    return (
+        {
+            "artifact_sha256": sha256_file(artifact_path),
+            "evidence_sha256": sha256_file(envelope),
+            "step": step_number,
+            "validated_sha": evidence.get("validated_sha"),
+        },
+        None,
+    )
+
+
+def production_validation_chain_digest(
+    root: Path,
+) -> tuple[str | None, GateDecision | None]:
+    """Re-evaluate and digest the actual evidence chain for Steps 1-19."""
+
+    entries: list[dict[str, object]] = []
+    freeze_specs = {
+        1: (
+            EXTRACTION_CORPUS,
+            EXTRACTION_REVIEW,
+            EXTRACTION_FREEZE,
+            "extraction-gold-v1",
+        ),
+        5: (
+            REASONING_CORPUS_V2,
+            REASONING_REVIEW_V2,
+            REASONING_FREEZE_V2,
+            "reasoning-gold-v2",
+        ),
+    }
+    for step_number in range(1, 20):
+        decision = evaluate_step(root, step_number)
+        if not decision.passed:
+            return None, GateDecision(
+                False,
+                "PRIOR_STEP_NOT_COMPLETE",
+                f"step {step_number} failed revalidation: {decision.code}: {decision.reason}",
+            )
+        if step_number in freeze_specs:
+            corpus_path, review_path, freeze_path, corpus_id = freeze_specs[step_number]
+            freeze_decision = _validate_freeze_manifest(
+                root,
+                corpus_path=corpus_path,
+                review_path=review_path,
+                freeze_path=freeze_path,
+                corpus_id=corpus_id,
+            )
+            if not freeze_decision.passed:
+                return None, GateDecision(
+                    False,
+                    freeze_decision.code,
+                    f"step {step_number}: {freeze_decision.reason}",
+                )
+            entries.append(
+                {
+                    "corpus_sha256": sha256_file(root / corpus_path),
+                    "freeze_sha256": sha256_file(root / freeze_path),
+                    "review_sha256": sha256_file(root / review_path),
+                    "step": step_number,
+                }
+            )
+        else:
+            entry, entry_decision = _generic_chain_entry(root, step_number)
+            if entry_decision is not None:
+                return None, entry_decision
+            if entry is None:
+                raise ProductionValidationError("chain entry validation returned no result")
+            entries.append(entry)
+
+    payload = json.dumps(
+        {"schema_version": "1.0", "steps": entries},
+        ensure_ascii=False,
+        separators=(",", ":"),
+        sort_keys=True,
+    ).encode()
+    return hashlib.sha256(payload).hexdigest(), None
+
+
+def evaluate_release_candidate(root: Path) -> GateDecision:
+    """Issue Step 20 only when the live Steps 1-19 evidence chain still verifies."""
+
+    chain_digest, chain_decision = production_validation_chain_digest(root)
+    if chain_decision is not None:
+        return chain_decision
+    if chain_digest is None:
+        raise ProductionValidationError("release chain validation returned no digest")
+
+    decision = evaluate_generic_evidence(root, 20)
+    if not decision.passed:
+        return decision
+
+    evidence = load_json(root / evidence_path(20))
+    artifact_path, path_decision = _safe_repo_artifact(root, evidence.get("artifact_path"))
+    if path_decision is not None:
+        return path_decision
+    if artifact_path is None:
+        raise ProductionValidationError("release artifact validation returned no result")
+    artifact = load_json(artifact_path)
+    if artifact.get("steps_1_19_digest") != chain_digest:
+        return GateDecision(
+            False,
+            "RELEASE_CHAIN_DIGEST_MISMATCH",
+            "release candidate is not bound to the current Steps 1-19 evidence chain",
+        )
+    return GateDecision(
+        True,
+        "PASS",
+        "Step 20 release candidate verified against the complete live evidence chain",
+    )
 
 
 def evaluate_step(root: Path, step_number: int) -> GateDecision:
@@ -350,6 +544,8 @@ def evaluate_step(root: Path, step_number: int) -> GateDecision:
         return evaluate_extraction_review(root)
     if step_number == 5:
         return evaluate_reasoning_review(root)
+    if step_number == 20:
+        return evaluate_release_candidate(root)
     return evaluate_generic_evidence(root, step_number)
 
 
