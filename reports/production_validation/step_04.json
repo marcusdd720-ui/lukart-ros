@@ -1,0 +1,62 @@
+{
+  "schema_version": "1.0",
+  "step": 4,
+  "status": "PASS",
+  "validated_sha": "24d11af3bc6519bb41245d198b870d482043be91",
+  "gate_kind": "implementation",
+  "evidence_kind": "reasoning_gold_v2_candidate",
+  "locked_evaluation_used_for_tuning": false,
+  "private_data_committed": false,
+  "corpus": {
+    "path": "data/quality/reasoning_gold_v2.json",
+    "corpus_id": "reasoning-gold-v2",
+    "version": "2.0.0",
+    "status": "candidate_pending_independent_review",
+    "review_status": "not_reviewed",
+    "development_cases": 8,
+    "validation_cases": 4,
+    "locked_evaluation_cases": 4,
+    "locked_evaluation_executed": false
+  },
+  "development_baseline": {
+    "total_cases": 8,
+    "decision_accuracy": 1.0,
+    "valid_conclusion_recall": 1.0,
+    "abstention_recall": 1.0,
+    "unsafe_conclusion_rate": 0.0,
+    "open_question_coverage": 1.0
+  },
+  "validation_baseline": {
+    "total_cases": 4,
+    "decision_accuracy": 1.0,
+    "valid_conclusion_recall": 1.0,
+    "abstention_recall": 1.0,
+    "unsafe_conclusion_rate": 0.0,
+    "open_question_coverage": 1.0
+  },
+  "certification_status": "PENDING_EXTERNAL_REVIEW",
+  "source_evidence": [
+    "data/quality/reasoning_gold_v2.json",
+    "tests/test_reasoning_gold_v2.py",
+    "validation/reasoning_gold.py",
+    "validation/reasoning_kqm.py"
+  ],
+  "checks": [
+    {
+      "name": "reasoning_corpus_v2_created",
+      "status": "PASS"
+    },
+    {
+      "name": "development_split_present",
+      "status": "PASS"
+    },
+    {
+      "name": "validation_split_present",
+      "status": "PASS"
+    },
+    {
+      "name": "locked_split_sealed",
+      "status": "PASS"
+    }
+  ]
+}
