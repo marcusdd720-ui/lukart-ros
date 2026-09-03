@@ -94,7 +94,8 @@ unexecuted during development/validation.
 
 ## P4 — Controlled Learning Foundation
 
-Status: **IMPLEMENTED / RELEASE VALIDATION PENDING** on `feat/controlled-learning-p4`.
+Status: **VALIDATED IMPLEMENTATION / FINAL MERGE GATE PENDING** on
+`feat/controlled-learning-p4`.
 
 Implemented scope:
 
@@ -107,7 +108,8 @@ Implemented scope:
 7. locked evaluation prohibited as learning/tuning input;
 8. runtime dependency boundary extended to `learning/`;
 9. adversarial tests for provenance, locked data, revision binding, non-finite metrics,
-   guardrail regression, contract mismatch, and run-budget violations.
+   malformed digests, guardrail regression, contract mismatch, and run-budget violations;
+10. Reasoning KQM evaluator provenance separated from Reasoning Engine provenance.
 
 Target loop:
 
@@ -117,7 +119,12 @@ A promotion decision is an immutable eligibility artifact only. P4 intentionally
 API for directly mutating canonical knowledge, prompts, rules, routing, code, models, agent
 certification, or production release state.
 
-P4 becomes COMPLETE only after exact-head feature validation, merge, and post-merge validation.
+Validated implementation head `434b97ce26c70b82f07cee5da5d1fd5de657fa21` passed CI Foundation
+on Python 3.11/3.12/3.13, Architectural Audit, GitHub App Smoke Test, and the smoke-dispatched
+Stage Gate. Because this SSoT update creates a newer docs-only head, that exact final head must
+pass the same merge gates before merge.
+
+P4 becomes COMPLETE only after exact-head merge and post-merge validation on `main`.
 
 ## P5 — Agent Teaching and Distillation
 
