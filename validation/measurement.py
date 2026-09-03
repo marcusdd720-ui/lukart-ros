@@ -7,6 +7,7 @@ from typing import Any
 
 from knowledge.graph import KnowledgeGraph
 from validation.extraction_quality import ExtractionMetrics
+from validation.reasoning_kqm import ReasoningKQMMetrics
 
 
 @dataclass(frozen=True, slots=True)
@@ -24,6 +25,21 @@ class MeasurementCollector:
     """Collect deterministic measurements from independent metric providers."""
 
     def from_extraction(self, metrics: ExtractionMetrics) -> MeasurementSnapshot:
+        return self._from_dataclass(metrics)
+
+    def from_reasoning(self, metrics: ReasoningKQMMetrics) -> MeasurementSnapshot:
+        return self._from_dataclass(metrics)
+
+    def from_graph(self, graph: KnowledgeGraph) -> MeasurementSnapshot:
+        statistics = graph.statistics()
+        return MeasurementSnapshot(
+            {key: statistics[key] for key in sorted(statistics)}
+        )
+
+    @staticmethod
+    def _from_dataclass(
+        metrics: ExtractionMetrics | ReasoningKQMMetrics,
+    ) -> MeasurementSnapshot:
         raw: dict[str, Any] = asdict(metrics)
         measured = {
             key: value
@@ -31,9 +47,3 @@ class MeasurementCollector:
             if isinstance(value, (int, float))
         }
         return MeasurementSnapshot(dict(sorted(measured.items())))
-
-    def from_graph(self, graph: KnowledgeGraph) -> MeasurementSnapshot:
-        statistics = graph.statistics()
-        return MeasurementSnapshot(
-            {key: statistics[key] for key in sorted(statistics)}
-        )
