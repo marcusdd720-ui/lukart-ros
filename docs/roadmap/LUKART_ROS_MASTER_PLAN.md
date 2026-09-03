@@ -94,10 +94,9 @@ unexecuted during development/validation.
 
 ## P4 — Controlled Learning Foundation
 
-Status: **VALIDATED IMPLEMENTATION / FINAL MERGE GATE PENDING** on
-`feat/controlled-learning-p4`.
+Status: **COMPLETE**
 
-Implemented scope:
+Delivered:
 
 1. immutable Measured Failure contract with evaluator/result/report/SHA provenance;
 2. Failure Corpus generated only from measured, traceable evaluator failures;
@@ -119,12 +118,24 @@ A promotion decision is an immutable eligibility artifact only. P4 intentionally
 API for directly mutating canonical knowledge, prompts, rules, routing, code, models, agent
 certification, or production release state.
 
-Validated implementation head `434b97ce26c70b82f07cee5da5d1fd5de657fa21` passed CI Foundation
-on Python 3.11/3.12/3.13, Architectural Audit, GitHub App Smoke Test, and the smoke-dispatched
-Stage Gate. Because this SSoT update creates a newer docs-only head, that exact final head must
-pass the same merge gates before merge.
+Final feature head `6727cd34be12f80a29499b70f7641eef7a42f0bc` passed CI Foundation on
+Python 3.11/3.12/3.13, Architectural Audit 1.0, GitHub App Smoke Test, and its dispatched Stage
+Gate, and was merged without further branch changes.
 
-P4 becomes COMPLETE only after exact-head merge and post-merge validation on `main`.
+Implementation merge `082358d28a336fa648e5cc05bb2a9d7a656c64af` then passed post-merge:
+
+- CI Foundation on Python 3.11, 3.12, and 3.13;
+- Architectural Audit 1.0;
+- Stage Orchestrator;
+- GitHub App Smoke Test;
+- smoke-dispatched Stage Gate.
+
+Core result: measured failures can now become traceable improvement hypotheses and bounded
+experiments, while promotion remains a measured eligibility decision rather than authority to
+self-modify production state.
+
+P4 engineering completion does not certify the reasoning Gold candidate as production truth and
+does not authorize locked evaluation for tuning.
 
 ## P5 — Agent Teaching and Distillation
 
