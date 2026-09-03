@@ -77,6 +77,7 @@ def _write_bound_evidence(
 
 def _approved_review(corpus_id: str, corpus_sha256: str) -> dict[str, object]:
     return {
+        "schema_version": "1.0",
         "corpus_id": corpus_id,
         "corpus_sha256": corpus_sha256,
         "reviewer_id": "independent-reviewer-one",
