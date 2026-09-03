@@ -1,6 +1,25 @@
 """Controlled, measurement-first learning foundation for LUKART ROS."""
 
+from learning.adversarial_verification import (
+    AdversarialVerificationDecision,
+    AdversarialVerificationGate,
+    AdversarialVerificationStatus,
+    ChallengeAssessment,
+    ChallengeFinding,
+    ChallengeResolution,
+    ChallengeResolutionStatus,
+    EvidenceVerification,
+    EvidenceVerificationStatus,
+    ReviewAssessment,
+    ReviewStatus,
+    VerificationProposal,
+)
 from learning.candidates import candidate_from_failure
+from learning.controlled_self_learning import (
+    ControlledSelfLearningGate,
+    SelfLearningCycleDecision,
+    SelfLearningCycleStatus,
+)
 from learning.experiment import (
     ExperimentContract,
     ExperimentMeasurement,
@@ -62,14 +81,24 @@ from learning.teaching import (
 )
 
 __all__ = [
+    "AdversarialVerificationDecision",
+    "AdversarialVerificationGate",
+    "AdversarialVerificationStatus",
     "AgentTeachingPackage",
     "AgentTeachingReleaseGate",
+    "ChallengeAssessment",
+    "ChallengeFinding",
+    "ChallengeResolution",
+    "ChallengeResolutionStatus",
     "ChangeKind",
     "ComponentDependency",
     "ComponentDependencyGraph",
     "ComponentNode",
+    "ControlledSelfLearningGate",
     "DiagnosisRule",
     "DiagnosisStatus",
+    "EvidenceVerification",
+    "EvidenceVerificationStatus",
     "ExperimentContract",
     "ExperimentMeasurement",
     "ExperimentResult",
@@ -88,9 +117,13 @@ __all__ = [
     "PromotionStatus",
     "RepairReadinessDecision",
     "RepairReadinessStatus",
+    "ReviewAssessment",
+    "ReviewStatus",
     "RevalidationMode",
     "RevalidationPlan",
     "RootCauseCategory",
+    "SelfLearningCycleDecision",
+    "SelfLearningCycleStatus",
     "SemanticFailureDiagnoser",
     "SemanticFailureDiagnosis",
     "SemanticSelfHealingGate",
@@ -99,6 +132,7 @@ __all__ = [
     "TeachingExampleKind",
     "TeachingReleaseDecision",
     "TeachingReleaseStatus",
+    "VerificationProposal",
     "candidate_from_failure",
     "contract_for_candidate",
     "distill_agent_teaching_package",
