@@ -1,6 +1,6 @@
 # Reasoning KQM Status — v1.0
 
-## Current state: TECHNICAL MEASUREMENT PATH IMPLEMENTED / FIRST BASELINE PENDING
+## Current state: TECHNICAL BASELINE VERIFIED / PRODUCTION CERTIFICATION BLOCKED
 
 P3 introduces a separate reasoning benchmark path:
 
@@ -22,23 +22,48 @@ threshold, locked split, or ReferenceFactAgent certification state is modified b
 The locked reasoning split is not authorized for P3 development/validation and is protected by
 a fail-closed API.
 
-## Metrics
+## Verified contract-conformance baseline
 
-The technical evaluator records:
+Measured on validated feature SHA:
 
-- decision accuracy;
-- valid-conclusion recall;
-- abstention recall;
-- unsafe-conclusion rate;
-- Open Question coverage;
-- per-case deterministic result digests;
-- explicit failure records.
+`d8406f4c4edc5ec457228a5bead2efa3bacbb826`
+
+### Development — 4 cases
+
+- decision accuracy: `1.0`
+- valid-conclusion recall: `1.0`
+- abstention recall: `1.0`
+- unsafe-conclusion rate: `0.0`
+- Open Question coverage: `1.0`
+- evaluation failures: `0`
+
+### Validation — 2 cases
+
+- decision accuracy: `1.0`
+- valid-conclusion recall: `1.0`
+- abstention recall: `1.0`
+- unsafe-conclusion rate: `0.0`
+- Open Question coverage: `1.0`
+- evaluation failures: `0`
+
+### Locked evaluation
+
+- executed: **NO**
+- status: **UNTOUCHED / PROTECTED**
+
+The baseline was accepted only after CI Foundation passed on Python 3.11, 3.12 and 3.13,
+Architectural Audit passed, and GitHub App Smoke Test passed on the exact feature SHA.
 
 ## Interpretation boundary
 
-The first candidate is primarily a contract-conformance benchmark. Even a perfect result on
-this small synthetic corpus would prove deterministic behavior against the encoded contract,
-not production/legal reasoning correctness.
+This is a **technical contract-conformance baseline**, not production or legal reasoning
+certification. The candidate contains a small number of synthetic cases chosen to test explicit
+reasoning invariants such as evidence-backed conclusions, abstention, missing support, UNKNOWN,
+and UNRESOLVED states.
+
+A perfect score here proves that the current deterministic engine behaves consistently with the
+encoded synthetic contract. It does not prove that real-world conclusions are legally or
+factually correct across representative domains.
 
 Production reasoning certification remains BLOCKED until at least:
 
@@ -54,6 +79,3 @@ Production reasoning certification remains BLOCKED until at least:
 The locked split must not be executed for implementation tuning, rule selection, threshold
 selection, or error-driven corpus changes. P3 tests verify that an unauthorized locked request
 raises `LockedReasoningEvaluationError`.
-
-Measured development/validation results will be recorded here only after the corresponding
-fresh SHA passes the repository quality gates.
