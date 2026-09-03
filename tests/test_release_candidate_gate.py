@@ -45,9 +45,19 @@ def _artifact_for_step(step_number: int) -> dict[str, object]:
 def _write_step_review(
     root: Path,
     step_number: int,
-    report_path: Path,
-    report: Path,
-) -> tuple[str, str]:
+) -> tuple[str, str, str, str]:
+    subject_path = Path(f"docs/quality/reviews/step_{step_number:02d}_review_package.json")
+    subject = root / subject_path
+    _write_json(
+        subject,
+        {
+            "schema_version": "1.0",
+            "step": step_number,
+            "validated_sha": VALIDATED_SHA,
+            "purpose": "synthetic pre-existing review package for release-chain tests",
+        },
+    )
+
     review_path = Path(f"docs/quality/reviews/step_{step_number:02d}_independent_review.json")
     review = root / review_path
     _write_json(
@@ -56,8 +66,8 @@ def _write_step_review(
             "schema_version": "1.0",
             "step": step_number,
             "reviewed_sha": VALIDATED_SHA,
-            "reviewed_artifact_path": report_path.as_posix(),
-            "reviewed_artifact_sha256": pvo.sha256_file(report),
+            "reviewed_artifact_path": subject_path.as_posix(),
+            "reviewed_artifact_sha256": pvo.sha256_file(subject),
             "reviewer_id": "external-human-reviewer",
             "reviewer_independent": True,
             "reviewer_kind": "human",
@@ -65,7 +75,12 @@ def _write_step_review(
             "review_summary": "Independent human fixture review for release-chain validation.",
         },
     )
-    return review_path.as_posix(), pvo.sha256_file(review)
+    return (
+        subject_path.as_posix(),
+        pvo.sha256_file(subject),
+        review_path.as_posix(),
+        pvo.sha256_file(review),
+    )
 
 
 def _write_bound_evidence(
@@ -90,12 +105,12 @@ def _write_bound_evidence(
         "critical_gates_passed": True,
     }
     if step_number in {16, 18}:
-        review_path, review_sha256 = _write_step_review(
+        subject_path, subject_sha256, review_path, review_sha256 = _write_step_review(
             root,
             step_number,
-            report_path,
-            report,
         )
+        envelope_payload["review_subject_path"] = subject_path
+        envelope_payload["review_subject_sha256"] = subject_sha256
         envelope_payload["review_path"] = review_path
         envelope_payload["review_sha256"] = review_sha256
     envelope = root / pvo.evidence_path(step_number)

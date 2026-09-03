@@ -1,7 +1,8 @@
 """Fail-closed validation for human review evidence on Production Validation steps.
 
 This module validates review artifacts supplied by a real reviewer. It never creates,
-infers, upgrades, or self-approves a review decision.
+infers, upgrades, or self-approves a review decision. The review binds to a separate,
+pre-existing review subject, not to the Step 16/18 PASS report that is produced after review.
 """
 
 from __future__ import annotations
@@ -71,17 +72,21 @@ def _load_json(path: Path) -> dict[str, object]:
     return value
 
 
-def _safe_review_path(root: Path, raw_path: object) -> Path:
+def _safe_repo_path(
+    root: Path,
+    raw_path: object,
+    *,
+    missing_code: str,
+    invalid_code: str,
+    label: str,
+) -> Path:
     if not isinstance(raw_path, str) or not raw_path.strip():
-        raise IndependentStepReviewError(
-            "INDEPENDENT_REVIEW_REQUIRED",
-            "step evidence must bind an independent review artifact",
-        )
+        raise IndependentStepReviewError(missing_code, f"{label} must be explicitly bound")
     candidate = Path(raw_path)
     if candidate.is_absolute() or ".." in candidate.parts:
         raise IndependentStepReviewError(
-            "REVIEW_PATH_INVALID",
-            "review_path must be repository-relative and cannot escape the repository",
+            invalid_code,
+            f"{label} must be repository-relative and cannot escape the repository",
         )
     root_resolved = root.resolve()
     resolved = (root / candidate).resolve()
@@ -89,18 +94,42 @@ def _safe_review_path(root: Path, raw_path: object) -> Path:
         resolved.relative_to(root_resolved)
     except ValueError as exc:
         raise IndependentStepReviewError(
-            "REVIEW_PATH_INVALID",
-            "review_path escapes the repository",
+            invalid_code,
+            f"{label} escapes the repository",
         ) from exc
     if not resolved.is_file():
-        raise IndependentStepReviewError(
-            "INDEPENDENT_REVIEW_REQUIRED",
-            "bound independent review artifact is missing",
-        )
+        raise IndependentStepReviewError(missing_code, f"bound {label} is missing")
+    return resolved
+
+
+def _safe_review_path(root: Path, raw_path: object) -> Path:
+    resolved = _safe_repo_path(
+        root,
+        raw_path,
+        missing_code="INDEPENDENT_REVIEW_REQUIRED",
+        invalid_code="REVIEW_PATH_INVALID",
+        label="review_path",
+    )
     if resolved.suffix.lower() != ".json":
         raise IndependentStepReviewError(
             "REVIEW_FORMAT_INVALID",
             "independent review artifact must be JSON",
+        )
+    return resolved
+
+
+def _safe_subject_path(root: Path, raw_path: object) -> Path:
+    resolved = _safe_repo_path(
+        root,
+        raw_path,
+        missing_code="REVIEW_SUBJECT_REQUIRED",
+        invalid_code="REVIEW_SUBJECT_PATH_INVALID",
+        label="review_subject_path",
+    )
+    if resolved.suffix.lower() != ".json":
+        raise IndependentStepReviewError(
+            "REVIEW_SUBJECT_FORMAT_INVALID",
+            "review subject must be a JSON review-package manifest",
         )
     return resolved
 
@@ -139,7 +168,28 @@ def validate_independent_step_review(
     if not _SHA256_RE.fullmatch(expected_artifact_sha256):
         raise IndependentStepReviewError(
             "REVIEW_ARTIFACT_MISMATCH",
-            "expected artifact SHA-256 is malformed",
+            "expected Step report SHA-256 is malformed",
+        )
+
+    subject_path = _safe_subject_path(root, evidence.get("review_subject_path"))
+    subject_relative = str(evidence["review_subject_path"])
+    if subject_relative == expected_artifact_path:
+        raise IndependentStepReviewError(
+            "REVIEW_SUBJECT_SELF_REFERENCE",
+            "human review must bind to a pre-existing review subject, not the Step PASS report",
+        )
+    expected_subject_digest = evidence.get("review_subject_sha256")
+    if not isinstance(expected_subject_digest, str) or not _SHA256_RE.fullmatch(
+        expected_subject_digest
+    ):
+        raise IndependentStepReviewError(
+            "REVIEW_SUBJECT_HASH_INVALID",
+            "review_subject_sha256 must be an explicit SHA-256 digest",
+        )
+    if _sha256_file(subject_path) != expected_subject_digest:
+        raise IndependentStepReviewError(
+            "REVIEW_SUBJECT_HASH_MISMATCH",
+            "step evidence is not bound to the exact review-subject bytes",
         )
 
     review_file = _safe_review_path(root, evidence.get("review_path"))
@@ -179,13 +229,13 @@ def validate_independent_step_review(
     reviewed_artifact_path = _required_text(review, "reviewed_artifact_path")
     reviewed_artifact_sha256 = _required_text(review, "reviewed_artifact_sha256").lower()
     if (
-        reviewed_artifact_path != expected_artifact_path
+        reviewed_artifact_path != subject_relative
         or not _SHA256_RE.fullmatch(reviewed_artifact_sha256)
-        or reviewed_artifact_sha256 != expected_artifact_sha256
+        or reviewed_artifact_sha256 != expected_subject_digest
     ):
         raise IndependentStepReviewError(
             "REVIEW_ARTIFACT_MISMATCH",
-            "independent review is not bound to the validated report artifact",
+            "independent review is not bound to the declared review subject",
         )
 
     reviewer_id = _required_text(review, "reviewer_id")

@@ -66,7 +66,26 @@ def _bind_review(
     reviewed_sha: str = VALIDATED_SHA,
     decision: str = "PASS",
     reviewed_artifact_sha256: str | None = None,
+    subject_is_report: bool = False,
 ) -> Path:
+    if subject_is_report:
+        subject_relative = str(envelope["artifact_path"])
+        subject_path = report_path
+    else:
+        subject_relative = f"docs/quality/reviews/step_{step:02d}_review_package.json"
+        subject_path = root / subject_relative
+        _write_json(
+            subject_path,
+            {
+                "schema_version": "1.0",
+                "step": step,
+                "validated_sha": VALIDATED_SHA,
+                "purpose": "synthetic pre-existing review package for contract tests",
+            },
+        )
+    envelope["review_subject_path"] = subject_relative
+    envelope["review_subject_sha256"] = _sha256(subject_path)
+
     review_relative = f"docs/quality/reviews/step_{step:02d}_independent_review.json"
     review_path = root / review_relative
     _write_json(
@@ -75,8 +94,8 @@ def _bind_review(
             "schema_version": "1.0",
             "step": step,
             "reviewed_sha": reviewed_sha,
-            "reviewed_artifact_path": str(envelope["artifact_path"]),
-            "reviewed_artifact_sha256": reviewed_artifact_sha256 or _sha256(report_path),
+            "reviewed_artifact_path": subject_relative,
+            "reviewed_artifact_sha256": reviewed_artifact_sha256 or _sha256(subject_path),
             "reviewer_id": reviewer_id,
             "reviewer_independent": True,
             "reviewer_kind": "human",
@@ -96,7 +115,7 @@ def test_step16_cannot_pass_from_boolean_check_without_review(tmp_path: Path) ->
     decision = evaluate_generic_evidence(tmp_path, 16)
 
     assert decision.passed is False
-    assert decision.code == "INDEPENDENT_REVIEW_REQUIRED"
+    assert decision.code == "REVIEW_SUBJECT_REQUIRED"
 
 
 def test_step18_cannot_pass_from_boolean_check_without_review(tmp_path: Path) -> None:
@@ -105,7 +124,34 @@ def test_step18_cannot_pass_from_boolean_check_without_review(tmp_path: Path) ->
     decision = evaluate_generic_evidence(tmp_path, 18)
 
     assert decision.passed is False
-    assert decision.code == "INDEPENDENT_REVIEW_REQUIRED"
+    assert decision.code == "REVIEW_SUBJECT_REQUIRED"
+
+
+def test_review_subject_cannot_be_the_step_pass_report(tmp_path: Path) -> None:
+    report, envelope_path, envelope = _prepare_step(tmp_path, 16)
+    _bind_review(
+        tmp_path,
+        16,
+        report,
+        envelope_path,
+        envelope,
+        subject_is_report=True,
+    )
+
+    decision = evaluate_generic_evidence(tmp_path, 16)
+
+    assert decision.code == "REVIEW_SUBJECT_SELF_REFERENCE"
+
+
+def test_review_subject_hash_must_match_exact_subject_bytes(tmp_path: Path) -> None:
+    report, envelope_path, envelope = _prepare_step(tmp_path, 18)
+    _bind_review(tmp_path, 18, report, envelope_path, envelope)
+    envelope["review_subject_sha256"] = "b" * 64
+    _write_json(envelope_path, envelope)
+
+    decision = evaluate_generic_evidence(tmp_path, 18)
+
+    assert decision.code == "REVIEW_SUBJECT_HASH_MISMATCH"
 
 
 def test_review_hash_must_match_exact_review_bytes(tmp_path: Path) -> None:
@@ -135,7 +181,7 @@ def test_review_must_bind_exact_validated_sha(tmp_path: Path) -> None:
     assert decision.code == "REVIEW_SHA_MISMATCH"
 
 
-def test_review_must_bind_exact_report_hash(tmp_path: Path) -> None:
+def test_review_must_bind_exact_review_subject_hash(tmp_path: Path) -> None:
     report, envelope_path, envelope = _prepare_step(tmp_path, 18)
     _bind_review(
         tmp_path,
@@ -184,9 +230,9 @@ def test_non_pass_human_review_blocks_gate(tmp_path: Path) -> None:
 
 
 def test_review_path_cannot_escape_repository(tmp_path: Path) -> None:
-    _, envelope_path, envelope = _prepare_step(tmp_path, 16)
+    report, envelope_path, envelope = _prepare_step(tmp_path, 16)
+    _bind_review(tmp_path, 16, report, envelope_path, envelope)
     envelope["review_path"] = "../outside.json"
-    envelope["review_sha256"] = "b" * 64
     _write_json(envelope_path, envelope)
 
     decision = evaluate_generic_evidence(tmp_path, 16)
