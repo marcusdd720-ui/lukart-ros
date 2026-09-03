@@ -15,6 +15,13 @@ _ALLOWED_LEARNING_SPLITS = frozenset({"development", "validation"})
 _HEX_DIGITS = frozenset(hexdigits.lower())
 
 
+def _sha256_digest(name: str, value: str) -> str:
+    digest = value.strip().lower()
+    if len(digest) != 64 or any(character not in _HEX_DIGITS for character in digest):
+        raise ValueError(f"{name} must be a SHA-256 digest")
+    return digest
+
+
 class MetricDirection(StrEnum):
     HIGHER_IS_BETTER = "higher_is_better"
     LOWER_IS_BETTER = "lower_is_better"
@@ -52,7 +59,6 @@ class ExperimentContract:
     def __post_init__(self) -> None:
         for field_name in (
             "experiment_id",
-            "candidate_digest",
             "target_component",
             "baseline_revision",
             "candidate_revision",
@@ -62,6 +68,11 @@ class ExperimentContract:
             if not value:
                 raise ValueError(f"{field_name} cannot be blank")
             object.__setattr__(self, field_name, value)
+        object.__setattr__(
+            self,
+            "candidate_digest",
+            _sha256_digest("candidate_digest", self.candidate_digest),
+        )
         if self.baseline_revision == self.candidate_revision:
             raise ValueError("candidate revision must differ from baseline revision")
         if not self.allowed_splits:
@@ -141,12 +152,13 @@ class ExperimentResult:
     run_count: int
 
     def __post_init__(self) -> None:
-        digest = self.contract_digest.strip().lower()
-        if len(digest) != 64 or any(character not in _HEX_DIGITS for character in digest):
-            raise ValueError("experiment result requires a SHA-256 contract digest")
+        object.__setattr__(
+            self,
+            "contract_digest",
+            _sha256_digest("contract_digest", self.contract_digest),
+        )
         if self.run_count < 1:
             raise ValueError("run_count must be >= 1")
-        object.__setattr__(self, "contract_digest", digest)
 
 
 def contract_for_candidate(
