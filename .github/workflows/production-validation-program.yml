@@ -54,6 +54,7 @@ jobs:
         run: |
           python - <<'PY'
           import json
+          import os
           from pathlib import Path
 
           state = json.loads(Path("factory/production_validation_state.json").read_text())
@@ -68,6 +69,7 @@ jobs:
           if "block_code" in state:
               lines.append(f"- blocker: {state['block_code']}")
               lines.append(f"- reason: {state['block_reason']}")
-          with open(Path("$GITHUB_STEP_SUMMARY"), "a", encoding="utf-8") as handle:
+          summary = Path(os.environ["GITHUB_STEP_SUMMARY"])
+          with summary.open("a", encoding="utf-8") as handle:
               handle.write("\n".join(lines) + "\n")
           PY
