@@ -1,9 +1,8 @@
 """Evidence-first adversarial verification for controlled multi-agent reasoning.
 
-P7 deliberately treats adversarial agents as independent critics, not voters. A generator,
-challenger, evidence verifier, and reviewer produce immutable artifacts bound to one proposal.
-Only the evidence verifier may resolve evidence challenges, and no count of supportive agents can
-override rejected provenance, unsupported claims, or an unresolved blocking challenge.
+P7 treats adversarial agents as independent critics, not voters. No number of
+supportive agents may override rejected provenance, unsupported claims, or an
+unresolved blocking challenge.
 """
 
 from __future__ import annotations
@@ -43,7 +42,12 @@ def _digest(payload: dict[str, object]) -> str:
     return hashlib.sha256(encoded).hexdigest()
 
 
-def _normalized_digests(name: str, values: tuple[str, ...], *, required: bool) -> tuple[str, ...]:
+def _normalized_digests(
+    name: str,
+    values: tuple[str, ...],
+    *,
+    required: bool,
+) -> tuple[str, ...]:
     normalized = tuple(_require_sha256(name, value) for value in values)
     if required and not normalized:
         raise ValueError(f"{name} requires at least one digest")
@@ -78,7 +82,7 @@ class AdversarialVerificationStatus(StrEnum):
 
 @dataclass(frozen=True, slots=True)
 class VerificationProposal:
-    """A digest-bound subject proposed for independent adversarial verification."""
+    """Digest-bound subject proposed for independent verification."""
 
     proposal_id: str
     generator_agent_id: AgentId
@@ -88,8 +92,16 @@ class VerificationProposal:
     evidence_digests: tuple[str, ...]
 
     def __post_init__(self) -> None:
-        object.__setattr__(self, "proposal_id", _required_text("proposal_id", self.proposal_id))
-        object.__setattr__(self, "subject_type", _required_text("subject_type", self.subject_type))
+        object.__setattr__(
+            self,
+            "proposal_id",
+            _required_text("proposal_id", self.proposal_id),
+        )
+        object.__setattr__(
+            self,
+            "subject_type",
+            _required_text("subject_type", self.subject_type),
+        )
         object.__setattr__(
             self,
             "subject_digest",
@@ -139,7 +151,11 @@ class ChallengeFinding:
         object.__setattr__(
             self,
             "evidence_digests",
-            _normalized_digests("challenge evidence", self.evidence_digests, required=False),
+            _normalized_digests(
+                "challenge evidence",
+                self.evidence_digests,
+                required=False,
+            ),
         )
 
     def canonical_dict(self) -> dict[str, object]:
@@ -196,7 +212,11 @@ class ChallengeResolution:
         object.__setattr__(
             self,
             "evidence_digests",
-            _normalized_digests("resolution evidence", self.evidence_digests, required=True),
+            _normalized_digests(
+                "resolution evidence",
+                self.evidence_digests,
+                required=True,
+            ),
         )
 
     def canonical_dict(self) -> dict[str, object]:
@@ -210,7 +230,7 @@ class ChallengeResolution:
 
 @dataclass(frozen=True, slots=True)
 class EvidenceVerification:
-    """Independent evidence verdict. This role has asymmetric veto over unsupported truth."""
+    """Independent evidence verdict with asymmetric veto power."""
 
     verifier_agent_id: AgentId
     proposal_digest: str
@@ -228,13 +248,19 @@ class EvidenceVerification:
             _require_sha256("proposal_digest", self.proposal_digest),
         )
         checked = _normalized_digests(
-            "checked evidence", self.checked_evidence_digests, required=True
+            "checked evidence",
+            self.checked_evidence_digests,
+            required=True,
         )
         rejected = _normalized_digests(
-            "rejected evidence", self.rejected_evidence_digests, required=False
+            "rejected evidence",
+            self.rejected_evidence_digests,
+            required=False,
         )
         unsupported = _normalized_digests(
-            "unsupported claim", self.unsupported_claim_digests, required=False
+            "unsupported claim",
+            self.unsupported_claim_digests,
+            required=False,
         )
         if not set(rejected).issubset(set(checked)):
             raise ValueError("rejected evidence must be a subset of checked evidence")
@@ -249,7 +275,8 @@ class EvidenceVerification:
     def canonical_dict(self) -> dict[str, object]:
         return {
             "challenge_resolutions": [
-                resolution.canonical_dict() for resolution in sorted(self.challenge_resolutions)
+                resolution.canonical_dict()
+                for resolution in sorted(self.challenge_resolutions)
             ],
             "checked_evidence_digests": list(self.checked_evidence_digests),
             "proposal_digest": self.proposal_digest,
@@ -266,7 +293,7 @@ class EvidenceVerification:
 
 @dataclass(frozen=True, slots=True)
 class ReviewAssessment:
-    """Independent process review; review cannot substitute for evidence verification."""
+    """Independent process review; it cannot substitute for evidence."""
 
     reviewer_agent_id: AgentId
     proposal_digest: str
@@ -281,7 +308,7 @@ class ReviewAssessment:
             _require_sha256("proposal_digest", self.proposal_digest),
         )
         issues = tuple(item.strip() for item in self.issues)
-        if not all(issues) and issues:
+        if issues and not all(issues):
             raise ValueError("review issues cannot be blank")
         if len(issues) != len(set(issues)):
             raise ValueError("review issues must be unique")
@@ -303,7 +330,7 @@ class ReviewAssessment:
 
 @dataclass(frozen=True, slots=True)
 class AdversarialVerificationDecision:
-    """Verification artifact only; it cannot persist, promote, mutate, or deploy anything."""
+    """Decision artifact only; never mutation or deployment authority."""
 
     status: AdversarialVerificationStatus
     reason: str
@@ -339,7 +366,10 @@ class AdversarialVerificationDecision:
         object.__setattr__(
             self,
             "evidence_verification_digest",
-            _require_sha256("evidence_verification_digest", self.evidence_verification_digest),
+            _require_sha256(
+                "evidence_verification_digest",
+                self.evidence_verification_digest,
+            ),
         )
         object.__setattr__(
             self,
@@ -364,7 +394,7 @@ class AdversarialVerificationDecision:
 
 
 class AdversarialVerificationGate:
-    """Resolve adversarial verification by evidence and independence, never by majority vote."""
+    """Resolve by evidence and independence, never by majority vote."""
 
     def evaluate(
         self,
@@ -379,7 +409,7 @@ class AdversarialVerificationGate:
         proposal_digest = proposal.digest()
         challenge_digests = tuple(sorted(challenge.digest() for challenge in challenges))
 
-        def decision(
+        def decide(
             status: AdversarialVerificationStatus,
             reason: str,
         ) -> AdversarialVerificationDecision:
@@ -396,7 +426,7 @@ class AdversarialVerificationGate:
 
         challenger_ids = [str(challenge.challenger_agent_id) for challenge in challenges]
         if len(challenger_ids) != len(set(challenger_ids)):
-            return decision(
+            return decide(
                 AdversarialVerificationStatus.REJECTED,
                 "challenger identities must be independent and unique",
             )
@@ -406,86 +436,99 @@ class AdversarialVerificationGate:
             str(evidence.verifier_agent_id),
             str(review.reviewer_agent_id),
         }
-        expected_identity_count = 3 + len(challenger_ids)
-        if len(role_ids) != expected_identity_count:
-            return decision(
+        if len(role_ids) != len(challenger_ids) + 3:
+            return decide(
                 AdversarialVerificationStatus.REJECTED,
-                "generator, challengers, evidence verifier, and reviewer must be independent",
+                (
+                    "generator, challengers, evidence verifier, and reviewer "
+                    "must be independent"
+                ),
             )
 
-        bound = [challenge.proposal_digest == proposal_digest for challenge in challenges]
-        if not all(bound) or evidence.proposal_digest != proposal_digest:
-            return decision(
+        if any(challenge.proposal_digest != proposal_digest for challenge in challenges):
+            return decide(
                 AdversarialVerificationStatus.REJECTED,
-                "adversarial artifacts are not bound to the exact proposal",
+                "challenger artifact is not bound to the exact proposal",
+            )
+        if evidence.proposal_digest != proposal_digest:
+            return decide(
+                AdversarialVerificationStatus.REJECTED,
+                "evidence verification is not bound to the exact proposal",
             )
         if review.proposal_digest != proposal_digest:
-            return decision(
+            return decide(
                 AdversarialVerificationStatus.REJECTED,
                 "review is not bound to the exact proposal",
             )
 
-        all_findings = tuple(finding for challenge in challenges for finding in challenge.findings)
+        all_findings = tuple(
+            finding for challenge in challenges for finding in challenge.findings
+        )
         finding_codes = [finding.code for finding in all_findings]
         if len(finding_codes) != len(set(finding_codes)):
-            return decision(
+            return decide(
                 AdversarialVerificationStatus.REJECTED,
                 "challenge codes must be globally unique for deterministic resolution",
             )
         if any(finding.claim_digest not in proposal.claim_digests for finding in all_findings):
-            return decision(
+            return decide(
                 AdversarialVerificationStatus.REJECTED,
                 "challenger referenced a claim outside the proposal",
             )
 
-        if not set(proposal.evidence_digests).issubset(set(evidence.checked_evidence_digests)):
-            return decision(
+        checked_evidence = set(evidence.checked_evidence_digests)
+        if not set(proposal.evidence_digests).issubset(checked_evidence):
+            return decide(
                 AdversarialVerificationStatus.INCONCLUSIVE,
                 "not all proposal evidence was independently checked",
             )
         if not set(evidence.unsupported_claim_digests).issubset(set(proposal.claim_digests)):
-            return decision(
+            return decide(
                 AdversarialVerificationStatus.REJECTED,
                 "evidence verifier referenced an unknown unsupported claim",
             )
 
         resolution_map = {
-            resolution.challenge_code: resolution for resolution in evidence.challenge_resolutions
+            resolution.challenge_code: resolution
+            for resolution in evidence.challenge_resolutions
         }
-        known_codes = set(finding_codes)
-        if not set(resolution_map).issubset(known_codes):
-            return decision(
+        if not set(resolution_map).issubset(set(finding_codes)):
+            return decide(
                 AdversarialVerificationStatus.REJECTED,
                 "evidence verifier resolved an unknown challenge",
             )
-        checked = set(evidence.checked_evidence_digests)
         for resolution in evidence.challenge_resolutions:
-            if not set(resolution.evidence_digests).issubset(checked):
-                return decision(
+            if not set(resolution.evidence_digests).issubset(checked_evidence):
+                return decide(
                     AdversarialVerificationStatus.REJECTED,
-                    "challenge resolution cites evidence that was not independently checked",
+                    (
+                        "challenge resolution cites evidence that was not "
+                        "independently checked"
+                    ),
                 )
 
         if evidence.rejected_evidence_digests or evidence.unsupported_claim_digests:
-            return decision(
+            return decide(
                 AdversarialVerificationStatus.REJECTED,
-                "independent evidence verification rejected provenance or found unsupported claims",
+                (
+                    "independent evidence verification rejected provenance "
+                    "or found unsupported claims"
+                ),
             )
         if evidence.status is EvidenceVerificationStatus.FAIL:
-            return decision(
+            return decide(
                 AdversarialVerificationStatus.REJECTED,
                 "independent evidence verification failed",
             )
         if review.status is ReviewStatus.FAIL:
-            return decision(
+            return decide(
                 AdversarialVerificationStatus.REJECTED,
                 "independent review failed",
             )
 
         blocking_codes = {finding.code for finding in all_findings if finding.blocking}
-        missing_resolutions = blocking_codes - set(resolution_map)
-        if missing_resolutions:
-            return decision(
+        if blocking_codes - set(resolution_map):
+            return decide(
                 AdversarialVerificationStatus.INCONCLUSIVE,
                 "one or more blocking challenges remain unresolved",
             )
@@ -493,7 +536,7 @@ class AdversarialVerificationGate:
             resolution_map[code].status is ChallengeResolutionStatus.UPHELD
             for code in blocking_codes
         ):
-            return decision(
+            return decide(
                 AdversarialVerificationStatus.REJECTED,
                 "independent evidence verification upheld a blocking challenge",
             )
@@ -501,7 +544,7 @@ class AdversarialVerificationGate:
             resolution_map[code].status is ChallengeResolutionStatus.INCONCLUSIVE
             for code in blocking_codes
         ):
-            return decision(
+            return decide(
                 AdversarialVerificationStatus.INCONCLUSIVE,
                 "a blocking challenge remains evidence-inconclusive",
             )
@@ -509,12 +552,15 @@ class AdversarialVerificationGate:
             evidence.status is EvidenceVerificationStatus.INCONCLUSIVE
             or review.status is ReviewStatus.INCONCLUSIVE
         ):
-            return decision(
+            return decide(
                 AdversarialVerificationStatus.INCONCLUSIVE,
                 "independent verification or review remains inconclusive",
             )
 
-        return decision(
+        return decide(
             AdversarialVerificationStatus.VERIFIED,
-            "independent evidence verification and review passed with all blocking challenges resolved",
+            (
+                "independent evidence verification and review passed with "
+                "all blocking challenges resolved"
+            ),
         )
