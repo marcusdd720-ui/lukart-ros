@@ -1,11 +1,11 @@
 # P5 — Agent Teaching & Distillation
 
-Status: VALIDATED IMPLEMENTATION / FINAL MERGE GATE PENDING
+Status: COMPLETE
 
 ## Decision need
 
 P4 can turn a measured KQM failure into a bounded improvement candidate and an immutable
-promotion-eligibility decision. P5 must convert only controlled, independently approved learning
+promotion-eligibility decision. P5 converts only controlled, independently approved learning
 material into a versioned teaching artifact for a specific agent contract, while preventing raw
 Case output, locked evaluation, or an unreviewed hypothesis from becoming training truth.
 
@@ -94,18 +94,40 @@ P5 preserves these invariants:
 7. agent release requires recertification of the exact taught contract;
 8. engineering PASS is not analytical or domain certification.
 
-## Feature validation evidence
+## Validation evidence
 
-Implementation head `c887edf5030f4012b85e4949fcc6200c38352217` passed:
+Initial implementation head `c887edf5030f4012b85e4949fcc6200c38352217` passed CI Foundation
+on Python 3.11/3.12/3.13, Architectural Audit 1.0, GitHub App Smoke Test, and Stage Gate #219.
+
+Final feature head `35f3a34a662a7a9870dd61e591078c4fe8f2b0bd` passed:
 
 - CI Foundation on Python 3.11, 3.12, and 3.13;
 - Ruff, MyPy, pytest, repository audit, PII/confidentiality gate, and dependency boundary;
 - Architectural Audit 1.0;
 - GitHub App Smoke Test;
-- smoke-dispatched Stage Gate #219.
+- smoke-dispatched Stage Gate #221.
 
-This SSoT update creates a newer feature head. The exact final docs+code head must pass the same
-merge gates before merge. P5 remains incomplete until merge and post-merge validation succeed.
+The exact final feature head was merged through PR #34 without further branch changes.
+Implementation merge `d2027770a970c2a5a52e36831d6dc7cbfbf51969` then passed post-merge:
+
+- CI Foundation on Python 3.11, 3.12, and 3.13;
+- Architectural Audit 1.0;
+- Stage Orchestrator;
+- GitHub App Smoke Test;
+- smoke-dispatched Stage Gate #222;
+- MVROS v1 Release.
+
+No functional P5 validation failure required a repair commit.
+
+## Core result
+
+P4 gave LUKART a controlled way to measure whether an improvement candidate is eligible for
+promotion. P5 adds the controlled teaching bridge: independently approved Gold/Failure examples
+can become a deterministic teaching package for one exact agent contract, and that taught agent
+cannot become release-eligible until the exact contract is recertified.
+
+This is controlled teaching and distillation, not autonomous self-modification or proof that a
+model has learned domain truth.
 
 ## Non-goals
 
@@ -121,12 +143,12 @@ P5 does not:
 
 ## Definition of Done
 
-P5 becomes COMPLETE only when:
+P5 is COMPLETE because:
 
-1. teaching/distillation unit and adversarial boundary tests pass;
-2. full Ruff/MyPy/pytest and repository gates pass;
-3. Architectural Audit passes;
-4. GitHub App Smoke Test and its dispatched Stage Gate pass on the exact feature head;
-5. the exact validated head is merged to `main`;
-6. post-merge CI, Architectural Audit, Stage Orchestrator, Smoke, and dispatched Stage Gate pass;
+1. teaching/distillation unit and adversarial boundary tests passed;
+2. full Ruff/MyPy/pytest and repository gates passed;
+3. Architectural Audit passed;
+4. GitHub App Smoke Test and its dispatched Stage Gate passed on the exact feature head;
+5. the exact validated head was merged to `main`;
+6. post-merge CI, Architectural Audit, Stage Orchestrator, Smoke, and dispatched Stage Gate passed;
 7. SSoT records P5 completion without claiming P6 semantic self-healing is implemented.
