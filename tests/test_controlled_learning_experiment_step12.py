@@ -40,7 +40,7 @@ def test_step12_regression_is_rejected_by_existing_promotion_path() -> None:
     assert report.passed is False
     assert report.promotion_status is PromotionStatus.REJECTED
     assert report.readiness_status is RepairReadinessStatus.REJECTED
-    assert report.cycle_status is SelfLearningCycleStatus.REJECTED
+    assert report.cycle_status is SelfLearningCycleStatus.SUSPENDED
 
 
 def test_step12_requires_a_fresh_candidate_sha() -> None:
