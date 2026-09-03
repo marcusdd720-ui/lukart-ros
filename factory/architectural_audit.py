@@ -1,1 +1,1 @@
-# intentionally absent; retained only on the discarded audit branch
+# discarded audit implementation; not used by the factory
