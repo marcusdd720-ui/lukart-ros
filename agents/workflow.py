@@ -5,7 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 from agents.contract import AgentRequest
-from agents.runner import AgentRunResult, AgentRunStatus, AgentRunner
+from agents.runner import AgentRunner, AgentRunResult, AgentRunStatus
 from core.models.ids import AgentId
 
 
