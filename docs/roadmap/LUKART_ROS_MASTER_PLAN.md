@@ -139,10 +139,9 @@ does not authorize locked evaluation for tuning.
 
 ## P5 — Agent Teaching and Distillation
 
-Status: **VALIDATED IMPLEMENTATION / FINAL MERGE GATE PENDING** on
-`feat/agent-teaching-p5`.
+Status: **COMPLETE**
 
-Implemented scope:
+Delivered:
 
 1. immutable Gold and measured-Failure Teaching Example manifests;
 2. digest-bound source, input, expected-output, and evidence provenance;
@@ -164,12 +163,25 @@ Target loop:
 The package is a teaching manifest, not mutation authority. It intentionally exposes no API for
 fine-tuning, prompt/model replacement, registry mutation, deployment, or production release.
 
-Validated implementation head `c887edf5030f4012b85e4949fcc6200c38352217` passed CI Foundation
-on Python 3.11/3.12/3.13, Architectural Audit 1.0, GitHub App Smoke Test, and smoke-dispatched
-Stage Gate #219. Because this SSoT update creates a newer docs+code head, that exact final head
-must pass the same merge gates before merge.
+Final feature head `35f3a34a662a7a9870dd61e591078c4fe8f2b0bd` passed CI Foundation on
+Python 3.11/3.12/3.13, Architectural Audit 1.0, GitHub App Smoke Test, and smoke-dispatched
+Stage Gate #221, and was merged without further feature-branch changes.
 
-P5 becomes COMPLETE only after exact-head merge and post-merge validation on `main`.
+Implementation merge `d2027770a970c2a5a52e36831d6dc7cbfbf51969` then passed post-merge:
+
+- CI Foundation on Python 3.11, 3.12, and 3.13;
+- Architectural Audit 1.0;
+- Stage Orchestrator;
+- GitHub App Smoke Test;
+- smoke-dispatched Stage Gate #222;
+- MVROS v1 Release.
+
+Core result: LUKART can now turn independently approved Gold/Failure material, after a measured
+P4 promotion decision, into a deterministic teaching package for one exact agent contract and
+require that exact taught contract to pass recertification before release eligibility.
+
+P5 does not claim autonomous model training, domain truth acquisition, production self-modification,
+or permission to use locked evaluation as teaching material.
 
 ## P6 — Semantic Self-Healing and Change Propagation
 
