@@ -47,7 +47,10 @@ COMPLETE.
 19. Release / versioning / migration policy.
 20. LUKART v1 Release Candidate.
 
-The canonical machine-readable registry is `factory/production_validation_registry.py`.
+The canonical machine-readable registry is `factory/production_validation_registry.py`. In addition
+to the order and gate category, every non-review step declares an exact `evidence_kind` and a set of
+required named checks. An evidence artifact from one step therefore cannot be silently reused as
+proof for another step.
 
 ## Step 1 independent review gate
 
@@ -78,13 +81,43 @@ freeze manifest for downstream tooling.
 The repository currently does not contain the independent review artifact, so Step 1 is truthfully
 BLOCKED rather than PASS.
 
-## Step 2-20 evidence contract
+## Step 5 independent review gate
 
-After Step 1, each step supplies a JSON evidence artifact:
+Step 5 uses the same fail-closed review model for `reasoning-gold-v2`. It is not a generic PASS JSON.
+The exact bytes of `data/quality/reasoning_gold_v2.json` must be independently reviewed and bound by
+SHA-256 in `docs/quality/reviews/reasoning_gold_v2_review.json`. A changed reasoning corpus invalidates
+the prior review and requires a new independent review before a new freeze can be accepted.
 
-`factory/production_validation_evidence/step_NN.json`
+## Bound evidence contract for Steps 2-4 and 6-20
 
-Minimum fields:
+Each non-review step has two artifacts:
+
+1. a small evidence envelope at `factory/production_validation_evidence/step_NN.json`;
+2. a separate JSON validation report named by `artifact_path` in that envelope.
+
+The evidence envelope uses schema 2.0:
+
+```json
+{
+  "schema_version": "2.0",
+  "step": 2,
+  "status": "PASS",
+  "validated_sha": "FULL_40_CHARACTER_GIT_SHA",
+  "gate_kind": "implementation",
+  "evidence_kind": "reference_fact_agent_improvement",
+  "artifact_path": "reports/production_validation/step_02.json",
+  "artifact_sha256": "FULL_64_CHARACTER_SHA256_OF_REPORT_BYTES",
+  "critical_gates_passed": true
+}
+```
+
+The controller rejects a missing artifact, an absolute/path-traversal path, a self-reference, a
+non-JSON artifact, a malformed digest, or any digest that does not equal SHA-256 of the exact report
+bytes. This prevents a standalone JSON envelope from fabricating completion.
+
+The bound report uses schema 1.0 and must repeat the step identity, exact validated Git SHA,
+`gate_kind`, and `evidence_kind`. It must explicitly state that locked evaluation was not used for
+tuning and private data was not committed. It also contains named checks:
 
 ```json
 {
@@ -92,30 +125,41 @@ Minimum fields:
   "step": 2,
   "status": "PASS",
   "validated_sha": "FULL_40_CHARACTER_GIT_SHA",
-  "evidence_sha256": "FULL_64_CHARACTER_SHA256",
-  "critical_gates_passed": true
+  "gate_kind": "implementation",
+  "evidence_kind": "reference_fact_agent_improvement",
+  "locked_evaluation_used_for_tuning": false,
+  "private_data_committed": false,
+  "checks": [
+    {"name": "agent_version_changed", "status": "PASS"},
+    {"name": "development_metrics_recorded", "status": "PASS"},
+    {"name": "validation_metrics_recorded", "status": "PASS"},
+    {"name": "locked_evaluation_untouched", "status": "PASS"}
+  ]
 }
 ```
 
-A step cannot advance if the step number does not match, status is not PASS, the Git SHA is not a
-full commit identifier, the evidence digest is malformed, or critical gates are not explicitly
-recorded as passed.
+Every declared check must be PASS, duplicate check names are rejected, and all required checks from
+the canonical registry must be present. Different program steps have different required checks, so
+for example replay evidence cannot satisfy a certification gate and a release report cannot satisfy
+a privacy gate merely by declaring `PASS`.
 
-The minimum envelope is intentionally generic. Each implementation step must additionally document
-its domain-specific measurement/certification/replay/privacy evidence. The generic control plane is
-not permission to reduce those domain gates to a single Boolean.
+The control plane still does not invent domain measurements. Step-specific tools must create the
+underlying reports from real execution. The strengthened contract makes those reports cryptographically
+bound and structurally required instead of trusting a Boolean assertion.
 
 ## Locked evaluation
 
 Locked evaluation remains protected. A step that needs first-use locked evaluation must satisfy the
 existing corpus review/freeze protocol and add explicit authorization evidence. Development and
-validation improvement must not tune against locked evaluation.
+validation improvement must not tune against locked evaluation. Every generic bound report must
+explicitly record `locked_evaluation_used_for_tuning: false`.
 
 ## Private cases
 
 Step 15 is local-only. Real private Cases, evidence, PII, and legal documents must not be committed
-to the public repository. Public CI may contain only synthetic/anonymized proof that the local-only
-boundary works.
+to the public repository. Public CI may contain only synthetic/anonymized proof or a non-sensitive
+attestation that the local-only boundary works. Every generic bound report must explicitly record
+`private_data_committed: false`.
 
 ## Relationship to P4-P7
 
