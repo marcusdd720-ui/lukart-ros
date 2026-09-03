@@ -1,0 +1,41 @@
+{
+  "schema_version": "1.0",
+  "step": 11,
+  "status": "PASS",
+  "validated_sha": "8588d12cdc29460ad81125d892eb67b83760d223",
+  "gate_kind": "validation",
+  "evidence_kind": "change_propagation_stress",
+  "locked_evaluation_used_for_tuning": false,
+  "private_data_committed": false,
+  "validation_summary": {
+    "suite": "tests/test_change_propagation_stress.py",
+    "scenarios": 5,
+    "passed_scenarios": 5,
+    "complete_long_chain_nodes": 40,
+    "selective_downstream_components": 23,
+    "incomplete_graph_nodes": 50,
+    "incomplete_graph_mode": "BROAD_REVALIDATION_REQUIRED",
+    "inconclusive_graph_nodes": 12,
+    "cycle_nodes": 20,
+    "cycle_rejected": true
+  },
+  "source_evidence": [
+    "learning/semantic_self_healing.py",
+    "tests/test_change_propagation_stress.py"
+  ],
+  "checks": [
+    {
+      "name": "complete_graph_selective_revalidation_tested",
+      "status": "PASS"
+    },
+    {
+      "name": "incomplete_graph_broad_fallback_tested",
+      "status": "PASS"
+    },
+    {
+      "name": "cycle_rejection_tested",
+      "status": "PASS"
+    }
+  ],
+  "report_revision": "1.0.1"
+}
