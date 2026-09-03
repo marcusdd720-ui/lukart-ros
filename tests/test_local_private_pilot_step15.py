@@ -34,7 +34,9 @@ def test_step15_preparation_does_not_claim_pilot_execution(tmp_path: Path) -> No
     )
 
     assert attestation.status is LocalPilotStatus.READY_FOR_LOCAL_EXECUTION
-    assert attestation.local_only_execution_attested is True
+    assert attestation.local_only_execution_attested is False
+    assert attestation.pii_not_committed is False
+    assert attestation.private_evidence_not_committed is False
     assert attestation.pilot_results_recorded is False
     assert attestation.passed is False
 
@@ -53,6 +55,8 @@ def test_step15_records_only_digest_of_private_local_result(tmp_path: Path) -> N
         result_path=result,
         pipeline_exit_code=0,
         stages_executed=3,
+        pii_committed=False,
+        private_evidence_committed=False,
     )
 
     payload = json.dumps(attestation.canonical_dict(), sort_keys=True)
@@ -80,6 +84,8 @@ def test_step15_rejects_result_outside_private_data_root(tmp_path: Path) -> None
             result_path=outside,
             pipeline_exit_code=0,
             stages_executed=1,
+            pii_committed=False,
+            private_evidence_committed=False,
         )
 
 
@@ -109,6 +115,7 @@ def test_step15_privacy_failure_blocks_pass(tmp_path: Path) -> None:
         pipeline_exit_code=0,
         stages_executed=1,
         pii_committed=True,
+        private_evidence_committed=False,
     )
 
     assert attestation.status is LocalPilotStatus.REJECTED
