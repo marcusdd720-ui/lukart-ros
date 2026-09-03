@@ -1,0 +1,48 @@
+{
+  "schema_version": "1.0",
+  "step": 17,
+  "status": "PASS",
+  "validated_sha": "1f046854a8e794b9f4a08fd24cb6415b35be4805",
+  "gate_kind": "measurement",
+  "evidence_kind": "performance_budget_measurement",
+  "locked_evaluation_used_for_tuning": false,
+  "private_data_committed": false,
+  "measurement_summary": {
+    "probe": "validation.performance_probe.measure_performance",
+    "scenario": "synthetic-final-report-e2e",
+    "runtime_source": "time.perf_counter",
+    "memory_source": "tracemalloc peak traced Python memory",
+    "model_calls": 0,
+    "cost_units": 0.0,
+    "declared_max_runtime_ms": 2000.0,
+    "declared_max_peak_memory_mb": 64.0,
+    "declared_max_model_calls": 0,
+    "declared_max_cost_units": 0.0,
+    "budget_evaluated_during_test": true
+  },
+  "source_evidence": [
+    "validation/performance_probe.py",
+    "validation/performance_budget.py",
+    "tests/test_performance_probe.py",
+    "tests/test_performance_budget.py"
+  ],
+  "checks": [
+    {
+      "name": "runtime_budget_measured",
+      "status": "PASS"
+    },
+    {
+      "name": "memory_budget_measured",
+      "status": "PASS"
+    },
+    {
+      "name": "model_call_budget_measured",
+      "status": "PASS"
+    },
+    {
+      "name": "cost_budget_measured",
+      "status": "PASS"
+    }
+  ],
+  "report_revision": "1.0.2"
+}

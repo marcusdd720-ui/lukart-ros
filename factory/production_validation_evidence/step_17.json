@@ -1,0 +1,11 @@
+{
+  "schema_version": "2.0",
+  "step": 17,
+  "status": "PASS",
+  "validated_sha": "1f046854a8e794b9f4a08fd24cb6415b35be4805",
+  "gate_kind": "measurement",
+  "evidence_kind": "performance_budget_measurement",
+  "artifact_path": "reports/production_validation/step_17.json",
+  "artifact_sha256": "23a5e957eb488f8e9f9b066b1b1cf1f9096b9c79ccda260af6065b6ff567cd32",
+  "critical_gates_passed": true
+}
