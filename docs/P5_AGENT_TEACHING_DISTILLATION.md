@@ -1,6 +1,6 @@
 # P5 — Agent Teaching & Distillation
 
-Status: IMPLEMENTED / VALIDATION PENDING
+Status: VALIDATED IMPLEMENTATION / FINAL MERGE GATE PENDING
 
 ## Decision need
 
@@ -93,6 +93,19 @@ P5 preserves these invariants:
 6. teaching artifacts are immutable manifests, not self-modification authority;
 7. agent release requires recertification of the exact taught contract;
 8. engineering PASS is not analytical or domain certification.
+
+## Feature validation evidence
+
+Implementation head `c887edf5030f4012b85e4949fcc6200c38352217` passed:
+
+- CI Foundation on Python 3.11, 3.12, and 3.13;
+- Ruff, MyPy, pytest, repository audit, PII/confidentiality gate, and dependency boundary;
+- Architectural Audit 1.0;
+- GitHub App Smoke Test;
+- smoke-dispatched Stage Gate #219.
+
+This SSoT update creates a newer feature head. The exact final docs+code head must pass the same
+merge gates before merge. P5 remains incomplete until merge and post-merge validation succeed.
 
 ## Non-goals
 
