@@ -1,6 +1,6 @@
 # P7 — Controlled Self-Learning / Adversarial Verification
 
-Status: VALIDATED IMPLEMENTATION / FINAL MERGE GATE PENDING
+Status: COMPLETE
 
 ## Decision need
 
@@ -137,13 +137,8 @@ before Mypy/Pytest because two new source lines exceeded the repository 100-char
 The first repair changed formatting only. No P7 decision semantics, evidence rules, P4/P6 bindings,
 or test expectations were relaxed.
 
-Fresh repair head `a2d7bbdf73c0` (abbreviated Git SHA) then passed:
-
-- CI Foundation on Python 3.11, 3.12, and 3.13;
-- Ruff, Mypy, pytest, dependency boundary, secret scan, model usage audit, and repository gates;
-- Architectural Audit 1.0;
-- GitHub App Smoke Test;
-- smoke-dispatched Stage Gate #234.
+Fresh repair head `a2d7bbdf73c0` (abbreviated Git SHA) then passed CI Foundation on Python
+3.11/3.12/3.13, Architectural Audit 1.0, GitHub App Smoke Test, and smoke-dispatched Stage Gate #234.
 
 The first docs+code finalization head `de74d16d` exposed a second fail-closed event. Ruff passed,
 Mypy reported no issues in 392 source files, all 478 pytest tests passed, and Repository Audit passed,
@@ -152,9 +147,31 @@ above happened to contain decimal runs matching the repository's NIP-like patter
 present. The scanner was not weakened or allowlisted; public SSoT references were changed to
 abbreviated Git SHA values while exact full hashes remain auditable in Git and PR history.
 
-This documentation repair creates a newer docs+code feature head. That exact final head must pass the
-same merge gates before merge. P7 remains incomplete until exact-head merge and post-merge validation
-succeed.
+Final feature head `945a741b2659ea965f11d67f151f9f8fdc6726a3` then passed:
+
+- CI Foundation on Python 3.11, 3.12, and 3.13;
+- Ruff, Mypy, pytest, PII/confidentiality, dependency boundary, secret scan, model usage audit,
+  dead-code inventory, and repository gates;
+- Architectural Audit 1.0;
+- GitHub App Smoke Test;
+- smoke-dispatched Stage Gate #236.
+
+PR #38 was merged from that exact validated feature head. Implementation merge
+`dc6b59c60ea05471d44eabb56750f98614389e4a` then passed post-merge:
+
+- CI Foundation on Python 3.11, 3.12, and 3.13;
+- Architectural Audit 1.0;
+- Stage Orchestrator;
+- GitHub App Smoke Test;
+- smoke-dispatched Stage Gate #237.
+
+## Core result
+
+LUKART can now require an independently challenged, evidence-verified, and independently reviewed
+learning trigger before that trigger is allowed to traverse the existing bounded P4 experiment and
+P6 fresh-SHA validation path. Agent agreement is never sufficient evidence, regression can suspend
+a candidate, and an unresolved evidentiary dispute produces abstention rather than autonomous
+promotion.
 
 ## Non-goals
 
@@ -175,7 +192,7 @@ future extensions and must reuse the same measured/evidence gates rather than we
 
 ## Definition of Done
 
-P7 becomes COMPLETE only when:
+P7 is COMPLETE because:
 
 1. adversarial verification contracts and gate tests pass;
 2. majority-vote, self-review, provenance-veto, unresolved-challenge, and abstention tests pass;
@@ -183,7 +200,7 @@ P7 becomes COMPLETE only when:
 4. locked evaluation remains prohibited;
 5. full Ruff/MyPy/pytest and repository gates pass;
 6. Architectural Audit passes;
-7. GitHub App Smoke Test and its dispatched Stage Gate pass on the exact final feature head;
-8. exact validated feature head is merged to `main`;
-9. post-merge CI, Architectural Audit, Stage Orchestrator, Smoke, and dispatched Stage Gate pass;
-10. SSoT records P7 COMPLETE without claiming autonomous production self-modification.
+7. GitHub App Smoke Test and its dispatched Stage Gate passed on the exact final feature head;
+8. the exact validated feature head was merged to `main`;
+9. post-merge CI, Architectural Audit, Stage Orchestrator, Smoke, and dispatched Stage Gate passed;
+10. this SSoT records P7 COMPLETE without claiming autonomous production self-modification.
