@@ -1,0 +1,11 @@
+{
+  "schema_version": "2.0",
+  "step": 7,
+  "status": "PASS",
+  "validated_sha": "52990da5f27b22dc7c371a428fbd5193a150dab7",
+  "gate_kind": "measurement",
+  "evidence_kind": "end_to_end_gold_measurement",
+  "artifact_path": "reports/production_validation/step_07.json",
+  "artifact_sha256": "c4aae6556d8ba99b025c0655f7046b217e7e5ea71e5612b8381dd0523c5619b7",
+  "critical_gates_passed": true
+}
