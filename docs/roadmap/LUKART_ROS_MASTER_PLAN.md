@@ -185,10 +185,9 @@ or permission to use locked evaluation as teaching material.
 
 ## P6 — Semantic Self-Healing and Change Propagation
 
-Status: **VALIDATED IMPLEMENTATION / FINAL MERGE GATE PENDING** on
-`feat/semantic-self-healing-p6`.
+Status: **COMPLETE**
 
-Implemented scope:
+Delivered:
 
 1. evidence-bound semantic KQM failure diagnosis tied to exact `MeasuredFailure` digests;
 2. explicit `INCONCLUSIVE`/`UNKNOWN` abstention when no curated diagnosis rule exists;
@@ -215,14 +214,33 @@ import or replace it.
 
 Initial feature head `986e267d97f5c32afeea614c2b33531c237f8be1` exposed one test assertion
 mismatch: the existing P4 contract correctly rejected `locked_evaluation`, but one P6 test expected
-a different exception-message regex. The minimal repair changed only the test assertion.
+a different exception-message regex. The minimal repair changed only the test assertion; no P6 or
+P4 semantics changed.
 
 Fresh repair head `86ce620782b0093f812243394401ab84799397f3` passed CI Foundation on
 Python 3.11/3.12/3.13, Architectural Audit 1.0, GitHub App Smoke Test, and smoke-dispatched
-Stage Gate #226. This SSoT update creates a newer docs+code head, which must pass the same exact-head
-merge gates before merge.
+Stage Gate #226.
 
-P6 becomes COMPLETE only after exact-head merge and post-merge validation on `main`.
+Final feature head `098b29a21c74a49a7fcdd6388850f0085f0528f4` passed CI Foundation on
+Python 3.11/3.12/3.13, Architectural Audit 1.0, GitHub App Smoke Test, and smoke-dispatched
+Stage Gate #228, and was merged without further feature-branch changes.
+
+Implementation merge `06e7f36ca8722b9cdeb3aab9153d51d189d97dba` then passed post-merge:
+
+- CI Foundation on Python 3.11, 3.12, and 3.13;
+- Architectural Audit 1.0;
+- Stage Orchestrator;
+- GitHub App Smoke Test;
+- smoke-dispatched Stage Gate #229.
+
+Core result: measured KQM failures can now become evidence-bound semantic diagnoses, trustworthy
+selective downstream revalidation plans when graph completeness is proven, P4 repair hypotheses,
+and fresh-SHA replay/KQM evidence. P6 can determine whether a repair is ready to continue through
+the existing controlled promotion/release path without itself becoming mutation or deployment
+authority.
+
+P6 does not claim automatic source-code patching, prompt/model rewriting, autonomous deployment,
+or P7 controlled self-learning.
 
 ## P7 — Controlled Self-Learning / Adversarial Verification
 
