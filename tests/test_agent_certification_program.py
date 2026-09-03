@@ -3,14 +3,16 @@ from __future__ import annotations
 from agents.certification import (
     AgentCertificationThresholds,
     AgentCertifier,
+    AgentCertificationStatus,
     contract_sha256,
 )
 from agents.certification_program import (
     AgentCertificationProgram,
     CertificationProgramEvidence,
     CertificationProgramStatus,
+    router_certification_update,
 )
-from agents.reference_fact import ReferenceFactAgent
+from agents.reference_fact import REFERENCE_FACT_AGENT_ID, ReferenceFactAgent
 from validation.extraction_quality import ExtractionMetrics
 from validation.independent_evaluation import ReviewOutcome
 
@@ -46,7 +48,11 @@ def _certifier() -> AgentCertifier:
     )
 
 
-def _evidence(*, e2e_passed: bool = True, contract_digest: str | None = None):  # type: ignore[no-untyped-def]
+def _evidence(
+    *,
+    e2e_passed: bool = True,
+    contract_digest: str | None = None,
+) -> CertificationProgramEvidence:
     agent = ReferenceFactAgent()
     return CertificationProgramEvidence(
         validated_sha="a" * 40,
@@ -57,64 +63,57 @@ def _evidence(*, e2e_passed: bool = True, contract_digest: str | None = None):  
     )
 
 
-def test_rejected_analytical_agent_cannot_be_elevated_by_e2e_pass() -> None:
+def _analytical_report(
+    *,
+    passing: bool,
+    review: ReviewOutcome,
+):  # type: ignore[no-untyped-def]
     agent = ReferenceFactAgent()
-    analytical = _certifier().evaluate(
+    return _certifier().evaluate(
         agent.contract,
-        _metrics(passing=False),
+        _metrics(passing=passing),
         corpus_version="1.0.0",
         split_name="validation",
-        external_review=ReviewOutcome.PASS,
+        external_review=review,
     )
+
+
+def test_rejected_analytical_agent_cannot_be_elevated_by_e2e_pass() -> None:
+    analytical = _analytical_report(passing=False, review=ReviewOutcome.PASS)
 
     report = AgentCertificationProgram().evaluate(analytical, _evidence())
 
     assert report.status is CertificationProgramStatus.REJECTED
     assert "ANALYTICAL_CERTIFICATION_REJECTED" in report.failures
+    assert router_certification_update(REFERENCE_FACT_AGENT_ID, report) == {}
 
 
 def test_external_review_is_mandatory_for_program_certification() -> None:
-    agent = ReferenceFactAgent()
-    analytical = _certifier().evaluate(
-        agent.contract,
-        _metrics(passing=True),
-        corpus_version="1.0.0",
-        split_name="validation",
-        external_review=ReviewOutcome.PENDING,
-    )
+    analytical = _analytical_report(passing=True, review=ReviewOutcome.PENDING)
 
     report = AgentCertificationProgram().evaluate(analytical, _evidence())
 
     assert report.status is CertificationProgramStatus.PENDING_EXTERNAL_REVIEW
     assert report.failures == ()
+    assert router_certification_update(REFERENCE_FACT_AGENT_ID, report) == {}
 
 
-def test_full_evidence_can_produce_program_certification() -> None:
-    agent = ReferenceFactAgent()
-    analytical = _certifier().evaluate(
-        agent.contract,
-        _metrics(passing=True),
-        corpus_version="1.0.0",
-        split_name="validation",
-        external_review=ReviewOutcome.PASS,
-    )
+def test_full_evidence_can_produce_program_certification_and_router_eligibility() -> None:
+    analytical = _analytical_report(passing=True, review=ReviewOutcome.PASS)
 
     report = AgentCertificationProgram().evaluate(analytical, _evidence())
+    eligibility = router_certification_update(REFERENCE_FACT_AGENT_ID, report)
 
     assert report.status is CertificationProgramStatus.CERTIFIED
     assert report.failures == ()
     assert len(report.digest()) == 64
+    assert eligibility == {
+        (str(REFERENCE_FACT_AGENT_ID), "1.0.0"): AgentCertificationStatus.CERTIFIED,
+    }
 
 
 def test_contract_or_e2e_failure_blocks_program_certification() -> None:
-    agent = ReferenceFactAgent()
-    analytical = _certifier().evaluate(
-        agent.contract,
-        _metrics(passing=True),
-        corpus_version="1.0.0",
-        split_name="validation",
-        external_review=ReviewOutcome.PASS,
-    )
+    analytical = _analytical_report(passing=True, review=ReviewOutcome.PASS)
 
     wrong_contract = AgentCertificationProgram().evaluate(
         analytical,
@@ -129,3 +128,5 @@ def test_contract_or_e2e_failure_blocks_program_certification() -> None:
     assert "CONTRACT_DIGEST_MISMATCH" in wrong_contract.failures
     assert failed_e2e.status is CertificationProgramStatus.REJECTED
     assert "E2E_SUITE_REQUIRED" in failed_e2e.failures
+    assert router_certification_update(REFERENCE_FACT_AGENT_ID, wrong_contract) == {}
+    assert router_certification_update(REFERENCE_FACT_AGENT_ID, failed_e2e) == {}
