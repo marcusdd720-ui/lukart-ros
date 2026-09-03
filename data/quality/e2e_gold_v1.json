@@ -1,0 +1,78 @@
+{
+  "schema_version": "1.0.0",
+  "corpus_id": "e2e-gold-v1",
+  "version": "1.0.0",
+  "status": "candidate_pending_independent_review",
+  "review_status": "not_reviewed",
+  "splits": {
+    "development": ["SYN-E2E-001", "SYN-E2E-002", "SYN-E2E-003", "SYN-E2E-004"],
+    "validation": ["SYN-E2E-005", "SYN-E2E-006"],
+    "locked_evaluation": ["SYN-E2E-007", "SYN-E2E-008"]
+  },
+  "cases": [
+    {
+      "case_id": "SYN-E2E-001",
+      "document_id": "SYN-DOC-E2E-001",
+      "document_text": "Sygn. akt ABC-12/34.",
+      "expected_entity_type": "CASE_NUMBER",
+      "expected_value": "Sygn. akt ABC-12/34",
+      "expected_outcome": "CONCLUDE"
+    },
+    {
+      "case_id": "SYN-E2E-002",
+      "document_id": "SYN-DOC-E2E-002",
+      "document_text": "Dokument sporządzono dnia 01.09.2026.",
+      "expected_entity_type": "DATE",
+      "expected_value": "01.09.2026",
+      "expected_outcome": "CONCLUDE"
+    },
+    {
+      "case_id": "SYN-E2E-003",
+      "document_id": "SYN-DOC-E2E-003",
+      "document_text": "Do zapłaty pozostaje kwota 1250,00 zł.",
+      "expected_entity_type": "AMOUNT",
+      "expected_value": "1250,00 zł",
+      "expected_outcome": "CONCLUDE"
+    },
+    {
+      "case_id": "SYN-E2E-004",
+      "document_id": "SYN-DOC-E2E-004",
+      "document_text": "Synthetic narrative contains no configured extraction token.",
+      "expected_entity_type": null,
+      "expected_value": null,
+      "expected_outcome": "ABSTAIN"
+    },
+    {
+      "case_id": "SYN-E2E-005",
+      "document_id": "SYN-DOC-E2E-005",
+      "document_text": "Wniosek dowodowy oparto na art. 167 k.p.k.",
+      "expected_entity_type": "LEGAL_BASIS",
+      "expected_value": "art. 167",
+      "expected_outcome": "CONCLUDE"
+    },
+    {
+      "case_id": "SYN-E2E-006",
+      "document_id": "SYN-DOC-E2E-006",
+      "document_text": "No date amount signature decision number or legal basis appears here.",
+      "expected_entity_type": null,
+      "expected_value": null,
+      "expected_outcome": "ABSTAIN"
+    },
+    {
+      "case_id": "SYN-E2E-007",
+      "document_id": "SYN-DOC-E2E-007",
+      "document_text": "Nr decyzji ZUS/2026/7.",
+      "expected_entity_type": "DECISION_NUMBER",
+      "expected_value": "Nr decyzji ZUS/2026/7",
+      "expected_outcome": "CONCLUDE"
+    },
+    {
+      "case_id": "SYN-E2E-008",
+      "document_id": "SYN-DOC-E2E-008",
+      "document_text": "Synthetic locked narrative deliberately contains no configured token.",
+      "expected_entity_type": null,
+      "expected_value": null,
+      "expected_outcome": "ABSTAIN"
+    }
+  ]
+}
