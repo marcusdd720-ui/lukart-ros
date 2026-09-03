@@ -1,9 +1,8 @@
 """Controlled self-learning closure over existing P4-P6 evidence gates.
 
-P7 does not mutate Product state. It verifies that an independently confirmed measured failure
-became the same P4 LearningCandidate, bounded experiment, measured promotion decision, and P6
-fresh-SHA readiness artifact. The final decision can only authorize continuation through the
-existing release path or stop/suspend the candidate.
+P7 does not mutate Product state. It verifies that an independently confirmed
+measured failure became the same P4 LearningCandidate, bounded experiment,
+measured promotion decision, and P6 fresh-SHA readiness artifact.
 """
 
 from __future__ import annotations
@@ -35,7 +34,7 @@ class SelfLearningCycleStatus(StrEnum):
 
 @dataclass(frozen=True, slots=True)
 class SelfLearningCycleDecision:
-    """Immutable governance artifact; never a code/model/prompt mutation authority."""
+    """Governance artifact only; never code/model/prompt mutation authority."""
 
     status: SelfLearningCycleStatus
     reason: str
@@ -67,7 +66,7 @@ class SelfLearningCycleDecision:
 
 
 class ControlledSelfLearningGate:
-    """Close one measured learning cycle without acquiring mutation or deployment authority."""
+    """Close one measured cycle without mutation or deployment authority."""
 
     def evaluate(
         self,
@@ -83,7 +82,10 @@ class ControlledSelfLearningGate:
         candidate_digest = candidate.digest()
         experiment_digest = experiment.digest()
 
-        def decision(status: SelfLearningCycleStatus, reason: str) -> SelfLearningCycleDecision:
+        def decide(
+            status: SelfLearningCycleStatus,
+            reason: str,
+        ) -> SelfLearningCycleDecision:
             return SelfLearningCycleDecision(
                 status=status,
                 reason=reason,
@@ -95,77 +97,87 @@ class ControlledSelfLearningGate:
             )
 
         if verification.proposal_subject_type != "measured_failure":
-            return decision(
+            return decide(
                 SelfLearningCycleStatus.REJECTED,
-                "self-learning requires adversarial verification of a measured_failure subject",
+                (
+                    "self-learning requires adversarial verification of a "
+                    "measured_failure subject"
+                ),
             )
         if verification.proposal_subject_digest != failure_digest:
-            return decision(
+            return decide(
                 SelfLearningCycleStatus.REJECTED,
                 "adversarial verification is not bound to this measured failure",
             )
         if verification.status is AdversarialVerificationStatus.REJECTED:
-            return decision(
+            return decide(
                 SelfLearningCycleStatus.REJECTED,
                 "adversarial verification rejected the learning trigger",
             )
         if verification.status is AdversarialVerificationStatus.INCONCLUSIVE:
-            return decision(
+            return decide(
                 SelfLearningCycleStatus.INCONCLUSIVE,
-                "adversarial verification did not establish a trustworthy learning trigger",
+                (
+                    "adversarial verification did not establish a trustworthy "
+                    "learning trigger"
+                ),
             )
         if candidate.source_failure_digest != failure_digest:
-            return decision(
+            return decide(
                 SelfLearningCycleStatus.REJECTED,
                 "learning candidate is not bound to this measured failure",
             )
         if experiment.candidate_digest != candidate_digest:
-            return decision(
+            return decide(
                 SelfLearningCycleStatus.REJECTED,
                 "experiment is not bound to this learning candidate",
             )
         if experiment.target_component != candidate.target_component:
-            return decision(
+            return decide(
                 SelfLearningCycleStatus.REJECTED,
                 "experiment target does not match the learning candidate",
             )
         if promotion.contract_digest != experiment_digest:
-            return decision(
+            return decide(
                 SelfLearningCycleStatus.REJECTED,
                 "promotion decision is not bound to this experiment",
             )
 
         regression = any(
-            delta.signed_improvement < -delta.allowed_regression for delta in promotion.deltas
+            delta.signed_improvement < -delta.allowed_regression
+            for delta in promotion.deltas
         )
         if regression:
-            return decision(
+            return decide(
                 SelfLearningCycleStatus.SUSPENDED,
                 "measured regression exceeded a P4 guardrail; candidate is suspended",
             )
         if promotion.status is PromotionStatus.REJECTED:
-            return decision(
+            return decide(
                 SelfLearningCycleStatus.REJECTED,
                 "P4 PromotionGate rejected the candidate",
             )
         if promotion.status is PromotionStatus.INCONCLUSIVE:
-            return decision(
+            return decide(
                 SelfLearningCycleStatus.INCONCLUSIVE,
                 "P4 experiment produced no sufficient measured improvement",
             )
         if readiness.candidate_digest != candidate_digest:
-            return decision(
+            return decide(
                 SelfLearningCycleStatus.REJECTED,
                 "P6 readiness is not bound to this learning candidate",
             )
         if readiness.status is not RepairReadinessStatus.READY_FOR_EXISTING_PROMOTION:
-            return decision(
+            return decide(
                 SelfLearningCycleStatus.REJECTED,
                 "P6 fresh-SHA semantic self-healing gate did not accept the repair",
             )
 
-        return decision(
+        return decide(
             SelfLearningCycleStatus.READY_FOR_EXISTING_RELEASE_PATH,
-            "independently verified measured failure completed P4 experiment and P6 fresh-SHA gates; "
-            "the candidate may continue only through the existing controlled release path",
+            (
+                "independently verified measured failure completed P4 experiment "
+                "and P6 fresh-SHA gates; the candidate may continue only through "
+                "the existing controlled release path"
+            ),
         )
