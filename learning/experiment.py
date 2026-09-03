@@ -7,10 +7,12 @@ import json
 import math
 from dataclasses import dataclass
 from enum import StrEnum
+from string import hexdigits
 
 from learning.models import LearningCandidate, MetricValue
 
 _ALLOWED_LEARNING_SPLITS = frozenset({"development", "validation"})
+_HEX_DIGITS = frozenset(hexdigits.lower())
 
 
 class MetricDirection(StrEnum):
@@ -140,7 +142,7 @@ class ExperimentResult:
 
     def __post_init__(self) -> None:
         digest = self.contract_digest.strip().lower()
-        if len(digest) != 64 or any(character not in "0123456789abcdef" for character in digest):
+        if len(digest) != 64 or any(character not in _HEX_DIGITS for character in digest):
             raise ValueError("experiment result requires a SHA-256 contract digest")
         if self.run_count < 1:
             raise ValueError("run_count must be >= 1")
