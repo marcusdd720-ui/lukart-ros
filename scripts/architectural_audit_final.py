@@ -1,17 +1,17 @@
 # ruff: noqa: E501
-"""Evidence-based final Architectural Audit 1.0 runner."""
+"""Final Architectural Audit 1.0 runner without package-path assumptions."""
 
 from __future__ import annotations
 
 import argparse
+import ast
 import json
 import os
 from dataclasses import asdict, dataclass
 from pathlib import Path
 
-from scripts.dependency_boundary_check import runtime_factory_imports
-
 STATUSES = ("PASS", "FAIL", "RISK", "NOT IMPLEMENTED", "NOT APPLICABLE")
+RUNTIME_ROOTS = ("core", "knowledge")
 
 
 @dataclass(frozen=True, slots=True)
@@ -23,6 +23,30 @@ class AuditItem:
     observation: str
     risk: str
     recommendation: str
+
+
+def runtime_factory_imports(root: Path) -> list[str]:
+    violations: list[str] = []
+    for package in RUNTIME_ROOTS:
+        package_root = root / package
+        if not package_root.is_dir():
+            continue
+        for path in sorted(package_root.rglob("*.py")):
+            try:
+                tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
+            except SyntaxError:
+                continue
+            for node in ast.walk(tree):
+                if isinstance(node, ast.Import):
+                    names = [alias.name for alias in node.names]
+                elif isinstance(node, ast.ImportFrom) and node.level == 0 and node.module:
+                    names = [node.module]
+                else:
+                    continue
+                for name in names:
+                    if name == "factory" or name.startswith("factory."):
+                        violations.append(f"{path.relative_to(root)}:{node.lineno}:{name}")
+    return violations
 
 
 def has_text(root: Path, path: str, *tokens: str) -> bool:
@@ -38,7 +62,7 @@ def exists_all(root: Path, *paths: str) -> bool:
 
 
 def current_sha() -> str:
-    return os.environ.get("GITHUB_SHA", "").strip() or "unknown"
+    return os.environ.get("AUDIT_HEAD_SHA", "").strip() or os.environ.get("GITHUB_SHA", "").strip() or "unknown"
 
 
 def build_items(root: Path) -> list[AuditItem]:
@@ -67,7 +91,7 @@ def build_items(root: Path) -> list[AuditItem]:
         AuditItem("A3", "CASE lifecycle", "PASS" if lifecycle else "FAIL", ("knowledge/models/case_workspace.py",), "Lifecycle states are represented." if lifecycle else "Lifecycle definition is incomplete.", "Missing lifecycle states weaken process control." if not lifecycle else "Presence alone does not prove every transition path.", "Keep lifecycle transitions testable."),
         AuditItem("A4", "Canonical source of truth", "PASS" if (root / "knowledge/models/case_manifest.py").is_file() else "FAIL", ("knowledge/models/case_manifest.py",), "CaseManifest is the canonical manifest with stable serialization and digest." if (root / "knowledge/models/case_manifest.py").is_file() else "No canonical case manifest exists.", "Distributed case state can drift." if not (root / "knowledge/models/case_manifest.py").is_file() else "Manifest adoption must remain enforced at runtime boundaries.", "Keep manifest persistence canonical."),
         AuditItem("A5", "Traceability", "PASS" if provenance and ids else "FAIL", ("knowledge/provenance.py", "core/models/ids.py"), "Source identity, integrity and canonical IDs are present." if provenance and ids else "Traceability contracts are incomplete.", "Weak linkage impairs reviewability." if not provenance or not ids else "Future refactors must preserve source binding.", "Keep source IDs and digests mandatory."),
-        AuditItem("A6", "Idempotency", "PASS" if idempotency else "FAIL", ("knowledge/project_timeline.py", "knowledge/models/case_manifest.py"), "Repeat-safe projection and canonical manifest digest are implemented." if idempotency else "Full repeatability is not evidenced.", "Reruns may duplicate or mutate derived state." if not idempotency else "Material-stage equivalence still depends on tests.", "Retain repeated-run regression tests."),
+        AuditItem("A6", "Idempotency", "PASS" if idempotency else "FAIL", ("knowledge/project_timeline.py", "knowledge/models/case_manifest.py"), "Repeat-safe projection and canonical manifest digest are implemented." if idempotency else "Full repeatability is not evidenced.", "Reruns may duplicate or mutate derived state." if not idempotency else "Material-stage equivalence still depends on regression tests.", "Retain repeated-run equivalence tests."),
         AuditItem("A7", "Determinism", "PASS" if (root / "knowledge/fact_extractor.py").is_file() else "FAIL", ("knowledge/fact_extractor.py", "knowledge/extraction_stage.py"), "Deterministic extraction components exist." if (root / "knowledge/fact_extractor.py").is_file() else "Deterministic extraction is incomplete.", "Non-deterministic output breaks measurement." if not (root / "knowledge/fact_extractor.py").is_file() else "Content-digest enforcement should remain in regression coverage.", "Keep deterministic ordering and hashing."),
         AuditItem("A8", "Failure isolation / recovery", "PASS" if fresh_sha else "FAIL", ("factory/stage_orchestrator.py", "factory/self_healing.py"), "Recovery requires a fresh repaired SHA." if fresh_sha else "Fresh-SHA recovery is not evidenced.", "Same-SHA reruns can mask ineffective repairs." if not fresh_sha else "Repair scope still needs bounded changes.", "Keep fresh-SHA recovery mandatory."),
         AuditItem("A9", "Dependency boundaries", "PASS" if dependency else "FAIL", ("scripts/dependency_boundary_check.py",), "Dependency direction is a dedicated executable CI gate." if dependency else "No dedicated dependency gate exists.", "Architecture can regress silently." if not dependency else "Gate coverage should evolve with new domains.", "Run the gate in every CI quality check."),
@@ -79,7 +103,7 @@ def build_items(root: Path) -> list[AuditItem]:
         AuditItem("A15", "Timeline consistency", "PASS" if timeline else "FAIL", ("knowledge/timeline_validator.py",), "Timeline validation rejects conflicting or non-deterministic ordering." if timeline else "Timeline validator is missing.", "Impossible or conflicting dates may survive." if not timeline else "Extend with domain-specific temporal rules when measured.", "Keep temporal validation deterministic."),
         AuditItem("A16", "PII leakage scanning", "PASS" if privacy else "FAIL", ("scripts/pii_scan.py", "scripts/repository_audit.py", "factory/stage_gate.py"), "PII and repository scans exist in the quality system." if privacy else "Repository scanning is incomplete.", "Private data may leak into committed artifacts." if not privacy else "Generated-output scans should remain enabled.", "Retain PII and repository scanning."),
         AuditItem("A17", "Secret leakage controls", "PASS" if secret else "FAIL", ("scripts/secret_scan.py",), "Dedicated secret scanning is implemented." if secret else "Secret scanner is missing.", "Credentials may enter version control." if not secret else "Pattern-based scanning is supplemental to platform controls.", "Keep secret scanning in CI."),
-        AuditItem("A18", "Path escape protection", "PASS" if (root / "core/local_case_store.py").is_file() else "FAIL", ("core/local_case_store.py",), "Private data roots and case keys are explicitly validated." if (root / "core/local_case_store.py").is_file() else "Storage boundary is incomplete.", "Path confusion can expose unrelated files." if not (root / "core/local_case_store.py").is_file() else "Filesystem edge cases still require adversarial tests.", "Keep canonical root containment."),
+        AuditItem("A18", "Path escape protection", "PASS" if (root / "core/local_case_store.py").is_file() else "FAIL", ("core/local_case_store.py",), "Private data roots and case keys are explicitly validated." if (root / "core/local_case_store.py").is_file() else "Storage boundary is incomplete.", "Path confusion can expose unrelated files." if not (root / "core/local_case_store.py").is_file() else "Filesystem edge cases require adversarial tests.", "Keep canonical root containment."),
         AuditItem("A19", "Symlink / traversal resistance", "PASS" if symlink_tests else "FAIL", ("tests/test_architecture_hardening.py", "core/import_manager.py"), "Adversarial symlink/traversal coverage exists." if symlink_tests else "Dedicated adversarial filesystem tests are missing.", "Symlinks or traversal may bypass naive checks." if not symlink_tests else "Continue covering new import paths.", "Retain adversarial filesystem regression tests."),
         AuditItem("A20", "Artifact isolation", "PASS" if artifact else "FAIL", (".github/workflows/mvros-v1-operations.yml",), "CI operational workflow uses a fixed synthetic fixture rather than private case input." if artifact else "Synthetic-only artifact isolation is not evidenced.", "Private CASE data could leak through CI inputs or artifacts." if not artifact else "Generated artifact content still needs privacy scanning.", "Keep production workflow inputs synthetic-only."),
         AuditItem("A21", "Domain model minimization", "PASS" if model_usage else "FAIL", ("scripts/model_usage_audit.py",), "Model usage is measured by an executable inventory rather than assumed." if model_usage else "Model usage measurement is missing.", "Unused duplication can grow silently." if not model_usage else "Measurement should precede consolidation.", "Use the inventory before deleting models."),

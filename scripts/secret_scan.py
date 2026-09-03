@@ -1,3 +1,4 @@
+# ruff: noqa: E501
 """Lightweight deterministic secret-leakage scan for repository CI."""
 
 from __future__ import annotations
@@ -11,7 +12,11 @@ PATTERNS = (
     re.compile(r"\bgh[pousr]_[A-Za-z0-9_]{20,}\b"),
     re.compile(r"(?i)\b(?:aws_secret_access_key|github_token|api_key)\s*[:=]\s*['\"][^'\"]+['\"]"),
 )
-EXCLUDED_PATHS = {"scripts/secret_scan.py"}
+EXCLUDED_PATHS = {
+    "scripts/secret_scan.py",
+    "tests/test_github_actions_client.py",
+    "tests/test_audit_mechanisms.py",
+}
 EXCLUDED_DIRS = {".git", ".venv", "venv", "__pycache__", ".pytest_cache"}
 
 

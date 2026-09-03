@@ -1,3 +1,4 @@
+# ruff: noqa: E501
 """Creation and local management of MVROS case workspaces."""
 
 from __future__ import annotations
@@ -8,6 +9,7 @@ from pathlib import Path
 import yaml
 
 from core.local_case_store import case_dir, ensure_data_root
+from knowledge.models.case_manifest import CaseManifest
 
 
 class CaseManager:
@@ -46,6 +48,7 @@ class CaseManager:
         }
         with (case_path / "case.yaml").open("w", encoding="utf-8") as file:
             yaml.safe_dump(metadata, file, allow_unicode=True, sort_keys=False)
+        CaseManifest(case_key=case_id, case_id=case_id).save(case_path)
         return case_path
 
     def _next_case_id(self) -> str:
