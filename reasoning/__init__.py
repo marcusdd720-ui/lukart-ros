@@ -8,6 +8,7 @@ from reasoning.models import (
     ReasoningOutcome,
     ReasoningRunResult,
 )
+from reasoning.transitions import transition_artifact
 from reasoning.validation import (
     ReasoningValidationIssue,
     ReasoningValidationResult,
@@ -23,5 +24,6 @@ __all__ = [
     "ReasoningRunResult",
     "ReasoningValidationIssue",
     "ReasoningValidationResult",
+    "transition_artifact",
     "validate_reasoning_graph",
 ]
