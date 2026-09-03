@@ -1,7 +1,7 @@
 {
   "schema_version": "1.0.0",
   "corpus_id": "e2e-gold-v1",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "status": "candidate_pending_independent_review",
   "review_status": "not_reviewed",
   "splits": {
@@ -15,7 +15,7 @@
       "document_id": "SYN-DOC-E2E-001",
       "document_text": "Sygn. akt ABC-12/34.",
       "expected_entity_type": "CASE_NUMBER",
-      "expected_value": "Sygn. akt ABC-12/34",
+      "expected_value": "ABC-12/34",
       "expected_outcome": "CONCLUDE"
     },
     {

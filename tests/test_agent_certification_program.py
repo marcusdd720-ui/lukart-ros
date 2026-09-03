@@ -103,13 +103,15 @@ def test_full_evidence_can_produce_program_certification_and_router_eligibility(
 
     report = AgentCertificationProgram().evaluate(analytical, _evidence())
     eligibility = router_certification_update(REFERENCE_FACT_AGENT_ID, report)
+    expected_key = (
+        str(REFERENCE_FACT_AGENT_ID),
+        ReferenceFactAgent().contract.version,
+    )
 
     assert report.status is CertificationProgramStatus.CERTIFIED
     assert report.failures == ()
     assert len(report.digest()) == 64
-    assert eligibility == {
-        (str(REFERENCE_FACT_AGENT_ID), "1.0.0"): AgentCertificationStatus.CERTIFIED,
-    }
+    assert eligibility == {expected_key: AgentCertificationStatus.CERTIFIED}
 
 
 def test_contract_or_e2e_failure_blocks_program_certification() -> None:

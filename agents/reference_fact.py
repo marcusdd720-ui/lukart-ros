@@ -28,7 +28,7 @@ class ReferenceFactAgent:
         self._contract = AgentContract(
             agent_id=REFERENCE_FACT_AGENT_ID,
             name="ReferenceFactAgent",
-            version="1.0.0",
+            version="1.1.0",
             input_schema="lukart.document_text.v1",
             output_schema="lukart.extracted_facts.v1",
             required_evidence_types=("document_text",),
