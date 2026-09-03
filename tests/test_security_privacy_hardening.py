@@ -14,7 +14,7 @@ def _control(control: SecurityControl, *, passed: bool = True) -> SecurityContro
     return SecurityControlEvidence(
         control=control,
         passed=passed,
-        report_sha256=control.value[0] * 64,
+        report_sha256="a" * 64,
         evidence_id=f"evidence-{control.value}",
     )
 
