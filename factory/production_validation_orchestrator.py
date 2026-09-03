@@ -15,6 +15,10 @@ from validation.corpus_review import (
     ExternalCorpusReviewError,
     validate_external_corpus_review,
 )
+from validation.independent_step_review import (
+    IndependentStepReviewError,
+    validate_independent_step_review,
+)
 
 STATE_PATH = Path("factory/production_validation_state.json")
 EVIDENCE_DIR = Path("factory/production_validation_evidence")
@@ -372,6 +376,24 @@ def evaluate_generic_evidence(root: Path, step_number: int) -> GateDecision:
             "REQUIRED_CHECKS_MISSING",
             f"required step checks are missing: {', '.join(missing)}",
         )
+
+    if step_number in {16, 18}:
+        raw_artifact_path = evidence.get("artifact_path")
+        if not isinstance(raw_artifact_path, str):
+            raise ProductionValidationError("validated artifact path must be text")
+        try:
+            validate_independent_step_review(
+                root,
+                evidence,
+                expected_step=step_number,
+                expected_validated_sha=validated_sha,
+                expected_artifact_path=raw_artifact_path,
+                expected_artifact_sha256=expected_digest,
+                reserved_reviewer_ids=RESERVED_REVIEWERS,
+            )
+        except IndependentStepReviewError as exc:
+            return GateDecision(False, exc.code, exc.reason)
+
     return GateDecision(
         True,
         "PASS",
