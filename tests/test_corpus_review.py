@@ -4,10 +4,7 @@ from dataclasses import FrozenInstanceError
 
 import pytest
 
-from validation.corpus_review import (
-    ExternalCorpusReviewError,
-    validate_external_corpus_review,
-)
+from validation.corpus_review import ExternalCorpusReviewError, validate_external_corpus_review
 
 
 RESERVED = frozenset({"system", "automated", "factory", "lukart", "agent"})
