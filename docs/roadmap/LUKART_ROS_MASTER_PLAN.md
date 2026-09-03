@@ -67,9 +67,9 @@ P2 engineering completion does not by itself certify real-world reasoning qualit
 
 ## P3 — Measured Result Layer
 
-Status: **IN_PROGRESS** on `feat/measured-result-p3` until the complete release gate passes.
+Status: **VALIDATED ON FEATURE HEAD / MERGE GATE PENDING**.
 
-Target vertical slice:
+Delivered on the feature branch:
 
 1. Reasoning Renderer Contract.
 2. deterministic JSON renderer.
@@ -79,7 +79,15 @@ Target vertical slice:
 6. Reasoning KQM evaluator and failure records.
 7. generic measurement hook for reasoning metrics.
 8. `FOUNDATION.md` and this roadmap populated from verified repository state.
-9. full PR validation, merge, and post-merge validation.
+9. focused and repository-wide validation.
+
+Verified contract-conformance baseline on SHA
+`d8406f4c4edc5ec457228a5bead2efa3bacbb826`:
+
+- development 4 cases: decision accuracy `1.0`, valid-conclusion recall `1.0`, abstention
+  recall `1.0`, unsafe-conclusion rate `0.0`, Open Question coverage `1.0`, failures `0`;
+- validation 2 cases: the same metric values, failures `0`;
+- locked evaluation: **NOT EXECUTED**.
 
 P3 does not implement a fake timeline from reasoning support order. Timeline semantics remain
 with actual Case/event chronology until a typed temporal contract is available.
