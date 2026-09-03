@@ -130,14 +130,14 @@ The P7 test suite verifies at minimum:
 
 ## Observed FAIL -> repair evidence
 
-Initial feature head `15b7017599ebf864a7b5b5030174604dca168079` passed dependency boundary,
-secret scanning, model usage audit, dead-code inventory, and Architectural Audit, but CI stopped in
-Ruff before Mypy/Pytest because two new source lines exceeded the repository 100-character limit.
+Initial feature head `15b7017599eb` (abbreviated Git SHA) passed dependency boundary, secret
+scanning, model usage audit, dead-code inventory, and Architectural Audit, but CI stopped in Ruff
+before Mypy/Pytest because two new source lines exceeded the repository 100-character limit.
 
-The repair changed formatting only. No P7 decision semantics, evidence rules, P4/P6 bindings, or test
-expectations were relaxed.
+The first repair changed formatting only. No P7 decision semantics, evidence rules, P4/P6 bindings,
+or test expectations were relaxed.
 
-Fresh repair head `a2d7bbdf73c0209b0499638119b7e82615244b04` passed:
+Fresh repair head `a2d7bbdf73c0` (abbreviated Git SHA) then passed:
 
 - CI Foundation on Python 3.11, 3.12, and 3.13;
 - Ruff, Mypy, pytest, dependency boundary, secret scan, model usage audit, and repository gates;
@@ -145,7 +145,14 @@ Fresh repair head `a2d7bbdf73c0209b0499638119b7e82615244b04` passed:
 - GitHub App Smoke Test;
 - smoke-dispatched Stage Gate #234.
 
-This documentation update creates a newer docs+code feature head. That exact final head must pass the
+The first docs+code finalization head `de74d16d` exposed a second fail-closed event. Ruff passed,
+Mypy reported no issues in 392 source files, all 478 pytest tests passed, and Repository Audit passed,
+but the PII/confidentiality gate rejected this document because the full hexadecimal Git SHA strings
+above happened to contain decimal runs matching the repository's NIP-like pattern. No PII was
+present. The scanner was not weakened or allowlisted; public SSoT references were changed to
+abbreviated Git SHA values while exact full hashes remain auditable in Git and PR history.
+
+This documentation repair creates a newer docs+code feature head. That exact final head must pass the
 same merge gates before merge. P7 remains incomplete until exact-head merge and post-merge validation
 succeed.
 
