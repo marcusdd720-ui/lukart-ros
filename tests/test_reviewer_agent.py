@@ -22,7 +22,9 @@ def test_reviewer_agent_runs_through_controlled_runtime() -> None:
     assert result.artifact is not None
     assert result.artifact.artifact_type == "review-findings.v1"
     assert result.artifact.epistemic_statuses == ()
-    assert result.artifact.metadata["error_count"] > 0
+    error_count = result.artifact.metadata["error_count"]
+    assert isinstance(error_count, int)
+    assert error_count > 0
 
 
 def test_reviewer_contract_is_review_only() -> None:
