@@ -1,0 +1,15 @@
+{
+  "schema_version": "1.0",
+  "corpus_id": "extraction-gold-v1",
+  "corpus_sha256": "REPLACE_WITH_SHA256_OF_EXACT_CORPUS_BYTES",
+  "reviewer_id": "REPLACE_WITH_INDEPENDENT_REVIEWER_ID",
+  "reviewer_independent": true,
+  "decision": "APPROVED_OR_REJECTED",
+  "annotation_review": "APPROVED_OR_REJECTED",
+  "criticality_review": "APPROVED_OR_REJECTED",
+  "freeze_approved": false,
+  "iaa_required": false,
+  "iaa_status": "NOT_REQUIRED",
+  "reviewed_at": "YYYY-MM-DD",
+  "notes": "Independent reviewer findings and limitations."
+}
