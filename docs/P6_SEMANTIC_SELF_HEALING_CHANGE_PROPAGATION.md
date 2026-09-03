@@ -1,12 +1,12 @@
 # P6 — Semantic Self-Healing & Change Propagation
 
-Status: VALIDATED IMPLEMENTATION / FINAL MERGE GATE PENDING
+Status: COMPLETE
 
 ## Decision need
 
 Factory already contains deterministic operational self-healing primitives for stage failures,
-including log classification, formatting-safe Ruff repair, and safe rollback. P6 must not duplicate
-that mechanism. It must add a Product-level semantic control plane that can answer:
+including log classification, formatting-safe Ruff repair, and safe rollback. P6 does not duplicate
+that mechanism. It adds a Product-level semantic control plane that can answer:
 
 1. what measured KQM failure occurred and what evidence supports a root-cause diagnosis;
 2. which Product component is implicated;
@@ -119,7 +119,7 @@ through already-governed promotion/release mechanisms.
 failures. P6 does not replace it and does not import it. A future integration may allow Factory to
 consume P6 readiness/impact artifacts, but the runtime/factory dependency boundary remains intact.
 
-## Validation evidence
+## Validation and repair evidence
 
 Initial feature head `986e267d97f5c32afeea614c2b33531c237f8be1` correctly exposed one test-contract
 mismatch during CI. Ruff, MyPy, dependency boundaries, security/repository gates, Architectural
@@ -129,17 +129,33 @@ error-message regex even though the existing P4 contract correctly rejected `loc
 The minimal repair changed only that test assertion. No P6 implementation semantics and no P4
 contract semantics were changed.
 
-Fresh repair head `86ce620782b0093f812243394401ab84799397f3` then passed:
+Fresh repair head `86ce620782b0093f812243394401ab84799397f3` then passed CI Foundation on
+Python 3.11/3.12/3.13, Architectural Audit 1.0, GitHub App Smoke Test, and smoke-dispatched
+Stage Gate #226.
+
+Final feature head `098b29a21c74a49a7fcdd6388850f0085f0528f4` then passed:
 
 - CI Foundation on Python 3.11, 3.12, and 3.13;
-- Ruff, MyPy, pytest, dependency boundary, secret scan, model usage audit, and repository gates;
 - Architectural Audit 1.0;
 - GitHub App Smoke Test;
-- smoke-dispatched Stage Gate #226.
+- smoke-dispatched Stage Gate #228.
 
-This SSoT update creates a newer docs+code feature head. That exact final head must pass the same
-merge gates before merge. P6 remains incomplete until exact-head merge and post-merge validation
-succeed.
+It was merged to `main` without further feature-branch changes as implementation merge
+`06e7f36ca8722b9cdeb3aab9153d51d189d97dba`.
+
+That exact implementation merge then passed post-merge:
+
+- CI Foundation on Python 3.11, 3.12, and 3.13;
+- Architectural Audit 1.0;
+- Stage Orchestrator;
+- GitHub App Smoke Test;
+- smoke-dispatched Stage Gate #229.
+
+Core result: LUKART now has a fail-closed semantic layer that can convert a measured KQM failure
+into an evidence-bound diagnosis, compute a trustworthy selective downstream validation plan only
+when graph completeness is proven, bind a repair hypothesis to the existing P4 learning path, and
+require fresh-SHA replay/KQM evidence before declaring the repair ready to continue through the
+existing controlled promotion/release path.
 
 ## Non-goals
 
@@ -155,14 +171,14 @@ P6 v1 does not:
 
 ## Definition of Done
 
-P6 becomes COMPLETE only when:
+P6 is COMPLETE because:
 
 1. semantic diagnosis, impact graph, repair-candidate, replay-evidence, and readiness-gate tests pass;
 2. adversarial tests prove abstention, broad fallback, cycle rejection, fresh-SHA enforcement,
    replay-drift enforcement, full planned validation, P4 promotion binding, and locked-split safety;
 3. full Ruff/MyPy/pytest and repository gates pass;
 4. Architectural Audit passes;
-5. GitHub App Smoke Test and its dispatched Stage Gate pass on the exact feature head;
-6. exact validated feature head is merged to `main`;
-7. post-merge CI, Architectural Audit, Stage Orchestrator, Smoke, and dispatched Stage Gate pass;
+5. GitHub App Smoke Test and its dispatched Stage Gate passed on the exact final feature head;
+6. the exact validated feature head was merged to `main`;
+7. post-merge CI, Architectural Audit, Stage Orchestrator, Smoke, and dispatched Stage Gate passed;
 8. SSoT records P6 COMPLETE without claiming P7 is implemented.
