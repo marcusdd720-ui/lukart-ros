@@ -67,6 +67,7 @@ _DOCUMENT_PATTERNS: dict[str, tuple[str, ...]] = {
         "legal_basis",
         "deadline_days",
     ),
+    "real_case": (),
 }
 
 
@@ -97,7 +98,6 @@ def extract_facts(
     text: str,
 ) -> Iterable[ExtractedFact]:
     """Extract typed facts with reproducible source spans from one document."""
-
     if document_type not in _DOCUMENT_PATTERNS:
         raise ValueError(f"unsupported document type: {document_type}")
 
