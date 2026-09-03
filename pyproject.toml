@@ -25,6 +25,7 @@ dev = [
 
 [tool.setuptools.packages.find]
 include = [
+  "agents*",
   "core*",
   "factory*",
   "knowledge*",
