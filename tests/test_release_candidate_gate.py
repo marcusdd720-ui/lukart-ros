@@ -1,10 +1,7 @@
-from __future__ import annotations
-
 import json
 from pathlib import Path
 
 from factory import production_validation_orchestrator as pvo
-from factory.production_validation_registry import get_program_step
 
 
 VALIDATED_SHA = "a" * 40
@@ -32,7 +29,7 @@ def _approved_review(corpus_id: str, corpus_sha256: str) -> dict[str, object]:
 
 
 def _artifact_for_step(step_number: int) -> dict[str, object]:
-    spec = get_program_step(step_number)
+    spec = pvo.get_program_step(step_number)
     return {
         "schema_version": "1.0",
         "step": step_number,
@@ -52,7 +49,7 @@ def _write_bound_evidence(
     *,
     artifact: dict[str, object] | None = None,
 ) -> Path:
-    spec = get_program_step(step_number)
+    spec = pvo.get_program_step(step_number)
     report_path = Path(f"reports/production_validation/step_{step_number:02d}.json")
     report = root / report_path
     _write_json(report, artifact or _artifact_for_step(step_number))
