@@ -2,7 +2,7 @@ from dataclasses import FrozenInstanceError
 
 import pytest
 
-from validation import corpus_review
+import validation.corpus_review as corpus_review
 
 
 RESERVED = frozenset({"system", "automated", "factory", "lukart", "agent"})
