@@ -21,9 +21,17 @@ class EntityType(StrEnum):
     OTHER = "OTHER"
 
 
+class EpistemicStatus(StrEnum):
+    EXTRACTED = "EXTRACTED"
+    VERIFIED = "VERIFIED"
+    INFERRED = "INFERRED"
+    DISPUTED = "DISPUTED"
+    REJECTED = "REJECTED"
+
+
 @dataclass(frozen=True, slots=True)
 class ExtractedFact:
-    """An extracted fact bound to a reproducible source location."""
+    """An extracted fact bound to reproducible source and epistemic metadata."""
 
     value: str
     entity_type: EntityType
@@ -34,6 +42,8 @@ class ExtractedFact:
     extractor_version: str
     source_document_sha256: str = ""
     extraction_method: str = ""
+    confidence: float = 1.0
+    epistemic_status: EpistemicStatus = EpistemicStatus.EXTRACTED
 
     def __post_init__(self) -> None:
         if not self.value:
@@ -48,3 +58,7 @@ class ExtractedFact:
             raise ValueError("char_end must be greater than char_start")
         if not self.extractor_version:
             raise ValueError("extractor_version must not be empty")
+        if not 0.0 <= self.confidence <= 1.0:
+            raise ValueError("ExtractedFact.confidence must be between 0 and 1")
+        if not isinstance(self.epistemic_status, EpistemicStatus):
+            raise ValueError("ExtractedFact.epistemic_status must be an EpistemicStatus")

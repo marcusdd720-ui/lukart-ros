@@ -7,7 +7,7 @@ from typing import Any
 
 import yaml
 
-from factory.local_case_store import case_dir, ensure_data_root, validate_case_key
+from core.local_case_store import case_dir, ensure_data_root, validate_case_key
 from knowledge.graph import KnowledgeGraph
 from knowledge.models.case import Case
 from knowledge.models.case_workspace import CaseWorkspace
@@ -53,7 +53,6 @@ def build_local_case_workspace(
         signature=signature,
         metadata=meta,
     )
-
     graph_case_id = f"case:{case_id}"
     graph = KnowledgeGraph()
     graph.add_node(
@@ -65,7 +64,6 @@ def build_local_case_workspace(
             metadata={"case_key": key, "local_only": True},
         )
     )
-
     workspace = CaseWorkspace(
         key=key,
         graph_case_id=graph_case_id,

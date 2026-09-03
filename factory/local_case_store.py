@@ -1,87 +1,31 @@
-"""Private local storage policy for real MVROS cases.
+"""Compatibility exports for factory-local integrations.
 
-Real case data must live outside the Git working tree. This module centralizes
-that invariant so case creation/import/publish code cannot silently default to
-repository-relative storage.
+Runtime code must import storage policy from ``core.local_case_store``.
+The factory keeps this module only for backwards compatibility with tooling.
 """
 
-from __future__ import annotations
+from core.local_case_store import (
+    PrivacyViolation,
+    case_dir,
+    default_data_root,
+    ensure_data_root,
+    find_repo_root,
+    output_case_dir,
+    save_source_snapshot,
+    source_snapshot_dir,
+    validate_case_key,
+    validate_data_root,
+)
 
-import os
-from pathlib import Path
-
-
-class PrivacyViolation(RuntimeError):
-    """Raised when real case data would be stored inside the repository."""
-
-
-def find_repo_root(start: Path | None = None) -> Path | None:
-    current = (start or Path.cwd()).expanduser().resolve()
-    if current.is_file():
-        current = current.parent
-    for candidate in (current, *current.parents):
-        if (candidate / ".git").exists():
-            return candidate
-    return None
-
-
-def default_data_root() -> Path:
-    configured = os.environ.get("MVROS_DATA_ROOT", "").strip()
-    if configured:
-        return Path(configured).expanduser().resolve()
-    return (Path.home() / "MVROS-DATA").resolve()
-
-
-def validate_data_root(data_root: Path, *, repo_root: Path | None = None) -> Path:
-    root = data_root.expanduser().resolve()
-    repo = repo_root.expanduser().resolve() if repo_root else find_repo_root()
-
-    if repo is not None and (root == repo or repo in root.parents):
-        raise PrivacyViolation(
-            "Real MVROS case data must be outside the Git repository: "
-            f"data_root={root} repo_root={repo}"
-        )
-
-    if (root / ".git").exists():
-        raise PrivacyViolation(f"Case data root must not contain a Git repository: {root}")
-
-    return root
-
-
-def ensure_data_root(
-    data_root: Path | None = None,
-    *,
-    repo_root: Path | None = None,
-) -> Path:
-    root = validate_data_root(data_root or default_data_root(), repo_root=repo_root)
-    root.mkdir(parents=True, exist_ok=True)
-    return root
-
-
-def validate_case_key(case_key: str) -> str:
-    key = case_key.strip()
-    if not key or key in {".", ".."}:
-        raise PrivacyViolation("Case key cannot be empty or relative")
-    if Path(key).is_absolute() or "/" in key or "\\" in key:
-        raise PrivacyViolation(f"Unsafe case key: {case_key!r}")
-    return key
-
-
-def case_dir(
-    case_key: str,
-    data_root: Path | None = None,
-    *,
-    repo_root: Path | None = None,
-) -> Path:
-    root = ensure_data_root(data_root, repo_root=repo_root)
-    return root / "cases" / validate_case_key(case_key)
-
-
-def output_case_dir(
-    case_key: str,
-    data_root: Path | None = None,
-    *,
-    repo_root: Path | None = None,
-) -> Path:
-    root = ensure_data_root(data_root, repo_root=repo_root)
-    return root / "output" / "cases" / validate_case_key(case_key)
+__all__ = [
+    "PrivacyViolation",
+    "case_dir",
+    "default_data_root",
+    "ensure_data_root",
+    "find_repo_root",
+    "output_case_dir",
+    "save_source_snapshot",
+    "source_snapshot_dir",
+    "validate_case_key",
+    "validate_data_root",
+]

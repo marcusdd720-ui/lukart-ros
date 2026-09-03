@@ -7,7 +7,7 @@ from pathlib import Path
 
 import yaml
 
-from factory.local_case_store import case_dir, ensure_data_root
+from core.local_case_store import case_dir, ensure_data_root
 
 
 class CaseManager:
@@ -25,7 +25,6 @@ class CaseManager:
         case_id = self._next_case_id()
         case_path = case_dir(case_id, self.data_root)
         case_path.mkdir(parents=True)
-
         for folder in (
             "original",
             "extracted",
@@ -36,7 +35,6 @@ class CaseManager:
             "exports",
         ):
             (case_path / folder).mkdir()
-
         metadata = {
             "id": case_id,
             "title": "",

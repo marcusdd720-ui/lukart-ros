@@ -22,7 +22,7 @@ jobs:
       - name: Run A1-A25 audit
         run: |
           OUTPUT_DIR="${RUNNER_TEMP}/architectural-audit"
-          python scripts/architectural_audit.py --output-dir "$OUTPUT_DIR"
+          python scripts/architectural_audit_final.py --output-dir "$OUTPUT_DIR"
           echo "AUDIT_REPORT_START"
           cat "$OUTPUT_DIR/audit-report.md"
           echo "AUDIT_REPORT_END"
