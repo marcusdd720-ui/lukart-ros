@@ -3,7 +3,6 @@ from dataclasses import FrozenInstanceError
 
 import pytest
 
-
 corpus_review = importlib.import_module("validation.corpus_review")
 RESERVED = frozenset({"system", "automated", "factory", "lukart", "agent"})
 CORPUS_SHA = "a" * 64
