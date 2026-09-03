@@ -37,5 +37,6 @@
       "name": "unexpected_drift_zero",
       "status": "PASS"
     }
-  ]
+  ],
+  "report_revision": "1.0.2"
 }
