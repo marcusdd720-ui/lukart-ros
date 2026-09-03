@@ -3,10 +3,10 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from enum import Enum
+from enum import StrEnum
 
 
-class ProgramPriority(str, Enum):
+class ProgramPriority(StrEnum):
     P0 = "P0"
     P1 = "P1"
     P2 = "P2"
@@ -14,7 +14,7 @@ class ProgramPriority(str, Enum):
     RELEASE = "RELEASE"
 
 
-class GateKind(str, Enum):
+class GateKind(StrEnum):
     EXTERNAL_REVIEW = "external_review"
     IMPLEMENTATION = "implementation"
     MEASUREMENT = "measurement"
