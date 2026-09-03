@@ -1,3 +1,5 @@
+from collections.abc import Mapping
+
 from agents.contract import AgentRequest
 from agents.contradiction import CONTRADICTION_AGENT_ID, ContradictionAgent
 from agents.registry import AgentRegistry
@@ -65,7 +67,9 @@ def test_contradiction_agent_does_not_invent_resolution() -> None:
         )
     )
 
+    assert isinstance(artifact.payload, tuple)
     finding = artifact.payload[0]
+    assert isinstance(finding, Mapping)
     assert finding["resolution_status"] == "UNRESOLVED"
     assert "winner" not in finding
 
