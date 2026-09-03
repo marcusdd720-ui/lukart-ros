@@ -10,6 +10,9 @@ on:
 permissions:
   contents: read
 
+env:
+  AUDIT_HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+
 jobs:
   audit:
     runs-on: ubuntu-latest
