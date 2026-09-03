@@ -1,6 +1,8 @@
 # P4 — Controlled Learning Foundation
 
-Status: VALIDATED IMPLEMENTATION / final merge gate pending
+Status: COMPLETE
+
+P4 implementation was merged to `main` as `082358d28a336fa648e5cc05bb2a9d7a656c64af` after exact-head feature validation. Post-merge validation on that merge SHA passed CI Foundation on Python 3.11/3.12/3.13, Architectural Audit 1.0, Stage Orchestrator, GitHub App Smoke Test, and the smoke-dispatched Stage Gate.
 
 ## Decision need
 
@@ -15,95 +17,21 @@ The P4 loop is:
 A positive promotion decision means only `ELIGIBLE_FOR_PROMOTION`. It is not a write operation,
 model deployment, rule replacement, prompt replacement, or certification event.
 
-## P4.1 — Measured Failure contract
+## Delivered
 
-`learning.models.MeasuredFailure` is immutable and records:
-
-- source KQM family;
-- source corpus and version;
-- split;
-- evaluator version;
-- source Git SHA;
-- case id and failure code;
-- expected and actual values;
-- source result SHA-256 digest;
-- source report SHA-256 digest.
-
-Raw model output or an unmeasured production observation is not a valid `MeasuredFailure`.
-
-## P4.2 — Failure Corpus
-
-`failure_corpus_from_reasoning` converts only traceable `ReasoningKQMReport` failures into a
-versioned Failure Corpus. Every failure must have a corresponding deterministic result digest.
-The public `FailureCorpus` contract also validates its source report digest as SHA-256.
-
-Locked evaluation is fail-closed: a report from `locked_evaluation`, or a report marked as
-having executed locked evaluation, raises `LockedLearningSourceError` and cannot become learning
-input.
-
-## P4.3 — Learning Candidate
-
-A `LearningCandidate` is a hypothesis, not trusted knowledge. It binds to the digest of one
-measured failure and explicitly declares:
-
-- target component;
-- change kind;
-- problem statement;
-- hypothesis;
-- measurable success criteria.
-
-Candidate identity is deterministic for the same measured failure and hypothesis.
-
-## P4.4 — Bounded Experiment contract
-
-An `ExperimentContract` binds a validated SHA-256 candidate digest to:
-
-- baseline revision;
-- distinct candidate revision;
-- sandbox id;
-- allowed benchmark splits;
-- metric guardrails;
-- maximum run budget.
-
-Only `development` and `validation` are valid learning experiment splits. `locked_evaluation`
-and arbitrary production/test split names are rejected.
-
-## P4.5 — Metric integrity
-
-Metric values and guardrail tolerances must be finite. `NaN` and infinity are invalid because
-they could otherwise bypass comparison semantics.
-
-Experiment measurements require unique metric names. Promotion requires every contracted
-metric to exist in both baseline and candidate measurements.
-
-## P4.6 — Promotion Gate
-
-`PromotionGate` is fail-closed and returns one of:
-
-- `ELIGIBLE_FOR_PROMOTION` — at least one guarded metric improves and none exceeds its allowed
-  regression;
-- `REJECTED` — contract binding, revision binding, run budget, required metrics, or guardrails
-  fail;
-- `INCONCLUSIVE` — the candidate produces no measured improvement and no forbidden regression.
-
-The gate returns an immutable decision artifact. It exposes no API for changing canonical
-knowledge, Product code, prompts, rules, routing, models, agent certification, or release state.
-
-## P4.7 — Provenance correction
-
-P4 versions the Reasoning KQM evaluator separately from the Reasoning Engine. A learning failure
-therefore records both the engine version and evaluator provenance rather than treating them as
-the same component.
-
-## P4.8 — Factory/Product boundary
-
-`learning/` is Product runtime logic and is included in the runtime dependency-boundary gate.
-It must not import `factory` implementation modules. Factory remains responsible for building,
-testing, validating, and releasing the Product.
+- immutable `MeasuredFailure` with corpus/split/evaluator/source-SHA/result/report provenance;
+- fail-closed Failure Corpus that rejects locked evaluation and malformed report digests;
+- deterministic `LearningCandidate` separated from trusted knowledge;
+- bounded `ExperimentContract` restricted to development/validation splits, distinct revisions,
+  sandbox, metric guardrails, and run budget;
+- finite metric checks and SHA-256 candidate/experiment digest validation;
+- fail-closed `PromotionGate` with `ELIGIBLE_FOR_PROMOTION`, `REJECTED`, and `INCONCLUSIVE`;
+- separate Reasoning KQM evaluator-version provenance;
+- `learning/` package discovery and Product/Factory dependency boundary;
+- adversarial tests covering provenance, locked data, malformed digests, revision binding,
+  non-finite metrics, contract mismatch, run budget, and guardrail regression.
 
 ## Security and epistemic invariants
-
-P4 preserves these invariants:
 
 1. no raw production outcome becomes trusted learning truth;
 2. no locked evaluation data becomes tuning input;
@@ -114,46 +42,24 @@ P4 preserves these invariants:
 7. material provenance links are validated and digest-bound;
 8. engineering PASS is not analytical certification.
 
-## Feature validation evidence
+## Validation evidence
 
-Implementation head `434b97ce26c70b82f07cee5da5d1fd5de657fa21` passed:
+Feature implementation head `434b97ce26c70b82f07cee5da5d1fd5de657fa21` passed CI Foundation,
+Architectural Audit, GitHub App Smoke, and dispatched Stage Gate. Final feature head
+`6727cd34be12f80a29499b70f7641eef7a42f0bc`, containing the validated SSoT update, passed the same exact-head gates and was merged without further branch changes.
 
-- CI Foundation on Python 3.11, 3.12, and 3.13;
-- Ruff, MyPy, pytest, repository audit, PII/confidentiality gate, and dependency boundary;
+Implementation merge `082358d28a336fa648e5cc05bb2a9d7a656c64af` then passed:
+
+- CI Foundation — Python 3.11, 3.12, 3.13;
 - Architectural Audit 1.0;
+- Stage Orchestrator;
 - GitHub App Smoke Test;
 - smoke-dispatched Stage Gate.
 
-Earlier validation failures were repaired on fresh SHAs rather than rerunning stale commits:
-Ruff formatting/style issues and a PII-scanner false positive caused by a hexadecimal-character
-literal. The PII gate itself was not weakened or bypassed.
+Earlier failures were repaired on fresh SHAs: Ruff style/line-length findings and a PII scanner false positive caused by a hexadecimal-character literal. The PII gate was not weakened or bypassed.
 
-This documentation update creates a newer docs-only feature head, so the exact final merge head
-must pass the same gates again before merge.
+## Non-goals preserved
 
-## Non-goals
+P4 does not generate repairs automatically, train/fine-tune models, distill Cases into agent training packages, mutate prompts/rules/retrieval/model weights, automatically select production agents, execute locked evaluation, claim production reasoning certification, or implement semantic Self-Healing/Change Propagation.
 
-P4 does not:
-
-- generate repairs automatically;
-- train or fine-tune models;
-- distill Cases into agent training packages;
-- mutate prompts/rules/retrieval/model weights;
-- select production agents automatically;
-- execute locked evaluation;
-- claim that the current reasoning Gold candidate is production truth;
-- implement semantic Self-Healing or dependency-aware Change Propagation.
-
-Those capabilities require later programs and their own evidence.
-
-## Definition of Done
-
-P4 becomes COMPLETE only when:
-
-1. controlled-learning unit and adversarial boundary tests pass;
-2. full Ruff/MyPy/pytest and repository gates pass;
-3. Architectural Audit passes;
-4. GitHub App Smoke Test and its dispatched Stage Gate pass on the exact feature head;
-5. the exact validated head is merged to `main`;
-6. post-merge CI, Architectural Audit, Stage Orchestrator, Smoke, and dispatched Stage Gate pass;
-7. SSoT records P4 completion without claiming P5 teaching/distillation is implemented.
+Those remain later-program responsibilities.
