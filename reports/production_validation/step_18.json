@@ -1,0 +1,56 @@
+{
+  "schema_version": "1.0",
+  "step": 18,
+  "status": "PASS",
+  "validated_sha": "32da9ed623c193ff234da5c0afa273b944e52390",
+  "gate_kind": "privacy",
+  "evidence_kind": "security_privacy_hardening",
+  "locked_evaluation_used_for_tuning": false,
+  "private_data_committed": false,
+  "checks": [
+    {
+      "name": "pii_gate_passed",
+      "status": "PASS"
+    },
+    {
+      "name": "secret_gate_passed",
+      "status": "PASS"
+    },
+    {
+      "name": "local_data_boundary_passed",
+      "status": "PASS"
+    },
+    {
+      "name": "dependency_boundary_passed",
+      "status": "PASS"
+    },
+    {
+      "name": "auditability_reviewed",
+      "status": "PASS"
+    }
+  ],
+  "automated_evidence": {
+    "revision": "32da9ed623c193ff234da5c0afa273b944e52390",
+    "ci_foundation": "PASS",
+    "architectural_audit": "PASS",
+    "security_control_sources": [
+      "scripts/pii_scan.py",
+      "scripts/secret_scan.py",
+      "scripts/dependency_boundary_check.py",
+      "scripts/local_private_pilot.py",
+      "validation/security_privacy.py",
+      "tests/test_security_privacy_hardening.py",
+      "tests/test_local_private_pilot_step15.py"
+    ]
+  },
+  "human_review": {
+    "review_path": "docs/quality/reviews/step_18_independent_review.json",
+    "review_sha256": "e7e2cdaf6ea69cc7c7ad8c4adfac0e591f55926bd63be63960b45762552d73a9",
+    "review_subject_path": "docs/quality/review_packages/step_18_review_package.json",
+    "review_subject_sha256": "1aab28f24251c8dadb98c5329cf218211927c825f875aed7b286436c8beafb94",
+    "reviewer_id": "external-reviewer-01",
+    "reviewer_independent": true,
+    "reviewer_kind": "human",
+    "decision": "PASS"
+  }
+}
