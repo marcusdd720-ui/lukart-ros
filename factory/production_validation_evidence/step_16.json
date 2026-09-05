@@ -1,6 +1,6 @@
 {
   "artifact_path": "reports/production_validation/step_16.json",
-  "artifact_sha256": "0a8f43e41878247bcd71dc7d035311fac615292f321754fcfdf148ad71a57ee0",
+  "artifact_sha256": "b8e127d9944028387f5cfb5f199566caa8d4ab4f78767a317c350a586c75db49",
   "critical_gates_passed": true,
   "evidence_kind": "renderer_quality_measurement",
   "gate_kind": "measurement",
