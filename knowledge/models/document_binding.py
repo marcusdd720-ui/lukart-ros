@@ -21,7 +21,8 @@ class ArtifactRef:
     digest: str
 
     def __post_init__(self) -> None:
-        if not self.artifact_type.strip() or not self.artifact_id.strip() or not self.digest.strip():
+        required = (self.artifact_type, self.artifact_id, self.digest)
+        if any(not value.strip() for value in required):
             raise ValueError("ArtifactRef identity and digest cannot be empty")
         if self.version < 1:
             raise ValueError("ArtifactRef version must be >= 1")
@@ -62,7 +63,9 @@ class DocumentBinding:
             raise ValueError("DocumentBinding required fields cannot be empty")
         if self.version < 1:
             raise ValueError("DocumentBinding version must be >= 1")
-        identities = [(ref.artifact_type, ref.artifact_id, ref.version) for ref in self.input_refs]
+        identities = [
+            (ref.artifact_type, ref.artifact_id, ref.version) for ref in self.input_refs
+        ]
         if len(identities) != len(set(identities)):
             raise ValueError("DocumentBinding input refs must be unique")
         collections = (
