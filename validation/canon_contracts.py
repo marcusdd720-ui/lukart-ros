@@ -88,7 +88,11 @@ def parse_canon_document(path: Path) -> tuple[CanonDocument | None, tuple[CanonV
     if canonical_id:
         if not CANON_ID_RE.fullmatch(canonical_id):
             violations.append(
-                CanonViolation(str(path), "INVALID_CANON_ID", f"invalid Canonical ID: {canonical_id}")
+                CanonViolation(
+                    str(path),
+                    "INVALID_CANON_ID",
+                    f"invalid Canonical ID: {canonical_id}",
+                )
             )
         expected_name = f"{canonical_id}.md"
         if path.name != expected_name:
