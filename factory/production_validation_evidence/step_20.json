@@ -1,11 +1,13 @@
 {
   "artifact_path": "reports/production_validation/step_20.json",
   "artifact_sha256": "0fcaa092690d2af565639c45bbf3532672e8007e89ba54b73e388e097dad52fc",
-  "critical_gates_passed": true,
+  "critical_gates_passed": false,
   "evidence_kind": "release_candidate_decision",
   "gate_kind": "release",
+  "replacement_required_after_steps_1_19_pass": true,
   "schema_version": "2.0",
-  "status": "PASS",
+  "stale_reason": "Historical Step 20 PASS was built for the superseded v1.0.0 candidate and an older Steps 1-19 digest. Regenerate only after genuine current Steps 1-19 PASS, authenticated human-review provenance, and enforced governance.",
+  "status": "STALE",
   "step": 20,
   "validated_sha": "d7dfbe06bb1d79b5719a966086dc1d2ac0ae9119"
 }
