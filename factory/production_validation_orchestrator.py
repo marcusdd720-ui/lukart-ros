@@ -619,6 +619,8 @@ def _git_changed() -> bool:
 
 
 def publish_changes() -> None:
+    """Commit validation state locally; remote publication is PR-only."""
+
     if not _git_changed():
         return
     paths = [str(STATE_PATH)]
@@ -628,7 +630,6 @@ def publish_changes() -> None:
     commands = (
         ["git", "add", *paths],
         ["git", "commit", "-m", "chore: advance production validation program"],
-        ["git", "push", "origin", "HEAD:main"],
     )
     for command in commands:
         result = subprocess.run(command, check=False)
