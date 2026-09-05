@@ -17,6 +17,7 @@
       "tests/test_e2e_gold.py"
     ]
   },
+  "certification_mode": "solo_maintainer",
   "checks": [
     {
       "name": "json_renderer_measured",
@@ -37,20 +38,30 @@
   ],
   "evidence_kind": "renderer_quality_measurement",
   "gate_kind": "measurement",
-  "human_review": {
-    "decision": "PASS",
-    "review_path": "docs/quality/reviews/step_16_independent_review.json",
-    "review_sha256": "ab74b44aee8671f3b0f66c3e7a21a5f92c5fd5ca676a34160cd7b36ba1bcc8cd",
-    "review_subject_path": "docs/quality/review_packages/step_16_review_package.json",
-    "review_subject_sha256": "9bf3851073508a007b42ce0ebc6911e7ab7107eca7e7355d8d2cf667e0a388a9",
-    "reviewer_id": "external-reviewer-01",
-    "reviewer_independent": true,
-    "reviewer_kind": "human"
-  },
+  "independent_external_review": "NOT_PERFORMED",
   "locked_evaluation_used_for_tuning": false,
+  "maintainer_review": {
+    "decision": "PASS",
+    "independent_external_review": "NOT_PERFORMED",
+    "review_mode": "solo_maintainer",
+    "review_path": "docs/quality/reviews/step_16_independent_review.json",
+    "review_sha256": "a585f7b3126176ef1a1d798f865b1d43d4faacbe786c3925ce412a238a99b5a8",
+    "review_subject_path": "docs/quality/review_packages/step_16_review_package.json",
+    "review_subject_sha256": "062a8cbc37331dbaf4eda2f21e89dade1b6bac55393e5a5ffdbd6cee1e6edab6",
+    "reviewer_id": "marcusdd720-ui",
+    "reviewer_independent": false,
+    "reviewer_kind": "maintainer"
+  },
   "private_data_committed": false,
   "schema_version": "1.0",
+  "source_evidence": [
+    "docs/quality/review_packages/step_16_review_package.json",
+    "docs/quality/reviews/step_16_independent_review.json",
+    "tests/test_renderer_quality.py",
+    "tests/test_e2e_gold.py",
+    "knowledge/models/document_binding.py"
+  ],
   "status": "PASS",
   "step": 16,
-  "validated_sha": "32da9ed623c193ff234da5c0afa273b944e52390"
+  "validated_sha": "4ebec450bd87f2c29cc890dbd02941c7af953710"
 }
