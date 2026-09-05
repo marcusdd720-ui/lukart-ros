@@ -18,9 +18,14 @@ from typing import Any
 
 from knowledge.graph import KnowledgeGraph
 from knowledge.legal_query import LegalQuery
+from knowledge.models.action_plan import ActionPlan
 from knowledge.models.authority_section import AuthoritySection, build_authority_section
 from knowledge.models.case import Case
+from knowledge.models.cognitive_release_guard import authorize_cognitive_release
+from knowledge.models.decision_model import DecisionModel
+from knowledge.models.document_binding import DocumentBinding
 from knowledge.models.dossier_render import DossierContext, DossierRenderer
+from knowledge.models.strategy_model import StrategyModel
 
 ROOT = Path(__file__).resolve().parents[2]
 
@@ -55,6 +60,12 @@ class CaseWorkspace:
     review_ok: bool | None = None
     meta: dict[str, Any] = field(default_factory=dict)
 
+    cognitive_release_enforced: bool = False
+    release_binding: DocumentBinding | None = None
+    release_decision: DecisionModel | None = None
+    release_strategy: StrategyModel | None = None
+    release_plan: ActionPlan | None = None
+
     _author_name: str = ""
     _place: str = ""
     _subject: str = ""
@@ -79,6 +90,53 @@ class CaseWorkspace:
     @property
     def legal(self) -> LegalQuery:
         return LegalQuery(self.graph)
+
+    def bind_cognitive_release(
+        self,
+        *,
+        binding: DocumentBinding,
+        decision: DecisionModel,
+        strategy: StrategyModel,
+        plan: ActionPlan | None,
+        enforce: bool = True,
+    ) -> None:
+        self.release_binding = binding
+        self.release_decision = decision
+        self.release_strategy = strategy
+        self.release_plan = plan
+        if enforce:
+            self.cognitive_release_enforced = True
+
+    def cognitive_release_blockers(self) -> tuple[str, ...]:
+        if not self.cognitive_release_enforced:
+            return ()
+
+        missing: list[str] = []
+        if self.release_binding is None:
+            missing.append("release_binding_missing")
+        if self.release_decision is None:
+            missing.append("release_decision_missing")
+        if self.release_strategy is None:
+            missing.append("release_strategy_missing")
+        if missing:
+            return tuple(missing)
+
+        assert self.release_binding is not None
+        assert self.release_decision is not None
+        assert self.release_strategy is not None
+        authorization = authorize_cognitive_release(
+            binding=self.release_binding,
+            decision=self.release_decision,
+            strategy=self.release_strategy,
+            plan=self.release_plan,
+        )
+        return authorization.reasons
+
+    def _require_cognitive_release(self) -> None:
+        blockers = self.cognitive_release_blockers()
+        if blockers:
+            rendered = ", ".join(blockers)
+            raise PermissionError(f"Cognitive release blocked: {rendered}")
 
     def set_letter_context(
         self,
@@ -194,6 +252,7 @@ class CaseWorkspace:
         *,
         filenames: list[str] | None = None,
     ) -> list[Path]:
+        self._require_cognitive_release()
         names = filenames or [
             "stanowisko_dossier_with_authorities.txt",
             "stanowisko_dossier_with_authorities.docx",
@@ -323,7 +382,11 @@ class CaseWorkspace:
             return self.run_review_agent()
 
         if name == "OUTBOUND":
-            copied = self.sync_outbound()
+            try:
+                copied = self.sync_outbound()
+            except PermissionError as exc:
+                print(str(exc))
+                return 1
             if copied:
                 print("Outbound:")
                 for path in copied:
@@ -346,6 +409,12 @@ class CaseWorkspace:
             return 0
 
         if name == "RELEASE":
+            try:
+                self._require_cognitive_release()
+            except PermissionError as exc:
+                print(str(exc))
+                return 1
+
             from knowledge.models.case_snapshot import CaseSnapshot
             from knowledge.models.snapshot_validator import validate_snapshot
 
@@ -472,7 +541,12 @@ class CaseWorkspace:
             return 1
 
         if sync_outbound:
-            outbound_files = self.sync_outbound()
+            try:
+                outbound_files = self.sync_outbound()
+            except PermissionError as exc:
+                print(str(exc))
+                print("WORKSPACE FAIL: Cognitive release")
+                return 1
             if outbound_files:
                 print("Outbound:")
                 for path in outbound_files:
