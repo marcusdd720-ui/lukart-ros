@@ -1,9 +1,9 @@
 {
   "schema_version": "1.0",
   "step": 18,
-  "reviewed_sha": "32da9ed623c193ff234da5c0afa273b944e52390",
+  "reviewed_sha": "4ebec450bd87f2c29cc890dbd02941c7af953710",
   "reviewed_artifact_path": "docs/quality/review_packages/step_18_review_package.json",
-  "reviewed_artifact_sha256": "1aab28f24251c8dadb98c5329cf218211927c825f875aed7b286436c8beafb94",
+  "reviewed_artifact_sha256": "7491e8ccd5c7a2b4d2a9d2ac4fcfbe0dd19699bcdd287ddc69a45925d499f306",
   "reviewer_id": "REPLACE_WITH_INDEPENDENT_HUMAN_REVIEWER_ID",
   "reviewer_independent": true,
   "reviewer_kind": "human",

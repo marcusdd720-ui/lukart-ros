@@ -3,7 +3,7 @@
   "package_id": "step16-renderer-dossier-review",
   "step": 16,
   "status": "READY_FOR_INDEPENDENT_REVIEW",
-  "reviewed_sha": "32da9ed623c193ff234da5c0afa273b944e52390",
+  "reviewed_sha": "4ebec450bd87f2c29cc890dbd02941c7af953710",
   "review_issue": 62,
   "decision_authority": "external_human_only",
   "private_data_included": false,
@@ -23,6 +23,10 @@
       "purpose": "Renderer registration and selection behavior."
     },
     {
+      "path": "renderer/document.py",
+      "purpose": "Human-facing document rendering added after the original Step 16 review revision."
+    },
+    {
       "path": "validation/renderer_quality.py",
       "purpose": "Automated final-report quality and traceability gate."
     },
@@ -37,6 +41,10 @@
     {
       "path": "reasoning/models.py",
       "purpose": "Canonical ReasoningRunResult and epistemic artifact representation consumed by renderers."
+    },
+    {
+      "path": "knowledge/models/document_binding.py",
+      "purpose": "Current document binding and human-review boundary for high-risk outputs."
     }
   ],
   "review_questions": [
@@ -45,6 +53,7 @@
     "Are decisions, abstentions, and open questions clearly presented?",
     "Is the final dossier usable as a professional human-facing output rather than only a machine artifact?",
     "Is any material information silently lost between ReasoningRunResult and the final JSON or Markdown report?",
+    "Do the current document-binding and release-boundary changes preserve human control over high-risk outputs?",
     "Does the reviewed revision merit PASS or FAIL for the Step 16 human-review requirement?"
   ],
   "required_review_artifact": {

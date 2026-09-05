@@ -3,7 +3,7 @@
   "package_id": "step18-security-auditability-review",
   "step": 18,
   "status": "READY_FOR_INDEPENDENT_REVIEW",
-  "reviewed_sha": "32da9ed623c193ff234da5c0afa273b944e52390",
+  "reviewed_sha": "4ebec450bd87f2c29cc890dbd02941c7af953710",
   "review_issue": 64,
   "decision_authority": "external_human_only",
   "private_data_included": false,
@@ -36,23 +36,62 @@
     },
     {
       "path": "factory/production_validation_orchestrator.py",
-      "purpose": "Exact-SHA evidence validation, fail-closed Production Validation state, and release-chain revalidation."
+      "purpose": "Evidence validation, fail-closed Production Validation state, and release-chain revalidation."
     },
     {
       "path": "validation/independent_step_review.py",
       "purpose": "Independent-human review identity, review-subject, revision, and SHA-256 binding rules."
     },
     {
+      "path": "validation/human_review_provenance.py",
+      "purpose": "Runtime-only provenance receipt validation and rejection of repository self-attestation."
+    },
+    {
+      "path": "validation/github_human_review_provenance.py",
+      "purpose": "Authenticated GitHub issue-comment provenance collection for human gates."
+    },
+    {
+      "path": ".github/workflows/production-validation-program.yml",
+      "purpose": "Runtime provenance collection and fail-closed enforcement in Production Validation."
+    },
+    {
+      "path": ".github/workflows/mvros-v1-release.yml",
+      "purpose": "Same-SHA companion-workflow enforcement and immutable release-tag behavior."
+    },
+    {
+      "path": "knowledge/models/cognitive_release_guard.py",
+      "purpose": "Cognitive release authorization boundary for outbound/release actions."
+    },
+    {
+      "path": "knowledge/models/case_workspace.py",
+      "purpose": "Current workspace enforcement of cognitive release before outbound/release."
+    },
+    {
+      "path": "scripts/publish.py",
+      "purpose": "Publication boundary preventing preparation state from authorizing remote release."
+    },
+    {
       "path": "tests/test_production_validation_independent_review_gates.py",
       "purpose": "Negative tests preventing bot self-approval, report self-reference, stale hashes, and unbound reviews."
+    },
+    {
+      "path": "tests/test_publication_boundary_contract.py",
+      "purpose": "Contract test proving READY_TO_PUBLISH is preparation-only."
+    },
+    {
+      "path": "tests/test_release_workflow_contract.py",
+      "purpose": "Release workflow contract checks for same-SHA gates and immutable tags."
     }
   ],
   "review_questions": [
     "Can validation and security decisions be reconstructed from exact revision and evidence bindings?",
     "Are failed or blocked security controls visible rather than silently converted into PASS?",
     "Is enough evidence preserved to reconstruct why a security/privacy gate passed or failed?",
-    "Is there any path by which a bot, agent, system, automation, or Factory identity can self-authorize the independent auditability review?",
+    "Is there any path by which a bot, agent, system, automation, Factory identity, or repository self-attestation can authorize the independent auditability review?",
+    "Does authenticated runtime human-review provenance fail closed on missing, mismatched, owner-authored, or automated attestations?",
     "Does the public-repository boundary adequately prevent private Case data and obvious PII from being committed?",
+    "Do the cognitive release guard and publication boundary prevent READY_TO_PUBLISH or local preparation from authorizing OUTBOUND/RELEASE?",
+    "Does the release workflow bind release-critical companion checks to the exact release SHA and refuse to move an existing tag?",
     "Does the reviewed revision merit PASS or FAIL for the Step 18 independent auditability-review requirement?"
   ],
   "required_review_artifact": {
