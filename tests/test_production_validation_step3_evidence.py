@@ -42,7 +42,7 @@ def _metric_dict(metrics: ExtractionMetrics) -> dict[str, float | int]:
     }
 
 
-def test_repository_step3_evidence_is_bound_measured_and_locked_safe(
+def test_repository_step3_historical_measurement_is_locked_safe_but_gate_is_stale(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     monkeypatch.delenv(PROVENANCE_DIR_ENV, raising=False)
@@ -84,5 +84,5 @@ def test_repository_step3_evidence_is_bound_measured_and_locked_safe(
     assert report["certification_decision"] == "PASS"
 
     step_decision = evaluate_generic_evidence(ROOT, 3)
-    assert step_decision.passed is True
-    assert step_decision.code == "PASS"
+    assert step_decision.passed is False
+    assert step_decision.code == "STEP_EVIDENCE_INVALID"
