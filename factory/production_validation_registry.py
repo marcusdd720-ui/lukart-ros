@@ -38,9 +38,9 @@ class ProgramStep:
 PROGRAM_STEPS: tuple[ProgramStep, ...] = (
     ProgramStep(
         1,
-        "Extraction Gold Corpus independent review and freeze",
+        "Extraction Gold Corpus review/acceptance and freeze",
         ProgramPriority.P0,
-        "Freeze a trustworthy extraction benchmark after independent review.",
+        "Freeze a trustworthy extraction benchmark after the selected profile accepts it.",
         GateKind.EXTERNAL_REVIEW,
         "independent_extraction_corpus_review",
         (),
@@ -88,9 +88,9 @@ PROGRAM_STEPS: tuple[ProgramStep, ...] = (
     ),
     ProgramStep(
         5,
-        "Independent review and freeze Reasoning Corpus",
+        "Review/acceptance and freeze Reasoning Corpus",
         ProgramPriority.P0,
-        "Independently review and freeze the reasoning benchmark.",
+        "Review, accept under the selected certification profile, and freeze the benchmark.",
         GateKind.EXTERNAL_REVIEW,
         "independent_reasoning_corpus_review",
         (),
