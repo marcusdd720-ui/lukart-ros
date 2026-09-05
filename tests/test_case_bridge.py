@@ -32,21 +32,29 @@ def _target(*, allow_cross_case: bool) -> CaseScope:
     )
 
 
-def _active_bridge(**kwargs: object) -> CaseBridge:
-    values = {
-        "bridge_id": "BRIDGE-1",
-        "source_case_id": "CASE-A",
-        "target_case_id": "CASE-B",
-        "subject_refs": (_subject(),),
-        "disclosure_level": DisclosureLevel.SOURCE_VERSION,
-        "purpose": "compare one bounded source",
-        "authorization_ref": "authority:1",
-        "provenance_ref": "bridge-prov:1",
-        "created_at": "2026-09-05T04:30:00Z",
-        "status": BridgeStatus.ACTIVE,
-    }
-    values.update(kwargs)
-    return CaseBridge(**values)  # type: ignore[arg-type]
+def _active_bridge(
+    *,
+    status: BridgeStatus = BridgeStatus.ACTIVE,
+    authorization_ref: str | None = "authority:1",
+    human_review_required: bool = False,
+    human_approval_ref: str | None = None,
+    audit_lineage: tuple[str, ...] = (),
+) -> CaseBridge:
+    return CaseBridge(
+        bridge_id="BRIDGE-1",
+        source_case_id="CASE-A",
+        target_case_id="CASE-B",
+        subject_refs=(_subject(),),
+        disclosure_level=DisclosureLevel.SOURCE_VERSION,
+        purpose="compare one bounded source",
+        authorization_ref=authorization_ref,
+        provenance_ref="bridge-prov:1",
+        created_at="2026-09-05T04:30:00Z",
+        status=status,
+        human_review_required=human_review_required,
+        human_approval_ref=human_approval_ref,
+        audit_lineage=audit_lineage,
+    )
 
 
 def test_candidate_discovery_contains_only_minimal_metadata() -> None:
