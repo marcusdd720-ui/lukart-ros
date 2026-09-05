@@ -4,8 +4,11 @@ import hashlib
 import json
 from pathlib import Path
 
+import pytest
+
 from factory.production_validation_orchestrator import evaluate_generic_evidence, evidence_path
 from factory.production_validation_registry import get_program_step
+from validation.human_review_provenance import PROVENANCE_DIR_ENV
 
 VALIDATED_SHA = "a" * 40
 
@@ -107,6 +110,42 @@ def _bind_review(
     envelope["review_sha256"] = _sha256(review_path)
     _write_json(envelope_path, envelope)
     return review_path
+
+
+def _write_step_provenance(
+    root: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    *,
+    step: int,
+    issue: int,
+    review_path: Path,
+) -> None:
+    review = json.loads(review_path.read_text(encoding="utf-8"))
+    provenance_dir = (root / "runtime-provenance").resolve()
+    provenance_dir.mkdir(parents=True, exist_ok=True)
+    reviewer_id = str(review["reviewer_id"])
+    _write_json(
+        provenance_dir / f"step_{step:02d}.json",
+        {
+            "schema_version": "1.0",
+            "verification_provider": "github_api",
+            "source_kind": "github_issue_comment",
+            "source_repository": "marcusdd720-ui/lukart-ros",
+            "source_issue": issue,
+            "source_comment_id": 20000 + step,
+            "source_comment_url": f"https://github.com/marcusdd720-ui/lukart-ros/issues/{issue}#issuecomment-test",
+            "source_author_type": "User",
+            "source_author_login": reviewer_id,
+            "reviewer_id": reviewer_id,
+            "reviewer_kind": "human",
+            "reviewer_independent": True,
+            "decision": "PASS",
+            "review_sha256": _sha256(review_path),
+            "reviewed_sha": review["reviewed_sha"],
+            "verified": True,
+        },
+    )
+    monkeypatch.setenv(PROVENANCE_DIR_ENV, str(provenance_dir))
 
 
 def test_step16_cannot_pass_from_boolean_check_without_review(tmp_path: Path) -> None:
@@ -240,9 +279,27 @@ def test_review_path_cannot_escape_repository(tmp_path: Path) -> None:
     assert decision.code == "REVIEW_PATH_INVALID"
 
 
-def test_valid_independent_human_review_unlocks_step16_generic_gate(tmp_path: Path) -> None:
+def test_self_declared_step16_review_without_runtime_provenance_fails_closed(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.delenv(PROVENANCE_DIR_ENV, raising=False)
     report, envelope_path, envelope = _prepare_step(tmp_path, 16)
     _bind_review(tmp_path, 16, report, envelope_path, envelope)
+
+    decision = evaluate_generic_evidence(tmp_path, 16)
+
+    assert decision.passed is False
+    assert decision.code == "HUMAN_PROVENANCE_REQUIRED"
+
+
+def test_valid_independent_human_review_unlocks_step16_generic_gate(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    report, envelope_path, envelope = _prepare_step(tmp_path, 16)
+    review_path = _bind_review(tmp_path, 16, report, envelope_path, envelope)
+    _write_step_provenance(tmp_path, monkeypatch, step=16, issue=62, review_path=review_path)
 
     decision = evaluate_generic_evidence(tmp_path, 16)
 
@@ -250,9 +307,13 @@ def test_valid_independent_human_review_unlocks_step16_generic_gate(tmp_path: Pa
     assert decision.code == "PASS"
 
 
-def test_valid_independent_human_review_unlocks_step18_generic_gate(tmp_path: Path) -> None:
+def test_valid_independent_human_review_unlocks_step18_generic_gate(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     report, envelope_path, envelope = _prepare_step(tmp_path, 18)
-    _bind_review(tmp_path, 18, report, envelope_path, envelope)
+    review_path = _bind_review(tmp_path, 18, report, envelope_path, envelope)
+    _write_step_provenance(tmp_path, monkeypatch, step=18, issue=64, review_path=review_path)
 
     decision = evaluate_generic_evidence(tmp_path, 18)
 
