@@ -1,9 +1,7 @@
 {
   "automated_evidence": {
     "architectural_audit_conclusion": "success",
-    "architectural_audit_run_id": 33816547011,
     "ci_foundation_conclusion": "success",
-    "ci_foundation_run_id": 33816547038,
     "measured_properties": [
       "deterministic rendering",
       "source binding",
