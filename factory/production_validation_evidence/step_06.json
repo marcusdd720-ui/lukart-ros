@@ -1,1 +1,15 @@
-{"artifact_path":"reports/production_validation/step_06.json","artifact_sha256":"dfd201be6456631a59f09d7a6279172826c82b45980a12e633f95cd020138e0f","critical_gates_passed":false,"evidence_kind":"reasoning_certification","gate_kind":"certification","replacement_required_after_human_review":true,"schema_version":"2.0","stale_reason":"Historical Step 6 PASS executed before authenticated independent-human provenance for Step 5. Rerun certification-only locked evaluation after genuine Step 5 review/freeze; do not reuse this envelope.","status":"STALE","step":6,"validated_sha":"2af8ab200945f57272d39e25b95a2011cddf76f4"}
+{
+  "artifact_path": "reports/production_validation/step_06.json",
+  "artifact_sha256": "230f7b298f71411e16f383897df17de0e1aab5032379468cf1e5d9b5145fc646",
+  "certification_mode": "solo_maintainer",
+  "critical_gates_passed": true,
+  "evidence_kind": "reasoning_certification",
+  "gate_kind": "certification",
+  "historical_locked_result_preexisted": true,
+  "independent_external_review": "NOT_PERFORMED",
+  "locked_evaluation_use": "certification_only",
+  "schema_version": "2.0",
+  "status": "PASS",
+  "step": 6,
+  "validated_sha": "50d7fd4fe2f03f0cdff133e2c930a8408c85c587"
+}
