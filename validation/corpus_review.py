@@ -1,7 +1,7 @@
 """Typed, immutable contract for externally supplied corpus review decisions.
 
 This module validates review evidence; it never generates, upgrades, or infers
-an approval.  External-review outcomes remain human-supplied evidence.
+an approval. External-review outcomes remain human-supplied evidence.
 """
 
 from __future__ import annotations
@@ -14,6 +14,7 @@ from dataclasses import dataclass
 from enum import StrEnum
 
 _SHA256_RE = re.compile(r"^[0-9a-f]{64}$")
+_GIT_SHA_RE = re.compile(r"^[0-9a-f]{40}$")
 
 
 class CorpusReviewDecision(StrEnum):
@@ -62,12 +63,21 @@ def _enum_value(enum_type: type[StrEnum], payload: Mapping[str, object], name: s
         ) from exc
 
 
+def _canonical_corpus_path(corpus_id: str) -> str:
+    """Return the canonical public corpus path for a corpus identifier."""
+
+    return f"data/quality/{corpus_id.replace('-', '_')}.json"
+
+
 @dataclass(frozen=True, slots=True)
 class ExternalCorpusReview:
     schema_version: str
     corpus_id: str
     corpus_sha256: str
+    reviewed_artifact_path: str
+    reviewed_sha: str
     reviewer_id: str
+    reviewer_kind: str
     reviewer_independent: bool
     decision: CorpusReviewDecision
     annotation_review: CorpusReviewSectionStatus
@@ -86,8 +96,11 @@ class ExternalCorpusReview:
             "freeze_approved": self.freeze_approved,
             "iaa_required": self.iaa_required,
             "iaa_status": self.iaa_status.value,
+            "reviewed_artifact_path": self.reviewed_artifact_path,
+            "reviewed_sha": self.reviewed_sha,
             "reviewer_id": self.reviewer_id,
             "reviewer_independent": self.reviewer_independent,
+            "reviewer_kind": self.reviewer_kind,
             "schema_version": self.schema_version,
         }
 
@@ -108,7 +121,7 @@ def validate_external_corpus_review(
     expected_corpus_sha256: str,
     reserved_reviewer_ids: frozenset[str],
 ) -> ExternalCorpusReview:
-    """Validate an already supplied independent review; never infer approval."""
+    """Validate an already supplied independent human review; never infer approval."""
 
     schema_version = _required_text(payload, "schema_version")
     if schema_version != "1.0":
@@ -131,15 +144,32 @@ def validate_external_corpus_review(
             "review is not bound to corpus bytes",
         )
 
+    reviewed_artifact_path = _required_text(payload, "reviewed_artifact_path")
+    expected_artifact_path = _canonical_corpus_path(corpus_id)
+    if reviewed_artifact_path != expected_artifact_path:
+        raise ExternalCorpusReviewError(
+            "REVIEW_ARTIFACT_MISMATCH",
+            "review is not bound to the canonical corpus path",
+        )
+
+    reviewed_sha = _required_text(payload, "reviewed_sha").lower()
+    if not _GIT_SHA_RE.fullmatch(reviewed_sha):
+        raise ExternalCorpusReviewError(
+            "REVIEW_SHA_INVALID",
+            "reviewed_sha must be a full Git SHA",
+        )
+
     reviewer_id = _required_text(payload, "reviewer_id")
+    reviewer_kind = _required_text(payload, "reviewer_kind")
     reviewer_independent = payload.get("reviewer_independent")
     if (
         reviewer_id.lower() in reserved_reviewer_ids
+        or reviewer_kind != "human"
         or reviewer_independent is not True
     ):
         raise ExternalCorpusReviewError(
             "REVIEW_NOT_INDEPENDENT",
-            "independent reviewer required",
+            "independent human reviewer required",
         )
 
     decision = _enum_value(CorpusReviewDecision, payload, "decision")
@@ -187,7 +217,10 @@ def validate_external_corpus_review(
         schema_version=schema_version,
         corpus_id=corpus_id,
         corpus_sha256=corpus_sha256,
+        reviewed_artifact_path=reviewed_artifact_path,
+        reviewed_sha=reviewed_sha,
         reviewer_id=reviewer_id,
+        reviewer_kind=reviewer_kind,
         reviewer_independent=True,
         decision=CorpusReviewDecision(decision),
         annotation_review=CorpusReviewSectionStatus(annotation_review),
