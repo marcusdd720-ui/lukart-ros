@@ -5,7 +5,7 @@
   "reviewer_id": "external-reviewer-01",
   "reviewer_kind": "human",
   "reviewer_independent": true,
-  "review_status": "APPROVED",
+  "decision": "APPROVED",
   "annotation_review": "APPROVED",
   "criticality_review": "APPROVED",
   "freeze_approved": true,
