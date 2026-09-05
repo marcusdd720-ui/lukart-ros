@@ -8,6 +8,7 @@ on:
 
 permissions:
   contents: read
+  issues: read
 
 concurrency:
   group: lukart-ros-production-validation-${{ github.ref }}
@@ -29,6 +30,17 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           python -m pip install ".[dev]"
+
+      - name: Collect authenticated human review provenance
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          provenance_dir="${RUNNER_TEMP}/lukart-human-review-provenance"
+          python -m validation.github_human_review_provenance \
+            --root . \
+            --output-dir "${provenance_dir}"
+          echo "LUKART_HUMAN_REVIEW_PROVENANCE_DIR=${provenance_dir}" >> "${GITHUB_ENV}"
 
       - name: Evaluate program until first blocker
         shell: bash

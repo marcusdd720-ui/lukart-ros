@@ -13,8 +13,14 @@ from collections.abc import Mapping
 from dataclasses import dataclass
 from enum import StrEnum
 
+from validation.human_review_provenance import (
+    HumanReviewProvenanceError,
+    validate_runtime_human_review_provenance,
+)
+
 _SHA256_RE = re.compile(r"^[0-9a-f]{64}$")
 _GIT_SHA_RE = re.compile(r"^[0-9a-f]{40}$")
+_PRODUCTION_REVIEW_STEPS = {"extraction-gold-v1": 1, "reasoning-gold-v2": 5}
 
 
 class CorpusReviewDecision(StrEnum):
@@ -121,7 +127,7 @@ def validate_external_corpus_review(
     expected_corpus_sha256: str,
     reserved_reviewer_ids: frozenset[str],
 ) -> ExternalCorpusReview:
-    """Validate an already supplied independent human review; never infer approval."""
+    """Validate supplied review content and, for production gates, external provenance."""
 
     schema_version = _required_text(payload, "schema_version")
     if schema_version != "1.0":
@@ -213,7 +219,7 @@ def validate_external_corpus_review(
             "IAA status is incompatible with an approved review",
         )
 
-    return ExternalCorpusReview(
+    result = ExternalCorpusReview(
         schema_version=schema_version,
         corpus_id=corpus_id,
         corpus_sha256=corpus_sha256,
@@ -229,3 +235,17 @@ def validate_external_corpus_review(
         iaa_required=iaa_required,
         iaa_status=IAAStatus(iaa_status),
     )
+
+    production_step = _PRODUCTION_REVIEW_STEPS.get(corpus_id)
+    if production_step is not None:
+        try:
+            validate_runtime_human_review_provenance(
+                step=production_step,
+                reviewer_id=reviewer_id,
+                review_sha256=result.digest(),
+                reviewed_sha=reviewed_sha,
+            )
+        except HumanReviewProvenanceError as exc:
+            raise ExternalCorpusReviewError(exc.code, exc.reason) from exc
+
+    return result
