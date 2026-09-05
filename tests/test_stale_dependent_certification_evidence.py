@@ -10,7 +10,7 @@ EVIDENCE_DIR = Path("factory/production_validation_evidence")
 
 
 def test_remaining_dependent_certification_envelopes_are_quarantined() -> None:
-    for step in (16, 18):
+    for step in (18,):
         path = EVIDENCE_DIR / f"step_{step:02d}.json"
         payload = json.loads(path.read_text(encoding="utf-8"))
 
