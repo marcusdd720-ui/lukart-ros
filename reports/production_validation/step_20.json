@@ -1,0 +1,44 @@
+{
+  "checks": [
+    {
+      "name": "steps_1_19_complete",
+      "status": "PASS"
+    },
+    {
+      "name": "release_manifest_created",
+      "status": "PASS"
+    },
+    {
+      "name": "release_gates_passed",
+      "status": "PASS"
+    },
+    {
+      "name": "rc_decision_recorded",
+      "status": "PASS"
+    }
+  ],
+  "decision": "RELEASE_CANDIDATE_PASS",
+  "decision_scope": "LUKART ROS v1 release candidate under the documented Production Validation contracts and known limitations.",
+  "evidence_kind": "release_candidate_decision",
+  "exact_sha_validation": {
+    "architectural_audit": "PASS",
+    "ci_foundation": "PASS",
+    "exact_stage_gate": "PASS",
+    "github_app_smoke": "PASS",
+    "production_validation_steps_1_19": "PASS"
+  },
+  "gate_kind": "release",
+  "locked_evaluation_used_for_tuning": false,
+  "private_data_committed": false,
+  "release_manifest": {
+    "path": "reports/production_validation/lukart_v1_release_manifest.json",
+    "product_version": "1.0.0",
+    "release_id": "lukart-ros-v1-rc1",
+    "sha256": "06f6260e5dfa932d11383cce51221906604354bdd7e4341feeab91b3ac841e4e"
+  },
+  "schema_version": "1.0",
+  "status": "PASS",
+  "step": 20,
+  "steps_1_19_digest": "38ced3e331a09e44203660861b78b9ed97cf802abd984e4db0765498146abcf8",
+  "validated_sha": "d7dfbe06bb1d79b5719a966086dc1d2ac0ae9119"
+}
