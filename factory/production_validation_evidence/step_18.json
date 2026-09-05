@@ -5,7 +5,7 @@
   "evidence_kind": "security_privacy_hardening",
   "gate_kind": "privacy",
   "review_path": "docs/quality/reviews/step_18_independent_review.json",
-  "review_sha256": "e7e2cdaf6ea69cc7c7ad8c4adfac0e591f55926bd63be63960b45762552d73a9",
+  "review_sha256": "732fba18c4bcacdd2074854c7f99bdd3e45c748fe766ec0b3b2fda00c32cc1f5",
   "review_subject_path": "docs/quality/review_packages/step_18_review_package.json",
   "review_subject_sha256": "1aab28f24251c8dadb98c5329cf218211927c825f875aed7b286436c8beafb94",
   "schema_version": "2.0",
