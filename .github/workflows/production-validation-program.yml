@@ -50,6 +50,7 @@ jobs:
           done
 
       - name: Publish program summary
+        if: always()
         shell: bash
         run: |
           python - <<'PY'
@@ -81,4 +82,26 @@ jobs:
           summary = Path(os.environ["GITHUB_STEP_SUMMARY"])
           with summary.open("a", encoding="utf-8") as handle:
               handle.write("\n".join(lines) + "\n")
+          PY
+
+      - name: Enforce complete program state
+        if: always()
+        shell: bash
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          state = json.loads(Path("factory/production_validation_state.json").read_text())
+          status = state.get("status")
+          last_completed = state.get("last_completed_step")
+          if status != "COMPLETE" or last_completed != 20:
+              blocker = state.get("block_code", "INCOMPLETE_PROGRAM")
+              reason = state.get("block_reason", "production validation did not complete")
+              print(
+                  f"Production Validation is not releasable: status={status}, "
+                  f"last_completed_step={last_completed}, blocker={blocker}, reason={reason}"
+              )
+              raise SystemExit(1)
+          print("PRODUCTION_VALIDATION_RELEASE_GATE=PASS")
           PY

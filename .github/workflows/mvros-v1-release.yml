@@ -8,16 +8,12 @@ on:
       - completed
 
 permissions:
+  actions: read
   contents: write
 
 concurrency:
   group: mvros-v1-release
   cancel-in-progress: false
-
-env:
-  # v1.0.0 was published before the final operational/privacy changes landed.
-  # Reconciliation is intentionally limited to that pre-operational release.
-  ALLOW_STALE_V1_RECONCILIATION: "true"
 
 jobs:
   release:
@@ -43,6 +39,57 @@ jobs:
           echo "VALIDATED_SHA=$VALIDATED_SHA"
           echo "CURRENT_MAIN_SHA=$CURRENT_MAIN_SHA"
           test "$VALIDATED_SHA" = "$CURRENT_MAIN_SHA"
+
+      - name: Require all release validation workflows on the same SHA
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VALIDATED_SHA: ${{ github.event.workflow_run.head_sha }}
+        run: |
+          set -euo pipefail
+          gh api "repos/${GITHUB_REPOSITORY}/actions/runs?head_sha=${VALIDATED_SHA}&per_page=100" > /tmp/release-workflow-runs.json
+          python - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+
+          validated_sha = os.environ["VALIDATED_SHA"]
+          payload = json.loads(Path("/tmp/release-workflow-runs.json").read_text(encoding="utf-8"))
+          runs = payload.get("workflow_runs", [])
+          required = (
+              "CI Foundation",
+              "Architectural Audit 1.0",
+              "Stage Gate",
+              "Stage Orchestrator",
+              "Production Validation Program",
+          )
+          failures: list[str] = []
+          for workflow_name in required:
+              candidates = [
+                  run
+                  for run in runs
+                  if run.get("name") == workflow_name and run.get("head_sha") == validated_sha
+              ]
+              if not candidates:
+                  failures.append(f"{workflow_name}: missing for {validated_sha}")
+                  continue
+              latest = max(candidates, key=lambda run: (run.get("run_number", 0), run.get("run_attempt", 0)))
+              conclusion = latest.get("conclusion")
+              status = latest.get("status")
+              print(
+                  f"RELEASE_REQUIRED_WORKFLOW name={workflow_name!r} "
+                  f"status={status!r} conclusion={conclusion!r} run_id={latest.get('id')}"
+              )
+              if status != "completed" or conclusion != "success":
+                  failures.append(
+                      f"{workflow_name}: status={status!r}, conclusion={conclusion!r}"
+                  )
+          if failures:
+              print("Release gate failed:")
+              for failure in failures:
+                  print(f"- {failure}")
+              raise SystemExit(1)
+          print("RELEASE_COMPANION_WORKFLOWS=PASS")
+          PY
 
       - name: Resolve project version
         id: version
@@ -74,7 +121,6 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           TAG: ${{ steps.version.outputs.tag }}
           VALIDATED_SHA: ${{ github.event.workflow_run.head_sha }}
-          VERSION: ${{ steps.version.outputs.version }}
         run: |
           set -euo pipefail
           TAG_COMMIT="$(git ls-remote origin "refs/tags/$TAG^{}" | awk '{print $1}')"
@@ -95,15 +141,15 @@ jobs:
           echo "release_immutable=$RELEASE_IMMUTABLE" >> "$GITHUB_OUTPUT"
           echo "release_target=$RELEASE_TARGET" >> "$GITHUB_OUTPUT"
 
-          if [ "$RELEASE_IMMUTABLE" = "true" ] && [ "$TAG_COMMIT" != "$VALIDATED_SHA" ]; then
-            echo "Immutable release/tag conflict for $TAG; refusing to mutate it."
+          if [ -n "$TAG_COMMIT" ] && [ "$TAG_COMMIT" != "$VALIDATED_SHA" ]; then
+            echo "Release tag $TAG already points to $TAG_COMMIT, not $VALIDATED_SHA."
+            echo "Refusing to move an existing release tag. Bump the project version for a new release."
             exit 1
           fi
 
-          if [ "$TAG_COMMIT" != "" ] && [ "$TAG_COMMIT" != "$VALIDATED_SHA" ]; then
-            test "$VERSION" = "1.0.0"
-            test "$ALLOW_STALE_V1_RECONCILIATION" = "true"
-            echo "Stale pre-operational v1.0.0 state detected; reconciliation is permitted."
+          if [ "$RELEASE_EXISTS" = "true" ] && [ -z "$TAG_COMMIT" ]; then
+            echo "Release $TAG exists without a resolvable remote tag; refusing automatic repair."
+            exit 1
           fi
 
       - name: Configure release git identity
@@ -111,21 +157,6 @@ jobs:
           set -euo pipefail
           git config user.name "lukart-ros-release[bot]"
           git config user.email "lukart-ros-release[bot]@users.noreply.github.com"
-
-      - name: Reconcile stale v1.0.0 release
-        if: steps.release_state.outputs.tag_commit != '' && steps.release_state.outputs.tag_commit != github.event.workflow_run.head_sha
-        env:
-          GH_TOKEN: ${{ github.token }}
-          TAG: ${{ steps.version.outputs.tag }}
-        run: |
-          set -euo pipefail
-          test "$TAG" = "v1.0.0"
-          if [ "${{ steps.release_state.outputs.release_exists }}" = "true" ]; then
-            test "${{ steps.release_state.outputs.release_immutable }}" = "false"
-            gh release delete "$TAG" --yes --cleanup-tag
-          else
-            git push origin ":refs/tags/$TAG"
-          fi
 
       - name: Create tag and GitHub Release
         env:
