@@ -1,6 +1,6 @@
 {
   "artifact_path": "reports/production_validation/step_20.json",
-  "artifact_sha256": "079489dd5fd01fbed7fe22b198867d97d78a0932cb474b2b8f56620dd264c02e",
+  "artifact_sha256": "0fcaa092690d2af565639c45bbf3532672e8007e89ba54b73e388e097dad52fc",
   "critical_gates_passed": true,
   "evidence_kind": "release_candidate_decision",
   "gate_kind": "release",
