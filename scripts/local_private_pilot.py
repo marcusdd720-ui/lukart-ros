@@ -21,6 +21,8 @@ from validation.local_private_pilot import (
     write_local_pilot_attestation,
 )
 
+PRIVATE_BLOCKED_STAGES = frozenset({"OUTBOUND", "RELEASE"})
+
 
 def _current_sha() -> str:
     result = subprocess.run(
@@ -35,6 +37,10 @@ def _current_sha() -> str:
 
 def _case_fingerprint(case_key: str) -> str:
     return hashlib.sha256(case_key.encode()).hexdigest()
+
+
+def _private_stage_allowed(stage: str | None) -> bool:
+    return stage is None or stage.strip().upper() not in PRIVATE_BLOCKED_STAGES
 
 
 def _pii_or_confidentiality_finding_present() -> bool:
@@ -80,12 +86,24 @@ def main() -> int:
     )
     args = parser.parse_args()
 
+    if not _private_stage_allowed(args.stage):
+        print(
+            "PRIVATE PILOT BLOCKED: OUTBOUND/RELEASE require a substantive cognitive "
+            "decision and human approval."
+        )
+        return 2
+
     data_root = validate_data_root(Path(args.data_root), repo_root=ROOT)
     spec = get_spec(args.case, data_root=data_root)
     workspace = spec.open(data_root=data_root)
     kwargs = spec.run_kwargs()
     if args.stage:
         kwargs["stage"] = args.stage
+    else:
+        # The legacy CaseWorkspace can synchronize outbound files before the new
+        # cognitive baseline is evaluated. A private pilot must remain fail-closed:
+        # local generation/review is allowed, publication is not.
+        kwargs["sync_outbound"] = False
 
     validated_sha = _current_sha()
     exit_code = workspace.run(**kwargs)
