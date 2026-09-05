@@ -60,6 +60,50 @@ def test_migration_registry_resolves_only_declared_edge() -> None:
     ) is None
 
 
+def test_reversible_migration_exposes_exact_rollback_path() -> None:
+    step = MigrationStep(
+        migration_id="case-replay-1-to-2",
+        artifact_type="case-replay",
+        from_version=SchemaVersion.parse("1.0.0"),
+        to_version=SchemaVersion.parse("2.0.0"),
+        reversible=True,
+    )
+    registry = MigrationRegistry((step,))
+
+    assert registry.direct_rollback(
+        "case-replay",
+        SchemaVersion.parse("2.0.0"),
+        SchemaVersion.parse("1.0.0"),
+    ) == step
+    assert registry.direct_rollback(
+        "case-replay",
+        SchemaVersion.parse("2.0.0"),
+        SchemaVersion.parse("1.1.0"),
+    ) is None
+
+
+def test_irreversible_migration_cannot_be_claimed_as_rollback_path() -> None:
+    step = MigrationStep(
+        migration_id="result-1-to-2",
+        artifact_type="result",
+        from_version=SchemaVersion.parse("1.0.0"),
+        to_version=SchemaVersion.parse("2.0.0"),
+        reversible=False,
+    )
+    registry = MigrationRegistry((step,))
+
+    assert registry.direct_migration(
+        "result",
+        SchemaVersion.parse("1.0.0"),
+        SchemaVersion.parse("2.0.0"),
+    ) == step
+    assert registry.direct_rollback(
+        "result",
+        SchemaVersion.parse("2.0.0"),
+        SchemaVersion.parse("1.0.0"),
+    ) is None
+
+
 def test_invalid_versions_and_duplicate_migrations_fail_closed() -> None:
     with pytest.raises(ValueError, match="MAJOR.MINOR.PATCH"):
         SchemaVersion.parse("v1")

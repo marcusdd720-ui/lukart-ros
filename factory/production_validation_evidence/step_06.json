@@ -1,0 +1,1 @@
+{"artifact_path":"reports/production_validation/step_06.json","artifact_sha256":"dfd201be6456631a59f09d7a6279172826c82b45980a12e633f95cd020138e0f","critical_gates_passed":true,"evidence_kind":"reasoning_certification","gate_kind":"certification","schema_version":"2.0","status":"PASS","step":6,"validated_sha":"2af8ab200945f57272d39e25b95a2011cddf76f4"}

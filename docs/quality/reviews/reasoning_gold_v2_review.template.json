@@ -2,7 +2,10 @@
   "schema_version": "1.0",
   "corpus_id": "reasoning-gold-v2",
   "corpus_sha256": "REPLACE_WITH_EXACT_SHA256_OF_data/quality/reasoning_gold_v2.json",
+  "reviewed_artifact_path": "data/quality/reasoning_gold_v2.json",
+  "reviewed_sha": "REPLACE_WITH_EXACT_REVIEWED_GIT_SHA",
   "reviewer_id": "REPLACE_WITH_REAL_INDEPENDENT_REVIEWER_ID",
+  "reviewer_kind": "human",
   "reviewer_independent": true,
   "decision": "APPROVED_OR_REJECTED",
   "annotation_review": "APPROVED_OR_REJECTED",
@@ -12,5 +15,5 @@
   "iaa_status": "NOT_REQUIRED_OR_PASS_OR_FAIL",
   "limitations": [],
   "findings": [],
-  "notes": "Do not inspect or execute locked_evaluation for tuning. Review must bind to exact corpus bytes."
+  "notes": "Do not inspect or execute locked_evaluation for tuning. Review must bind to exact corpus bytes and the exact reviewed Git revision."
 }

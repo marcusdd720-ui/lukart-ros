@@ -1,0 +1,15 @@
+{
+  "artifact_path": "reports/production_validation/step_18.json",
+  "artifact_sha256": "86eaf0f23796d46d5941257c6bbe1fc02c8a08c4b15c80c2705848674ec9c810",
+  "critical_gates_passed": true,
+  "evidence_kind": "security_privacy_hardening",
+  "gate_kind": "privacy",
+  "review_path": "docs/quality/reviews/step_18_independent_review.json",
+  "review_sha256": "e7e2cdaf6ea69cc7c7ad8c4adfac0e591f55926bd63be63960b45762552d73a9",
+  "review_subject_path": "docs/quality/review_packages/step_18_review_package.json",
+  "review_subject_sha256": "1aab28f24251c8dadb98c5329cf218211927c825f875aed7b286436c8beafb94",
+  "schema_version": "2.0",
+  "status": "PASS",
+  "step": 18,
+  "validated_sha": "32da9ed623c193ff234da5c0afa273b944e52390"
+}

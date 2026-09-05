@@ -1,0 +1,56 @@
+{
+  "automated_evidence": {
+    "architectural_audit_conclusion": "success",
+    "ci_foundation_conclusion": "success",
+    "measured_properties": [
+      "deterministic rendering",
+      "source binding",
+      "decision visibility",
+      "artifact coverage",
+      "evidence coverage",
+      "epistemic status coverage",
+      "open question coverage",
+      "lossy final-output rejection"
+    ],
+    "test_files": [
+      "tests/test_renderer_quality.py",
+      "tests/test_e2e_gold.py"
+    ]
+  },
+  "checks": [
+    {
+      "name": "json_renderer_measured",
+      "status": "PASS"
+    },
+    {
+      "name": "markdown_renderer_measured",
+      "status": "PASS"
+    },
+    {
+      "name": "dossier_traceability_measured",
+      "status": "PASS"
+    },
+    {
+      "name": "human_review_recorded",
+      "status": "PASS"
+    }
+  ],
+  "evidence_kind": "renderer_quality_measurement",
+  "gate_kind": "measurement",
+  "human_review": {
+    "decision": "PASS",
+    "review_path": "docs/quality/reviews/step_16_independent_review.json",
+    "review_sha256": "ab74b44aee8671f3b0f66c3e7a21a5f92c5fd5ca676a34160cd7b36ba1bcc8cd",
+    "review_subject_path": "docs/quality/review_packages/step_16_review_package.json",
+    "review_subject_sha256": "9bf3851073508a007b42ce0ebc6911e7ab7107eca7e7355d8d2cf667e0a388a9",
+    "reviewer_id": "external-reviewer-01",
+    "reviewer_independent": true,
+    "reviewer_kind": "human"
+  },
+  "locked_evaluation_used_for_tuning": false,
+  "private_data_committed": false,
+  "schema_version": "1.0",
+  "status": "PASS",
+  "step": 16,
+  "validated_sha": "32da9ed623c193ff234da5c0afa273b944e52390"
+}

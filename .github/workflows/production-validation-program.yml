@@ -57,6 +57,8 @@ jobs:
           import os
           from pathlib import Path
 
+          from factory.production_validation_orchestrator import production_validation_chain_digest
+
           state = json.loads(Path("factory/production_validation_state.json").read_text())
           lines = [
               "## Production Validation Program",
@@ -69,6 +71,13 @@ jobs:
           if "block_code" in state:
               lines.append(f"- blocker: {state['block_code']}")
               lines.append(f"- reason: {state['block_reason']}")
+          if state["last_completed_step"] >= 19:
+              digest, digest_decision = production_validation_chain_digest(Path("."))
+              if digest_decision is None and digest is not None:
+                  print(f"STEPS_1_19_DIGEST={digest}")
+                  lines.append(f"- steps 1-19 digest: `{digest}`")
+              else:
+                  lines.append("- steps 1-19 digest: unavailable (chain revalidation failed)")
           summary = Path(os.environ["GITHUB_STEP_SUMMARY"])
           with summary.open("a", encoding="utf-8") as handle:
               handle.write("\n".join(lines) + "\n")

@@ -1,0 +1,11 @@
+{
+  "artifact_path": "reports/production_validation/step_19.json",
+  "artifact_sha256": "8e6ad17d6a9cbc7d5351017a6eb88b103dcb331b6ba8a19f1f7db135366896e0",
+  "critical_gates_passed": true,
+  "evidence_kind": "release_versioning_migration",
+  "gate_kind": "release",
+  "schema_version": "2.0",
+  "status": "PASS",
+  "step": 19,
+  "validated_sha": "fb731f847b9f06fb0735a9e574d384d96bc20744"
+}
