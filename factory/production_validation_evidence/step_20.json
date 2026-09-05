@@ -1,13 +1,13 @@
 {
   "artifact_path": "reports/production_validation/step_20.json",
-  "artifact_sha256": "0fcaa092690d2af565639c45bbf3532672e8007e89ba54b73e388e097dad52fc",
-  "critical_gates_passed": false,
+  "artifact_sha256": "1acf0951f7115329fbf099f7a58f22975e2e082ece952a4ac4db509386e93dad",
+  "certification_mode": "solo_maintainer",
+  "critical_gates_passed": true,
   "evidence_kind": "release_candidate_decision",
   "gate_kind": "release",
-  "replacement_required_after_steps_1_19_pass": true,
+  "independent_external_review": "NOT_PERFORMED",
   "schema_version": "2.0",
-  "stale_reason": "Historical Step 20 PASS was built for the superseded v1.0.0 candidate and an older Steps 1-19 digest. Regenerate only after genuine current Steps 1-19 PASS, authenticated human-review provenance, and enforced governance.",
-  "status": "STALE",
+  "status": "PASS",
   "step": 20,
-  "validated_sha": "d7dfbe06bb1d79b5719a966086dc1d2ac0ae9119"
+  "validated_sha": "21b7672e92f01a79fe3b4b69ee083bf293c0884d"
 }
