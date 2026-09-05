@@ -1,0 +1,57 @@
+name: Step 6 Locked Reasoning Certification
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/workflows/step6-locked-certification.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  certify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout preregistered target
+        uses: actions/checkout@v6
+        with:
+          ref: 2af8ab200945f57272d39e25b95a2011cddf76f4
+      - name: Set up Python
+        uses: actions/setup-python@v7
+        with:
+          python-version: '3.11'
+      - name: Install project
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install '.[dev]'
+      - name: Execute one-time locked certification
+        run: |
+          mkdir -p certification-output
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          from validation.reasoning_certification import run_locked_certification
+
+          target_sha = '2af8ab200945f57272d39e25b95a2011cddf76f4'
+          report = run_locked_certification(
+              corpus_path=Path('data/quality/reasoning_gold_v2.json'),
+              review_path=Path('docs/quality/reviews/reasoning_gold_v2_review.json'),
+              freeze_path=Path('data/quality/reasoning_gold_v2.freeze.json'),
+              policy_path=Path('docs/quality/reasoning_certification_policy_v1.json'),
+              validated_sha=target_sha,
+          )
+          output = Path('certification-output/step_06.json')
+          output.write_text(json.dumps(report, indent=2, sort_keys=True) + '\n', encoding='utf-8')
+          print(output.read_text(encoding='utf-8'))
+          if report.get('status') != 'PASS':
+              raise SystemExit(1)
+          PY
+      - name: Upload immutable certification result
+        uses: actions/upload-artifact@v4
+        with:
+          name: step6-locked-certification-2af8ab2
+          path: certification-output/step_06.json
+          if-no-files-found: error
+          retention-days: 30
