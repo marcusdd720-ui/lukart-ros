@@ -109,7 +109,10 @@ class ActionPlan:
                 raise ValueError("ActionPlan contains unresolved task dependencies")
         self._reject_cycles()
         if self.status is PlanStatus.COMPLETED:
-            if not self.tasks or any(task.status is not TaskStatus.COMPLETED for task in self.tasks):
+            incomplete = any(
+                task.status is not TaskStatus.COMPLETED for task in self.tasks
+            )
+            if not self.tasks or incomplete:
                 raise ValueError("COMPLETED plan requires all tasks to be completed")
 
     def _reject_cycles(self) -> None:
