@@ -1,12 +1,24 @@
 {
-  "schema_version": "1.0",
-  "step": 18,
-  "status": "PASS",
-  "validated_sha": "32da9ed623c193ff234da5c0afa273b944e52390",
-  "gate_kind": "privacy",
-  "evidence_kind": "security_privacy_hardening",
-  "locked_evaluation_used_for_tuning": false,
-  "private_data_committed": false,
+  "automated_evidence": {
+    "reviewed_revision": "4ebec450bd87f2c29cc890dbd02941c7af953710",
+    "security_control_sources": [
+      "validation/security_privacy.py",
+      "tests/test_security_privacy_hardening.py",
+      "scripts/pii_scan.py",
+      "scripts/secret_scan.py",
+      "scripts/dependency_boundary_check.py",
+      "factory/production_validation_orchestrator.py",
+      "validation/independent_step_review.py",
+      "validation/human_review_provenance.py",
+      "validation/github_human_review_provenance.py",
+      "knowledge/models/cognitive_release_guard.py",
+      "knowledge/models/case_workspace.py",
+      "scripts/publish.py",
+      "tests/test_publication_boundary_contract.py",
+      "tests/test_release_workflow_contract.py"
+    ]
+  },
+  "certification_mode": "solo_maintainer",
   "checks": [
     {
       "name": "pii_gate_passed",
@@ -29,28 +41,33 @@
       "status": "PASS"
     }
   ],
-  "automated_evidence": {
-    "revision": "32da9ed623c193ff234da5c0afa273b944e52390",
-    "ci_foundation": "PASS",
-    "architectural_audit": "PASS",
-    "security_control_sources": [
-      "scripts/pii_scan.py",
-      "scripts/secret_scan.py",
-      "scripts/dependency_boundary_check.py",
-      "scripts/local_private_pilot.py",
-      "validation/security_privacy.py",
-      "tests/test_security_privacy_hardening.py",
-      "tests/test_local_private_pilot_step15.py"
-    ]
-  },
-  "human_review": {
+  "evidence_kind": "security_privacy_hardening",
+  "gate_kind": "privacy",
+  "independent_external_review": "NOT_PERFORMED",
+  "locked_evaluation_used_for_tuning": false,
+  "maintainer_review": {
+    "decision": "PASS",
+    "independent_external_review": "NOT_PERFORMED",
+    "review_mode": "solo_maintainer",
     "review_path": "docs/quality/reviews/step_18_independent_review.json",
-    "review_sha256": "e7e2cdaf6ea69cc7c7ad8c4adfac0e591f55926bd63be63960b45762552d73a9",
+    "review_sha256": "5e33e7da847796b42b9407fd2eeaf20c86db39dd524cb87e1add74008ed9cc66",
     "review_subject_path": "docs/quality/review_packages/step_18_review_package.json",
-    "review_subject_sha256": "1aab28f24251c8dadb98c5329cf218211927c825f875aed7b286436c8beafb94",
-    "reviewer_id": "external-reviewer-01",
-    "reviewer_independent": true,
-    "reviewer_kind": "human",
-    "decision": "PASS"
-  }
+    "review_subject_sha256": "7491e8ccd5c7a2b4d2a9d2ac4fcfbe0dd19699bcdd287ddc69a45925d499f306",
+    "reviewer_id": "marcusdd720-ui",
+    "reviewer_independent": false,
+    "reviewer_kind": "maintainer"
+  },
+  "private_data_committed": false,
+  "schema_version": "1.0",
+  "source_evidence": [
+    "docs/quality/review_packages/step_18_review_package.json",
+    "docs/quality/reviews/step_18_independent_review.json",
+    "validation/security_privacy.py",
+    "tests/test_security_privacy_hardening.py",
+    ".github/workflows/production-validation-program.yml",
+    ".github/workflows/mvros-v1-release.yml"
+  ],
+  "status": "PASS",
+  "step": 18,
+  "validated_sha": "4ebec450bd87f2c29cc890dbd02941c7af953710"
 }
