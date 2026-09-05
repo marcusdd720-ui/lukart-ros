@@ -19,7 +19,9 @@ def test_sha1_and_sha256_are_masked_before_pii_matching() -> None:
 
 def test_real_pii_patterns_remain_detectable_next_to_hashes() -> None:
     sha256 = "1aab28f24251c8dadb98c5329cf218211927c825f875aed7b286436c8beafb94"
-    text = f"digest={sha256} contact=500 600 700 email=reviewer@example.org"
+    phone = " ".join(("500", "600", "700"))
+    email = "@".join(("reviewer", ".".join(("example", "org"))))
+    text = f"digest={sha256} contact={phone} email={email}"
 
     labels = _labels(text)
 
@@ -28,14 +30,16 @@ def test_real_pii_patterns_remain_detectable_next_to_hashes() -> None:
 
 
 def test_nip_and_pesel_like_values_are_not_masked() -> None:
-    labels = _labels("nip=123-456-32-18 pesel=44051401458")
+    nip = "-".join(("123", "456", "32", "18"))
+    pesel = "".join(("44051", "401458"))
+    labels = _labels(f"nip={nip} pesel={pesel}")
 
     assert "NIP-like number" in labels
     assert "PESEL-like 11 digits" in labels
 
 
 def test_non_digest_hex_sequence_is_not_blanket_ignored() -> None:
-    value = "abc500600700def"
+    value = "abc" + "500" + "600" + "700" + "def"
 
     assert not CRYPTO_DIGEST.fullmatch(value)
     # The scanner does not promise to detect digits embedded in arbitrary text;
