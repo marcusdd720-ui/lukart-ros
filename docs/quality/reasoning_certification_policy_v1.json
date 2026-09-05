@@ -1,6 +1,6 @@
 {
   "authorization_date": "2026-09-05",
-  "authorization_reason": "Repository owner authorized continuation of canonical Production Validation Step 6 after independent human review and freeze of reasoning-gold-v2.",
+  "authorization_reason": "Repository owner authorized canonical Production Validation Step 6 under SOLO_MAINTAINER_MODE after maintainer acceptance and freeze of reasoning-gold-v2; independent external review was not performed.",
   "authorized_by": "marcusdd720-ui",
   "contradiction_case_ids": [
     "SYN-R-211"
