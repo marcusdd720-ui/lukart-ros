@@ -11,6 +11,10 @@ from pathlib import Path
 from reasoning.engine import ReasoningEngine
 from reasoning.models import ReasoningOutcome
 from reasoning.validation import validate_reasoning_graph
+from validation.corpus_review import (
+    ExternalCorpusReviewError,
+    validate_external_corpus_review,
+)
 from validation.reasoning_gold import (
     ReasoningGoldCase,
     ReasoningGoldCorpus,
@@ -20,6 +24,7 @@ from validation.reasoning_gold import (
 from validation.reasoning_kqm import ReasoningKQMReport, evaluate_reasoning_split
 
 LOWER_GIT_SHA_RE = re.compile(r"^[0-9a-f]{40}$")
+RESERVED_REVIEWERS = frozenset({"system", "automated", "factory", "lukart", "agent"})
 
 
 class ReasoningCertificationError(RuntimeError):
@@ -172,16 +177,15 @@ def validate_frozen_reasoning_corpus(
     review = _mapping(review_value, "review")
     freeze = _mapping(freeze_value, "freeze")
 
-    if review.get("corpus_id") != policy.corpus_id:
-        raise ReasoningCertificationError("review corpus id does not match policy")
-    if review.get("corpus_sha256") != corpus_sha256:
-        raise ReasoningCertificationError("review hash does not match reasoning corpus")
-    if review.get("reviewer_kind") != "human":
-        raise ReasoningCertificationError("reasoning review must be human")
-    if review.get("reviewer_independent") is not True:
-        raise ReasoningCertificationError("reasoning review must be independent")
-    if review.get("decision") != "APPROVED" or review.get("freeze_approved") is not True:
-        raise ReasoningCertificationError("reasoning corpus is not approved for freeze")
+    try:
+        validate_external_corpus_review(
+            review,
+            expected_corpus_id=policy.corpus_id,
+            expected_corpus_sha256=corpus_sha256,
+            reserved_reviewer_ids=RESERVED_REVIEWERS,
+        )
+    except ExternalCorpusReviewError as exc:
+        raise ReasoningCertificationError(f"{exc.code}: {exc.reason}") from exc
 
     canonical_review = json.dumps(review, sort_keys=True, separators=(",", ":")).encode()
     expected_review_digest = hashlib.sha256(canonical_review).hexdigest()
