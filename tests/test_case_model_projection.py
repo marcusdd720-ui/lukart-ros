@@ -34,7 +34,11 @@ def _scope() -> CaseScope:
     )
 
 
-def _object(object_id: str, *, status: KnowledgeStatus = KnowledgeStatus.CLAIM) -> ProjectedCognitiveRef:
+def _object(
+    object_id: str,
+    *,
+    status: KnowledgeStatus = KnowledgeStatus.CLAIM,
+) -> ProjectedCognitiveRef:
     return ProjectedCognitiveRef(
         object_id=object_id,
         object_version="v1",
