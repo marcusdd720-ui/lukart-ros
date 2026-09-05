@@ -109,10 +109,11 @@ class CaseBridge:
             raise ValueError("CaseBridge requires at least one bounded subject reference")
         if any(not item.strip() for item in self.audit_lineage):
             raise ValueError("audit_lineage cannot contain empty values")
-        if self.status in {BridgeStatus.APPROVED, BridgeStatus.ACTIVE}:
+        active_states = {BridgeStatus.APPROVED, BridgeStatus.ACTIVE}
+        if self.status in active_states:
             if self.authorization_ref is None or not self.authorization_ref.strip():
                 raise ValueError("approved/active bridge requires authorization")
-        if self.human_review_required and self.status in {BridgeStatus.APPROVED, BridgeStatus.ACTIVE}:
+        if self.human_review_required and self.status in active_states:
             if self.human_approval_ref is None or not self.human_approval_ref.strip():
                 raise ValueError("human-reviewed bridge requires human approval record")
 
