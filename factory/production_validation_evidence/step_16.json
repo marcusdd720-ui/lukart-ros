@@ -5,7 +5,7 @@
   "evidence_kind": "renderer_quality_measurement",
   "gate_kind": "measurement",
   "review_path": "docs/quality/reviews/step_16_independent_review.json",
-  "review_sha256": "ab74b44aee8671f3b0f66c3e7a21a5f92c5fd5ca676a34160cd7b36ba1bcc8cd",
+  "review_sha256": "7173af0cbc6985ab3a2fa9510317fcb636df1ef67c58599b3c717d51d583acd5",
   "review_subject_path": "docs/quality/review_packages/step_16_review_package.json",
   "review_subject_sha256": "9bf3851073508a007b42ce0ebc6911e7ab7107eca7e7355d8d2cf667e0a388a9",
   "schema_version": "2.0",
