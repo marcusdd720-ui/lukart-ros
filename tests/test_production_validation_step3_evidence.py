@@ -42,7 +42,7 @@ def _metric_dict(metrics: ExtractionMetrics) -> dict[str, float | int]:
     }
 
 
-def test_repository_step3_historical_measurement_is_locked_safe_but_gate_is_stale(
+def test_repository_step3_is_fresh_solo_certification(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     monkeypatch.delenv(PROVENANCE_DIR_ENV, raising=False)
@@ -57,8 +57,10 @@ def test_repository_step3_historical_measurement_is_locked_safe_but_gate_is_stal
     corpus_sha256 = sha256_file(ROOT / EXTRACTION_CORPUS)
     assert freeze["status"] == "FROZEN"
     assert freeze["corpus_sha256"] == corpus_sha256
+    assert freeze["reviewer_id"] == "marcusdd720-ui"
     assert report["frozen_corpus"]["corpus_sha256"] == corpus_sha256
     assert report["frozen_corpus"]["reviewed_sha"] == review["reviewed_sha"]
+    assert report["frozen_corpus"]["review_digest"] == freeze["review_digest"]
     assert review["review_mode"] == "solo_maintainer"
     assert review["reviewer_kind"] == "maintainer"
     assert review["reviewer_independent"] is False
@@ -87,5 +89,5 @@ def test_repository_step3_historical_measurement_is_locked_safe_but_gate_is_stal
     assert report["certification_decision"] == "PASS"
 
     step_decision = evaluate_generic_evidence(ROOT, 3)
-    assert step_decision.passed is False
-    assert step_decision.code == "STEP_EVIDENCE_INVALID"
+    assert step_decision.passed is True
+    assert step_decision.code == "PASS"
