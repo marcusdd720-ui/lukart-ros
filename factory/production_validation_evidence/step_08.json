@@ -1,1 +1,13 @@
-{"artifact_path":"reports/production_validation/step_08.json","artifact_sha256":"65d15afaaf98d3056824b689e4bd433e70cfcbc2ffeaa374ea5d2d17af7b7ea7","critical_gates_passed":false,"evidence_kind":"agent_certification_bundle","gate_kind":"certification","replacement_required_after_human_review":true,"schema_version":"2.0","stale_reason":"Historical Step 8 certification bundle depends on extraction review evidence whose independent-human provenance is not authenticated. Regenerate after genuine Step 1 review/freeze and refreshed Step 3 evidence.","status":"STALE","step":8,"validated_sha":"f659ba0dda61dd73c9c7cd99243ef5c3635b7f31"}
+{
+  "artifact_path": "reports/production_validation/step_08.json",
+  "artifact_sha256": "c0f22276bd4b23c6b1da8db19cc50bc2e894cd3b17fe7612d7c77ca83dc3c765",
+  "certification_mode": "solo_maintainer",
+  "critical_gates_passed": true,
+  "evidence_kind": "agent_certification_bundle",
+  "gate_kind": "certification",
+  "independent_external_review": "NOT_PERFORMED",
+  "schema_version": "2.0",
+  "status": "PASS",
+  "step": 8,
+  "validated_sha": "120fc7627b6f54ef44c5a73448c547cbb165dcee"
+}
