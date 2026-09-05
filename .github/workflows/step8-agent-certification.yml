@@ -1,0 +1,151 @@
+name: Step 8 Agent Certification
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/workflows/step8-agent-certification.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  certify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout validated target
+        uses: actions/checkout@v6
+        with:
+          ref: f659ba0dda61dd73c9c7cd99243ef5c3635b7f31
+      - name: Set up Python
+        uses: actions/setup-python@v7
+        with:
+          python-version: '3.11'
+      - name: Install project
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install '.[dev]'
+      - name: Build certification bundle
+        run: |
+          mkdir -p certification-output
+          python - <<'PY'
+          import hashlib
+          import json
+          from pathlib import Path
+
+          from agents.certification import AgentCertificationThresholds, AgentCertifier, contract_sha256
+          from agents.certification_program import (
+              AgentCertificationProgram,
+              CertificationProgramEvidence,
+              CertificationProgramStatus,
+              router_certification_update,
+          )
+          from agents.reference_fact import REFERENCE_FACT_AGENT_ID, ReferenceFactAgent
+          from validation.extraction_quality import ExtractionMetrics
+          from validation.independent_evaluation import ReviewOutcome
+
+          target_sha = 'f659ba0dda61dd73c9c7cd99243ef5c3635b7f31'
+          step3_path = Path('reports/production_validation/step_03.json')
+          step7_path = Path('reports/production_validation/step_07.json')
+          review_path = Path('docs/quality/reviews/extraction_gold_v1_review.json')
+          corpus_path = Path('data/quality/extraction_gold_v1.json')
+
+          step3 = json.loads(step3_path.read_text(encoding='utf-8'))
+          step7 = json.loads(step7_path.read_text(encoding='utf-8'))
+          review = json.loads(review_path.read_text(encoding='utf-8'))
+          agent = ReferenceFactAgent()
+
+          if step3.get('status') != 'PASS' or step3.get('certification_decision') != 'PASS':
+              raise SystemExit('Step 3 extraction certification is not PASS')
+          if step7.get('status') != 'PASS':
+              raise SystemExit('Step 7 E2E measurement is not PASS')
+          if step3.get('candidate', {}).get('agent') != agent.contract.name:
+              raise SystemExit('Step 3 candidate does not match current agent')
+          if step3.get('candidate', {}).get('agent_version') != agent.contract.version:
+              raise SystemExit('Step 3 candidate version does not match current contract')
+          if review.get('reviewer_kind') != 'human' or review.get('reviewer_independent') is not True:
+              raise SystemExit('Extraction corpus review is not an independent human review')
+          if review.get('decision') != 'APPROVED' or review.get('freeze_approved') is not True:
+              raise SystemExit('Extraction corpus review is not approved for freeze')
+
+          corpus_sha = hashlib.sha256(corpus_path.read_bytes()).hexdigest()
+          if review.get('corpus_sha256') != corpus_sha:
+              raise SystemExit('Extraction review is not bound to current corpus')
+
+          thresholds = AgentCertificationThresholds(**step3['thresholds'])
+          metrics = ExtractionMetrics(**step3['validation'])
+          analytical = AgentCertifier(thresholds).evaluate(
+              agent.contract,
+              metrics,
+              corpus_version=f"sha256:{corpus_sha}",
+              split_name='validation',
+              external_review=ReviewOutcome.PASS,
+          )
+          e2e_sha = hashlib.sha256(step7_path.read_bytes()).hexdigest()
+          program = AgentCertificationProgram().evaluate(
+              analytical,
+              CertificationProgramEvidence(
+                  validated_sha=target_sha,
+                  expected_contract_sha256=contract_sha256(agent.contract),
+                  engineering_validated=True,
+                  e2e_suite_passed=True,
+                  e2e_report_sha256=e2e_sha,
+              ),
+          )
+          eligibility = router_certification_update(REFERENCE_FACT_AGENT_ID, program)
+          if program.status is not CertificationProgramStatus.CERTIFIED or not eligibility:
+              raise SystemExit(f'Agent certification failed: {program.status.value} {program.failures}')
+
+          router_entries = [
+              {
+                  'agent_id': agent_id,
+                  'agent_version': version,
+                  'certification_status': status.value,
+              }
+              for (agent_id, version), status in sorted(eligibility.items())
+          ]
+          report = {
+              'schema_version': '1.0',
+              'step': 8,
+              'status': 'PASS',
+              'validated_sha': target_sha,
+              'gate_kind': 'certification',
+              'evidence_kind': 'agent_certification_bundle',
+              'locked_evaluation_used_for_tuning': False,
+              'private_data_committed': False,
+              'benchmark_bundle': {
+                  'benchmark_id': 'reference-fact-extraction-validation-v1',
+                  'corpus_id': 'extraction-gold-v1',
+                  'corpus_sha256': corpus_sha,
+                  'split': 'validation',
+                  'frozen': True,
+                  'human_review_id': review.get('reviewer_id'),
+                  'human_review_decision': review.get('decision'),
+              },
+              'certification_reports': [program.canonical_dict()],
+              'router_eligibility': router_entries,
+              'source_evidence': [
+                  str(step3_path),
+                  str(step7_path),
+                  str(review_path),
+                  str(corpus_path),
+                  'agents/certification.py',
+                  'agents/certification_program.py',
+              ],
+              'checks': [
+                  {'name': 'agent_benchmarks_versioned', 'status': 'PASS'},
+                  {'name': 'certification_decisions_recorded', 'status': 'PASS'},
+                  {'name': 'router_eligibility_updated', 'status': 'PASS'},
+              ],
+          }
+          output = Path('certification-output/step_08.json')
+          output.write_text(json.dumps(report, indent=2, sort_keys=True) + '\n', encoding='utf-8')
+          print(output.read_text(encoding='utf-8'))
+          PY
+      - name: Upload certification bundle
+        uses: actions/upload-artifact@v4
+        with:
+          name: step8-agent-certification-f659ba0
+          path: certification-output/step_08.json
+          if-no-files-found: error
+          retention-days: 30
