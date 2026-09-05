@@ -29,7 +29,8 @@ class EvidenceNeed:
             raise ValueError("EvidenceNeed.proposition_ref cannot be empty")
         if self.burden_ref is not None and not self.burden_ref.strip():
             raise ValueError("EvidenceNeed.burden_ref cannot be blank")
-        if any(not value.strip() for value in (*self.supporting_refs, *self.missing_categories)):
+        values_to_validate = (*self.supporting_refs, *self.missing_categories)
+        if any(not value.strip() for value in values_to_validate):
             raise ValueError("EvidenceNeed references/categories cannot contain empty values")
 
 
