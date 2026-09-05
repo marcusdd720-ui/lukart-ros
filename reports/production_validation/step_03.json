@@ -42,12 +42,16 @@
     "corpus_id": "extraction-gold-v1",
     "corpus_sha256": "8f184c7944393d4fe617b24f900754f1dd8957ee1a43a4a9c0144e15ddd26ee8",
     "freeze_manifest_path": "data/quality/extraction_gold_v1.freeze.json",
+    "independent_external_review": "NOT_PERFORMED",
     "path": "data/quality/extraction_gold_v1.json",
     "review_decision": "APPROVED",
+    "review_digest": "2e8d5b740b519b36c9dd3055c01a271abeab67c55adf4264adb2ea1facbcf34a",
+    "review_mode": "solo_maintainer",
     "review_path": "docs/quality/reviews/extraction_gold_v1_review.json",
     "reviewed_sha": "58022395a148b3f551ad018723282f12eaebae15",
-    "reviewer_id": "external-reviewer-01",
-    "reviewer_kind": "human"
+    "reviewer_id": "marcusdd720-ui",
+    "reviewer_independent": false,
+    "reviewer_kind": "maintainer"
   },
   "gate_kind": "certification",
   "locked_evaluation_used_for_tuning": false,
@@ -80,7 +84,7 @@
     "min_provenance_completeness": 1.0,
     "min_recall": 0.9
   },
-  "validated_sha": "17eb54c9022d7b1fa75ffc4f754d6ac58ad2ae78",
+  "validated_sha": "5bf580e9513fa7651cab7232aea28f8651e112b9",
   "validation": {
     "case_number_false_positive_rate": 0.0,
     "critical_fact_loss": 0,
