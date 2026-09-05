@@ -49,7 +49,9 @@ def independent_default_profile() -> CertificationProfile:
 def _required_text(payload: dict[str, object], name: str) -> str:
     value = payload.get(name)
     if not isinstance(value, str) or not value.strip():
-        raise CertificationProfileError(f"certification profile field {name} must be non-empty text")
+        raise CertificationProfileError(
+            f"certification profile field {name} must be non-empty text"
+        )
     return value.strip()
 
 
