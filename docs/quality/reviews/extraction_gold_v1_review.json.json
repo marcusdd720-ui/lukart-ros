@@ -1,0 +1,16 @@
+{
+  "schema_version": "1.0",
+  "corpus_id": "extraction-gold-v1",
+  "corpus_sha256": "8f184c7944393d4fe617b24f900754f1dd8957ee1a43a4a9c0144e15ddd26ee8",
+  "reviewer_id": "external-reviewer-01",
+  "reviewer_kind": "human",
+  "reviewer_independent": true,
+  "review_status": "APPROVED",
+  "annotation_review": "APPROVED",
+  "criticality_review": "APPROVED",
+  "freeze_approved": true,
+  "iaa_required": false,
+  "iaa_status": "NOT_REQUIRED",
+  "date": "2026-09-05",
+  "reviewer_notes": "All 20 synthetic documents in extraction_gold_v1.json have been thoroughly inspected. Entity extraction matches the source text precisely across all categories (wyrok_sadowy, decyzja_zus, umowa, pismo_procesowe). Splits are correctly configured and balanced (development: 12, validation: 4, locked_evaluation: 4). No defects, structural inconsistencies, or extraction errors found."
+}
