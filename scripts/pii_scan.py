@@ -20,6 +20,7 @@ TEXT_SUFFIXES = {
     ".html",
 }
 FORBIDDEN_SUFFIXES = {".pdf", ".doc", ".docx", ".odt", ".rtf"}
+CRYPTO_DIGEST = re.compile(r"(?<![0-9A-Fa-f])(?:[0-9A-Fa-f]{40}|[0-9A-Fa-f]{64})(?![0-9A-Fa-f])")
 PATTERNS = {
     "PESEL-like 11 digits": re.compile(r"(?<!\d)\d{11}(?!\d)"),
     "NIP-like number": re.compile(r"(?<!\d)\d{3}[- ]?\d{3}[- ]?\d{2}[- ]?\d{2}(?!\d)"),
@@ -37,6 +38,18 @@ def tracked_files() -> list[Path]:
     return [ROOT / item for item in result.stdout.splitlines() if item]
 
 
+def _pii_scan_text(text: str) -> str:
+    """Remove only standalone SHA-1/SHA-256 tokens before PII matching.
+
+    Cryptographic bindings are expected in validation/review metadata and can
+    contain 9-11 digit runs that resemble Polish identifiers. Masking the full
+    40/64-hex token avoids that false positive without suppressing adjacent or
+    standalone phone, NIP, PESEL, or email values.
+    """
+
+    return CRYPTO_DIGEST.sub("<CRYPTO_DIGEST>", text)
+
+
 def scan() -> list[str]:
     findings: list[str] = []
     for path in tracked_files():
@@ -52,8 +65,9 @@ def scan() -> list[str]:
         except UnicodeDecodeError:
             findings.append(f"non-UTF8 tracked text candidate requires review: {relative}")
             continue
+        scan_text = _pii_scan_text(text)
         for label, pattern in PATTERNS.items():
-            if pattern.search(text):
+            if pattern.search(scan_text):
                 findings.append(f"{label}: {relative}")
     return sorted(set(findings))
 
