@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import re
 from dataclasses import asdict, dataclass
 from pathlib import Path
 
@@ -17,6 +18,8 @@ from validation.reasoning_gold import (
     load_reasoning_gold_corpus,
 )
 from validation.reasoning_kqm import ReasoningKQMReport, evaluate_reasoning_split
+
+LOWER_GIT_SHA_RE = re.compile(r"^[0-9a-f]{40}$")
 
 
 class ReasoningCertificationError(RuntimeError):
@@ -311,7 +314,7 @@ def run_locked_certification(
     policy_path: Path,
     validated_sha: str,
 ) -> dict[str, object]:
-    if len(validated_sha) != 40 or any(ch not in "0123456789abcdef" for ch in validated_sha):
+    if not LOWER_GIT_SHA_RE.fullmatch(validated_sha):
         raise ReasoningCertificationError("validated_sha must be a full lowercase Git SHA")
 
     readiness = certification_readiness(
