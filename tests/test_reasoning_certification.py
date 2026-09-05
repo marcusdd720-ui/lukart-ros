@@ -1,10 +1,12 @@
 from __future__ import annotations
 
+import hashlib
 import json
 from pathlib import Path
 
 import pytest
 
+from validation.human_review_provenance import EXPECTED_REPOSITORY, PROVENANCE_DIR_ENV
 from validation.reasoning_certification import (
     ReasoningCertificationError,
     certification_readiness,
@@ -18,6 +20,75 @@ CORPUS_PATH = Path("data/quality/reasoning_gold_v2.json")
 REVIEW_PATH = Path("docs/quality/reviews/reasoning_gold_v2_review.json")
 FREEZE_PATH = Path("data/quality/reasoning_gold_v2.freeze.json")
 POLICY_PATH = Path("docs/quality/reasoning_certification_policy_v1.json")
+_CORPUS_REVIEW_FIELDS = (
+    "annotation_review",
+    "corpus_id",
+    "corpus_sha256",
+    "criticality_review",
+    "decision",
+    "freeze_approved",
+    "iaa_required",
+    "iaa_status",
+    "reviewed_artifact_path",
+    "reviewed_sha",
+    "reviewer_id",
+    "reviewer_independent",
+    "reviewer_kind",
+    "schema_version",
+)
+
+
+def _review_digest(review: dict[str, object]) -> str:
+    canonical = {name: review.get(name) for name in _CORPUS_REVIEW_FIELDS}
+    payload = json.dumps(
+        canonical,
+        ensure_ascii=False,
+        separators=(",", ":"),
+        sort_keys=True,
+    ).encode()
+    return hashlib.sha256(payload).hexdigest()
+
+
+def _install_step5_provenance(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    review_value = json.loads(REVIEW_PATH.read_text(encoding="utf-8"))
+    assert isinstance(review_value, dict)
+    review: dict[str, object] = review_value
+    reviewer_id = review.get("reviewer_id")
+    reviewed_sha = review.get("reviewed_sha")
+    assert isinstance(reviewer_id, str)
+    assert isinstance(reviewed_sha, str)
+
+    provenance_dir = (tmp_path / "runtime-human-provenance").resolve()
+    provenance_dir.mkdir(parents=True)
+    receipt = {
+        "schema_version": "1.0",
+        "verification_provider": "github_api",
+        "source_kind": "github_issue_comment",
+        "source_repository": EXPECTED_REPOSITORY,
+        "source_issue": 51,
+        "source_comment_id": 51001,
+        "source_comment_url": (
+            "https://github.com/marcusdd720-ui/lukart-ros/issues/51"
+            "#issuecomment-51001"
+        ),
+        "source_author_type": "User",
+        "source_author_login": reviewer_id,
+        "reviewer_id": reviewer_id,
+        "reviewer_kind": "human",
+        "reviewer_independent": True,
+        "decision": "PASS",
+        "review_sha256": _review_digest(review),
+        "reviewed_sha": reviewed_sha,
+        "verified": True,
+    }
+    (provenance_dir / "step_05.json").write_text(
+        json.dumps(receipt, sort_keys=True),
+        encoding="utf-8",
+    )
+    monkeypatch.setenv(PROVENANCE_DIR_ENV, str(provenance_dir))
 
 
 def test_step6_policy_is_bound_before_locked_execution() -> None:
@@ -32,7 +103,12 @@ def test_step6_policy_is_bound_before_locked_execution() -> None:
     assert policy.thresholds.unsafe_conclusion_rate_max == 0.0
 
 
-def test_step6_readiness_does_not_execute_locked_split() -> None:
+def test_step6_readiness_does_not_execute_locked_split(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    _install_step5_provenance(tmp_path, monkeypatch)
+
     readiness = certification_readiness(
         corpus_path=CORPUS_PATH,
         review_path=REVIEW_PATH,
@@ -43,6 +119,20 @@ def test_step6_readiness_does_not_execute_locked_split() -> None:
     assert readiness["ready"] is True
     assert readiness["locked_evaluation_executed"] is False
     assert readiness["contradiction_pass_rate"] == 1.0
+
+
+def test_step6_readiness_rejects_self_declared_human_without_runtime_provenance(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.delenv(PROVENANCE_DIR_ENV, raising=False)
+
+    with pytest.raises(ReasoningCertificationError, match="HUMAN_PROVENANCE_REQUIRED"):
+        certification_readiness(
+            corpus_path=CORPUS_PATH,
+            review_path=REVIEW_PATH,
+            freeze_path=FREEZE_PATH,
+            policy_path=POLICY_PATH,
+        )
 
 
 def test_step6_contradiction_measurement_uses_non_locked_case() -> None:
