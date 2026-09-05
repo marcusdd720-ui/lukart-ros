@@ -3,6 +3,8 @@ name: Stage Orchestrator
 on:
   push:
     branches: [main]
+  pull_request:
+    branches: [main]
   workflow_dispatch:
     inputs:
       stage:
@@ -11,17 +13,40 @@ on:
         default: ""
         type: string
 
-permissions:
-  contents: write
-  actions: write
-
 concurrency:
-  group: lukart-ros-stage-orchestrator
+  group: lukart-ros-stage-orchestrator-${{ github.event_name }}-${{ github.ref }}
   cancel-in-progress: false
 
 jobs:
   orchestrate:
+    if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      actions: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install project and development tools
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install ".[dev]"
+
+      - name: Validate orchestrator contract without lifecycle mutation
+        run: python -m pytest tests/test_stage_orchestrator.py tests/test_stage_registry.py -q
+
+  orchestrate-main:
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      actions: write
     steps:
       - name: Checkout
         uses: actions/checkout@v4
