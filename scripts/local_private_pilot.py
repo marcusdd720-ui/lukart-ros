@@ -15,6 +15,7 @@ sys.path.insert(0, str(ROOT))
 from core.local_case_store import validate_data_root
 from knowledge.models.case_registry import get_spec
 from knowledge.models.case_workspace import STAGES
+from knowledge.models.private_cognitive_pilot import build_private_cognitive_baseline
 from validation.local_private_pilot import (
     attest_local_private_pilot,
     write_local_pilot_attestation,
@@ -90,6 +91,9 @@ def main() -> int:
     exit_code = workspace.run(**kwargs)
     completed_stages = 0 if exit_code != 0 else (1 if args.stage else len(STAGES))
 
+    cognitive = build_private_cognitive_baseline(workspace)
+    cognitive_status = "abstain" if cognitive.abstained else "unexpected_non_abstain"
+
     result_dir = data_root / "pilot-results"
     result_dir.mkdir(parents=True, exist_ok=True)
     result_path = result_dir / f"{_case_fingerprint(args.case)}.json"
@@ -97,6 +101,14 @@ def main() -> int:
         json.dumps(
             {
                 "case_fingerprint": _case_fingerprint(args.case),
+                "cognitive_chain": {
+                    "decision_status": cognitive.decision.status.value,
+                    "document_review_required": cognitive.document_binding.approval_required,
+                    "source_count": len(cognitive.case_model.object_refs),
+                    "source_digest": cognitive.document_binding.source_digest,
+                    "strategy_status": cognitive.strategy.status.value,
+                },
+                "cognitive_status": cognitive_status,
                 "pipeline_exit_code": exit_code,
                 "stages_completed": completed_stages,
                 "validated_sha": validated_sha,
@@ -128,6 +140,10 @@ def main() -> int:
     print(f"STEP15_STATUS={attestation.status.value}")
     print(f"STEP15_ATTESTATION={attestation_path}")
     print(f"STEP15_DIGEST={attestation.digest()}")
+    print(f"COGNITIVE_STATUS={cognitive_status}")
+    print(f"COGNITIVE_SOURCE_DIGEST={cognitive.document_binding.source_digest}")
+    if not cognitive.abstained:
+        return 1
     return exit_code if exit_code != 0 else (0 if attestation.passed else 1)
 
 
