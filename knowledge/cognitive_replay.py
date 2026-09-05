@@ -4,9 +4,12 @@ from __future__ import annotations
 
 import hashlib
 import json
+import re
 from dataclasses import dataclass
 
 from knowledge.case_replay import CaseReplayRecord
+
+_SHA256_RE = re.compile(r"^[0-9a-f]{64}$")
 
 
 @dataclass(frozen=True, slots=True, order=True)
@@ -21,7 +24,7 @@ class CognitiveArtifactBinding:
             raise ValueError("cognitive artifact identity cannot be empty")
         if self.version < 1:
             raise ValueError("cognitive artifact version must be >= 1")
-        if len(self.digest) != 64 or any(char not in "0123456789abcdef" for char in self.digest):
+        if not _SHA256_RE.fullmatch(self.digest):
             raise ValueError("cognitive artifact digest must be lowercase SHA-256")
 
 
@@ -32,9 +35,7 @@ class CognitiveReplayEnvelope:
     chain_version: str
 
     def __post_init__(self) -> None:
-        if len(self.case_replay_fingerprint) != 64 or any(
-            char not in "0123456789abcdef" for char in self.case_replay_fingerprint
-        ):
+        if not _SHA256_RE.fullmatch(self.case_replay_fingerprint):
             raise ValueError("case replay fingerprint must be lowercase SHA-256")
         if not self.chain_version.strip():
             raise ValueError("chain_version is required")
