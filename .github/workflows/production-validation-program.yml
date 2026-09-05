@@ -74,6 +74,7 @@ jobs:
           if state["last_completed_step"] >= 19:
               digest, digest_decision = production_validation_chain_digest(Path("."))
               if digest_decision is None and digest is not None:
+                  print(f"STEPS_1_19_DIGEST={digest}")
                   lines.append(f"- steps 1-19 digest: `{digest}`")
               else:
                   lines.append("- steps 1-19 digest: unavailable (chain revalidation failed)")
