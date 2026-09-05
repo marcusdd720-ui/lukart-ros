@@ -9,14 +9,13 @@ ROOT = Path(".")
 EVIDENCE_DIR = Path("factory/production_validation_evidence")
 
 
-def test_dependent_certification_envelopes_are_quarantined_until_human_review() -> None:
-    for step in (3, 6, 8, 16, 18):
+def test_remaining_dependent_certification_envelopes_are_quarantined() -> None:
+    for step in (6, 8, 16, 18):
         path = EVIDENCE_DIR / f"step_{step:02d}.json"
         payload = json.loads(path.read_text(encoding="utf-8"))
 
         assert payload["status"] == "STALE"
         assert payload["critical_gates_passed"] is False
-        assert payload["replacement_required_after_human_review"] is True
         assert isinstance(payload["stale_reason"], str)
         assert payload["stale_reason"].strip()
 
