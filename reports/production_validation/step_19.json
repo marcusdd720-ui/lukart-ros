@@ -4,24 +4,24 @@
   "status": "PASS",
   "validated_sha": "fb731f847b9f06fb0735a9e574d384d96bc20744",
   "gate_kind": "release",
-  "evidence_kind": "versioning_migration_policy",
+  "evidence_kind": "release_versioning_migration",
   "locked_evaluation_used_for_tuning": false,
   "private_data_committed": false,
   "checks": [
     {
-      "name": "schema_versioning_policy_defined",
+      "name": "versioning_policy_defined",
       "status": "PASS"
     },
     {
-      "name": "backward_compatibility_tested",
+      "name": "migration_policy_defined",
       "status": "PASS"
     },
     {
-      "name": "migration_path_tested",
+      "name": "schema_compatibility_tested",
       "status": "PASS"
     },
     {
-      "name": "rollback_path_tested",
+      "name": "rollback_policy_defined",
       "status": "PASS"
     }
   ],
