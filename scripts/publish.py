@@ -1,6 +1,8 @@
-"""Validate and publish a private local case snapshot.
+"""Validate publication readiness for a private local case snapshot.
 
-Case data is intentionally never committed or pushed to GitHub.
+This command is preparation-only. ``READY_TO_PUBLISH`` is local readiness
+metadata and never authorizes OUTBOUND, RELEASE, Git commit/push, upload, or
+any other external side effect. Case data remains local-only.
 """
 
 from __future__ import annotations
@@ -13,7 +15,12 @@ from factory.local_case_store import output_case_dir, validate_case_key
 from knowledge.models.snapshot_validator import validate_snapshot
 
 
-def load_snapshot(case_key: str, *, prefer: str = "freeze", data_root: Path | None = None) -> dict:
+def load_snapshot(
+    case_key: str,
+    *,
+    prefer: str = "freeze",
+    data_root: Path | None = None,
+) -> dict:
     base = output_case_dir(validate_case_key(case_key), data_root) / "snapshots"
     candidates = [
         base / f"latest_{prefer}.json",
@@ -26,21 +33,34 @@ def load_snapshot(case_key: str, *, prefer: str = "freeze", data_root: Path | No
             data = json.loads(path.read_text(encoding="utf-8"))
             data["_snapshot_file"] = str(path)
             return data
-    raise FileNotFoundError(f"No local snapshot under {base}. Run pipeline FREEZE first.")
+    raise FileNotFoundError(
+        f"No local snapshot under {base}. Run pipeline FREEZE first."
+    )
 
 
 def main() -> int:
     parser = argparse.ArgumentParser(
-        description="Validate a private local case snapshot; never publish case data to GitHub"
+        description=(
+            "Validate preparation readiness for a private local case snapshot; "
+            "never publish case data to GitHub or authorize external release"
+        )
     )
     parser.add_argument("--case", required=True, help="Private local case key")
-    parser.add_argument("--data-root", default=None, help="Private local MVROS data root")
     parser.add_argument(
-        "--prefer", choices=("freeze", "release", "latest"), default="freeze",
+        "--data-root", default=None, help="Private local MVROS data root"
     )
-    parser.add_argument("--commit", action="store_true", help="Rejected: case data is local-only")
-    parser.add_argument("--push", action="store_true", help="Rejected: case data is local-only")
-    parser.add_argument("--dry-run", action="store_true", help="Validate without write operations")
+    parser.add_argument(
+        "--prefer", choices=("freeze", "release", "latest"), default="freeze"
+    )
+    parser.add_argument(
+        "--commit", action="store_true", help="Rejected: case data is local-only"
+    )
+    parser.add_argument(
+        "--push", action="store_true", help="Rejected: case data is local-only"
+    )
+    parser.add_argument(
+        "--dry-run", action="store_true", help="Validate without write operations"
+    )
     args = parser.parse_args()
 
     if args.commit or args.push:
@@ -69,7 +89,10 @@ def main() -> int:
         print("PUBLISH BLOCKED: snapshot not READY_TO_PUBLISH")
         return 1
 
-    print("PUBLISH OK (local-only): snapshot is READY_TO_PUBLISH")
+    print(
+        "PREPARATION READY (local-only): snapshot is READY_TO_PUBLISH; "
+        "no OUTBOUND/RELEASE authorization granted"
+    )
     if args.dry_run:
         print("No local write requested")
     return 0
