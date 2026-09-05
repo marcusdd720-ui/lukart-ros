@@ -73,13 +73,14 @@ def _approved_chain() -> tuple[DecisionModel, StrategyModel, ActionPlan, Documen
     return decision, strategy, plan, binding
 
 
-def test_legacy_workspace_remains_compatible_until_enforcement_enabled(
+def test_unenforced_workspace_is_preparation_only_and_blocks_outbound(
     tmp_path: Path,
 ) -> None:
     workspace = _workspace(tmp_path)
 
     assert workspace.cognitive_release_blockers() == ()
-    assert workspace.sync_outbound() == []
+    with pytest.raises(PermissionError, match="cognitive_release_not_enforced"):
+        workspace.sync_outbound()
 
 
 def test_enforced_workspace_blocks_outbound_and_release_without_chain(
