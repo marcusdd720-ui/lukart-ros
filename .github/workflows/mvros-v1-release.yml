@@ -40,6 +40,16 @@ jobs:
           echo "CURRENT_MAIN_SHA=$CURRENT_MAIN_SHA"
           test "$VALIDATED_SHA" = "$CURRENT_MAIN_SHA"
 
+      - name: Require effective main governance for release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          gh api "repos/${GITHUB_REPOSITORY}/rules/branches/main?per_page=100" \
+            > /tmp/main-effective-rules.json
+          python -m validation.release_governance \
+            --rules-json /tmp/main-effective-rules.json
+
       - name: Require all release validation workflows on the same SHA
         env:
           GH_TOKEN: ${{ github.token }}
