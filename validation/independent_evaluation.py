@@ -12,6 +12,7 @@ class ReviewOutcome(StrEnum):
     PASS = "PASS"
     FAIL = "FAIL"
     PENDING = "PENDING"
+    NOT_PERFORMED = "NOT_PERFORMED"
 
 
 @dataclass(frozen=True, slots=True)
@@ -51,8 +52,10 @@ class IndependentEvaluator:
             raise IndependentEvaluationError("reviewer_id is required")
         if reviewer_id.lower() in self.forbidden_reviewer_ids:
             raise IndependentEvaluationError("reviewer_id must identify an external reviewer")
-        if assessment.outcome is ReviewOutcome.PENDING:
-            raise IndependentEvaluationError("independent evaluation outcome must be PASS or FAIL")
+        if assessment.outcome not in {ReviewOutcome.PASS, ReviewOutcome.FAIL}:
+            raise IndependentEvaluationError(
+                "independent evaluation outcome must be PASS or FAIL"
+            )
         if not assessment.rationale.strip():
             raise IndependentEvaluationError("rationale is required")
         if not assessment.evidence_ref.strip():

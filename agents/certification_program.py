@@ -30,6 +30,7 @@ class CertificationProgramEvidence:
     engineering_validated: bool
     e2e_suite_passed: bool
     e2e_report_sha256: str
+    independent_review_required: bool = True
 
     def __post_init__(self) -> None:
         validated_sha = self.validated_sha.strip().lower()
@@ -54,6 +55,7 @@ class CertificationProgramReport:
     validated_sha: str
     analytical_status: AgentCertificationStatus
     external_review: ReviewOutcome
+    independent_review_required: bool
     engineering_validated: bool
     e2e_suite_passed: bool
     e2e_report_sha256: str
@@ -71,6 +73,7 @@ class CertificationProgramReport:
             "engineering_validated": self.engineering_validated,
             "external_review": self.external_review.value,
             "failures": list(self.failures),
+            "independent_review_required": self.independent_review_required,
             "status": self.status.value,
             "validated_sha": self.validated_sha,
         }
@@ -113,9 +116,15 @@ class AgentCertificationProgram:
         hard_failures = tuple(sorted(set(failures)))
         if hard_failures:
             status = CertificationProgramStatus.REJECTED
-        elif analytical_report.external_review is not ReviewOutcome.PASS:
+        elif (
+            evidence.independent_review_required
+            and analytical_report.external_review is not ReviewOutcome.PASS
+        ):
             status = CertificationProgramStatus.PENDING_EXTERNAL_REVIEW
-        elif analytical_report.status is AgentCertificationStatus.PENDING_EXTERNAL_REVIEW:
+        elif (
+            evidence.independent_review_required
+            and analytical_report.status is AgentCertificationStatus.PENDING_EXTERNAL_REVIEW
+        ):
             status = CertificationProgramStatus.PENDING_EXTERNAL_REVIEW
         elif analytical_report.status is AgentCertificationStatus.CERTIFIED:
             status = CertificationProgramStatus.CERTIFIED
@@ -129,6 +138,7 @@ class AgentCertificationProgram:
             validated_sha=evidence.validated_sha,
             analytical_status=analytical_report.status,
             external_review=analytical_report.external_review,
+            independent_review_required=evidence.independent_review_required,
             engineering_validated=evidence.engineering_validated,
             e2e_suite_passed=evidence.e2e_suite_passed,
             e2e_report_sha256=evidence.e2e_report_sha256,

@@ -83,7 +83,7 @@ class AgentCertifier:
         failures = self._threshold_failures(metrics)
         if failures or external_review is ReviewOutcome.FAIL:
             status = AgentCertificationStatus.REJECTED
-        elif self.require_independent_review and external_review is ReviewOutcome.PENDING:
+        elif self.require_independent_review and external_review is not ReviewOutcome.PASS:
             status = AgentCertificationStatus.PENDING_EXTERNAL_REVIEW
         elif external_review is ReviewOutcome.PASS or not self.require_independent_review:
             status = AgentCertificationStatus.CERTIFIED
