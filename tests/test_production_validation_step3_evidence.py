@@ -47,8 +47,8 @@ def test_repository_step3_historical_measurement_is_locked_safe_but_gate_is_stal
 ) -> None:
     monkeypatch.delenv(PROVENANCE_DIR_ENV, raising=False)
     review_decision = evaluate_extraction_review(ROOT)
-    assert review_decision.passed is False
-    assert review_decision.code == "HUMAN_PROVENANCE_REQUIRED"
+    assert review_decision.passed is True
+    assert review_decision.code == "PASS"
 
     report = json.loads(REPORT_PATH.read_text(encoding="utf-8"))
     review = json.loads((ROOT / EXTRACTION_REVIEW).read_text(encoding="utf-8"))
@@ -59,7 +59,10 @@ def test_repository_step3_historical_measurement_is_locked_safe_but_gate_is_stal
     assert freeze["corpus_sha256"] == corpus_sha256
     assert report["frozen_corpus"]["corpus_sha256"] == corpus_sha256
     assert report["frozen_corpus"]["reviewed_sha"] == review["reviewed_sha"]
-    assert review["reviewer_kind"] == "human"
+    assert review["review_mode"] == "solo_maintainer"
+    assert review["reviewer_kind"] == "maintainer"
+    assert review["reviewer_independent"] is False
+    assert review["independent_external_review"] == "NOT_PERFORMED"
     assert review["decision"] == "APPROVED"
 
     thresholds = report["thresholds"]
