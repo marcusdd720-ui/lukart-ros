@@ -99,14 +99,17 @@ class ReferenceSet:
     def get(self, reference_id: str) -> CaseReference | None:
         return next((item for item in self.references if item.reference_id == reference_id), None)
 
-    def admit(self, reference: CaseReference, policy: ScopePolicy) -> "ReferenceSet":
+    def admit(self, reference: CaseReference, policy: ScopePolicy) -> ReferenceSet:
         if self.get(reference.reference_id) is not None:
             raise ValueError(f"duplicate CaseReference: {reference.reference_id}")
         if not policy.admits_type(reference.reference_type):
             raise ValueError(f"reference type rejected by ScopePolicy: {reference.reference_type}")
         if reference.cross_case_source and not policy.cross_case_allowed:
             raise ValueError("cross-case reference rejected by ScopePolicy")
-        if policy.require_authorization and reference.authorization is not ReferenceAuthorization.AUTHORIZED:
+        if (
+            policy.require_authorization
+            and reference.authorization is not ReferenceAuthorization.AUTHORIZED
+        ):
             raise ValueError("reference requires explicit authorization")
         return ReferenceSet(self.references + (reference,))
 
@@ -135,7 +138,7 @@ class CaseScope:
         if any(not goal.strip() for goal in self.goals):
             raise ValueError("CaseScope goals cannot contain empty values")
 
-    def with_reference(self, reference: CaseReference) -> "CaseScope":
+    def with_reference(self, reference: CaseReference) -> CaseScope:
         return replace(
             self,
             reference_set=self.reference_set.admit(reference, self.scope_policy),
@@ -147,7 +150,7 @@ class CaseScope:
         *,
         operational_state: CaseOperationalState | None = None,
         epistemic_state: CaseEpistemicState | None = None,
-    ) -> "CaseScope":
+    ) -> CaseScope:
         return replace(
             self,
             operational_state=operational_state or self.operational_state,
