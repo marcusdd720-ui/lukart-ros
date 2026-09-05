@@ -1,0 +1,28 @@
+{
+  "candidate_sha": "d7dfbe06bb1d79b5719a966086dc1d2ac0ae9119",
+  "certification_scope": [
+    "Production Validation Steps 1-19 are cryptographically bound and revalidated before the RC decision.",
+    "Human review gates are bound to their exact reviewed revisions and review-package SHA-256 values.",
+    "Private Case material and PII are excluded from the public release evidence."
+  ],
+  "known_limitations": [
+    "Reasoning certification is contract conformance on the frozen synthetic benchmark and is not a domain-wide correctness guarantee.",
+    "Historical independent reviews certify only the exact revisions and review packages to which they are cryptographically bound.",
+    "Locked evaluation results are certification-only and must not be reused for tuning, threshold selection, or corpus changes."
+  ],
+  "locked_evaluation_used_for_tuning": false,
+  "private_data_committed": false,
+  "product": "lukart-ros",
+  "product_version": "1.0.0",
+  "release_evidence": [
+    "factory/production_validation_evidence/step_18.json",
+    "factory/production_validation_evidence/step_19.json",
+    "docs/RELEASE_VERSIONING_MIGRATION_POLICY.md",
+    "docs/quality/reviews/step_16_independent_review.json",
+    "docs/quality/reviews/step_18_independent_review.json"
+  ],
+  "release_id": "lukart-ros-v1-rc1",
+  "schema_version": "1.0",
+  "status": "RELEASE_CANDIDATE",
+  "steps_1_19_digest": "38ced3e331a09e44203660861b78b9ed97cf802abd984e4db0765498146abcf8"
+}
