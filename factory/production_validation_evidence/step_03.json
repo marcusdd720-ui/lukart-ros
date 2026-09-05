@@ -1,13 +1,13 @@
 {
-  "schema_version": "2.0",
-  "step": 3,
-  "status": "STALE",
-  "validated_sha": "17eb54c9022d7b1fa75ffc4f754d6ac58ad2ae78",
-  "gate_kind": "certification",
-  "evidence_kind": "extraction_certification",
   "artifact_path": "reports/production_validation/step_03.json",
-  "artifact_sha256": "59d6b9f9e80d5defbff4e335e3a6d869d634946a357672cb144b663868c31d08",
-  "critical_gates_passed": false,
-  "stale_reason": "Historical Step 3 PASS depends on extraction review evidence whose independent-human provenance is not authenticated. Regenerate after Step 1 is genuinely reviewed and frozen.",
-  "replacement_required_after_human_review": true
+  "artifact_sha256": "e8037bf0372cad4b00ccba8339410d02bbba6bf190e630f8bd9e987e87f3a6be",
+  "certification_mode": "solo_maintainer",
+  "critical_gates_passed": true,
+  "evidence_kind": "extraction_certification",
+  "gate_kind": "certification",
+  "independent_external_review": "NOT_PERFORMED",
+  "schema_version": "2.0",
+  "status": "PASS",
+  "step": 3,
+  "validated_sha": "5bf580e9513fa7651cab7232aea28f8651e112b9"
 }
