@@ -1,7 +1,8 @@
-"""Typed, immutable contract for externally supplied corpus review decisions.
+"""Typed, immutable contract for corpus review/acceptance decisions.
 
-This module validates review evidence; it never generates, upgrades, or infers
-an approval. External-review outcomes remain human-supplied evidence.
+Independent mode preserves the authenticated external-human provenance contract.
+SOLO_MAINTAINER_MODE is a separate, explicit profile: it never claims reviewer
+independence and records that independent external review was not performed.
 """
 
 from __future__ import annotations
@@ -12,7 +13,14 @@ import re
 from collections.abc import Mapping
 from dataclasses import dataclass
 from enum import StrEnum
+from pathlib import Path
 
+from validation.certification_mode import (
+    CertificationMode,
+    CertificationProfile,
+    CertificationProfileError,
+    load_certification_profile,
+)
 from validation.human_review_provenance import (
     HumanReviewProvenanceError,
     validate_runtime_human_review_provenance,
@@ -93,6 +101,8 @@ class ExternalCorpusReview:
     iaa_status: IAAStatus
 
     def canonical_dict(self) -> dict[str, object]:
+        # This exact field set is intentionally unchanged so independent-mode
+        # authenticated provenance digests remain backwards compatible.
         return {
             "annotation_review": self.annotation_review.value,
             "corpus_id": self.corpus_id,
@@ -120,6 +130,62 @@ class ExternalCorpusReview:
         return hashlib.sha256(payload).hexdigest()
 
 
+def _profile_for_payload(payload: Mapping[str, object]) -> CertificationProfile | None:
+    raw_mode = payload.get("review_mode")
+    if raw_mode is None:
+        return None
+    if raw_mode != CertificationMode.SOLO_MAINTAINER.value:
+        raise ExternalCorpusReviewError(
+            "CERTIFICATION_MODE_INVALID",
+            "review_mode must be omitted for independent review or equal solo_maintainer",
+        )
+    try:
+        profile = load_certification_profile(Path.cwd(), required=True)
+    except CertificationProfileError as exc:
+        raise ExternalCorpusReviewError("CERTIFICATION_MODE_INVALID", str(exc)) from exc
+    if profile.mode is not CertificationMode.SOLO_MAINTAINER:
+        raise ExternalCorpusReviewError(
+            "CERTIFICATION_MODE_INVALID",
+            "solo-maintainer review requires repository mode solo_maintainer",
+        )
+    return profile
+
+
+def _validate_reviewer_identity(
+    payload: Mapping[str, object],
+    *,
+    reviewer_id: str,
+    reviewer_kind: str,
+    reviewer_independent: object,
+    reserved_reviewer_ids: frozenset[str],
+) -> CertificationProfile | None:
+    profile = _profile_for_payload(payload)
+    if profile is None:
+        if (
+            reviewer_id.lower() in reserved_reviewer_ids
+            or reviewer_kind != "human"
+            or reviewer_independent is not True
+        ):
+            raise ExternalCorpusReviewError(
+                "REVIEW_NOT_INDEPENDENT",
+                "independent human reviewer required",
+            )
+        return None
+
+    if (
+        reviewer_id != profile.maintainer_id
+        or reviewer_kind != "maintainer"
+        or reviewer_independent is not False
+        or payload.get("independent_external_review") != "NOT_PERFORMED"
+    ):
+        raise ExternalCorpusReviewError(
+            "SOLO_MAINTAINER_ATTESTATION_INVALID",
+            "solo mode requires repository maintainer identity, reviewer_independent=false, "
+            "and independent_external_review=NOT_PERFORMED",
+        )
+    return profile
+
+
 def validate_external_corpus_review(
     payload: Mapping[str, object],
     *,
@@ -127,7 +193,7 @@ def validate_external_corpus_review(
     expected_corpus_sha256: str,
     reserved_reviewer_ids: frozenset[str],
 ) -> ExternalCorpusReview:
-    """Validate supplied review content and, for production gates, external provenance."""
+    """Validate independent review or explicit solo-maintainer acceptance."""
 
     schema_version = _required_text(payload, "schema_version")
     if schema_version != "1.0":
@@ -168,15 +234,13 @@ def validate_external_corpus_review(
     reviewer_id = _required_text(payload, "reviewer_id")
     reviewer_kind = _required_text(payload, "reviewer_kind")
     reviewer_independent = payload.get("reviewer_independent")
-    if (
-        reviewer_id.lower() in reserved_reviewer_ids
-        or reviewer_kind != "human"
-        or reviewer_independent is not True
-    ):
-        raise ExternalCorpusReviewError(
-            "REVIEW_NOT_INDEPENDENT",
-            "independent human reviewer required",
-        )
+    profile = _validate_reviewer_identity(
+        payload,
+        reviewer_id=reviewer_id,
+        reviewer_kind=reviewer_kind,
+        reviewer_independent=reviewer_independent,
+        reserved_reviewer_ids=reserved_reviewer_ids,
+    )
 
     decision = _enum_value(CorpusReviewDecision, payload, "decision")
     annotation_review = _enum_value(
@@ -206,7 +270,7 @@ def validate_external_corpus_review(
     ):
         raise ExternalCorpusReviewError(
             "REVIEW_NOT_APPROVED",
-            "external review has not approved annotation, criticality, and corpus freeze",
+            "review has not approved annotation, criticality, and corpus freeze",
         )
     if iaa_required and iaa_status is not IAAStatus.PASS:
         raise ExternalCorpusReviewError(
@@ -227,7 +291,7 @@ def validate_external_corpus_review(
         reviewed_sha=reviewed_sha,
         reviewer_id=reviewer_id,
         reviewer_kind=reviewer_kind,
-        reviewer_independent=True,
+        reviewer_independent=reviewer_independent is True,
         decision=CorpusReviewDecision(decision),
         annotation_review=CorpusReviewSectionStatus(annotation_review),
         criticality_review=CorpusReviewSectionStatus(criticality_review),
@@ -237,7 +301,7 @@ def validate_external_corpus_review(
     )
 
     production_step = _PRODUCTION_REVIEW_STEPS.get(corpus_id)
-    if production_step is not None:
+    if production_step is not None and profile is None:
         try:
             validate_runtime_human_review_provenance(
                 step=production_step,
