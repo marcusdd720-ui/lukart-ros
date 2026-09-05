@@ -101,9 +101,9 @@ class CaseModelProjection:
             if reference.authorization is ReferenceAuthorization.AUTHORIZED
         }
 
-        used_reference_ids = {
-            item.case_reference_id for item in (*object_refs, *relation_refs)
-        }
+        object_reference_ids = {item.case_reference_id for item in object_refs}
+        relation_reference_ids = {item.case_reference_id for item in relation_refs}
+        used_reference_ids = object_reference_ids | relation_reference_ids
         unauthorized = used_reference_ids - authorized
         if unauthorized:
             rendered = ", ".join(sorted(unauthorized))
