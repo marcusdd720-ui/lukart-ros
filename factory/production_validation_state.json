@@ -1,6 +1,6 @@
 {
-  "block_code": "EXTERNAL_REVIEW_REQUIRED",
-  "block_reason": "independent extraction corpus review artifact is missing",
+  "block_code": "HUMAN_PROVENANCE_REQUIRED",
+  "block_reason": "authenticated runtime provenance receipt is missing for Step 1",
   "current_step": 1,
   "last_completed_step": 0,
   "last_result": "BLOCKED",
