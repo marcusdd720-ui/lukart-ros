@@ -14,6 +14,11 @@ from collections.abc import Mapping
 from dataclasses import dataclass
 from pathlib import Path
 
+from validation.human_review_provenance import (
+    HumanReviewProvenanceError,
+    validate_runtime_human_review_provenance,
+)
+
 _SHA256_RE = re.compile(r"^[0-9a-f]{64}$")
 _GIT_SHA_RE = re.compile(r"^[0-9a-f]{40}$")
 _AUTOMATION_ID_RE = re.compile(
@@ -153,7 +158,7 @@ def validate_independent_step_review(
     expected_artifact_sha256: str,
     reserved_reviewer_ids: frozenset[str],
 ) -> IndependentStepReview:
-    """Validate already supplied human review evidence for Step 16 or Step 18."""
+    """Validate review bytes and authenticated runtime provenance for Step 16 or 18."""
 
     if expected_step not in {16, 18}:
         raise IndependentStepReviewError(
@@ -256,6 +261,16 @@ def validate_independent_step_review(
             "independent human review has not recorded a PASS decision",
         )
     review_summary = _required_text(review, "review_summary")
+
+    try:
+        validate_runtime_human_review_provenance(
+            step=expected_step,
+            reviewer_id=reviewer_id,
+            review_sha256=expected_review_digest,
+            reviewed_sha=reviewed_sha,
+        )
+    except HumanReviewProvenanceError as exc:
+        raise IndependentStepReviewError(exc.code, exc.reason) from exc
 
     return IndependentStepReview(
         step=expected_step,
