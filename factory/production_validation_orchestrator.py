@@ -91,7 +91,7 @@ def _review_digest(review: dict[str, object]) -> str:
     return hashlib.sha256(encoded).hexdigest()
 
 
-def _evaluate_independent_review(
+def _evaluate_corpus_review(
     root: Path,
     *,
     corpus_path: Path,
@@ -120,26 +120,30 @@ def _evaluate_independent_review(
         )
     except ExternalCorpusReviewError as exc:
         return GateDecision(False, exc.code, exc.reason)
-    return GateDecision(True, "PASS", "independent review accepted; corpus may be frozen")
+    if review.get("review_mode") == "solo_maintainer":
+        reason = "solo-maintainer acceptance verified; corpus may be frozen"
+    else:
+        reason = "independent review accepted; corpus may be frozen"
+    return GateDecision(True, "PASS", reason)
 
 
 def evaluate_extraction_review(root: Path) -> GateDecision:
-    return _evaluate_independent_review(
+    return _evaluate_corpus_review(
         root,
         corpus_path=EXTRACTION_CORPUS,
         review_path=EXTRACTION_REVIEW,
         corpus_id="extraction-gold-v1",
-        missing_review_reason="independent extraction corpus review artifact is missing",
+        missing_review_reason="extraction corpus review/acceptance artifact is missing",
     )
 
 
 def evaluate_reasoning_review(root: Path) -> GateDecision:
-    return _evaluate_independent_review(
+    return _evaluate_corpus_review(
         root,
         corpus_path=REASONING_CORPUS_V2,
         review_path=REASONING_REVIEW_V2,
         corpus_id="reasoning-gold-v2",
-        missing_review_reason="independent reasoning corpus v2 review artifact is missing",
+        missing_review_reason="reasoning corpus v2 review/acceptance artifact is missing",
     )
 
 

@@ -4,9 +4,11 @@
   "corpus_sha256": "b51956dc82264ab4ae6bb7a183efa926ae087fc52b8b074fbb6468dd08614851",
   "reviewed_artifact_path": "data/quality/reasoning_gold_v2.json",
   "reviewed_sha": "6b9ab40640aa564259ac97a34f13d7a2e63269ca",
-  "reviewer_id": "external-reviewer-01",
-  "reviewer_kind": "human",
-  "reviewer_independent": true,
+  "reviewer_id": "marcusdd720-ui",
+  "reviewer_kind": "maintainer",
+  "reviewer_independent": false,
+  "review_mode": "solo_maintainer",
+  "independent_external_review": "NOT_PERFORMED",
   "decision": "APPROVED",
   "annotation_review": "APPROVED",
   "criticality_review": "APPROVED",
@@ -14,5 +16,5 @@
   "iaa_required": false,
   "iaa_status": "NOT_REQUIRED",
   "date": "2026-09-05",
-  "reviewer_notes": "Independent review of reasoning_gold_v2.json completed successfully on Git revision 6b9ab40640aa564259ac97a34f13d7a2e63269ca. Case construction, reasoning chains, expected outcomes, and abstention boundaries are logically sound and correctly structured. Locked evaluation split is properly isolated without tuning leakage."
+  "reviewer_notes": "SOLO_MAINTAINER_MODE acceptance based on the repository's automated reasoning-corpus validation, split isolation, abstention checks, and certification policy. No independent external human review was performed or claimed."
 }

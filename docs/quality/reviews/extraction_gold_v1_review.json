@@ -4,9 +4,11 @@
   "corpus_sha256": "8f184c7944393d4fe617b24f900754f1dd8957ee1a43a4a9c0144e15ddd26ee8",
   "reviewed_artifact_path": "data/quality/extraction_gold_v1.json",
   "reviewed_sha": "58022395a148b3f551ad018723282f12eaebae15",
-  "reviewer_id": "external-reviewer-01",
-  "reviewer_kind": "human",
-  "reviewer_independent": true,
+  "reviewer_id": "marcusdd720-ui",
+  "reviewer_kind": "maintainer",
+  "reviewer_independent": false,
+  "review_mode": "solo_maintainer",
+  "independent_external_review": "NOT_PERFORMED",
   "decision": "APPROVED",
   "annotation_review": "APPROVED",
   "criticality_review": "APPROVED",
@@ -14,5 +16,5 @@
   "iaa_required": false,
   "iaa_status": "NOT_REQUIRED",
   "date": "2026-09-05",
-  "reviewer_notes": "All 20 synthetic documents in extraction_gold_v1.json have been thoroughly inspected. Entity extraction matches the source text precisely across all categories (wyrok_sadowy, decyzja_zus, umowa, pismo_procesowe). Splits are correctly configured and balanced (development: 12, validation: 4, locked_evaluation: 4). No defects, structural inconsistencies, or extraction errors found."
+  "reviewer_notes": "SOLO_MAINTAINER_MODE acceptance based on the repository's automated corpus integrity, taxonomy, split-isolation, and deterministic validation evidence. No independent external human review was performed or claimed."
 }

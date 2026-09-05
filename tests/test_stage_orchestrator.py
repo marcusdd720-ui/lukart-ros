@@ -43,3 +43,19 @@ def test_state_rejects_inconsistent_stage_order(tmp_path: Path) -> None:
         assert "terminal status" in str(exc)
     else:
         raise AssertionError("invalid lifecycle state was accepted")
+
+
+def test_pr_orchestrator_check_is_read_only_and_main_keeps_write_authority() -> None:
+    workflow = Path(".github/workflows/stage-orchestrator.yml").read_text(encoding="utf-8")
+
+    assert "pull_request:" in workflow
+    assert "orchestrate:" in workflow
+    assert "if: github.event_name == 'pull_request'" in workflow
+    assert "contents: read" in workflow
+    assert "actions: read" in workflow
+    assert "Validate orchestrator contract without lifecycle mutation" in workflow
+    assert "orchestrate-main:" in workflow
+    assert "if: github.event_name != 'pull_request'" in workflow
+    assert "contents: write" in workflow
+    assert "actions: write" in workflow
+    assert "Execute autonomous lifecycle controller" in workflow

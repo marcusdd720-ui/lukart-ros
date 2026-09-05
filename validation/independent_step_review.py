@@ -1,8 +1,8 @@
-"""Fail-closed validation for human review evidence on Production Validation steps.
+"""Fail-closed validation for Step 16/18 review evidence.
 
-This module validates review artifacts supplied by a real reviewer. It never creates,
-infers, upgrades, or self-approves a review decision. The review binds to a separate,
-pre-existing review subject, not to the Step 16/18 PASS report that is produced after review.
+Independent mode requires authenticated external-human provenance. SOLO_MAINTAINER_MODE
+is a distinct, explicit certification profile and must record that no independent external
+review was performed; it never upgrades maintainer acceptance into independent review.
 """
 
 from __future__ import annotations
@@ -14,6 +14,11 @@ from collections.abc import Mapping
 from dataclasses import dataclass
 from pathlib import Path
 
+from validation.certification_mode import (
+    CertificationMode,
+    CertificationProfileError,
+    load_certification_profile,
+)
 from validation.human_review_provenance import (
     HumanReviewProvenanceError,
     validate_runtime_human_review_provenance,
@@ -29,7 +34,7 @@ _AUTOMATION_ID_RE = re.compile(
 
 
 class IndependentStepReviewError(ValueError):
-    """Stable fail-closed error for independent human review validation."""
+    """Stable fail-closed error for Step 16/18 review validation."""
 
     def __init__(self, code: str, reason: str) -> None:
         super().__init__(reason)
@@ -44,6 +49,9 @@ class IndependentStepReview:
     reviewed_artifact_path: str
     reviewed_artifact_sha256: str
     reviewer_id: str
+    reviewer_kind: str
+    reviewer_independent: bool
+    certification_mode: str
     review_summary: str
 
 
@@ -67,12 +75,12 @@ def _load_json(path: Path) -> dict[str, object]:
     except (OSError, json.JSONDecodeError) as exc:
         raise IndependentStepReviewError(
             "REVIEW_FORMAT_INVALID",
-            "independent review artifact must be valid UTF-8 JSON",
+            "step review artifact must be valid UTF-8 JSON",
         ) from exc
     if not isinstance(value, dict):
         raise IndependentStepReviewError(
             "REVIEW_FORMAT_INVALID",
-            "independent review artifact must be a JSON object",
+            "step review artifact must be a JSON object",
         )
     return value
 
@@ -118,7 +126,7 @@ def _safe_review_path(root: Path, raw_path: object) -> Path:
     if resolved.suffix.lower() != ".json":
         raise IndependentStepReviewError(
             "REVIEW_FORMAT_INVALID",
-            "independent review artifact must be JSON",
+            "step review artifact must be JSON",
         )
     return resolved
 
@@ -148,6 +156,27 @@ def _reviewer_is_automation(reviewer_id: str, reserved_reviewer_ids: frozenset[s
     )
 
 
+def _certification_mode(root: Path, review: Mapping[str, object]) -> CertificationMode:
+    raw_mode = review.get("review_mode")
+    if raw_mode is None:
+        return CertificationMode.INDEPENDENT
+    if raw_mode != CertificationMode.SOLO_MAINTAINER.value:
+        raise IndependentStepReviewError(
+            "CERTIFICATION_MODE_INVALID",
+            "review_mode must be omitted for independent review or equal solo_maintainer",
+        )
+    try:
+        profile = load_certification_profile(root, required=True)
+    except CertificationProfileError as exc:
+        raise IndependentStepReviewError("CERTIFICATION_MODE_INVALID", str(exc)) from exc
+    if profile.mode is not CertificationMode.SOLO_MAINTAINER:
+        raise IndependentStepReviewError(
+            "CERTIFICATION_MODE_INVALID",
+            "solo-maintainer review requires repository mode solo_maintainer",
+        )
+    return profile.mode
+
+
 def validate_independent_step_review(
     root: Path,
     evidence: Mapping[str, object],
@@ -158,12 +187,12 @@ def validate_independent_step_review(
     expected_artifact_sha256: str,
     reserved_reviewer_ids: frozenset[str],
 ) -> IndependentStepReview:
-    """Validate review bytes and authenticated runtime provenance for Step 16 or 18."""
+    """Validate Step 16/18 review bytes under the selected certification profile."""
 
     if expected_step not in {16, 18}:
         raise IndependentStepReviewError(
             "REVIEW_SCOPE_INVALID",
-            "independent step review contract is restricted to Steps 16 and 18",
+            "step review contract is restricted to Steps 16 and 18",
         )
     if not _GIT_SHA_RE.fullmatch(expected_validated_sha):
         raise IndependentStepReviewError(
@@ -181,7 +210,7 @@ def validate_independent_step_review(
     if subject_relative == expected_artifact_path:
         raise IndependentStepReviewError(
             "REVIEW_SUBJECT_SELF_REFERENCE",
-            "human review must bind to a pre-existing review subject, not the Step PASS report",
+            "review must bind to a pre-existing review subject, not the Step PASS report",
         )
     expected_subject_digest = evidence.get("review_subject_sha256")
     if not isinstance(expected_subject_digest, str) or not _SHA256_RE.fullmatch(
@@ -209,26 +238,26 @@ def validate_independent_step_review(
     if _sha256_file(review_file) != expected_review_digest:
         raise IndependentStepReviewError(
             "REVIEW_HASH_MISMATCH",
-            "step evidence is not bound to the independent review bytes",
+            "step evidence is not bound to the review bytes",
         )
 
     review = _load_json(review_file)
     if review.get("schema_version") != "1.0":
         raise IndependentStepReviewError(
             "REVIEW_FORMAT_INVALID",
-            "independent step review schema_version must be 1.0",
+            "step review schema_version must be 1.0",
         )
     if review.get("step") != expected_step:
         raise IndependentStepReviewError(
             "REVIEW_SCOPE_INVALID",
-            "independent review is bound to a different Production Validation step",
+            "review is bound to a different Production Validation step",
         )
 
     reviewed_sha = _required_text(review, "reviewed_sha").lower()
     if not _GIT_SHA_RE.fullmatch(reviewed_sha) or reviewed_sha != expected_validated_sha:
         raise IndependentStepReviewError(
             "REVIEW_SHA_MISMATCH",
-            "independent review is not bound to the validated revision",
+            "review is not bound to the validated revision",
         )
 
     reviewed_artifact_path = _required_text(review, "reviewed_artifact_path")
@@ -240,37 +269,59 @@ def validate_independent_step_review(
     ):
         raise IndependentStepReviewError(
             "REVIEW_ARTIFACT_MISMATCH",
-            "independent review is not bound to the declared review subject",
+            "review is not bound to the declared review subject",
         )
 
     reviewer_id = _required_text(review, "reviewer_id")
-    if review.get("reviewer_independent") is not True or review.get("reviewer_kind") != "human":
-        raise IndependentStepReviewError(
-            "REVIEW_NOT_INDEPENDENT",
-            "review must explicitly identify an independent human reviewer",
-        )
-    if _reviewer_is_automation(reviewer_id, reserved_reviewer_ids):
-        raise IndependentStepReviewError(
-            "REVIEW_NOT_INDEPENDENT",
-            "bot, agent, system, automation, or Factory identities cannot approve this gate",
-        )
+    reviewer_kind = _required_text(review, "reviewer_kind")
+    reviewer_independent = review.get("reviewer_independent")
+    mode = _certification_mode(root, review)
+
+    if mode is CertificationMode.INDEPENDENT:
+        if reviewer_independent is not True or reviewer_kind != "human":
+            raise IndependentStepReviewError(
+                "REVIEW_NOT_INDEPENDENT",
+                "review must explicitly identify an independent human reviewer",
+            )
+        if _reviewer_is_automation(reviewer_id, reserved_reviewer_ids):
+            raise IndependentStepReviewError(
+                "REVIEW_NOT_INDEPENDENT",
+                "bot, agent, system, automation, or Factory identities cannot approve this gate",
+            )
+    else:
+        try:
+            profile = load_certification_profile(root, required=True)
+        except CertificationProfileError as exc:
+            raise IndependentStepReviewError("CERTIFICATION_MODE_INVALID", str(exc)) from exc
+        if (
+            reviewer_id != profile.maintainer_id
+            or reviewer_kind != "maintainer"
+            or reviewer_independent is not False
+            or review.get("independent_external_review") != "NOT_PERFORMED"
+        ):
+            raise IndependentStepReviewError(
+                "SOLO_MAINTAINER_ATTESTATION_INVALID",
+                "solo mode requires repository maintainer identity, reviewer_independent=false, "
+                "and independent_external_review=NOT_PERFORMED",
+            )
 
     if review.get("decision") != "PASS":
         raise IndependentStepReviewError(
             "REVIEW_NOT_APPROVED",
-            "independent human review has not recorded a PASS decision",
+            "step review has not recorded a PASS decision",
         )
     review_summary = _required_text(review, "review_summary")
 
-    try:
-        validate_runtime_human_review_provenance(
-            step=expected_step,
-            reviewer_id=reviewer_id,
-            review_sha256=expected_review_digest,
-            reviewed_sha=reviewed_sha,
-        )
-    except HumanReviewProvenanceError as exc:
-        raise IndependentStepReviewError(exc.code, exc.reason) from exc
+    if mode is CertificationMode.INDEPENDENT:
+        try:
+            validate_runtime_human_review_provenance(
+                step=expected_step,
+                reviewer_id=reviewer_id,
+                review_sha256=expected_review_digest,
+                reviewed_sha=reviewed_sha,
+            )
+        except HumanReviewProvenanceError as exc:
+            raise IndependentStepReviewError(exc.code, exc.reason) from exc
 
     return IndependentStepReview(
         step=expected_step,
@@ -278,5 +329,8 @@ def validate_independent_step_review(
         reviewed_artifact_path=reviewed_artifact_path,
         reviewed_artifact_sha256=reviewed_artifact_sha256,
         reviewer_id=reviewer_id,
+        reviewer_kind=reviewer_kind,
+        reviewer_independent=reviewer_independent is True,
+        certification_mode=mode.value,
         review_summary=review_summary,
     )

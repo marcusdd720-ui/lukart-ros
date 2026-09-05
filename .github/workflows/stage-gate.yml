@@ -1,6 +1,8 @@
 name: Stage Gate
 
 on:
+  pull_request:
+    branches: [main]
   workflow_dispatch:
     inputs:
       stage:
@@ -12,6 +14,8 @@ on:
 jobs:
   gate:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     steps:
       - name: Checkout
         uses: actions/checkout@v6
@@ -23,5 +27,16 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           python -m pip install ".[dev]"
+      - name: Resolve stage
+        id: stage
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          INPUT_STAGE: ${{ inputs.stage || '' }}
+        run: |
+          if [[ "${EVENT_NAME}" == "pull_request" ]]; then
+            echo "stage=0" >> "${GITHUB_OUTPUT}"
+          else
+            echo "stage=${INPUT_STAGE}" >> "${GITHUB_OUTPUT}"
+          fi
       - name: Run selected stage gate
-        run: python -m factory.stage_gate --stage "${{ inputs.stage }}"
+        run: python -m factory.stage_gate --stage "${{ steps.stage.outputs.stage }}"

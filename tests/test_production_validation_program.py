@@ -158,7 +158,7 @@ def test_extraction_review_blocks_when_artifact_is_missing(tmp_path: Path) -> No
     assert decision == GateDecision(
         False,
         "EXTERNAL_REVIEW_REQUIRED",
-        "independent extraction corpus review artifact is missing",
+        "extraction corpus review/acceptance artifact is missing",
     )
 
 
