@@ -1,8 +1,8 @@
 {
   "block_code": "STEP_EVIDENCE_INVALID",
   "block_reason": "step evidence does not declare PASS",
-  "current_step": 16,
-  "last_completed_step": 15,
+  "current_step": 18,
+  "last_completed_step": 17,
   "last_result": "BLOCKED",
   "status": "BLOCKED"
 }
