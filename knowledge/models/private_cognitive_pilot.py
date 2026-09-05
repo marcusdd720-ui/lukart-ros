@@ -9,6 +9,7 @@ remain outside the public repository.
 from __future__ import annotations
 
 import hashlib
+import string
 from dataclasses import dataclass
 
 from knowledge.epistemic import KnowledgeStatus
@@ -58,6 +59,10 @@ def _safe_digest(parts: tuple[str, ...]) -> str:
     return hashlib.sha256(payload).hexdigest()
 
 
+def _valid_sha256(value: str) -> bool:
+    return len(value) == 64 and all(character in string.hexdigits for character in value)
+
+
 def build_private_cognitive_baseline(
     workspace: CaseWorkspace,
     *,
@@ -87,7 +92,7 @@ def build_private_cognitive_baseline(
         document_id = str(raw.get("document_id", "")).strip()
         sha256 = str(raw.get("sha256", "")).strip().lower()
         source_name = str(raw.get("source_name", "")).strip()
-        if not document_id or len(sha256) != 64:
+        if not document_id or not _valid_sha256(sha256):
             continue
 
         reference_id = f"source:{document_id}"
@@ -127,7 +132,7 @@ def build_private_cognitive_baseline(
         scope,
         object_refs=tuple(projected),
         unresolved_items=(
-            "Substantive facts, propositions and legal conclusions require verified extraction."
+            "Substantive facts, propositions and legal conclusions require verified extraction.",
         ),
     )
     problem = ProblemModel.build(
