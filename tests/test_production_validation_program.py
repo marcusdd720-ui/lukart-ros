@@ -17,13 +17,15 @@ from factory.production_validation_orchestrator import (
 )
 from factory.production_validation_registry import PROGRAM_STEPS, get_program_step
 
+VALIDATED_SHA = "a" * 40
+
 
 def _write_json(path: Path, value: object) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(value), encoding="utf-8")
 
 
-def _artifact_for_step(step_number: int, validated_sha: str = "a" * 40) -> dict[str, object]:
+def _artifact_for_step(step_number: int, validated_sha: str = VALIDATED_SHA) -> dict[str, object]:
     spec = get_program_step(step_number)
     return {
         "schema_version": "1.0",
@@ -49,7 +51,7 @@ def _write_bound_evidence(
     critical_gates_passed: bool = True,
 ) -> tuple[Path, Path]:
     spec = get_program_step(step_number)
-    validated_sha = "a" * 40
+    validated_sha = VALIDATED_SHA
     report_path = artifact_path or f"reports/production_validation/step_{step_number:02d}.json"
     report = root / report_path
     if artifact_path is None or ".." not in Path(artifact_path).parts:
@@ -80,7 +82,10 @@ def _approved_review(corpus_id: str, corpus_sha256: str) -> dict[str, object]:
         "schema_version": "1.0",
         "corpus_id": corpus_id,
         "corpus_sha256": corpus_sha256,
+        "reviewed_artifact_path": f"data/quality/{corpus_id.replace('-', '_')}.json",
+        "reviewed_sha": VALIDATED_SHA,
         "reviewer_id": "independent-reviewer-one",
+        "reviewer_kind": "human",
         "reviewer_independent": True,
         "decision": "APPROVED",
         "annotation_review": "APPROVED",
@@ -193,7 +198,7 @@ def test_generic_step_rejects_missing_bound_artifact(tmp_path: Path) -> None:
             "schema_version": "2.0",
             "step": 6,
             "status": "PASS",
-            "validated_sha": "a" * 40,
+            "validated_sha": VALIDATED_SHA,
             "gate_kind": spec.gate_kind.value,
             "evidence_kind": spec.evidence_kind,
             "artifact_path": "reports/missing.json",
