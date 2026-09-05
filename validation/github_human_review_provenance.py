@@ -41,7 +41,10 @@ _CORPUS_REVIEW_FIELDS = (
     "reviewer_kind",
     "schema_version",
 )
-_AUTOMATION_RE = re.compile(r"(?:bot|factory|system|automated|automation|agent|github-actions)", re.I)
+_AUTOMATION_RE = re.compile(
+    r"(?:bot|factory|system|automated|automation|agent|github-actions)",
+    re.I,
+)
 
 
 class GitHubProvenanceCollectionError(RuntimeError):
@@ -96,10 +99,15 @@ def _issue_comments(repository: str, issue: int, token: str) -> list[dict[str, o
     comments: list[dict[str, object]] = []
     page = 1
     while True:
-        url = f"https://api.github.com/repos/{repository}/issues/{issue}/comments?per_page=100&page={page}"
+        url = (
+            f"https://api.github.com/repos/{repository}/issues/{issue}/comments"
+            f"?per_page=100&page={page}"
+        )
         value = _github_get_json(url, token)
         if not isinstance(value, list):
-            raise GitHubProvenanceCollectionError("GitHub issue comments response must be a list")
+            raise GitHubProvenanceCollectionError(
+                "GitHub issue comments response must be a list"
+            )
         batch = [item for item in value if isinstance(item, dict)]
         comments.extend(batch)
         if len(value) < 100:
@@ -175,7 +183,10 @@ def _matching_receipt(
         return None
     if review.get("reviewer_id") != login:
         return None
-    if review.get("reviewer_kind") != "human" or review.get("reviewer_independent") is not True:
+    if (
+        review.get("reviewer_kind") != "human"
+        or review.get("reviewer_independent") is not True
+    ):
         return None
     if step in {1, 5}:
         if review.get("decision") != "APPROVED":
@@ -236,8 +247,14 @@ def collect(root: Path, output_dir: Path, *, repository: str, token: str) -> int
             print(f"Step {step}: HUMAN_PROVENANCE_NOT_VERIFIED (issue #{issue})")
             continue
         target = output_dir / f"step_{step:02d}.json"
-        target.write_text(json.dumps(receipt, indent=2, sort_keys=True) + "\n", encoding="utf-8")
-        print(f"Step {step}: HUMAN_PROVENANCE_VERIFIED from comment {receipt['source_comment_id']}")
+        target.write_text(
+            json.dumps(receipt, indent=2, sort_keys=True) + "\n",
+            encoding="utf-8",
+        )
+        print(
+            f"Step {step}: HUMAN_PROVENANCE_VERIFIED "
+            f"from comment {receipt['source_comment_id']}"
+        )
         verified += 1
     return verified
 
