@@ -1,15 +1,17 @@
 {
   "artifact_path": "reports/production_validation/step_18.json",
   "artifact_sha256": "86eaf0f23796d46d5941257c6bbe1fc02c8a08c4b15c80c2705848674ec9c810",
-  "critical_gates_passed": true,
+  "critical_gates_passed": false,
   "evidence_kind": "security_privacy_hardening",
   "gate_kind": "privacy",
+  "replacement_required_after_human_review": true,
   "review_path": "docs/quality/reviews/step_18_independent_review.json",
   "review_sha256": "732fba18c4bcacdd2074854c7f99bdd3e45c748fe766ec0b3b2fda00c32cc1f5",
   "review_subject_path": "docs/quality/review_packages/step_18_review_package.json",
   "review_subject_sha256": "1aab28f24251c8dadb98c5329cf218211927c825f875aed7b286436c8beafb94",
   "schema_version": "2.0",
-  "status": "PASS",
+  "stale_reason": "Historical Step 18 PASS is bound to a superseded auditability package and unauthenticated independent-human review. Regenerate against the current v1 review package after genuine Issue #64 review and authenticated provenance.",
+  "status": "STALE",
   "step": 18,
   "validated_sha": "32da9ed623c193ff234da5c0afa273b944e52390"
 }
