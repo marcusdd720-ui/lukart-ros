@@ -116,3 +116,22 @@ class MigrationRegistry:
             ):
                 return step
         return None
+
+    def direct_rollback(
+        self,
+        artifact_type: str,
+        current_version: SchemaVersion,
+        target_version: SchemaVersion,
+    ) -> MigrationStep | None:
+        """Return the reversible forward migration that authorizes an exact rollback edge."""
+
+        artifact = artifact_type.strip()
+        for step in self._steps:
+            if (
+                step.artifact_type == artifact
+                and step.to_version == current_version
+                and step.from_version == target_version
+                and step.reversible
+            ):
+                return step
+        return None
