@@ -17,7 +17,6 @@ from factory.production_validation_orchestrator import (
 )
 from factory.production_validation_registry import PROGRAM_STEPS, get_program_step
 
-
 VALIDATED_SHA = "a" * 40
 
 
