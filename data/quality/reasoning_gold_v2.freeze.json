@@ -1,0 +1,8 @@
+{
+  "corpus_id": "reasoning-gold-v2",
+  "corpus_sha256": "b51956dc82264ab4ae6bb7a183efa926ae087fc52b8b074fbb6468dd08614851",
+  "review_digest": "ce2d24430e675b960731783bfb6b3a131053504b0ffbf926e51a581b773590e7",
+  "reviewer_id": "external-reviewer-01",
+  "schema_version": "1.0",
+  "status": "FROZEN"
+}

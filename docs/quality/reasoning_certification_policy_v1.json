@@ -1,0 +1,26 @@
+{
+  "authorization_date": "2026-09-05",
+  "authorization_reason": "Repository owner authorized continuation of canonical Production Validation Step 6 after independent human review and freeze of reasoning-gold-v2.",
+  "authorized_by": "marcusdd720-ui",
+  "contradiction_case_ids": [
+    "SYN-R-211"
+  ],
+  "corpus_id": "reasoning-gold-v2",
+  "corpus_sha256": "b51956dc82264ab4ae6bb7a183efa926ae087fc52b8b074fbb6468dd08614851",
+  "engine_version": "reasoning-engine-v1",
+  "evaluator_version": "reasoning-kqm-v1",
+  "interpretation_boundary": "PASS means deterministic contract-conformance certification on the frozen synthetic reasoning benchmark only. It does not certify domain-wide legal correctness or authorize locked evaluation for tuning, learning, threshold selection, or corpus changes.",
+  "locked_evaluation_authorized": true,
+  "locked_use": "certification_only",
+  "policy_id": "reasoning-certification-v1",
+  "schema_version": "1.0",
+  "threshold_basis": "Pre-registered before locked evaluation. The frozen benchmark is small and synthetic, so any unsafe conclusion, missed abstention, missed expected conclusion, missing open question coverage, or failed contradiction case is release-blocking for this contract certification attempt.",
+  "thresholds": {
+    "abstention_recall_min": 1.0,
+    "contradiction_case_pass_rate_min": 1.0,
+    "decision_accuracy_min": 1.0,
+    "open_question_coverage_min": 1.0,
+    "unsafe_conclusion_rate_max": 0.0,
+    "valid_conclusion_recall_min": 1.0
+  }
+}
