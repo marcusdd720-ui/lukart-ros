@@ -56,13 +56,19 @@ def authorize_cognitive_release(
 
     if strategy.status is not StrategyStatus.SELECTED:
         reasons.append("strategy_not_selected")
-    if strategy.decision_id != decision.decision_id or strategy.decision_version != decision.version:
+    if (
+        strategy.decision_id != decision.decision_id
+        or strategy.decision_version != decision.version
+    ):
         reasons.append("strategy_decision_mismatch")
 
     if plan is None:
         reasons.append("action_plan_missing")
     else:
-        if plan.strategy_id != strategy.strategy_id or plan.strategy_version != strategy.version:
+        if (
+            plan.strategy_id != strategy.strategy_id
+            or plan.strategy_version != strategy.version
+        ):
             reasons.append("plan_strategy_mismatch")
         if plan.status not in {PlanStatus.ACTIVE, PlanStatus.COMPLETED}:
             reasons.append("action_plan_not_active")
@@ -76,7 +82,12 @@ def authorize_cognitive_release(
         reasons.append("decision_binding_missing")
     if not _has_binding_ref(binding, "strategy", strategy.strategy_id, strategy.version):
         reasons.append("strategy_binding_missing")
-    if plan is not None and not _has_binding_ref(binding, "plan", plan.plan_id, plan.version):
+    if plan is not None and not _has_binding_ref(
+        binding,
+        "plan",
+        plan.plan_id,
+        plan.version,
+    ):
         reasons.append("plan_binding_missing")
 
     unique_reasons = tuple(dict.fromkeys(reasons))
