@@ -3,6 +3,8 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
+import pytest
+
 from agents.certification import AgentCertificationThresholds
 from agents.kqm import run_reference_agent_kqm
 from factory.production_validation_orchestrator import (
@@ -14,6 +16,7 @@ from factory.production_validation_orchestrator import (
     sha256_file,
 )
 from validation.extraction_quality import ExtractionMetrics
+from validation.human_review_provenance import PROVENANCE_DIR_ENV
 
 ROOT = Path(".")
 REPORT_PATH = Path("reports/production_validation/step_03.json")
@@ -39,9 +42,13 @@ def _metric_dict(metrics: ExtractionMetrics) -> dict[str, float | int]:
     }
 
 
-def test_repository_step3_evidence_is_bound_measured_and_locked_safe() -> None:
+def test_repository_step3_evidence_is_bound_measured_and_locked_safe(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.delenv(PROVENANCE_DIR_ENV, raising=False)
     review_decision = evaluate_extraction_review(ROOT)
-    assert review_decision.passed is True
+    assert review_decision.passed is False
+    assert review_decision.code == "HUMAN_PROVENANCE_REQUIRED"
 
     report = json.loads(REPORT_PATH.read_text(encoding="utf-8"))
     review = json.loads((ROOT / EXTRACTION_REVIEW).read_text(encoding="utf-8"))
