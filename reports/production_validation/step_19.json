@@ -2,11 +2,13 @@
   "schema_version": "1.0",
   "step": 19,
   "status": "PASS",
-  "validated_sha": "fb731f847b9f06fb0735a9e574d384d96bc20744",
+  "validated_sha": "4ebec450bd87f2c29cc890dbd02941c7af953710",
   "gate_kind": "release",
   "evidence_kind": "release_versioning_migration",
   "locked_evaluation_used_for_tuning": false,
   "private_data_committed": false,
+  "project_version": "1.0.1",
+  "release_tag": "v1.0.1",
   "checks": [
     {
       "name": "versioning_policy_defined",
@@ -29,6 +31,8 @@
     "policy": "docs/RELEASE_VERSIONING_MIGRATION_POLICY.md",
     "implementation": "validation/schema_compatibility.py",
     "tests": "tests/test_schema_compatibility.py",
+    "version_source": "pyproject.toml",
+    "release_workflow": ".github/workflows/mvros-v1-release.yml",
     "ci_foundation": "PASS",
     "architectural_audit": "PASS",
     "github_app_smoke": "PASS",
@@ -39,6 +43,12 @@
     "same-major backward compatibility is explicit",
     "undeclared migration edges fail closed",
     "rollback requires an explicitly reversible migration",
-    "irreversible migration cannot be represented as a rollback path"
-  ]
+    "irreversible migration cannot be represented as a rollback path",
+    "existing release tags are immutable and require a project version bump"
+  ],
+  "release_version_binding": {
+    "project_version": "1.0.1",
+    "expected_tag": "v1.0.1",
+    "existing_v1_0_0_must_not_move": true
+  }
 }
