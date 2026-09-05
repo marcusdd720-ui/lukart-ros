@@ -1,0 +1,8 @@
+{
+  "schema_version": "1.0",
+  "mode": "solo_maintainer",
+  "maintainer_id": "marcusdd720-ui",
+  "authorized_by": "marcusdd720-ui",
+  "independent_external_review": "NOT_PERFORMED",
+  "authorization_reason": "Repository maintainer explicitly selected SOLO_MAINTAINER_MODE for the v1.0.1 certification track. Automated evidence and maintainer acceptance remain required; no independent external human review is claimed."
+}
