@@ -1,15 +1,17 @@
 {
   "artifact_path": "reports/production_validation/step_16.json",
   "artifact_sha256": "b8e127d9944028387f5cfb5f199566caa8d4ab4f78767a317c350a586c75db49",
-  "critical_gates_passed": true,
+  "critical_gates_passed": false,
   "evidence_kind": "renderer_quality_measurement",
   "gate_kind": "measurement",
+  "replacement_required_after_human_review": true,
   "review_path": "docs/quality/reviews/step_16_independent_review.json",
   "review_sha256": "99ba71acf60a6230509572913d5fcfe8dbf4bedc190a38104dc977e34838c091",
   "review_subject_path": "docs/quality/review_packages/step_16_review_package.json",
   "review_subject_sha256": "9bf3851073508a007b42ce0ebc6911e7ab7107eca7e7355d8d2cf667e0a388a9",
   "schema_version": "2.0",
-  "status": "PASS",
+  "stale_reason": "Historical Step 16 PASS is bound to a superseded review package and unauthenticated independent-human review. Regenerate against the current v1 review package after genuine Issue #62 review and authenticated provenance.",
+  "status": "STALE",
   "step": 16,
   "validated_sha": "32da9ed623c193ff234da5c0afa273b944e52390"
 }
