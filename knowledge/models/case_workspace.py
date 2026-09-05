@@ -133,6 +133,10 @@ class CaseWorkspace:
         return authorization.reasons
 
     def _require_cognitive_release(self) -> None:
+        if not self.cognitive_release_enforced:
+            raise PermissionError(
+                "Cognitive release blocked: cognitive_release_not_enforced"
+            )
         blockers = self.cognitive_release_blockers()
         if blockers:
             rendered = ", ".join(blockers)
@@ -462,7 +466,7 @@ class CaseWorkspace:
         stage: str | None = None,
         save_snapshot: bool = True,
         export_docx: bool = True,
-        sync_outbound: bool = True,
+        sync_outbound: bool = False,
         write_note: bool = True,
     ) -> int:
         self.set_letter_context(
