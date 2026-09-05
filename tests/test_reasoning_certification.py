@@ -14,7 +14,6 @@ from validation.reasoning_certification import (
 )
 from validation.reasoning_gold import load_reasoning_gold_corpus
 
-
 CORPUS_PATH = Path("data/quality/reasoning_gold_v2.json")
 REVIEW_PATH = Path("docs/quality/reviews/reasoning_gold_v2_review.json")
 FREEZE_PATH = Path("data/quality/reasoning_gold_v2.freeze.json")
