@@ -31,6 +31,37 @@ def test_release_governance_accepts_complete_effective_rules() -> None:
     validate_effective_main_rules(_effective_rules())
 
 
+def test_release_governance_accepts_layered_rulesets() -> None:
+    contexts = sorted(REQUIRED_RELEASE_CHECKS)
+    midpoint = len(contexts) // 2
+    rules = [
+        {"type": "pull_request", "parameters": {}},
+        {"type": "pull_request", "parameters": {"dismiss_stale_reviews_on_push": True}},
+        {"type": "deletion"},
+        {"type": "non_fast_forward"},
+        {
+            "type": "required_status_checks",
+            "parameters": {
+                "strict_required_status_checks_policy": False,
+                "required_status_checks": [
+                    {"context": context} for context in contexts[:midpoint]
+                ],
+            },
+        },
+        {
+            "type": "required_status_checks",
+            "parameters": {
+                "strict_required_status_checks_policy": True,
+                "required_status_checks": [
+                    {"context": context} for context in contexts[midpoint:]
+                ],
+            },
+        },
+    ]
+
+    validate_effective_main_rules(rules)
+
+
 def test_release_governance_requires_pull_request_rule() -> None:
     rules = [rule for rule in _effective_rules() if rule["type"] != "pull_request"]
 
