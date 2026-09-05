@@ -9,16 +9,16 @@ ROOT = Path(".")
 EVIDENCE_DIR = Path("factory/production_validation_evidence")
 
 
-def test_remaining_dependent_certification_envelopes_are_quarantined() -> None:
-    for step in (18,):
+def test_regenerated_dependent_certification_envelopes_are_active() -> None:
+    for step in (16, 18):
         path = EVIDENCE_DIR / f"step_{step:02d}.json"
         payload = json.loads(path.read_text(encoding="utf-8"))
 
-        assert payload["status"] == "STALE"
-        assert payload["critical_gates_passed"] is False
-        assert isinstance(payload["stale_reason"], str)
-        assert payload["stale_reason"].strip()
+        assert payload["status"] == "PASS"
+        assert payload["critical_gates_passed"] is True
+        assert payload["certification_mode"] == "solo_maintainer"
+        assert payload["independent_external_review"] == "NOT_PERFORMED"
 
         decision = evaluate_generic_evidence(ROOT, step)
-        assert decision.passed is False
-        assert decision.code == "STEP_EVIDENCE_INVALID"
+        assert decision.passed is True
+        assert decision.code == "PASS"
