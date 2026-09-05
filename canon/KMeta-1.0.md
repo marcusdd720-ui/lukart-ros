@@ -1,12 +1,22 @@
 # KMeta-1.0 — Kanon Kanonów
 
+Canonical ID: KMeta-1.0
+Title: Kanon Kanonów
+Version: 1.0
 Status: CANDIDATE CANON
-Poziom: Meta-governance Kanonu
+Class: METHODOLOGY
+Stability Index: 4
 Owner: Core Architecture
+Depends On: FOUNDATION.md; accepted ADRs
+Affects: all Canon documents; canon validation
+Supersedes: none
+Validation Method: canonical metadata validation + dependency graph + exact-SHA CI/Audit/Stage Gate
+Review Requirement: independent architectural review before CANONICAL
+Change Policy: versioned semantic change only
 
 ## 1. Cel
 
-KMeta definiuje jednolity sposób tworzenia, klasyfikowania, wersjonowania, walidowania, zamrażania, zmiany i wycofywania dokumentów Kanonu Artur OS / LUKART ROS. Jego zadaniem jest zapobieganie konkurencyjnym definicjom, proliferacji dokumentów oraz cichym zmianom znaczenia pojęć podstawowych.
+KMeta definiuje jednolity sposób tworzenia, klasyfikowania, wersjonowania, walidowania, zamrażania, zmiany i wycofywania dokumentów Kanonu Artur OS / LUKART ROS. Zapobiega konkurencyjnym definicjom, proliferacji dokumentów oraz cichym zmianom znaczenia pojęć podstawowych.
 
 KMeta nie definiuje treści domenowych. Definiuje reguły, według których treści domenowe mogą uzyskać status kanoniczny.
 
@@ -14,11 +24,9 @@ KMeta nie definiuje treści domenowych. Definiuje reguły, według których tre�
 
 Żaden dokument nie staje się Kanonem wyłącznie dlatego, że został zapisany w katalogu `canon/`.
 
-Status kanoniczny jest wynikiem jawnego procesu:
-
 `Proposal -> Candidate -> Validation -> Review -> Freeze -> Canonical`
 
-Dokument bez spełnionego procesu ma status nie wyższy niż Candidate, nawet jeśli jego treść jest technicznie poprawna.
+Dokument bez spełnionego procesu ma status nie wyższy niż Candidate.
 
 ## 3. Klasy dokumentów
 
@@ -38,15 +46,15 @@ Każdy dokument Kanonu MUST deklarować dokładnie jedną klasę:
 
 Każdy dokument MUST deklarować `Stability Index` w skali 1–5:
 
-- 5 — ekstremalnie stabilny; zmiana wyjątkowa.
-- 4 — bardzo stabilny; wymaga dowodu naruszenia lub konieczności systemowej.
-- 3 — stabilny; zmiana wymaga walidacji i review.
-- 2 — umiarkowanie stabilny; może ewoluować po testach kontraktowych.
-- 1 — zmienny; implementacja/runtime.
+- 5 — ekstremalnie stabilny.
+- 4 — bardzo stabilny.
+- 3 — stabilny.
+- 2 — umiarkowanie stabilny.
+- 1 — zmienny / implementacyjny.
 
 Wyższy Stability Index oznacza silniejszy obowiązek kompatybilności wstecznej i mocniejszy proces review.
 
-## 5. Wymagane metadane dokumentu
+## 5. Wymagane metadane
 
 Każdy dokument Candidate lub Canonical MUST zawierać:
 
@@ -68,24 +76,18 @@ Brak wymaganych metadanych powoduje FAIL procesu kanonizacji.
 
 ## 6. Single Ownership Rule
 
-Każdy dokument Kanonu ma dokładnie jednego właściciela odpowiedzialnego za znaczenie dokumentu. Właściciel może delegować implementację lub review, ale nie może istnieć dwóch równorzędnych źródeł prawdy dla tej samej definicji.
+Każdy dokument Kanonu ma dokładnie jednego właściciela odpowiedzialnego za jego znaczenie. Delegowanie implementacji lub review nie tworzy drugiego źródła prawdy.
 
-Jeżeli dwa dokumenty próbują definiować ten sam byt, kontrakt lub operator, konflikt musi zostać rozwiązany przez:
-
-1. rozdzielenie zakresów,
-2. wskazanie dokumentu nadrzędnego,
-3. albo formalne wycofanie jednego z dokumentów.
+Jeżeli dwa dokumenty próbują definiować ten sam byt, kontrakt lub operator, konflikt musi zostać rozwiązany przez rozdzielenie zakresów, wskazanie nadrzędności albo formalne wycofanie jednego dokumentu.
 
 ## 7. Dependency Graph
 
 Każdy dokument MUST jawnie deklarować zależności.
 
-Reguły:
-
-1. zależność musi wskazywać konkretny Canonical ID i wersję lub zakres wersji;
+1. zależność wskazuje konkretny Canonical ID i wersję lub jawnie zewnętrzne authority;
 2. zależności cykliczne pomiędzy dokumentami normatywnymi są zabronione;
 3. dokument niższego poziomu nie może nadpisywać dokumentu wyższego poziomu;
-4. zmiana dokumentu musi uruchomić analizę propagacji do wszystkich dokumentów `Affects`;
+4. zmiana dokumentu uruchamia analizę propagacji do `Affects`;
 5. brak jawnej zależności nie zwalnia z odpowiedzialności za wykryty konflikt semantyczny.
 
 ## 8. Status lifecycle
@@ -101,73 +103,39 @@ Dozwolone statusy:
 - SUPERSEDED
 - REJECTED
 
-Przejścia statusów są jawne i audytowalne. Automatyzacja może wykonać testy i przygotować evidence, ale nie może sama nadać statusu CANONICAL tam, gdzie wymagane jest niezależne review.
+Automatyzacja może wykonać testy i przygotować evidence, ale nie może sama nadać statusu CANONICAL tam, gdzie wymagane jest niezależne review.
 
 ## 9. Validation Before Canon
 
-Przed statusem CANONICAL dokument MUST posiadać metodę walidacji adekwatną do klasy.
+Przed statusem CANONICAL dokument MUST posiadać metodę walidacji adekwatną do klasy. Może to być spójność formalna, poligon syntetyczny, local private pilot bez publikacji PII, test kontraktowy, dependency graph, failure/adversarial cases lub niezależne review.
 
-Przykładowe metody:
-
-- spójność formalna,
-- test na poligonie syntetycznym,
-- test na lokalnym private pilot bez publikacji PII,
-- test kontraktowy implementacji,
-- analiza dependency graph,
-- failure/adversarial cases,
-- niezależne review.
-
-Sam brak błędów składniowych lub pozytywny CI nie oznacza walidacji semantycznej Kanonu.
+Pozytywny CI nie oznacza automatycznie walidacji semantycznej Kanonu.
 
 ## 10. Freeze
 
-Freeze oznacza związanie konkretnej wersji dokumentu z niezmiennym identyfikatorem treści.
+Freeze wiąże konkretną wersję dokumentu z niezmiennym identyfikatorem treści. Minimalne evidence freeze obejmuje Canonical ID, wersję, exact Git SHA, SHA-256 dokumentu lub manifestu review, datę freeze, wymagane review i wynik walidacji.
 
-Minimum evidence freeze:
-
-- Canonical ID,
-- wersja,
-- exact Git SHA,
-- SHA-256 dokumentu lub manifestu review,
-- data freeze,
-- wymagane review,
-- wynik walidacji.
-
-Zmiana zamrożonego dokumentu wymaga nowej wersji. Nie wolno nadpisywać znaczenia istniejącej wersji.
+Zmiana zamrożonego dokumentu wymaga nowej wersji.
 
 ## 11. Change Propagation
 
-Każda zmiana Candidate/Canonical MUST wykonać analizę wpływu co najmniej na:
+Każda zmiana Candidate/Canonical MUST analizować wpływ co najmniej na zależne dokumenty Kanonu, ADR, modele danych, schematy, API/kontrakty operatorów, testy, walidację i benchmarki, Case Replay oraz Renderer, jeżeli zmiana wpływa na semantykę wyniku.
 
-- zależne dokumenty Kanonu,
-- ADR,
-- modele danych,
-- schematy,
-- API/kontrakty operatorów,
-- testy,
-- walidację i benchmarki,
-- Case Replay,
-- Renderer i artefakty wyjściowe, jeżeli zmiana wpływa na semantykę wyniku.
-
-Zmiana o wpływie nieznanym nie może zostać uznana za bezpieczną zmianę kanoniczną.
+Zmiana o wpływie nieznanym nie może być uznana za bezpieczną zmianę kanoniczną.
 
 ## 12. Evidence Before Standard
 
-Norma lub reguła nie może być promowana wyłącznie dlatego, że jest elegancka teoretycznie. Dla dokumentów Architecture, Standard i Validation wymagane jest co najmniej jedno obserwowalne evidence zastosowania albo jawne oznaczenie jako jeszcze niewalidowane.
+Norma lub reguła nie może być promowana wyłącznie dlatego, że jest elegancka teoretycznie. Dla Architecture, Standard i Validation wymagane jest obserwowalne evidence zastosowania albo jawny status niewalidowany.
 
 ## 13. Canon != Implementation
 
-Dokument Kanonu definiuje znaczenie, granice i invarianty. Implementacja jest jednym z możliwych realizatorów kontraktu.
+Kanon definiuje znaczenie, granice i invarianty. Implementacja jest realizacją kontraktu. Wymiana modelu AI, biblioteki, języka, renderera lub infrastruktury nie powinna wymuszać zmiany Kanonu, jeśli semantyka i kontrakt pozostają niezmienione.
 
-Wymiana modelu AI, biblioteki, języka programowania, silnika renderującego albo infrastruktury nie powinna wymuszać zmiany Kanonu, jeśli semantyka i kontrakt pozostają niezmienione.
+## 14. Authority order
 
-## 14. Konflikt z istniejącym authority order
+KMeta podlega zaakceptowanym ADR oraz niezmiennikom safety/privacy/quality obowiązującym w repozytorium. Do czasu osobnego ADR formalnie włączającego KMeta do authority order, KMeta pozostaje Candidate i nie może nadpisać `FOUNDATION.md` ani `AGENTS.md`.
 
-KMeta podlega zaakceptowanym ADR oraz niezmiennikom safety/privacy/quality już obowiązującym w repozytorium. Do czasu osobnego ADR formalnie włączającego KMeta do authority order, KMeta pozostaje Candidate i nie może cicho nadpisać `FOUNDATION.md` ani `AGENTS.md`.
-
-## 15. Minimalny szablon dokumentu Kanonu
-
-Każdy nowy dokument powinien rozpoczynać się blokiem:
+## 15. Minimalny szablon
 
 ```text
 Canonical ID:
@@ -185,38 +153,18 @@ Review Requirement:
 Change Policy:
 ```
 
-Następnie MUST zawierać co najmniej:
-
-1. Purpose
-2. Definitions
-3. Scope
-4. Invariants
-5. Contracts / Rules
-6. Failure Modes
-7. Validation
-8. Dependencies
-9. Change Policy
+Dokument SHOULD zawierać Purpose, Definitions, Scope, Invariants, Contracts/Rules, Failure Modes, Validation, Dependencies i Change Policy odpowiednio do swojej klasy.
 
 ## 16. Failure modes KMeta
 
-Kanonizacja MUST FAIL, gdy wystąpi co najmniej jeden z warunków:
-
-- konkurencyjne źródło prawdy,
-- brak właściciela,
-- cykliczna zależność normatywna,
-- naruszenie wyższego authority,
-- brak metody walidacji,
-- promocja bez wymaganego review,
-- zmiana zamrożonej wersji bez nowej wersji,
-- niejawna zmiana semantyczna,
-- brak analizy propagacji zmiany.
+Kanonizacja MUST FAIL przy konkurencyjnym źródle prawdy, braku właściciela, cyklicznej zależności normatywnej, naruszeniu wyższego authority, braku metody walidacji, promocji bez wymaganego review, zmianie zamrożonej wersji bez nowej wersji, niejawnej zmianie semantycznej lub braku analizy propagacji.
 
 ## 17. Walidacja KMeta-1.0
 
 KMeta-1.0 pozostaje CANDIDATE CANON do czasu:
 
-1. zastosowania jego szablonu do co najmniej dwóch kolejnych dokumentów Kanonu;
-2. sprawdzenia dependency graph na istniejących dokumentach;
-3. potwierdzenia, że reguły nie kolidują z Accepted ADR i FOUNDATION;
+1. zastosowania szablonu do co najmniej dwóch kolejnych dokumentów Kanonu;
+2. automatycznego sprawdzenia metadata/dependency graph;
+3. potwierdzenia braku konfliktu z Accepted ADR i FOUNDATION;
 4. przejścia repozytoryjnych CI/Audit/Stage Gate na exact SHA;
 5. niezależnego architectural review przed promocją do CANONICAL.
