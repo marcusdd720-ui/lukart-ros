@@ -1,0 +1,100 @@
+{
+  "candidate": {
+    "agent": "ReferenceFactAgent",
+    "agent_version": "1.1.0",
+    "extractor": "GenericRegexFactExtractor",
+    "extractor_version": "regex-generic-v2"
+  },
+  "certification_decision": "PASS",
+  "certification_scope": "Production Validation Step 3 extraction KQM certification on development and validation splits only",
+  "checks": [
+    {
+      "name": "frozen_extraction_corpus_bound",
+      "status": "PASS"
+    },
+    {
+      "name": "thresholds_evaluated",
+      "status": "PASS"
+    },
+    {
+      "name": "certification_decision_recorded",
+      "status": "PASS"
+    }
+  ],
+  "development": {
+    "case_number_false_positive_rate": 0.0,
+    "critical_fact_loss": 0,
+    "critical_false_negative": 0,
+    "critical_false_positive": 0,
+    "critical_precision": 1.0,
+    "critical_recall": 1.0,
+    "critical_true_positive": 42,
+    "f1": 1.0,
+    "false_negative": 0,
+    "false_positive": 0,
+    "precision": 1.0,
+    "provenance_completeness": 1.0,
+    "recall": 1.0,
+    "true_positive": 60
+  },
+  "evidence_kind": "extraction_certification",
+  "frozen_corpus": {
+    "corpus_id": "extraction-gold-v1",
+    "corpus_sha256": "8f184c7944393d4fe617b24f900754f1dd8957ee1a43a4a9c0144e15ddd26ee8",
+    "freeze_manifest_path": "data/quality/extraction_gold_v1.freeze.json",
+    "path": "data/quality/extraction_gold_v1.json",
+    "review_decision": "APPROVED",
+    "review_path": "docs/quality/reviews/extraction_gold_v1_review.json",
+    "reviewed_sha": "58022395a148b3f551ad018723282f12eaebae15",
+    "reviewer_id": "external-reviewer-01",
+    "reviewer_kind": "human"
+  },
+  "gate_kind": "certification",
+  "locked_evaluation_used_for_tuning": false,
+  "private_data_committed": false,
+  "schema_version": "1.0",
+  "source_evidence": [
+    "reports/production_validation/step_02.json",
+    "tests/test_agent_kqm_vertical_slice.py",
+    "agents/certification.py",
+    "docs/quality/reviews/extraction_gold_v1_review.json",
+    "data/quality/extraction_gold_v1.freeze.json"
+  ],
+  "status": "PASS",
+  "step": 3,
+  "threshold_evaluation": {
+    "case_number_false_positive_rate": true,
+    "critical_fact_loss": true,
+    "critical_recall": true,
+    "f1": true,
+    "precision": true,
+    "provenance_completeness": true,
+    "recall": true
+  },
+  "thresholds": {
+    "max_case_number_false_positive_rate": 0.0,
+    "max_critical_fact_loss": 0,
+    "min_critical_recall": 0.95,
+    "min_f1": 0.92,
+    "min_precision": 0.95,
+    "min_provenance_completeness": 1.0,
+    "min_recall": 0.9
+  },
+  "validated_sha": "17eb54c9022d7b1fa75ffc4f754d6ac58ad2ae78",
+  "validation": {
+    "case_number_false_positive_rate": 0.0,
+    "critical_fact_loss": 0,
+    "critical_false_negative": 0,
+    "critical_false_positive": 0,
+    "critical_precision": 1.0,
+    "critical_recall": 1.0,
+    "critical_true_positive": 14,
+    "f1": 1.0,
+    "false_negative": 0,
+    "false_positive": 0,
+    "precision": 1.0,
+    "provenance_completeness": 1.0,
+    "recall": 1.0,
+    "true_positive": 20
+  }
+}
