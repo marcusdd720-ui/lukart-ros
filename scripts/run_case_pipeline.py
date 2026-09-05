@@ -6,12 +6,29 @@ import argparse
 import os
 import sys
 from pathlib import Path
+from typing import Any
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
 from knowledge.models.case_registry import get_spec, registered_keys
-from knowledge.models.case_workspace import STAGES
+from knowledge.models.case_workspace import STAGES, CaseWorkspace
+
+_RELEASE_STAGES = frozenset({"OUTBOUND", "RELEASE"})
+
+
+def _configure_release_boundary(
+    workspace: CaseWorkspace,
+    stage: str | None,
+    kwargs: dict[str, Any],
+) -> None:
+    """Keep local case analysis non-publishing until a cognitive chain is bound."""
+    if stage is None:
+        kwargs["sync_outbound"] = False
+        return
+
+    if stage.strip().upper() in _RELEASE_STAGES:
+        workspace.cognitive_release_enforced = True
 
 
 def main() -> int:
@@ -61,6 +78,7 @@ def main() -> int:
 
     ws = spec.open(data_root=data_root)
     kwargs = spec.run_kwargs()
+    _configure_release_boundary(ws, args.stage, kwargs)
     if args.stage:
         kwargs["stage"] = args.stage
     return ws.run(**kwargs)
