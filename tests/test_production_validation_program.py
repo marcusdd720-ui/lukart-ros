@@ -1,7 +1,10 @@
 from __future__ import annotations
 
+import hashlib
 import json
 from pathlib import Path
+
+import pytest
 
 from factory.production_validation_orchestrator import (
     EXTRACTION_CORPUS,
@@ -16,6 +19,7 @@ from factory.production_validation_orchestrator import (
     sha256_file,
 )
 from factory.production_validation_registry import PROGRAM_STEPS, get_program_step
+from validation.human_review_provenance import PROVENANCE_DIR_ENV
 
 VALIDATED_SHA = "a" * 40
 
@@ -96,6 +100,49 @@ def _approved_review(corpus_id: str, corpus_sha256: str) -> dict[str, object]:
     }
 
 
+def _write_corpus_provenance(
+    root: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    *,
+    step: int,
+    issue: int,
+    review: dict[str, object],
+) -> None:
+    provenance_dir = (root / "runtime-provenance").resolve()
+    provenance_dir.mkdir(parents=True, exist_ok=True)
+    review_digest = hashlib.sha256(
+        json.dumps(
+            review,
+            ensure_ascii=False,
+            separators=(",", ":"),
+            sort_keys=True,
+        ).encode()
+    ).hexdigest()
+    reviewer_id = str(review["reviewer_id"])
+    _write_json(
+        provenance_dir / f"step_{step:02d}.json",
+        {
+            "schema_version": "1.0",
+            "verification_provider": "github_api",
+            "source_kind": "github_issue_comment",
+            "source_repository": "marcusdd720-ui/lukart-ros",
+            "source_issue": issue,
+            "source_comment_id": 12345 + step,
+            "source_comment_url": f"https://github.com/marcusdd720-ui/lukart-ros/issues/{issue}#issuecomment-test",
+            "source_author_type": "User",
+            "source_author_login": reviewer_id,
+            "reviewer_id": reviewer_id,
+            "reviewer_kind": "human",
+            "reviewer_independent": True,
+            "decision": "PASS",
+            "review_sha256": review_digest,
+            "reviewed_sha": review["reviewed_sha"],
+            "verified": True,
+        },
+    )
+    monkeypatch.setenv(PROVENANCE_DIR_ENV, str(provenance_dir))
+
+
 def test_registry_contains_exactly_twenty_ordered_steps() -> None:
     assert len(PROGRAM_STEPS) == 20
     assert [step.number for step in PROGRAM_STEPS] == list(range(1, 21))
@@ -139,7 +186,11 @@ def test_extraction_review_rejects_wrong_corpus_hash(tmp_path: Path) -> None:
     assert decision.code == "REVIEW_HASH_MISMATCH"
 
 
-def test_extraction_review_accepts_independent_approved_review(tmp_path: Path) -> None:
+def test_self_declared_human_review_without_runtime_provenance_fails_closed(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.delenv(PROVENANCE_DIR_ENV, raising=False)
     corpus = tmp_path / EXTRACTION_CORPUS
     _write_json(corpus, {"corpus_id": "extraction-gold-v1"})
     _write_json(
@@ -149,17 +200,35 @@ def test_extraction_review_accepts_independent_approved_review(tmp_path: Path) -
 
     decision = evaluate_extraction_review(tmp_path)
 
+    assert decision.passed is False
+    assert decision.code == "HUMAN_PROVENANCE_REQUIRED"
+
+
+def test_extraction_review_accepts_independent_approved_review(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    corpus = tmp_path / EXTRACTION_CORPUS
+    _write_json(corpus, {"corpus_id": "extraction-gold-v1"})
+    review = _approved_review("extraction-gold-v1", sha256_file(corpus))
+    _write_json(tmp_path / EXTRACTION_REVIEW, review)
+    _write_corpus_provenance(tmp_path, monkeypatch, step=1, issue=50, review=review)
+
+    decision = evaluate_extraction_review(tmp_path)
+
     assert decision.passed is True
     assert decision.code == "PASS"
 
 
-def test_reasoning_review_is_bound_to_reasoning_v2_bytes(tmp_path: Path) -> None:
+def test_reasoning_review_is_bound_to_reasoning_v2_bytes(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     corpus = tmp_path / REASONING_CORPUS_V2
     _write_json(corpus, {"corpus_id": "reasoning-gold-v2"})
-    _write_json(
-        tmp_path / REASONING_REVIEW_V2,
-        _approved_review("reasoning-gold-v2", sha256_file(corpus)),
-    )
+    review = _approved_review("reasoning-gold-v2", sha256_file(corpus))
+    _write_json(tmp_path / REASONING_REVIEW_V2, review)
+    _write_corpus_provenance(tmp_path, monkeypatch, step=5, issue=51, review=review)
 
     decision = evaluate_reasoning_review(tmp_path)
 
