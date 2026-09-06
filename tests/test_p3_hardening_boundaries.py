@@ -4,7 +4,7 @@ from pathlib import Path
 
 import pytest
 
-from core.p2 import AgentProvider, AgentTask, PluginRegistry
+from core.p2 import AgentProvider, AgentResult, AgentTask, PluginRegistry
 from core.p3 import (
     CapabilityPolicy,
     HardenedAgentRuntime,
@@ -100,7 +100,7 @@ class AlwaysBrokenAgent(AgentProvider):
     capabilities = frozenset({"boundary-analysis"})
 
     @classmethod
-    def execute(cls, task: AgentTask):
+    def execute(cls, task: AgentTask) -> AgentResult:
         raise RuntimeError("synthetic hard failure")
 
 
