@@ -208,7 +208,10 @@ class ReplayComparison:
             self.differing_fields or self.migration_path or self.unresolved
         ):
             raise P3ContractError("IDENTICAL replay cannot contain differences or unresolved state")
-        if self.relation is ReplayRelation.CROSS_VERSION_COMPARABLE and len(self.migration_path) < 2:
+        if (
+            self.relation is ReplayRelation.CROSS_VERSION_COMPARABLE
+            and len(self.migration_path) < 2
+        ):
             raise P3ContractError("cross-version replay requires explicit migration path")
 
     def canonical_dict(self) -> dict[str, object]:
