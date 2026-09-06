@@ -195,7 +195,11 @@ class SlsaStyleProvenance:
     parameters: Mapping[str, object]
 
     def __post_init__(self) -> None:
-        if not self.subject_name.strip() or not self.builder_id.strip() or not self.build_type.strip():
+        if (
+            not self.subject_name.strip()
+            or not self.builder_id.strip()
+            or not self.build_type.strip()
+        ):
             raise EnterpriseContractError("provenance subject/builder/build_type are required")
         require_hex_digest(self.subject_digest, field_name="subject_digest")
         require_hex_digest(self.source_sha, field_name="source_sha", lengths=(40, 64))
