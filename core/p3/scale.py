@@ -10,6 +10,7 @@ from dataclasses import dataclass
 from core.p2.runtime import LruArtifactCache, bounded_parallel_map
 
 from .contracts import P3ContractError, content_digest
+from .semantic_graph import SemanticChangeGraph
 
 
 @dataclass(frozen=True, slots=True)
@@ -23,7 +24,13 @@ class ScaleProfile:
     def __post_init__(self) -> None:
         if not self.name.strip():
             raise P3ContractError("scale profile name is required")
-        if min(self.evidence_count, self.graph_nodes, self.replay_count, self.concurrency) < 1:
+        values = (
+            self.evidence_count,
+            self.graph_nodes,
+            self.replay_count,
+            self.concurrency,
+        )
+        if min(values) < 1:
             raise P3ContractError("scale profile values must be positive")
 
 
@@ -74,6 +81,7 @@ class ScaleMeasurement:
     work_digest: str
     cache_hits: int
     cache_misses: int
+    blast_radius_size: int
 
     @property
     def cache_hit_ratio(self) -> float:
@@ -110,6 +118,7 @@ def measure_scale_profile(profile: ScaleProfile) -> ScaleMeasurement:
     )
     hits = 0
     misses = 0
+    blast_radius_size = 0
     tracemalloc.start()
     started = time.perf_counter()
     try:
@@ -119,21 +128,33 @@ def measure_scale_profile(profile: ScaleProfile) -> ScaleMeasurement:
             if cache.get(key) is None:
                 misses += 1
                 cache.put(key, evidence_digest)
-            if index < min(profile.evidence_count, 512) and cache.get(key) is not None:
+
+        hot_size = min(profile.evidence_count, 512)
+        hot_start = profile.evidence_count - hot_size
+        for index in range(hot_start, profile.evidence_count):
+            if cache.get(f"EV-{index:06d}") is not None:
                 hits += 1
 
+        change_graph = SemanticChangeGraph(case.graph_dependencies)
+        change_graph.validate_acyclic()
+        blast_plan = change_graph.plan(("EV-000000",))
+        blast_radius_size = len(blast_plan.affected_ids)
+        if blast_radius_size != profile.graph_nodes + 1:
+            raise P3ContractError("synthetic blast radius did not traverse full dependency chain")
+
+        case_digest = case.digest()
         replay_inputs: Sequence[int] = tuple(range(profile.replay_count))
         replay_digests = bounded_parallel_map(
-            lambda index: content_digest(
-                {"case_digest": case.digest(), "replay": index}
-            ),
+            lambda index: content_digest({"case_digest": case_digest, "replay": index}),
             replay_inputs,
             max_workers=profile.concurrency,
         )
         work_digest = content_digest(
             {
-                "case": case.digest(),
+                "case": case_digest,
                 "evidence": evidence_digests,
+                "blast_graph": change_graph.digest(),
+                "blast_affected": blast_plan.affected_ids,
                 "replays": replay_digests,
             }
         )
@@ -141,7 +162,15 @@ def measure_scale_profile(profile: ScaleProfile) -> ScaleMeasurement:
         duration = time.perf_counter() - started
         _, peak = tracemalloc.get_traced_memory()
         tracemalloc.stop()
-    return ScaleMeasurement(profile.name, duration, peak, work_digest, hits, misses)
+    return ScaleMeasurement(
+        profile,
+        duration,
+        peak,
+        work_digest,
+        hits,
+        misses,
+        blast_radius_size,
+    )
 
 
 def certify_scale(measurement: ScaleMeasurement, budget: ScaleBudget) -> ScaleCertification:
