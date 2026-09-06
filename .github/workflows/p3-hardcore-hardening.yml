@@ -20,11 +20,17 @@ jobs:
       - name: Install
         run: python -m pip install -e ".[dev]"
       - name: Lint P3
-        run: ruff check core/p3 tests/test_p3_hardcore.py
+        run: >-
+          ruff check core/p3 tests/test_p3_hardcore.py
+          tests/test_p3_hardening_boundaries.py
       - name: Type-check P3
-        run: mypy core/p3 tests/test_p3_hardcore.py
+        run: >-
+          mypy core/p3 tests/test_p3_hardcore.py
+          tests/test_p3_hardening_boundaries.py
       - name: Hardcore adversarial suite
-        run: pytest -q tests/test_p3_hardcore.py
+        run: >-
+          pytest -q tests/test_p3_hardcore.py
+          tests/test_p3_hardening_boundaries.py
       - name: P2 compatibility suite
         run: pytest -q tests/test_p2_program.py tests/test_post_v1_certification.py
       - name: Full regression suite
