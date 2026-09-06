@@ -84,7 +84,9 @@ def test_p3_01_reasoning_change_graph_produces_reason_paths() -> None:
     plan = graph.plan(("EV-1",))
     assert plan.affected_ids == ("@decision", "C-1", "EV-1", "F-1")
     decision_path = next(
-        item for item in plan.paths if item.changed_id == "EV-1" and item.affected_id == "@decision"
+        item
+        for item in plan.paths
+        if item.changed_id == "EV-1" and item.affected_id == "@decision"
     )
     assert decision_path.path == ("EV-1", "F-1", "C-1", "@decision")
     assert len(plan.graph_digest) == 64
@@ -180,8 +182,22 @@ def test_p3_05_quality_objectives_are_unambiguous_and_missing_is_visible() -> No
             "missing_metric": MetricObjective.HIGHER_IS_BETTER,
         }
     )
-    store.append(QualityPoint("r1", "a" * 40, "b" * 64, {"evidence_coverage": 0.9, "unsupported_conclusion_rate": 0.1}))
-    store.append(QualityPoint("r2", "c" * 40, "b" * 64, {"evidence_coverage": 0.95, "unsupported_conclusion_rate": 0.05}))
+    store.append(
+        QualityPoint(
+            "r1",
+            "a" * 40,
+            "b" * 64,
+            {"evidence_coverage": 0.9, "unsupported_conclusion_rate": 0.1},
+        )
+    )
+    store.append(
+        QualityPoint(
+            "r2",
+            "c" * 40,
+            "b" * 64,
+            {"evidence_coverage": 0.95, "unsupported_conclusion_rate": 0.05},
+        )
+    )
     result = {item.metric: item for item in store.compare("r1", "r2")}
     assert result["evidence_coverage"].direction is QualityDirection.IMPROVED
     assert result["unsupported_conclusion_rate"].direction is QualityDirection.IMPROVED
@@ -331,7 +347,13 @@ def test_p3_08_trusted_analytical_api_state_requires_authorization_marker() -> N
 
 
 def test_p3_09_scale_measurement_is_deterministic_in_semantic_work() -> None:
-    profile = ScaleProfile("ci-small", evidence_count=32, graph_nodes=64, replay_count=8, concurrency=2)
+    profile = ScaleProfile(
+        "ci-small",
+        evidence_count=32,
+        graph_nodes=64,
+        replay_count=8,
+        concurrency=2,
+    )
     measurement = measure_scale_profile(profile)
     assert measurement.duration_seconds >= 0
     assert measurement.peak_memory_bytes > 0
