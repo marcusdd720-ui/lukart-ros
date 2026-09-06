@@ -13,10 +13,13 @@ It does not replace architectural ADRs or quality specifications. It operational
 
 Canonical references:
 
+- `docs/WORKING_PRINCIPLES.md`
 - `docs/architecture/adr/0000-project-principles.md`
 - `docs/architecture/adr/0001-foundation-of-kos.md`
 - `docs/QUALITY_GATES.md`
 - `README.md`
+
+Agents MUST read and apply `docs/WORKING_PRINCIPLES.md` as the canonical execution, trust, Hardcore Enterprise, CI/CD, release-governance, and reporting standard. This file remains the detailed agent contract. If the two overlap, apply the stricter safety/trust requirement and report any real contradiction instead of creating a parallel rule set.
 
 If this file conflicts with an Accepted ADR or an explicit quality/safety invariant, the canonical ADR/invariant wins. The conflict must be reported instead of silently resolved.
 
