@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import copy
 import json
+import re
 import shutil
 from pathlib import Path
 
@@ -227,11 +228,13 @@ def test_h3_rejects_unpinned_workflow_dependency(tmp_path: Path) -> None:
     root = _prepared_root(tmp_path)
     workflow = root / ".github" / "workflows" / "enterprise-hardening.yml"
     text = workflow.read_text(encoding="utf-8")
-    text = text.replace(
-        "actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803",
-        "actions/checkout@v6",
-        1,
+    text, count = re.subn(
+        r"actions/checkout@[0-9a-f]{40}",
+        "actions/checkout@v7",
+        text,
+        count=1,
     )
+    assert count == 1
     workflow.write_text(text, encoding="utf-8")
     with pytest.raises(EnterpriseContractError, match="unpinned workflow dependency"):
         build_h3_evidence(CANDIDATE_SHA, _builder(), root=root)
