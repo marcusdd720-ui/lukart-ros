@@ -1,4 +1,4 @@
-"""E8 stable Enterprise API guard around the existing P3 digest-bound API surface."""
+"""E8/H6 Enterprise API guard around the digest-bound P3 API surface."""
 
 from __future__ import annotations
 
@@ -37,6 +37,9 @@ class EnterpriseRequest:
     nonce: str
     idempotency_key: str | None = None
     attestation: SignedAttestation | None = None
+    resource_id: str | None = None
+    case_id: str | None = None
+    workspace_id: str | None = None
 
     def __post_init__(self) -> None:
         for value, field in (
@@ -47,6 +50,13 @@ class EnterpriseRequest:
         ):
             if not value.strip():
                 raise EnterpriseContractError(f"{field} is required")
+        for value, field in (
+            (self.resource_id, "resource_id"),
+            (self.case_id, "case_id"),
+            (self.workspace_id, "workspace_id"),
+        ):
+            if value is not None and not value.strip():
+                raise EnterpriseContractError(f"{field} cannot be blank")
         if self.operation is not ApiOperation.READ:
             if self.idempotency_key is None or not self.idempotency_key.strip():
                 raise EnterpriseContractError("mutating requests require idempotency_key")
@@ -58,6 +68,10 @@ class EnterpriseRequest:
                 "TRUST_PROMOTE operation requires trust:promote permission"
             )
 
+    @property
+    def strict_resource_binding(self) -> bool:
+        return self.api_version == "1.1.0"
+
     def canonical_body(self) -> dict[str, object]:
         return {
             "request_id": self.request_id,
@@ -68,6 +82,9 @@ class EnterpriseRequest:
             "payload": dict(self.payload),
             "nonce": self.nonce,
             "idempotency_key": self.idempotency_key,
+            "resource_id": self.resource_id,
+            "case_id": self.case_id,
+            "workspace_id": self.workspace_id,
         }
 
     def digest(self) -> str:
@@ -81,15 +98,21 @@ class ApiReceipt:
     subject_id: str
     accepted: bool
     attestation_digest: str | None
+    resource_digest: str | None = None
+    policy_digest: str | None = None
+    schema: str = "lukart.api-receipt.v2"
 
     def digest(self) -> str:
         return content_digest(
             {
+                "schema": self.schema,
                 "request_digest": self.request_digest,
                 "authorization_digest": self.authorization_digest,
                 "subject_id": self.subject_id,
                 "accepted": self.accepted,
                 "attestation_digest": self.attestation_digest,
+                "resource_digest": self.resource_digest,
+                "policy_digest": self.policy_digest,
             }
         )
 
@@ -100,7 +123,7 @@ class EnterpriseApiGuard:
         authorization: AuthorizationEngine,
         *,
         verifier: AttestationVerifier | None = None,
-        supported_versions: tuple[str, ...] = ("1.0.0",),
+        supported_versions: tuple[str, ...] = ("1.0.0", "1.1.0"),
         max_payload_bytes: int = 1_000_000,
         rate_limit: int = 100,
         rate_window_seconds: int = 60,
@@ -128,6 +151,20 @@ class EnterpriseApiGuard:
             raise EnterpriseContractError("API rate quota exceeded")
         bucket.append(now)
 
+    @staticmethod
+    def _require_resource_binding(
+        request: EnterpriseRequest,
+        resource: ResourceDescriptor,
+    ) -> None:
+        if request.resource_id is None:
+            raise EnterpriseContractError("API v1.1 requires resource_id binding")
+        if request.resource_id != resource.resource_id:
+            raise EnterpriseContractError("API resource binding mismatch")
+        if request.case_id != resource.case_id:
+            raise EnterpriseContractError("API case binding mismatch")
+        if request.workspace_id != resource.workspace_id:
+            raise EnterpriseContractError("API workspace binding mismatch")
+
     def process(
         self,
         request: EnterpriseRequest,
@@ -140,6 +177,10 @@ class EnterpriseApiGuard:
             raise EnterpriseContractError("unsupported Enterprise API version")
         if request.tenant_id != context.tenant_id or resource.tenant_id != context.tenant_id:
             raise EnterpriseContractError("API tenant mismatch")
+        if request.strict_resource_binding:
+            self._require_resource_binding(request, resource)
+        if request.operation is ApiOperation.TRUST_PROMOTE and not request.strict_resource_binding:
+            raise EnterpriseContractError("trust promotion requires API v1.1 resource binding")
         payload_size = len(canonical_json(dict(request.payload)).encode("utf-8"))
         if payload_size > self.max_payload_bytes:
             raise EnterpriseContractError("API payload size limit exceeded")
@@ -160,7 +201,13 @@ class EnterpriseApiGuard:
             raise EnterpriseContractError("API replay nonce already used")
         self._check_rate(context.subject_id, now)
 
-        decision = self.authorization.require(context, request.permission, resource)
+        decision = self.authorization.require(
+            context,
+            request.permission,
+            resource,
+            request_digest=request_digest,
+            strict_scope=request.strict_resource_binding,
+        )
         attestation_digest: str | None = None
         if request.operation is ApiOperation.TRUST_PROMOTE:
             if self.verifier is None or request.attestation is None:
@@ -180,6 +227,8 @@ class EnterpriseApiGuard:
             subject_id=context.subject_id,
             accepted=True,
             attestation_digest=attestation_digest,
+            resource_digest=decision.resource_digest,
+            policy_digest=decision.policy_digest,
         )
         if idempotency_slot is not None:
             self._idempotency[idempotency_slot] = (request_digest, receipt)
