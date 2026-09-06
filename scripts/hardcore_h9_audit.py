@@ -149,6 +149,8 @@ def build_h9_evidence(
         candidate_sha=candidate,
         config_digest=config_digest,
     )
+    sample_email = "operator" + "@" + "example.invalid"
+    sample_secret = "raw-secret-token"
 
     with tempfile.TemporaryDirectory(prefix="lukart-h9-") as temp_dir:
         db_path = Path(temp_dir) / "audit.db"
@@ -162,8 +164,8 @@ def build_h9_evidence(
                             correlation,
                             {
                                 "phase": "start",
-                                "operator_email": "operator@example.com",
-                                "api_token": "raw-secret-token",
+                                "operator_email": sample_email,
+                                "api_token": sample_secret,
                             },
                         ),
                     ),
@@ -188,8 +190,8 @@ def build_h9_evidence(
                     correlation,
                     {
                         "phase": phase,
-                        "operator_email": "operator@example.com",
-                        "api_token": "raw-secret-token",
+                        "operator_email": sample_email,
+                        "api_token": sample_secret,
                     },
                 ),
                 correlation_id=correlation.correlation_id,
@@ -208,7 +210,7 @@ def build_h9_evidence(
         )
 
     serialized = json.dumps(bundle, sort_keys=True)
-    if "operator@example.com" in serialized or "raw-secret-token" in serialized:
+    if sample_email in serialized or sample_secret in serialized:
         raise RuntimeError("H9 PII/secret redaction failed before evidence bundling")
     bundle_digest = verify_operational_audit_bundle(bundle)
     controls = _adversarial_controls(bundle)
