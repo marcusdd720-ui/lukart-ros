@@ -18,7 +18,23 @@ Existing repository agent contract:
 
 `AGENTS.md`
 
-The working-principles document consolidates execution, trust, CI/CD, enterprise hardening, Long-Horizon Engineering, certification honesty, release immutability, reporting, and amendment rules. `AGENTS.md` remains the detailed repository agent contract; where both apply, use the stricter safety/trust requirement and avoid creating a competing third rule set.
+The working-principles document consolidates execution, strict stage sequencing, trust, CI/CD, enterprise hardening, Long-Horizon Engineering, certification honesty, release immutability, reporting, and amendment rules. `AGENTS.md` remains the detailed repository agent contract; where both apply, use the stricter safety/trust requirement and avoid creating a competing third rule set.
+
+## Strict stage sequence — mandatory mirror
+
+ChatGPT Project Instructions and Memory should preserve this execution invariant without weakening it:
+
+`Current open stage + PR + exact candidate SHA -> inspect exact-SHA CI -> if FAIL/incomplete/stale: repair inside same stage -> fresh SHA -> full required gates on fresh SHA -> merge exact validated PR head -> post-merge validation on resulting main -> close stage -> only then next stage`
+
+Do not:
+- skip an open roadmap stage;
+- work ahead on a later stage before current-stage closure;
+- declare PASS/DONE before complete exact-SHA and post-merge validation;
+- reuse stale PASS from an older candidate after a repair;
+- combine results from different SHAs;
+- rewrite historically closed stages during normal roadmap progression.
+
+A newly evidenced regression, incident, security issue, or dependency should be handled as a new repair stage rather than retroactively rewriting historical closure.
 
 ## Long-Horizon Engineering / 10-Year Design Horizon
 
@@ -58,14 +74,15 @@ Project instructions apply only inside that project and override global custom i
 Do **not** paste the full `docs/WORKING_PRINCIPLES.md` into that box. Keep the repository file as the complete canonical authority and use a compressed project-instruction mirror containing only execution-critical rules.
 
 Compression priority:
-1. end-to-end execution and failure recovery;
-2. exact-SHA / CI / merge / post-merge rules;
-3. epistemic trust and fail-closed behavior;
-4. Hardcore Enterprise upgrade rule;
-5. Long-Horizon Engineering / 10-Year Design Horizon;
-6. security, provenance, replay and migration invariants;
-7. certification honesty and release immutability;
-8. Definition of Done and reporting format.
+1. **strict current-stage sequencing: current open stage -> exact candidate SHA -> exact-SHA CI -> repair/fresh SHA if needed -> full gates -> exact-head merge -> post-merge -> only then next stage**;
+2. end-to-end execution and failure recovery;
+3. exact-SHA / CI / merge / post-merge rules and prohibition on mixed-SHA claims;
+4. epistemic trust and fail-closed behavior;
+5. Hardcore Enterprise upgrade rule;
+6. Long-Horizon Engineering / 10-Year Design Horizon;
+7. security, provenance, replay and migration invariants;
+8. certification honesty and release immutability;
+9. Definition of Done and reporting format.
 
 Do not shorten by deleting safety invariants. Shorten examples and explanatory prose first.
 
@@ -79,7 +96,7 @@ Current OpenAI UI path:
 4. Open **Memory summary -> Manage**.
 5. Use the text box at the bottom of the Memory summary to request an update.
 6. Paste or request incorporation of the concise rules from `docs/CHATGPT_MEMORY_SUMMARY.md`.
-7. Review the resulting summary and correct any wording that weakens the end-to-end execution rule, exact-SHA rule, fail-closed rule, Long-Horizon Engineering rule, or certification-honesty rule.
+7. Review the resulting summary and correct any wording that weakens the strict stage sequence, end-to-end execution rule, exact-SHA rule, fail-closed rule, Long-Horizon Engineering rule, or certification-honesty rule.
 
 The Memory summary is automatically synthesized and may not reproduce every sentence verbatim. Treat Project Instructions and the repository document as the stronger explicit sources for operating rules.
 
@@ -93,9 +110,12 @@ When beginning a new LUKART ROS chat after a completed phase, paste the relevant
 
 At minimum include:
 - current `main` SHA;
+- current open stage, if any;
+- current PR and exact candidate SHA for that open stage, if any;
 - last completed roadmap/phase;
 - release/baseline immutability state;
 - next approved roadmap;
+- instruction to first inspect exact-SHA CI for the current open-stage candidate before any later-stage work;
 - instruction to execute the approved roadmap end-to-end without stopping at intermediate statuses;
 - instruction to apply justified Hardcore Enterprise and Long-Horizon Engineering review before major architectural implementation.
 
