@@ -35,7 +35,7 @@ class RevalidationPlan:
 class SemanticChangeGraph:
     """Explicit dependency graph where an artifact depends on prerequisites.
 
-    The graph intentionally does not infer edge meaning.  Callers must project
+    The graph intentionally does not infer edge meaning. Callers must project
     Product/Knowledge edges into the dependency contract explicitly.
     """
 
@@ -90,7 +90,9 @@ class SemanticChangeGraph:
             visit(artifact_id)
 
     def plan(self, changed_ids: Sequence[str]) -> RevalidationPlan:
-        changed = tuple(sorted(set(require_unique_nonblank(changed_ids, field_name="changed_ids"))))
+        changed = tuple(
+            sorted(set(require_unique_nonblank(changed_ids, field_name="changed_ids")))
+        )
         unknown = tuple(item for item in changed if item not in self._dependencies)
         if unknown:
             raise P3ContractError(f"unknown changed artifacts: {', '.join(unknown)}")
@@ -124,27 +126,61 @@ class SemanticChangeGraph:
 
     @classmethod
     def from_reasoning(cls, result: ReasoningRunResult) -> SemanticChangeGraph:
+        artifact_ids = {artifact.artifact_id for artifact in result.artifacts}
+        if len(artifact_ids) != len(result.artifacts):
+            raise P3ContractError("duplicate reasoning artifact ids")
+
         dependencies: dict[str, tuple[str, ...]] = {}
         for artifact in result.artifacts:
+            missing_support = sorted(set(artifact.support_ids) - artifact_ids)
+            if missing_support:
+                raise P3ContractError(
+                    "dangling reasoning support references: " + ",".join(missing_support)
+                )
             dependencies[artifact.artifact_id] = tuple(
                 sorted(set((*artifact.support_ids, *artifact.evidence_refs)))
             )
+
         for evidence_ref in {
             ref for artifact in result.artifacts for ref in artifact.evidence_refs
         }:
             dependencies.setdefault(evidence_ref, ())
-        decision_id = "@decision"
+
+        if result.decision.artifact_id and result.decision.artifact_id not in artifact_ids:
+            raise P3ContractError("decision references unknown reasoning artifact")
+
+        questions_by_id = {question.question_id: question for question in result.open_questions}
+        if len(questions_by_id) != len(result.open_questions):
+            raise P3ContractError("duplicate open question ids")
+        missing_questions = sorted(
+            set(result.decision.open_question_ids) - set(questions_by_id)
+        )
+        if missing_questions:
+            raise P3ContractError(
+                "decision references unknown open questions: " + ",".join(missing_questions)
+            )
+
         decision_dependencies: list[str] = []
         if result.decision.artifact_id:
             decision_dependencies.append(result.decision.artifact_id)
         decision_dependencies.extend(
             f"@question:{question_id}" for question_id in result.decision.open_question_ids
         )
-        dependencies[decision_id] = tuple(sorted(set(decision_dependencies)))
+        dependencies["@decision"] = tuple(sorted(set(decision_dependencies)))
+
         for question in result.open_questions:
+            missing_related = sorted(set(question.related_artifact_ids) - artifact_ids)
+            if missing_related:
+                raise P3ContractError(
+                    "open question references unknown artifacts: "
+                    + ",".join(missing_related)
+                )
             question_id = f"@question:{question.question_id}"
             dependencies[question_id] = tuple(sorted(question.related_artifact_ids))
-        return cls(dependencies)
+
+        graph = cls(dependencies)
+        graph.validate_acyclic()
+        return graph
 
     @classmethod
     def from_knowledge_graph(
@@ -161,7 +197,9 @@ class SemanticChangeGraph:
             prerequisite = edge.target if source_depends_on_target else edge.source
             dependencies.setdefault(dependent, []).append(prerequisite)
             dependencies.setdefault(prerequisite, [])
-        return cls(dependencies)
+        projected = cls(dependencies)
+        projected.validate_acyclic()
+        return projected
 
 
 def compare_semantic_artifacts(
