@@ -42,7 +42,9 @@ class StableApiResource:
             # API transport may preserve a trusted state but can never create it.
             marker = self.payload.get("trusted_state_authorization")
             if not isinstance(marker, str) or not marker.strip():
-                raise P3ContractError("trusted analytical API resource requires authorization marker")
+                raise P3ContractError(
+                    "trusted analytical API resource requires authorization marker"
+                )
 
     @property
     def schema(self) -> str:
