@@ -201,5 +201,27 @@
     "wall_clock_is_not_sole_trust_gate": true,
     "resource_budget_breach": "FAIL",
     "nondeterministic_work_identity": "FAIL"
+  },
+  "h9_tamper_evident_audit": {
+    "schema": "lukart.hardcore.h9-audit.v1",
+    "bundle_schema": "lukart.operational-audit-bundle.v1",
+    "provenance_hash_chain_required": true,
+    "telemetry_hash_chain_required": true,
+    "correlation_fields": [
+      "run_id",
+      "case_id",
+      "provider_id",
+      "provider_version",
+      "workflow_id",
+      "workflow_ref",
+      "candidate_sha",
+      "config_digest"
+    ],
+    "pii_redaction_before_bundle": true,
+    "max_provenance_records": 10000,
+    "max_telemetry_events": 10000,
+    "unknown_schema": "FAIL",
+    "tamper_or_gap": "FAIL",
+    "cryptographic_authenticity_claimed": false
   }
 }

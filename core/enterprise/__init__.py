@@ -1,6 +1,13 @@
-"""LUKART ROS Enterprise hardening surface (E0-E10)."""
+"""LUKART ROS Enterprise hardening surface (E0-E10, H9 audit composition)."""
 
 from .api_guard import ApiOperation, ApiReceipt, EnterpriseApiGuard, EnterpriseRequest
+from .audit import (
+    AuditCorrelation,
+    build_audit_payload,
+    build_operational_audit_bundle,
+    build_telemetry_attributes,
+    verify_operational_audit_bundle,
+)
 from .authorization import (
     AuthorizationDecision,
     AuthorizationEngine,
@@ -69,6 +76,7 @@ __all__ = [
     "AttestationPurpose",
     "AttestationSigner",
     "AttestationVerifier",
+    "AuditCorrelation",
     "AuthorizationContext",
     "AuthorizationDecision",
     "AuthorizationEngine",
@@ -114,7 +122,11 @@ __all__ = [
     "WorkflowPinFinding",
     "WorkflowPinReport",
     "audit_workflow_action_pins",
+    "build_audit_payload",
     "build_cyclonedx_sbom",
+    "build_operational_audit_bundle",
+    "build_telemetry_attributes",
     "read_project_metadata",
     "resolve_dependencies",
+    "verify_operational_audit_bundle",
 ]

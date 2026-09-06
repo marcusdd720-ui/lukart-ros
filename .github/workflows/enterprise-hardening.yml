@@ -81,6 +81,9 @@ jobs:
       - name: H8 focused and adversarial suite
         run: pytest -q tests/test_hardcore_h8.py
 
+      - name: H9 focused and adversarial suite
+        run: pytest -q tests/test_hardcore_h9.py
+
       - name: Threat-model coverage gate
         run: python scripts/enterprise_threat_check.py
 
@@ -194,6 +197,17 @@ jobs:
           assert h8['wall_clock_is_not_sole_trust_gate'] is True
           assert h8['resource_budget_breach'] == 'FAIL'
           assert h8['nondeterministic_work_identity'] == 'FAIL'
+          h9 = policy['h9_tamper_evident_audit']
+          assert h9['schema'] == 'lukart.hardcore.h9-audit.v1'
+          assert h9['bundle_schema'] == 'lukart.operational-audit-bundle.v1'
+          assert h9['provenance_hash_chain_required'] is True
+          assert h9['telemetry_hash_chain_required'] is True
+          assert h9['pii_redaction_before_bundle'] is True
+          assert h9['max_provenance_records'] == 10000
+          assert h9['max_telemetry_events'] == 10000
+          assert h9['unknown_schema'] == 'FAIL'
+          assert h9['tamper_or_gap'] == 'FAIL'
+          assert h9['cryptographic_authenticity_claimed'] is False
           print('ENTERPRISE_POLICY_INTEGRITY=PASS')
           PY
 
@@ -290,7 +304,18 @@ jobs:
           python scripts/hardcore_h8_scale.py
           --candidate-sha "${CANDIDATE_SHA}"
 
-      - name: Upload Enterprise and H1-H8 evidence bundle
+      - name: H9 exact-SHA tamper-evident audit closure
+        run: >-
+          python scripts/hardcore_h9_audit.py
+          --candidate-sha "${CANDIDATE_SHA}"
+          --run-id "${GITHUB_RUN_ID}"
+          --case-id "H9-ENGINEERING-CONTROL"
+          --provider-id "github-actions"
+          --provider-version "${RUNNER_OS}-${RUNNER_ARCH}"
+          --workflow-id "${GITHUB_WORKFLOW}"
+          --workflow-ref "${GITHUB_WORKFLOW_REF}"
+
+      - name: Upload Enterprise and H1-H9 evidence bundle
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: enterprise-evidence-${{ github.event.pull_request.head.sha || github.sha }}
@@ -303,6 +328,7 @@ jobs:
             build/hardcore/h6-authorization-isolation.json
             build/hardcore/h7-recovery-rollback.json
             build/hardcore/h8-scale-concurrency.json
+            build/hardcore/h9-tamper-evident-audit.json
             build/enterprise/bom.cdx.json
             build/enterprise/scale-certification.json
             build/enterprise/enterprise-engineering-evidence.json
