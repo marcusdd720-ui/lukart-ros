@@ -1,6 +1,6 @@
 # LUKART ROS — Canonical Working Principles
 
-Version: 1.0
+Version: 1.1
 Status: Canonical project operating standard
 Scope: Repository-wide engineering, agents, automation, reviews, CI/CD, release governance
 
@@ -87,6 +87,34 @@ Do not add complexity for prestige. Raise the standard where there is:
 Preferred design posture:
 
 `contract-first + adversarial-first + deterministic + bounded + measurable + reversible + provenance-aware + fail-closed`
+
+### Long-Horizon Engineering / 10-Year Design Horizon
+
+For every major architectural, platform, provider, schema, persistence, orchestration, security-boundary, or data-format decision, also evaluate whether the design remains safely evolvable over an indicative 5–10 year horizon.
+
+The goal is **not** to predict which specific technologies will exist in the future. The goal is to avoid present-day decisions that unnecessarily trap trusted data, provenance, replayability, security controls, or audit evidence inside technology that is difficult to replace.
+
+Prefer, where justified:
+- versioned and open contracts;
+- replaceable components and provider/model independence;
+- interoperability and explicit migration paths;
+- backward compatibility where practical;
+- stable/canonical data representations;
+- deterministic replay and provenance identities that survive component replacement;
+- rollback and recovery paths;
+- bounded vendor and technology lock-in;
+- preservation of evidence, auditability, and epistemic controls across technology changes.
+
+For a material long-horizon decision, explicitly ask:
+1. What concrete future change would make the current design expensive or unsafe to replace?
+2. Can a model, provider, database, schema, renderer, orchestration layer, or infrastructure component be replaced without losing trusted data, evidence provenance, replay identity, auditability, or security invariants?
+3. Is compatibility/migration explicit and testable?
+4. Is rollback/recovery possible if the replacement fails?
+5. Does the proposed abstraction solve a credible failure mode or change cost, rather than a hypothetical future possibility?
+
+Do not use a 5–10 year horizon as justification for speculative frameworks or generalized abstractions without a concrete failure mode, trust boundary, migration risk, or measurable future-change cost.
+
+Short rule: **future-resistant, not future-predictive**.
 
 Important capabilities should, where justified, include:
 - explicit contracts and invariants;
@@ -378,7 +406,8 @@ Before implementation:
 1. verify live repository state;
 2. review the roadmap for avoidable weakness;
 3. upgrade it to a justified Hardcore Enterprise level;
-4. execute the improved roadmap end-to-end.
+4. apply the Long-Horizon Engineering / 10-Year Design Horizon check to major architectural decisions;
+5. execute the improved roadmap end-to-end.
 
 Do not stop between roadmap items unless a genuine blocker requires user action.
 
@@ -388,7 +417,7 @@ After closure, summarize and propose the next logical track.
 
 This document is a living canonical standard, not a frozen checklist.
 
-A new principle may be added when it materially improves correctness, epistemic safety, determinism, security, provenance, replayability, resilience, observability, recoverability, or auditability.
+A new principle may be added when it materially improves correctness, epistemic safety, determinism, security, provenance, replayability, resilience, observability, recoverability, auditability, or long-term evolvability.
 
 Before adding a new rule:
 1. identify the concrete failure mode or risk it addresses;
@@ -415,6 +444,8 @@ The purpose is to create a system that becomes more trustworthy when:
 
 Every major evolution should increase:
 
-`correctness + epistemic safety + determinism + security + provenance + replayability + resilience + observability + recoverability + auditability`
+`correctness + epistemic safety + determinism + security + provenance + replayability + resilience + observability + recoverability + auditability + evolvability`
 
 without unjustified complexity.
+
+Major evolutions should also preserve the ability to replace technology without losing trusted data, evidence provenance, replay identity, auditability, security boundaries, or epistemic controls.
