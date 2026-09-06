@@ -285,7 +285,11 @@ class SQLiteProvenanceStore:
         *,
         max_records: int | None = None,
     ) -> SQLiteProvenanceStore:
-        """Verify in a staging database before replacing destination; never accept partial restore."""
+        """Verify staged restore before replacing the destination.
+
+        A restore is accepted only when the complete semantic and provenance
+        identity matches the verified snapshot.
+        """
 
         if max_records is not None and max_records < 1:
             raise EnterpriseContractError("restore max_records must be positive")
