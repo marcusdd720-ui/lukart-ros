@@ -8,8 +8,8 @@ from __future__ import annotations
 
 import hashlib
 import json
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
-from typing import Mapping, Sequence
 
 
 class CertificationError(ValueError):
@@ -132,9 +132,10 @@ def semantic_renderer_fidelity(
     if "certainty" in source:
         source_certainty = source.get("certainty")
         rendered_certainty = rendered.get("certainty", source_certainty)
-        if isinstance(source_certainty, (int, float)) and isinstance(rendered_certainty, (int, float)):
-            if rendered_certainty > source_certainty:
-                issues.append("renderer increased certainty")
+        source_is_number = isinstance(source_certainty, (int, float))
+        rendered_is_number = isinstance(rendered_certainty, (int, float))
+        if source_is_number and rendered_is_number and rendered_certainty > source_certainty:
+            issues.append("renderer increased certainty")
     return not issues, tuple(issues)
 
 
