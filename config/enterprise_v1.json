@@ -173,5 +173,17 @@
     "trust_promotion_requires_security_review": true,
     "trust_promotion_requires_attestation": true,
     "legacy_trust_promotion": "DENY"
+  },
+  "h7_recovery_rollback": {
+    "schema": "lukart.hardcore.h7-recovery-rollback.v1",
+    "recovery_identity_schema": "lukart.recovery-identity.v1",
+    "atomic_batch_persistence": true,
+    "staged_restore_before_replace": true,
+    "provenance_identity_required": true,
+    "semantic_identity_required": true,
+    "max_restore_records": 10000,
+    "corrupt_snapshot": "FAIL",
+    "blast_radius_breach": "FAIL",
+    "silent_partial_recovery": false
   }
 }
