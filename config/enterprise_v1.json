@@ -223,5 +223,21 @@
     "unknown_schema": "FAIL",
     "tamper_or_gap": "FAIL",
     "cryptographic_authenticity_claimed": false
+  },
+  "h10_evidence_closure": {
+    "schema": "lukart.hardcore.h10-evidence-closure.v1",
+    "manifest_schema": "lukart.hardcore.h10-evidence-manifest.v1",
+    "expected_stages": ["H1", "H2", "H3", "H4", "H5", "H6", "H7", "H8", "H9"],
+    "exact_candidate_sha_required": true,
+    "canonical_config_digest_required": true,
+    "missing_stage": "FAIL",
+    "mixed_sha": "FAIL",
+    "evidence_digest_mismatch": "FAIL",
+    "unknown_schema": "FAIL",
+    "failed_stage": "FAIL",
+    "engineering_pass_may_be_automated": true,
+    "independent_review_state": "INDEPENDENT_REVIEW_REQUIRED",
+    "independent_certification_claimed": false,
+    "release_mutation_requested": false
   }
 }
