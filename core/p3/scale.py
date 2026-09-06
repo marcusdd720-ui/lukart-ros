@@ -163,7 +163,7 @@ def measure_scale_profile(profile: ScaleProfile) -> ScaleMeasurement:
         _, peak = tracemalloc.get_traced_memory()
         tracemalloc.stop()
     return ScaleMeasurement(
-        profile,
+        profile.name,
         duration,
         peak,
         work_digest,
