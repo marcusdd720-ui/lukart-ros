@@ -1,14 +1,15 @@
 # LUKART ROS — Master Plan
 
 Status: Active Post-v1 governance contract
-Immutable baseline: `v1.0.1 @ 8020137534412bde79b9034d094625565efc3f08`
+Immutable baseline: `v1.0.1 @ 802013c4d0e53dc12306a97e1877ebba86af64a7`
+Historical tag identity: `v1.0.1 tag object @ 9f7c0b28f766c8921e63b1d517fefcc96aa991d4`
 Enterprise implementation base: `P3 merge @ 8550d08651957afd7f21b91553768786cb8bcf6e`
 Roadmap target: `Hardcore Enterprise H1-H10`
 Development version: `1.1.0.dev0`
 
 ## 1. Immutable release baseline
 
-The `v1.0.1` release is an immutable historical baseline. Its authoritative identity is the live Git tag and H1 validates that repository policy/documentation agree with that tag. Post-v1 work MUST NOT rewrite, move, reinterpret or silently replace its tag, Gold data, certification evidence or historical run outputs. Corrections after v1.0.1 are new Post-v1 changes with new SHA/evidence/provenance.
+The `v1.0.1` release is an immutable historical baseline. Its authoritative identity is two-level: the annotated Git tag object and the commit targeted by that tag. H1 validates both identities against repository policy and canonical documentation. Post-v1 work MUST NOT rewrite, move, reinterpret or silently replace its tag, target commit, Gold data, certification evidence or historical run outputs. Corrections after v1.0.1 are new Post-v1 changes with new SHA/evidence/provenance.
 
 ## 2. Governing principles
 
