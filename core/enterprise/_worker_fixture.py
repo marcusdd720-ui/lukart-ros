@@ -13,7 +13,10 @@ def echo(payload: Mapping[str, object]) -> dict[str, object]:
 
 
 def delayed(payload: Mapping[str, object]) -> dict[str, object]:
-    seconds = float(payload.get("seconds", 0.0))
+    raw_seconds = payload.get("seconds", 0.0)
+    if not isinstance(raw_seconds, str | int | float):
+        raise ValueError("seconds must be numeric")
+    seconds = float(raw_seconds)
     time.sleep(seconds)
     return {"slept": seconds}
 
