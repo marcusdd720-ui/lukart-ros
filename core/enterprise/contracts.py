@@ -273,7 +273,11 @@ class AttestationSigner:
 
 
 class AttestationVerifier:
-    def __init__(self, public_keys: Mapping[str, bytes], revoked_key_ids: Sequence[str] = ()) -> None:
+    def __init__(
+        self,
+        public_keys: Mapping[str, bytes],
+        revoked_key_ids: Sequence[str] = (),
+    ) -> None:
         self._keys: dict[str, Ed25519PublicKey] = {}
         for key_id, raw in public_keys.items():
             normalized = key_id.strip()
@@ -317,7 +321,8 @@ class AttestationVerifier:
         except ValueError as exc:
             raise EnterpriseContractError("invalid attestation signature encoding") from exc
         try:
-            public_key.verify(signature, canonical_json(attestation.canonical_body()).encode("utf-8"))
+            message = canonical_json(attestation.canonical_body()).encode("utf-8")
+            public_key.verify(signature, message)
         except InvalidSignature as exc:
             raise EnterpriseContractError("attestation signature invalid") from exc
         return attestation.digest()
