@@ -81,7 +81,9 @@ class EnterpriseScalePlan:
         if self.fast.graph_nodes > self.certification.graph_nodes:
             raise EnterpriseContractError("certification graph cannot be smaller than fast graph")
         if self.certification.evidence_count < 10_000:
-            raise EnterpriseContractError("enterprise certification requires >=10k synthetic evidence")
+            raise EnterpriseContractError(
+                "enterprise certification requires >=10k synthetic evidence"
+            )
         if self.certification.graph_nodes < 10_000:
             raise EnterpriseContractError("enterprise certification requires >=10k graph nodes")
 
