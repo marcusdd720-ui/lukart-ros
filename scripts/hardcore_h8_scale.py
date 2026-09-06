@@ -3,6 +3,7 @@ from __future__ import annotations
 import argparse
 import json
 import subprocess
+from functools import partial
 from pathlib import Path
 
 from core.p3.contracts import content_digest, require_hex_digest
@@ -37,6 +38,13 @@ def _profiles() -> tuple[ScaleProfile, ...]:
     )
 
 
+def _positive_policy_int(policy: dict[str, object], field: str) -> int:
+    value = policy.get(field)
+    if not isinstance(value, int) or value < 1:
+        raise RuntimeError(f"H8 {field} must be a positive integer")
+    return value
+
+
 def build_h8_evidence(candidate_sha: str) -> dict[str, object]:
     candidate = require_hex_digest(candidate_sha, field_name="candidate_sha", lengths=(40,))
     head = require_hex_digest(_git_head(), field_name="head_sha", lengths=(40,))
@@ -61,21 +69,13 @@ def build_h8_evidence(candidate_sha: str) -> dict[str, object]:
         if h8.get(key) != expected:
             raise RuntimeError(f"H8 policy mismatch for {key}: {h8.get(key)!r} != {expected!r}")
 
-    integer_fields = (
-        "max_evidence_count",
-        "max_graph_nodes",
-        "max_replay_count",
-        "max_concurrency",
-        "max_blast_radius_size",
+    budget = StructuralScaleBudget(
+        max_evidence_count=_positive_policy_int(h8, "max_evidence_count"),
+        max_graph_nodes=_positive_policy_int(h8, "max_graph_nodes"),
+        max_replay_count=_positive_policy_int(h8, "max_replay_count"),
+        max_concurrency=_positive_policy_int(h8, "max_concurrency"),
+        max_blast_radius_size=_positive_policy_int(h8, "max_blast_radius_size"),
     )
-    integer_values: dict[str, int] = {}
-    for field in integer_fields:
-        value = h8.get(field)
-        if not isinstance(value, int) or value < 1:
-            raise RuntimeError(f"H8 {field} must be a positive integer")
-        integer_values[field] = value
-
-    budget = StructuralScaleBudget(**integer_values)
     measurements: list[dict[str, object]] = []
     work_digests: dict[str, str] = {}
     for profile in _profiles():
@@ -96,7 +96,7 @@ def build_h8_evidence(candidate_sha: str) -> dict[str, object]:
                 f"{post_measurement.failures}"
             )
         repeats = repeated_measurement_digest(
-            lambda profile=profile: measure_scale_profile(profile),
+            partial(measure_scale_profile, profile),
             repetitions=2,
         )
         if len(set(repeats)) != 1 or repeats[0] != measurement.work_digest:
