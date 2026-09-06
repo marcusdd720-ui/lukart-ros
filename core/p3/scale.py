@@ -1,4 +1,4 @@
-"""P3-09 realistic, deterministic scale measurement and policy certification."""
+"""P3-09/H8 realistic, deterministic scale measurement and policy certification."""
 
 from __future__ import annotations
 
@@ -32,6 +32,93 @@ class ScaleProfile:
         )
         if min(values) < 1:
             raise P3ContractError("scale profile values must be positive")
+
+    def canonical_dict(self) -> dict[str, object]:
+        return {
+            "name": self.name,
+            "evidence_count": self.evidence_count,
+            "graph_nodes": self.graph_nodes,
+            "replay_count": self.replay_count,
+            "concurrency": self.concurrency,
+        }
+
+    def digest(self) -> str:
+        return content_digest(self.canonical_dict())
+
+
+@dataclass(frozen=True, slots=True)
+class StructuralScaleBudget:
+    """Deterministic resource envelope independent from runner wall-clock variance."""
+
+    max_evidence_count: int
+    max_graph_nodes: int
+    max_replay_count: int
+    max_concurrency: int
+    max_blast_radius_size: int
+    schema: str = "lukart.structural-scale-budget.v1"
+
+    def __post_init__(self) -> None:
+        values = (
+            self.max_evidence_count,
+            self.max_graph_nodes,
+            self.max_replay_count,
+            self.max_concurrency,
+            self.max_blast_radius_size,
+        )
+        if min(values) < 1:
+            raise P3ContractError("structural scale budgets must be positive")
+        if self.schema != "lukart.structural-scale-budget.v1":
+            raise P3ContractError(f"unsupported structural scale budget schema: {self.schema}")
+
+    def canonical_dict(self) -> dict[str, object]:
+        return {
+            "schema": self.schema,
+            "max_evidence_count": self.max_evidence_count,
+            "max_graph_nodes": self.max_graph_nodes,
+            "max_replay_count": self.max_replay_count,
+            "max_concurrency": self.max_concurrency,
+            "max_blast_radius_size": self.max_blast_radius_size,
+        }
+
+    def digest(self) -> str:
+        return content_digest(self.canonical_dict())
+
+
+@dataclass(frozen=True, slots=True)
+class StructuralScaleCertification:
+    passed: bool
+    failures: tuple[str, ...]
+    profile_digest: str
+    budget_digest: str
+
+
+def certify_profile_structure(
+    profile: ScaleProfile,
+    budget: StructuralScaleBudget,
+    *,
+    blast_radius_size: int | None = None,
+) -> StructuralScaleCertification:
+    failures: list[str] = []
+    if profile.evidence_count > budget.max_evidence_count:
+        failures.append("evidence_count")
+    if profile.graph_nodes > budget.max_graph_nodes:
+        failures.append("graph_nodes")
+    if profile.replay_count > budget.max_replay_count:
+        failures.append("replay_count")
+    if profile.concurrency > budget.max_concurrency:
+        failures.append("concurrency")
+    expected_blast_radius = profile.graph_nodes + 1
+    observed_blast_radius = expected_blast_radius if blast_radius_size is None else blast_radius_size
+    if observed_blast_radius != expected_blast_radius:
+        failures.append("blast_radius_identity")
+    if observed_blast_radius > budget.max_blast_radius_size:
+        failures.append("blast_radius_budget")
+    return StructuralScaleCertification(
+        passed=not failures,
+        failures=tuple(failures),
+        profile_digest=profile.digest(),
+        budget_digest=budget.digest(),
+    )
 
 
 @dataclass(frozen=True, slots=True)
