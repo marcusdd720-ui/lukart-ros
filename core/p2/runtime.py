@@ -108,7 +108,11 @@ class BoundedAgentRuntime:
         result = provider.execute(task)
         if result.task_id != task.task_id:
             raise RuntimeContractError("provider returned mismatched task_id")
-        if result.provider_id != provider.plugin_id or result.provider_version != provider.version:
+        identity_matches = (
+            result.provider_id == provider.plugin_id
+            and result.provider_version == provider.version
+        )
+        if not identity_matches:
             raise RuntimeContractError("provider returned mismatched identity")
         if result.steps_used < 0 or result.steps_used > task.budget.max_steps:
             raise RuntimeContractError("provider exceeded execution step budget")
@@ -132,7 +136,11 @@ class ApiEnvelope:
 
     @classmethod
     def build(
-        cls, *, schema: str, version: str, payload: Mapping[str, object]
+        cls,
+        *,
+        schema: str,
+        version: str,
+        payload: Mapping[str, object],
     ) -> ApiEnvelope:
         if not schema.strip() or not version.strip():
             raise RuntimeContractError("API schema and version are required")
