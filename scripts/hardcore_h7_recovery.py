@@ -179,7 +179,9 @@ def build_h7_evidence(candidate_sha: str) -> dict[str, object]:
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description="Validate H7 recovery, rollback and failure containment")
+    parser = argparse.ArgumentParser(
+        description="Validate H7 recovery, rollback and failure containment"
+    )
     parser.add_argument("--candidate-sha", required=True)
     parser.add_argument("--output", default="build/hardcore/h7-recovery-rollback.json")
     args = parser.parse_args()
