@@ -2,9 +2,9 @@
 
 from __future__ import annotations
 
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field
 from enum import StrEnum
-from typing import Mapping, Sequence
 
 from reasoning.models import ReasoningRunResult
 
@@ -177,7 +177,10 @@ def discover_gold_candidates(
                 occurrences=len(items),
                 max_severity=maximum,
                 case_ids=case_ids,
-                rationale="Repeated validated failure pattern; independent review required before Gold.",
+                rationale=(
+                    "Repeated validated failure pattern; independent review required "
+                    "before Gold."
+                ),
             )
         )
     return tuple(candidates)
