@@ -201,5 +201,16 @@
     "hard_timeout_kill": true,
     "unknown_capability": "FAIL",
     "kernel_or_container_sandbox_claimed": false
+  },
+  "h5_replay_migration": {
+    "schema": "lukart.hardcore.h5-replay-migration.v1",
+    "runtime_identity_schema": "lukart.runtime-identity.v2",
+    "complete_identity_required_for_identical": true,
+    "provider_plugin_versions_required": true,
+    "input_evidence_digests_required": true,
+    "explicit_cross_version_migration_required": true,
+    "unknown_migration_path": "FAIL",
+    "ambiguous_migration_path": "FAIL",
+    "semantic_divergence_visible": true
   }
 }
