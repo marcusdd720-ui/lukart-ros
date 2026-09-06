@@ -138,11 +138,18 @@ class AuthorizationEngine:
             reason = "cross-tenant access denied"
         elif permission not in context.permissions:
             reason = "permission denied"
-        elif resource.case_id is not None and context.case_ids and resource.case_id not in context.case_ids:
+        elif (
+            resource.case_id is not None
+            and context.case_ids
+            and resource.case_id not in context.case_ids
+        ):
             reason = "case scope denied"
         elif not self._classification_allowed(context, resource.classification):
             reason = "data classification exceeds role clearance"
-        elif permission is Permission.TRUST_PROMOTE and Permission.SECURITY_REVIEW not in context.permissions:
+        elif (
+            permission is Permission.TRUST_PROMOTE
+            and Permission.SECURITY_REVIEW not in context.permissions
+        ):
             reason = "trust promotion requires independent security-review permission"
         else:
             allowed = True
