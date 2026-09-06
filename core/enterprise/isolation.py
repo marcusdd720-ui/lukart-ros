@@ -156,9 +156,13 @@ def _apply_posix_limits(memory_bytes: int, cpu_seconds: int) -> tuple[bool, bool
 def _path_from_audit(value: object, *, cwd: Path) -> Path | None:
     if value is None or isinstance(value, int):
         return None
-    try:
-        raw = os.fspath(value)
-    except TypeError:
+    if isinstance(value, str):
+        raw: str | bytes = value
+    elif isinstance(value, bytes):
+        raw = value
+    elif isinstance(value, os.PathLike):
+        raw = value.__fspath__()
+    else:
         return None
     if isinstance(raw, bytes):
         raw = os.fsdecode(raw)
