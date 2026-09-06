@@ -54,6 +54,7 @@ class AuthorizationContext:
     roles: tuple[str, ...]
     permissions: tuple[Permission, ...]
     case_ids: tuple[str, ...] = ()
+    workspace_ids: tuple[str, ...] = ()
 
     def __post_init__(self) -> None:
         subject = self.subject_id.strip()
@@ -65,13 +66,17 @@ class AuthorizationContext:
             raise EnterpriseContractError("at least one nonblank role is required")
         permissions = tuple(sorted(set(self.permissions), key=lambda item: item.value))
         case_ids = tuple(sorted({item.strip() for item in self.case_ids}))
+        workspace_ids = tuple(sorted({item.strip() for item in self.workspace_ids}))
         if any(not item for item in case_ids):
             raise EnterpriseContractError("case_ids cannot contain blanks")
+        if any(not item for item in workspace_ids):
+            raise EnterpriseContractError("workspace_ids cannot contain blanks")
         object.__setattr__(self, "subject_id", subject)
         object.__setattr__(self, "tenant_id", tenant)
         object.__setattr__(self, "roles", roles)
         object.__setattr__(self, "permissions", permissions)
         object.__setattr__(self, "case_ids", case_ids)
+        object.__setattr__(self, "workspace_ids", workspace_ids)
 
     def require(
         self,
@@ -79,13 +84,23 @@ class AuthorizationContext:
         *,
         tenant_id: str,
         case_id: str | None = None,
+        workspace_id: str | None = None,
+        strict_scope: bool = False,
     ) -> None:
         if tenant_id.strip() != self.tenant_id:
             raise EnterpriseContractError("cross-tenant access denied")
         if permission not in self.permissions:
             raise EnterpriseContractError(f"permission denied: {permission.value}")
-        if case_id is not None and self.case_ids and case_id not in self.case_ids:
-            raise EnterpriseContractError("case scope denied")
+        if case_id is not None:
+            if strict_scope and case_id not in self.case_ids:
+                raise EnterpriseContractError("case scope denied")
+            if self.case_ids and case_id not in self.case_ids:
+                raise EnterpriseContractError("case scope denied")
+        if workspace_id is not None:
+            if strict_scope and workspace_id not in self.workspace_ids:
+                raise EnterpriseContractError("workspace scope denied")
+            if self.workspace_ids and workspace_id not in self.workspace_ids:
+                raise EnterpriseContractError("workspace scope denied")
 
     def canonical_dict(self) -> dict[str, object]:
         return {
@@ -94,6 +109,7 @@ class AuthorizationContext:
             "roles": list(self.roles),
             "permissions": [item.value for item in self.permissions],
             "case_ids": list(self.case_ids),
+            "workspace_ids": list(self.workspace_ids),
         }
 
     def digest(self) -> str:

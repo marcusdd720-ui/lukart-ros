@@ -440,13 +440,15 @@ def test_e8_api_replay_idempotency_and_attested_trust_boundaries() -> None:
     payload = {"candidate": "fact-1"}
     unsigned = EnterpriseRequest(
         request_id="req-trust",
-        api_version="1.0.0",
+        api_version="1.1.0",
         tenant_id="tenant-a",
         operation=ApiOperation.TRUST_PROMOTE,
         permission=Permission.TRUST_PROMOTE,
         payload=payload,
         nonce="trust-nonce",
         idempotency_key="trust-idem",
+        resource_id="case-1",
+        case_id="case-1",
     )
     attestation = signer.sign(
         purpose=AttestationPurpose.API_TRUST,
@@ -466,6 +468,9 @@ def test_e8_api_replay_idempotency_and_attested_trust_boundaries() -> None:
         nonce=unsigned.nonce,
         idempotency_key=unsigned.idempotency_key,
         attestation=attestation,
+        resource_id=unsigned.resource_id,
+        case_id=unsigned.case_id,
+        workspace_id=unsigned.workspace_id,
     )
     trusted_guard = EnterpriseApiGuard(engine, verifier=verifier)
     receipt = trusted_guard.process(signed, reviewer, _resource(), now=150)

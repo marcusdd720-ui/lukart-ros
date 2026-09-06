@@ -108,76 +108,23 @@
       "refresh_on_ruleset_update": true
     },
     "required_checks": [
-      {
-        "context": "quality-gate (3.11)",
-        "integration_id": 15368,
-        "workflow": ".github/workflows/ci.yml",
-        "job_id": "quality-gate"
-      },
-      {
-        "context": "quality-gate (3.12)",
-        "integration_id": 15368,
-        "workflow": ".github/workflows/ci.yml",
-        "job_id": "quality-gate"
-      },
-      {
-        "context": "quality-gate (3.13)",
-        "integration_id": 15368,
-        "workflow": ".github/workflows/ci.yml",
-        "job_id": "quality-gate"
-      },
-      {
-        "context": "gate",
-        "integration_id": 15368,
-        "workflow": ".github/workflows/stage-gate.yml",
-        "job_id": "gate"
-      },
-      {
-        "context": "orchestrate",
-        "integration_id": 15368,
-        "workflow": ".github/workflows/stage-orchestrator.yml",
-        "job_id": "orchestrate"
-      },
-      {
-        "context": "audit",
-        "integration_id": 15368,
-        "workflow": ".github/workflows/architectural-audit.yml",
-        "job_id": "audit"
-      },
-      {
-        "context": "smoke-test",
-        "integration_id": 15368,
-        "workflow": ".github/workflows/github-app-smoke.yml",
-        "job_id": "smoke-test"
-      },
-      {
-        "context": "program-gate",
-        "integration_id": 15368,
-        "workflow": ".github/workflows/production-validation-program.yml",
-        "job_id": "program-gate"
-      },
-      {
-        "context": "enterprise-gate",
-        "integration_id": 15368,
-        "workflow": ".github/workflows/enterprise-hardening.yml",
-        "job_id": "enterprise-gate"
-      },
-      {
-        "context": "codeql",
-        "integration_id": 15368,
-        "workflow": ".github/workflows/codeql-enterprise.yml",
-        "job_id": "codeql"
-      }
+      {"context": "quality-gate (3.11)", "integration_id": 15368, "workflow": ".github/workflows/ci.yml", "job_id": "quality-gate"},
+      {"context": "quality-gate (3.12)", "integration_id": 15368, "workflow": ".github/workflows/ci.yml", "job_id": "quality-gate"},
+      {"context": "quality-gate (3.13)", "integration_id": 15368, "workflow": ".github/workflows/ci.yml", "job_id": "quality-gate"},
+      {"context": "gate", "integration_id": 15368, "workflow": ".github/workflows/stage-gate.yml", "job_id": "gate"},
+      {"context": "orchestrate", "integration_id": 15368, "workflow": ".github/workflows/stage-orchestrator.yml", "job_id": "orchestrate"},
+      {"context": "audit", "integration_id": 15368, "workflow": ".github/workflows/architectural-audit.yml", "job_id": "audit"},
+      {"context": "smoke-test", "integration_id": 15368, "workflow": ".github/workflows/github-app-smoke.yml", "job_id": "smoke-test"},
+      {"context": "program-gate", "integration_id": 15368, "workflow": ".github/workflows/production-validation-program.yml", "job_id": "program-gate"},
+      {"context": "enterprise-gate", "integration_id": 15368, "workflow": ".github/workflows/enterprise-hardening.yml", "job_id": "enterprise-gate"},
+      {"context": "codeql", "integration_id": 15368, "workflow": ".github/workflows/codeql-enterprise.yml", "job_id": "codeql"}
     ]
   },
   "h3_supply_chain_provenance": {
     "schema": "lukart.hardcore.h3-provenance.v1",
     "provenance_predicate_type": "https://slsa.dev/provenance/v1",
     "cyclonedx_spec_version": "1.7",
-    "dependency_groups": [
-      "runtime",
-      "dev"
-    ],
+    "dependency_groups": ["runtime", "dev"],
     "exact_source_sha_required": true,
     "artifact_manifest_sha256_required": true,
     "workflow_file_digest_required": true,
@@ -212,5 +159,19 @@
     "unknown_migration_path": "FAIL",
     "ambiguous_migration_path": "FAIL",
     "semantic_divergence_visible": true
+  },
+  "h6_authorization_isolation": {
+    "schema": "lukart.hardcore.h6-authorization-isolation.v1",
+    "strict_api_version": "1.1.0",
+    "tenant_scope": "DENY_UNDECLARED",
+    "case_scope": "DENY_UNDECLARED",
+    "workspace_scope": "DENY_UNDECLARED",
+    "request_resource_binding_required": true,
+    "authorization_receipt_resource_digest": true,
+    "authorization_receipt_policy_digest": true,
+    "nonce_replay_protection_required": true,
+    "trust_promotion_requires_security_review": true,
+    "trust_promotion_requires_attestation": true,
+    "legacy_trust_promotion": "DENY"
   }
 }
