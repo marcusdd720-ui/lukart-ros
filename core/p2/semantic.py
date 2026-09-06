@@ -63,7 +63,8 @@ def digest(value: object) -> str:
 
 
 def _severity(path: str) -> SemanticSeverity:
-    parts = tuple(part for part in path.replace("[", ".").replace("]", "").split(".") if part)
+    normalized = path.replace("[", ".").replace("]", "")
+    parts = tuple(part for part in normalized.split(".") if part)
     if any(part in _CRITICAL_ROOTS for part in parts):
         return SemanticSeverity.CRITICAL
     return SemanticSeverity.MATERIAL
