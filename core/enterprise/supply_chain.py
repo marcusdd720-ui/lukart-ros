@@ -291,9 +291,9 @@ def validate_cyclonedx_sbom(
             raw_component.get("properties"),
             field_name=f"component {normalized_name}",
         )
-        requirement = properties.get("lukart:declared-requirement")
-        group = properties.get("lukart:dependency-group")
-        if requirement is None or group is None:
+        declared_requirement = properties.get("lukart:declared-requirement")
+        dependency_group = properties.get("lukart:dependency-group")
+        if declared_requirement is None or dependency_group is None:
             raise EnterpriseContractError(
                 f"SBOM dependency declaration metadata missing: {normalized_name}"
             )
@@ -301,8 +301,8 @@ def validate_cyclonedx_sbom(
             "name": name,
             "version": version,
             "bom_ref": bom_ref,
-            "declared_requirement": requirement,
-            "group": group,
+            "declared_requirement": declared_requirement,
+            "group": dependency_group,
         }
         component_refs.append(bom_ref)
 
