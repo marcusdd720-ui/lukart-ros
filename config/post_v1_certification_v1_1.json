@@ -1,0 +1,38 @@
+{
+  "schema": "lukart.post-v1-certification-policy.v1",
+  "version": "1.1.0",
+  "controlled_learning": {
+    "lifecycle": ["FAILURE","CANDIDATE","EXPERIMENT","VALIDATION","PROMOTION","MONITORING","ROLLBACK"],
+    "promotion_budget": {"max_promotions_per_candidate": 1, "requires_new_sha": true},
+    "contamination_protection": {"locked_gold_read_only": true, "production_outcome_is_not_ground_truth": true},
+    "audit_record_required": true,
+    "reviewer_or_policy_identity_required": true,
+    "rollback_trigger_required": true,
+    "direct_candidate_to_fact": false
+  },
+  "performance": {
+    "measure_before_optimize": true,
+    "metrics": ["end_to_end_latency_ms","peak_memory_mb","graph_nodes","reasoning_runtime_ms","replay_runtime_ms","renderer_runtime_ms","full_case_runtime_ms"],
+    "record_environment": true,
+    "shared_runner_policy": "observe-and-compare; do not fail on brittle wall-clock micro-thresholds",
+    "release_regression_warning_percent": 25
+  },
+  "security_privacy": {
+    "hostile_evidence_is_data_only": true,
+    "document_instructions_have_control_authority": false,
+    "provenance_spoofing": "FAIL",
+    "unsafe_file_handling": "FAIL",
+    "secret_leakage": "FAIL",
+    "public_repo_pii": "FATAL",
+    "dependency_integrity_required": true,
+    "public_fixtures": "synthetic_or_anonymized_only"
+  },
+  "self_healing": {
+    "required_states": ["CANDIDATE","QUARANTINE","VALIDATION","PROMOTION_GATE","VERSIONED_CHANGE","MONITORING"],
+    "explicit_affected_artifacts": true,
+    "replay_after_promotion": true,
+    "rollback_required": true,
+    "historical_evidence_mutable": false,
+    "locked_gold_mutable": false
+  }
+}
