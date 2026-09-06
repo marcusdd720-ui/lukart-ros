@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import hashlib
 import json
 from pathlib import Path
 
@@ -106,7 +107,7 @@ def test_markdown_renderer_preserves_semantic_visibility() -> None:
 
 
 def test_semantic_renderer_fidelity_rejects_certainty_inflation_and_loss() -> None:
-    source = {
+    source: dict[str, object] = {
         "status": "HYPOTHESIS",
         "evidence_refs": ["EV-1"],
         "open_questions": ["OQ-1"],
@@ -123,15 +124,27 @@ def test_semantic_renderer_fidelity_rejects_certainty_inflation_and_loss() -> No
 
 
 def test_replay_identity_changes_on_material_input_change() -> None:
-    kwargs = {
-        "code_sha": "abc123",
-        "config_version": "1.1",
-        "schema_version": "lukart.reasoning-result.v1",
-        "component_versions": ("reasoning-v1", "renderer-v1"),
-    }
-    first = build_replay_identity({"evidence": [1, 2]}, **kwargs)
-    repeat = build_replay_identity({"evidence": [1, 2]}, **kwargs)
-    changed = build_replay_identity({"evidence": [1, 3]}, **kwargs)
+    first = build_replay_identity(
+        {"evidence": [1, 2]},
+        code_sha="abc123",
+        config_version="1.1",
+        schema_version="lukart.reasoning-result.v1",
+        component_versions=("reasoning-v1", "renderer-v1"),
+    )
+    repeat = build_replay_identity(
+        {"evidence": [1, 2]},
+        code_sha="abc123",
+        config_version="1.1",
+        schema_version="lukart.reasoning-result.v1",
+        component_versions=("reasoning-v1", "renderer-v1"),
+    )
+    changed = build_replay_identity(
+        {"evidence": [1, 3]},
+        code_sha="abc123",
+        config_version="1.1",
+        schema_version="lukart.reasoning-result.v1",
+        component_versions=("reasoning-v1", "renderer-v1"),
+    )
     assert first.digest() == repeat.digest()
     assert first.digest() != changed.digest()
 
@@ -179,8 +192,6 @@ def test_gold_corpus_identity_and_split_contract() -> None:
     corpus_path = ROOT / "data/quality/post_v1_gold_v1_1.json"
     manifest = json.loads((ROOT / "data/quality/post_v1_gold_v1_1.manifest.json").read_text())
     raw = corpus_path.read_bytes()
-    import hashlib
-
     assert hashlib.sha256(raw).hexdigest() == manifest["corpus_sha256"]
     corpus = json.loads(raw)
     counts = {split: 0 for split in manifest["splits"]}
@@ -192,7 +203,7 @@ def test_gold_corpus_identity_and_split_contract() -> None:
 
 
 def test_kqm_release_policy_is_fail_closed_on_missing_or_failed_metric() -> None:
-    policy = {
+    policy: dict[str, dict[str, float | str]] = {
         "evidence_coverage": {"direction": "min", "release_threshold": 0.95},
         "unsupported_conclusion_rate": {"direction": "max", "release_threshold": 0.0},
     }
