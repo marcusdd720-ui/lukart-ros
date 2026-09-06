@@ -50,8 +50,13 @@ class EnterpriseRequest:
         if self.operation is not ApiOperation.READ:
             if self.idempotency_key is None or not self.idempotency_key.strip():
                 raise EnterpriseContractError("mutating requests require idempotency_key")
-        if self.operation is ApiOperation.TRUST_PROMOTE and self.permission is not Permission.TRUST_PROMOTE:
-            raise EnterpriseContractError("TRUST_PROMOTE operation requires trust:promote permission")
+        if (
+            self.operation is ApiOperation.TRUST_PROMOTE
+            and self.permission is not Permission.TRUST_PROMOTE
+        ):
+            raise EnterpriseContractError(
+                "TRUST_PROMOTE operation requires trust:promote permission"
+            )
 
     def canonical_body(self) -> dict[str, object]:
         return {
