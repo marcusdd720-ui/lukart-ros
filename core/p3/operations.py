@@ -51,7 +51,9 @@ def build_explainability_dossier(
     """Project P2 explainability into a source-bound final dossier contract."""
 
     report: ExplainabilityReport = explain_result(result)
-    normalized_contradictions = tuple(sorted({item.strip() for item in contradictions if item.strip()}))
+    normalized_contradictions = tuple(
+        sorted({item.strip() for item in contradictions if item.strip()})
+    )
     return ExplainabilityDossier(
         schema="lukart.explainability-dossier.v1",
         source_reasoning_digest=result.digest(),
@@ -86,7 +88,8 @@ class QualityPoint:
     metrics: Mapping[str, float]
 
     def __post_init__(self) -> None:
-        if not self.release_id.strip() or not self.code_sha.strip() or not self.corpus_digest.strip():
+        identities = (self.release_id, self.code_sha, self.corpus_digest)
+        if any(not identity.strip() for identity in identities):
             raise P3ContractError("quality point identity cannot be blank")
         for metric, value in self.metrics.items():
             if not metric.strip():
@@ -133,7 +136,9 @@ class LongitudinalQualityStore:
     def points(self) -> tuple[QualityPoint, ...]:
         return tuple(self._points)
 
-    def compare(self, baseline_release: str, current_release: str) -> tuple[QualityDelta, ...]:
+    def compare(
+        self, baseline_release: str, current_release: str
+    ) -> tuple[QualityDelta, ...]:
         by_release = {point.release_id: point for point in self._points}
         if baseline_release not in by_release or current_release not in by_release:
             raise P3ContractError("quality comparison references unknown release")
