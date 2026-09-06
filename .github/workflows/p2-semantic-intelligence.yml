@@ -1,0 +1,41 @@
+name: P2 Semantic Intelligence
+
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  p2-gates:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+      - name: Install
+        run: python -m pip install -e ".[dev]"
+      - name: Lint P2
+        run: ruff check core/p2 tests/test_p2_program.py
+      - name: Type-check P2
+        run: mypy core/p2
+      - name: P2 focused suite
+        run: pytest -q tests/test_p2_program.py
+      - name: Full regression suite
+        run: pytest -q
+      - name: Policy integrity
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          policy = json.loads(Path('config/p2_v2.json').read_text())
+          assert policy['gold_candidate_discovery']['automatic_promotion'] is False
+          assert policy['semantic_regression']['critical_change_requires_review'] is True
+          assert policy['agent_runtime_v2']['bounded_execution'] is True
+          assert policy['plugins']['registry_stores_classes_not_instances'] is True
+          print('P2 policy integrity: PASS')
+          PY

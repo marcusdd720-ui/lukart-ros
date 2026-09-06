@@ -2,7 +2,7 @@
 
 Status: Active Post-v1 governance contract
 Baseline: `v1.0.1 @ 802013c4d0e53dc12306a97e1877ebba86af64a7`
-Roadmap target: `v1.1`
+Roadmap target: `P2`
 
 ## 1. Immutable release baseline
 
@@ -121,6 +121,42 @@ reproduced and filed against a Post-v1 SHA.
 
 ## 8. Source of roadmap detail
 
-Detailed deliverables, acceptance criteria, and gates are maintained in
-`docs/ROADMAP_V1_1.md`. This file remains the compact governance authority for execution order,
-baseline immutability, and release eligibility.
+Detailed v1.1 deliverables, acceptance criteria, and gates are maintained in
+`docs/ROADMAP_V1_1.md`. P2 detail is maintained in `docs/ROADMAP_P2.md`.
+
+## 9. P2 execution order
+
+P2 is executed in this fixed order:
+
+1. P2-01 Semantic Regression Intelligence
+2. P2-02 Automatic Blast-Radius Analysis
+3. P2-03 Cross-Version Replay & Migration Engine
+4. P2-04 Longitudinal Quality Intelligence
+5. P2-05 Explainability Layer v2
+6. P2-06 Gold Candidate Discovery
+7. P2-07 Agent Runtime v2
+8. P2-08 API / Interoperability Layer
+9. P2-09 Scalability / Concurrency / Caching
+10. P2-10 Provider / Plugin Ecosystem
+
+P2 adds semantic observability and bounded interoperability. It does not create a new
+independent epistemic authority.
+
+## 10. Definition of Done for P2
+
+P2-01 through P2-10 are engineering-complete only when:
+
+- semantic regression exposes critical meaning changes explicitly;
+- blast-radius analysis deterministically identifies transitive dependents;
+- cross-version replay binds equivalent inputs and detects semantic output divergence;
+- longitudinal KQM trends cannot hide a regressed metric behind aggregate improvement;
+- explainability is derived from actual reasoning lineage/evidence/open questions;
+- failure patterns may become Gold candidates but never Gold automatically;
+- agent execution is bounded, capability-routed and identity-checked;
+- external API artifacts are schema/version/digest bound;
+- concurrency and caching are bounded and deterministic at contract boundaries;
+- plugins are versioned class registrations with duplicate/capability checks;
+- focused P2 tests, full regression tests, Ruff, MyPy and Stage Gate pass on one exact SHA.
+
+Engineering PASS for P2 does not replace Gold/KQM/human-review evidence required for future
+analytical certification.

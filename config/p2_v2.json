@@ -1,0 +1,64 @@
+{
+  "schema": "lukart.p2-policy.v1",
+  "version": "2.0.0",
+  "semantic_regression": {
+    "critical_fields": [
+      "decision",
+      "status",
+      "evidence_refs",
+      "support_ids",
+      "open_questions",
+      "contradictions",
+      "certainty",
+      "outcome"
+    ],
+    "critical_change_requires_review": true
+  },
+  "blast_radius": {
+    "transitive": true,
+    "replay_all_affected": true,
+    "unrelated_artifacts_untouched": true
+  },
+  "cross_version_replay": {
+    "same_input_digest_required_for_equivalence": true,
+    "semantic_diff_required": true,
+    "critical_divergence_requires_review": true
+  },
+  "quality_intelligence": {
+    "longitudinal": true,
+    "missing_metric": "FAIL",
+    "regression_visible": true
+  },
+  "explainability": {
+    "support_lineage_required": true,
+    "evidence_refs_required": true,
+    "open_questions_visible": true,
+    "counterfactual_checks_required": true
+  },
+  "gold_candidate_discovery": {
+    "automatic_promotion": false,
+    "synthetic_or_anonymized_only": true,
+    "independent_review_before_gold": true
+  },
+  "agent_runtime_v2": {
+    "bounded_execution": true,
+    "capability_routing": true,
+    "deterministic_provider_selection": true,
+    "provider_identity_required": true
+  },
+  "api": {
+    "versioned_envelopes": true,
+    "payload_digest_required": true,
+    "tamper_fail_closed": true
+  },
+  "scalability": {
+    "bounded_parallelism": true,
+    "bounded_cache": true,
+    "order_preserving_parallel_map": true
+  },
+  "plugins": {
+    "registry_stores_classes_not_instances": true,
+    "duplicate_identity_rejected": true,
+    "capability_discovery": true
+  }
+}
