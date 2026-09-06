@@ -8,6 +8,7 @@ from .contracts import (
     canonical_json,
     content_digest,
     require_digest,
+    require_hex_digest,
 )
 from .ledger import AppendOnlyReplayLedger, ProvenanceRecord
 from .operations import (
@@ -28,6 +29,7 @@ from .plugins import (
     PluginManifest,
     PluginSdkBoundary,
 )
+from .quality_store import PersistentLongitudinalQualityStore
 from .runtime import (
     AgentAuditRecord,
     CancellationToken,
@@ -82,6 +84,7 @@ __all__ = [
     "MigrationReport",
     "MigrationStep",
     "P3ContractError",
+    "PersistentLongitudinalQualityStore",
     "PluginCompatibility",
     "PluginManifest",
     "PluginSdkBoundary",
@@ -111,4 +114,5 @@ __all__ = [
     "measure_scale_profile",
     "repeated_measurement_digest",
     "require_digest",
+    "require_hex_digest",
 ]
