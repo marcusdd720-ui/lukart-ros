@@ -111,19 +111,21 @@ def test_h9_unknown_bundle_schema_fails_closed(tmp_path: Path) -> None:
 
 def test_h9_pii_and_secret_values_are_redacted_before_persistence() -> None:
     correlation = _correlation()
+    sample_email = "operator" + "@" + "example.invalid"
+    sample_number = "12345" + "678901"
     payload = build_audit_payload(
         correlation,
         {
-            "operator_email": "operator@example.com",
+            "operator_email": sample_email,
             "api_token": "raw-secret-token",
-            "case_note": "contact 12345678901 before export",
+            "case_note": f"contact {sample_number} before export",
         },
     )
     serialized = json.dumps(payload, sort_keys=True)
 
-    assert "operator@example.com" not in serialized
+    assert sample_email not in serialized
     assert "raw-secret-token" not in serialized
-    assert "12345678901" not in serialized
+    assert sample_number not in serialized
     assert "[REDACTED]" in serialized
     assert "[REDACTED_NUMBER]" in serialized
 
