@@ -3,6 +3,8 @@
 from .api import ApiContractRegistry, ApiResourceKind, StableApiResource
 from .contracts import (
     P3ContractError,
+    ReplayComparison,
+    ReplayRelation,
     RuntimeIdentity,
     TrustLevel,
     canonical_json,
@@ -93,6 +95,8 @@ __all__ = [
     "QualityDelta",
     "QualityDirection",
     "QualityPoint",
+    "ReplayComparison",
+    "ReplayRelation",
     "RevalidationPlan",
     "RuntimeIdentity",
     "RuntimeOutcome",
