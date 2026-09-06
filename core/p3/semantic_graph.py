@@ -72,24 +72,42 @@ class SemanticChangeGraph:
         return content_digest(self._dependencies)
 
     def validate_acyclic(self) -> None:
-        visiting: set[str] = set()
-        visited: set[str] = set()
+        """Detect cycles iteratively so deep graphs do not depend on Python recursion depth."""
 
-        def visit(node: str) -> None:
-            if node in visited:
-                return
-            if node in visiting:
-                raise P3ContractError(f"dependency cycle detected at {node}")
-            visiting.add(node)
-            for prerequisite in self._dependencies[node]:
-                visit(prerequisite)
-            visiting.remove(node)
-            visited.add(node)
+        remaining_prerequisites = {
+            node: len(prerequisites) for node, prerequisites in self._dependencies.items()
+        }
+        queue: deque[str] = deque(
+            node for node in sorted(self._dependencies) if remaining_prerequisites[node] == 0
+        )
+        visited = 0
+        while queue:
+            node = queue.popleft()
+            visited += 1
+            for dependent in self._reverse.get(node, ()):
+                remaining_prerequisites[dependent] -= 1
+                if remaining_prerequisites[dependent] == 0:
+                    queue.append(dependent)
+        if visited != len(self._dependencies):
+            cyclic = tuple(
+                node for node in sorted(self._dependencies) if remaining_prerequisites[node] > 0
+            )
+            sample = ",".join(cyclic[:5])
+            raise P3ContractError(f"dependency cycle detected; unresolved nodes: {sample}")
 
-        for artifact_id in sorted(self._dependencies):
-            visit(artifact_id)
+    def plan(
+        self,
+        changed_ids: Sequence[str],
+        *,
+        materialize_paths: bool = True,
+    ) -> RevalidationPlan:
+        """Build a deterministic revalidation plan.
 
-    def plan(self, changed_ids: Sequence[str]) -> RevalidationPlan:
+        ``materialize_paths=False`` preserves affected/replay semantics while avoiding the
+        O(n^2) memory cost of storing every full path in very deep graphs. The default remains
+        backward compatible for explainability-oriented callers that require concrete paths.
+        """
+
         changed = tuple(
             sorted(set(require_unique_nonblank(changed_ids, field_name="changed_ids")))
         )
@@ -100,7 +118,9 @@ class SemanticChangeGraph:
         best_paths: dict[tuple[str, str], tuple[str, ...]] = {}
         affected: set[str] = set()
         for root in changed:
-            queue: deque[tuple[str, tuple[str, ...]]] = deque([(root, (root,))])
+            queue: deque[tuple[str, tuple[str, ...] | None]] = deque(
+                [(root, (root,) if materialize_paths else None)]
+            )
             seen: set[str] = set()
             while queue:
                 current, path = queue.popleft()
@@ -108,10 +128,14 @@ class SemanticChangeGraph:
                     continue
                 seen.add(current)
                 affected.add(current)
-                best_paths[(root, current)] = path
+                if materialize_paths:
+                    if path is None:
+                        raise P3ContractError("internal path materialization contract violated")
+                    best_paths[(root, current)] = path
                 for dependent in self._reverse.get(current, ()):
                     if dependent not in seen:
-                        queue.append((dependent, (*path, dependent)))
+                        next_path = (*path, dependent) if path is not None else None
+                        queue.append((dependent, next_path))
 
         paths = tuple(
             DependencyPath(changed_id=root, affected_id=affected_id, path=path)

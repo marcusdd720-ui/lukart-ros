@@ -1,0 +1,161 @@
+name: Enterprise Hardcore Gate
+
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  enterprise-gate:
+    runs-on: ubuntu-latest
+    env:
+      CANDIDATE_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+    steps:
+      - name: Checkout exact candidate SHA
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+
+      - name: Set up Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: Install
+        run: python -m pip install -e ".[dev]"
+
+      - name: Lint Enterprise
+        run: >-
+          ruff check core/enterprise tests/test_enterprise_track.py
+          scripts/enterprise_sbom.py scripts/enterprise_threat_check.py
+          scripts/enterprise_certify.py
+
+      - name: Type-check Enterprise
+        run: >-
+          mypy core/enterprise tests/test_enterprise_track.py
+          scripts/enterprise_sbom.py scripts/enterprise_threat_check.py
+          scripts/enterprise_certify.py
+
+      - name: Threat-model coverage gate
+        run: python scripts/enterprise_threat_check.py
+
+      - name: Enterprise adversarial suite
+        run: pytest -q tests/test_enterprise_track.py
+
+      - name: P2/P3 compatibility
+        run: >-
+          pytest -q tests/test_p2_program.py tests/test_p3_hardcore.py
+          tests/test_p3_hardening_boundaries.py tests/test_post_v1_certification.py
+
+      - name: Full regression suite
+        run: pytest -q
+
+      - name: Supply-chain pin audit
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          from core.enterprise.supply_chain import audit_workflow_action_pins
+
+          report = audit_workflow_action_pins(Path('.'))
+          print(f"WORKFLOWS_SCANNED={report.scanned_files}")
+          print(f"EXTERNAL_ACTION_REFS={report.external_action_references}")
+          for finding in report.findings:
+              print(f"UNPINNED {finding.path}: {finding.reference} — {finding.reason}")
+          if not report.passed:
+              raise SystemExit(1)
+          print("ENTERPRISE_ACTION_PIN_AUDIT=PASS")
+          PY
+
+      - name: Generate resolved-runtime CycloneDX SBOM
+        run: python scripts/enterprise_sbom.py
+
+      - name: Enterprise policy integrity
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          policy = json.loads(Path('config/enterprise_v1.json').read_text(encoding='utf-8'))
+          assert policy['baseline']['v1_0_1_immutable'] is True
+          assert policy['baseline']['locked_gold_mutation_for_pass'] is False
+          assert policy['e2_isolation']['separate_process'] is True
+          assert policy['e2_isolation']['claims_kernel_or_container_sandbox'] is False
+          assert policy['e3_attestation']['algorithm'] == 'Ed25519'
+          assert policy['e4_supply_chain']['github_actions_full_sha_required'] is True
+          assert policy['e5_authorization']['deny_by_default'] is True
+          assert policy['e6_durability']['verified_backup_restore'] is True
+          assert policy['e7_observability']['telemetry_is_product_authority'] is False
+          assert policy['e8_api']['trusted_state_requires_attestation'] is True
+          assert policy['e10_certification']['automated_result_can_claim_independent_certification'] is False
+          print('ENTERPRISE_POLICY_INTEGRITY=PASS')
+          PY
+
+      - name: Large synthetic scale certification profile
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          from core.enterprise.resilience import EnterpriseScalePlan
+          from core.p3.scale import ScaleBudget, certify_scale, measure_scale_profile
+
+          plan = EnterpriseScalePlan.default()
+          measurement = measure_scale_profile(plan.certification)
+          budget = ScaleBudget(
+              max_duration_seconds=120.0,
+              max_peak_memory_bytes=1_073_741_824,
+              min_cache_hit_ratio=0.01,
+          )
+          certification = certify_scale(measurement, budget)
+          payload = {
+              'profile': measurement.profile,
+              'duration_seconds': measurement.duration_seconds,
+              'peak_memory_bytes': measurement.peak_memory_bytes,
+              'work_digest': measurement.work_digest,
+              'cache_hits': measurement.cache_hits,
+              'cache_misses': measurement.cache_misses,
+              'cache_hit_ratio': measurement.cache_hit_ratio,
+              'blast_radius_size': measurement.blast_radius_size,
+              'budget': {
+                  'max_duration_seconds': budget.max_duration_seconds,
+                  'max_peak_memory_bytes': budget.max_peak_memory_bytes,
+                  'min_cache_hit_ratio': budget.min_cache_hit_ratio,
+              },
+              'passed': certification.passed,
+              'failures': list(certification.failures),
+          }
+          output = Path('build/enterprise/scale-certification.json')
+          output.parent.mkdir(parents=True, exist_ok=True)
+          output.write_text(json.dumps(payload, indent=2, sort_keys=True) + '\n', encoding='utf-8')
+          print(f"PROFILE={measurement.profile}")
+          print(f"DURATION_SECONDS={measurement.duration_seconds:.6f}")
+          print(f"PEAK_MEMORY_BYTES={measurement.peak_memory_bytes}")
+          print(f"CACHE_HIT_RATIO={measurement.cache_hit_ratio:.6f}")
+          print(f"BLAST_RADIUS={measurement.blast_radius_size}")
+          print(f"WORK_DIGEST={measurement.work_digest}")
+          if measurement.blast_radius_size != plan.certification.graph_nodes + 1:
+              raise SystemExit('Enterprise blast-radius scale contract failed')
+          if not certification.passed:
+              raise SystemExit(f"Enterprise scale budget failed: {certification.failures}")
+          print('ENTERPRISE_SCALE_CERTIFICATION=PASS')
+          PY
+
+      - name: Build exact-SHA E10 engineering evidence
+        run: >-
+          python scripts/enterprise_certify.py
+          --candidate-sha "${CANDIDATE_SHA}"
+
+      - name: Upload Enterprise evidence bundle
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: enterprise-evidence-${{ github.event.pull_request.head.sha || github.sha }}
+          path: |
+            build/enterprise/bom.cdx.json
+            build/enterprise/scale-certification.json
+            build/enterprise/enterprise-engineering-evidence.json
+          if-no-files-found: error
+          retention-days: 30

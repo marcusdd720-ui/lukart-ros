@@ -1,0 +1,106 @@
+{
+  "schema": "lukart.enterprise-threat-model.v1",
+  "version": "1.0.0",
+  "threats": [
+    {
+      "threat_id": "T-001",
+      "source_zone": "EXTERNAL",
+      "target_zone": "API_EDGE",
+      "asset": "API trust boundary",
+      "attack": "forged trusted-state request or replay",
+      "severity": "CRITICAL",
+      "mitigations": ["authorization", "nonce replay protection", "signed attestation"],
+      "evidence_ids": ["E3-attestation-tests", "E8-api-tests"]
+    },
+    {
+      "threat_id": "T-002",
+      "source_zone": "API_EDGE",
+      "target_zone": "PRODUCT_CORE",
+      "asset": "tenant/case data and trusted state",
+      "attack": "authorization or tenant isolation bypass",
+      "severity": "CRITICAL",
+      "mitigations": ["deny-by-default RBAC", "attribute scope", "tenant binding"],
+      "evidence_ids": ["E5-authorization-tests", "E8-api-tests"]
+    },
+    {
+      "threat_id": "T-003",
+      "source_zone": "UNTRUSTED_WORKER",
+      "target_zone": "PRODUCT_CORE",
+      "asset": "reasoning and evidence authority",
+      "attack": "agent/plugin attempts to bypass Product validation",
+      "severity": "CRITICAL",
+      "mitigations": ["separate process", "allow-listed entrypoint", "untrusted output contract"],
+      "evidence_ids": ["E2-process-tests", "P3-agent-runtime-tests"]
+    },
+    {
+      "threat_id": "T-004",
+      "source_zone": "PRODUCT_CORE",
+      "target_zone": "EVALUATION",
+      "asset": "Gold/KQM independence",
+      "attack": "candidate output contaminates evaluation or locked Gold",
+      "severity": "CRITICAL",
+      "mitigations": ["locked Gold immutability", "controlled experiment gate"],
+      "evidence_ids": ["P3-policy-integrity", "E10-enterprise-gate"]
+    },
+    {
+      "threat_id": "T-005",
+      "source_zone": "EVALUATION",
+      "target_zone": "GOVERNANCE",
+      "asset": "certification decision",
+      "attack": "missing metric/review is converted into PASS",
+      "severity": "CRITICAL",
+      "mitigations": ["missing evidence is incomplete", "independent review required"],
+      "evidence_ids": ["E10-certification-tests"]
+    },
+    {
+      "threat_id": "T-006",
+      "source_zone": "GOVERNANCE",
+      "target_zone": "PRODUCT_CORE",
+      "asset": "release and runtime baseline",
+      "attack": "historical tag moved or stale release republished",
+      "severity": "CRITICAL",
+      "mitigations": ["immutable v1.0.1 ruleset", "development-aware release workflow"],
+      "evidence_ids": ["E0-release-hygiene", "github-tag-ruleset"]
+    },
+    {
+      "threat_id": "T-007",
+      "source_zone": "EXTERNAL",
+      "target_zone": "GOVERNANCE",
+      "asset": "CI software supply chain",
+      "attack": "movable or compromised GitHub Action dependency",
+      "severity": "HIGH",
+      "mitigations": ["full commit SHA pinning", "CodeQL", "SBOM", "SLSA-style provenance"],
+      "evidence_ids": ["E4-action-pin-audit", "E4-codeql", "E4-sbom"]
+    },
+    {
+      "threat_id": "T-008",
+      "source_zone": "PRODUCT_CORE",
+      "target_zone": "EXTERNAL",
+      "asset": "confidential case data",
+      "attack": "telemetry leaks sensitive attributes",
+      "severity": "HIGH",
+      "mitigations": ["redaction before export", "attribute bounds"],
+      "evidence_ids": ["E7-observability-tests"]
+    },
+    {
+      "threat_id": "T-009",
+      "source_zone": "UNTRUSTED_WORKER",
+      "target_zone": "EXTERNAL",
+      "asset": "host secrets and case data",
+      "attack": "worker exfiltrates environment or network data",
+      "severity": "HIGH",
+      "mitigations": ["sanitized environment", "Python network guard", "hard process timeout"],
+      "evidence_ids": ["E2-process-tests"]
+    },
+    {
+      "threat_id": "T-010",
+      "source_zone": "GOVERNANCE",
+      "target_zone": "EVALUATION",
+      "asset": "independent review provenance",
+      "attack": "automation self-claims independent certification",
+      "severity": "CRITICAL",
+      "mitigations": ["signed external review artifact", "automation capped at review-required state"],
+      "evidence_ids": ["E10-certification-tests", "E3-attestation-tests"]
+    }
+  ]
+}

@@ -1,0 +1,87 @@
+{
+  "schema": "lukart.enterprise-policy.v1",
+  "version": "1.0.0",
+  "baseline": {
+    "enterprise_base_sha": "8550d08651957afd7f21b91553768786cb8bcf6e",
+    "v1_0_1_sha": "802013c4d0e53dc12306a97e1877ebba86af64a7",
+    "v1_0_1_immutable": true,
+    "locked_gold_mutation_for_pass": false
+  },
+  "e0_governance": {
+    "fail_closed": true,
+    "development_version_distinct_from_v1_release": true,
+    "enterprise_gate_composed_into_stage_gate": true,
+    "independent_review_may_be_automatically_claimed": false
+  },
+  "e1_threat_model": {
+    "deny_by_default": true,
+    "unknown_zone": "FAIL",
+    "unknown_permission": "FAIL",
+    "critical_threat_requires_mitigation": true
+  },
+  "e2_isolation": {
+    "separate_process": true,
+    "hard_timeout_kill": true,
+    "sanitized_environment": true,
+    "temporary_workspace": true,
+    "posix_resource_limits_when_available": true,
+    "python_network_guard_when_denied": true,
+    "claims_kernel_or_container_sandbox": false
+  },
+  "e3_attestation": {
+    "algorithm": "Ed25519",
+    "canonical_payload": true,
+    "key_id_required": true,
+    "expiry_supported": true,
+    "revocation_supported": true,
+    "private_keys_in_repository": false
+  },
+  "e4_supply_chain": {
+    "cyclonedx_sbom": true,
+    "github_actions_full_sha_required": true,
+    "slsa_style_provenance": true,
+    "workflow_permissions_least_privilege": true
+  },
+  "e5_authorization": {
+    "rbac": true,
+    "attribute_scope": true,
+    "tenant_isolation": true,
+    "deny_by_default": true,
+    "trust_promotion_permission_separate": true
+  },
+  "e6_durability": {
+    "transactional_sqlite": true,
+    "wal": true,
+    "synchronous_full": true,
+    "sha256_hash_chain": true,
+    "verified_backup_restore": true
+  },
+  "e7_observability": {
+    "structured_events": true,
+    "pii_redaction_before_export": true,
+    "bounded_attributes": true,
+    "sli_slo_evidence_required": true,
+    "telemetry_is_product_authority": false
+  },
+  "e8_api": {
+    "authorization_required": true,
+    "nonce_replay_protection": true,
+    "idempotency_required_for_mutation": true,
+    "payload_limit": true,
+    "rate_limit": true,
+    "trusted_state_requires_attestation": true
+  },
+  "e9_resilience": {
+    "negative_failure_injection": true,
+    "deterministic_scenarios": true,
+    "large_scale_outside_fast_pr_path": true,
+    "semantic_integrity_after_failure_measured": true
+  },
+  "e10_certification": {
+    "exact_sha_evidence": true,
+    "all_e0_e9_required": true,
+    "missing_evidence": "INCOMPLETE",
+    "automated_result_can_claim_independent_certification": false,
+    "final_state_after_engineering_pass": "INDEPENDENT_REVIEW_REQUIRED"
+  }
+}

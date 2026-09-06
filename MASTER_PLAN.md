@@ -1,162 +1,139 @@
 # LUKART ROS — Master Plan
 
 Status: Active Post-v1 governance contract
-Baseline: `v1.0.1 @ 802013c4d0e53dc12306a97e1877ebba86af64a7`
-Roadmap target: `P2`
+Immutable baseline: `v1.0.1 @ 802013c4d0e53dc12306a97e1877ebba86af64a7`
+Current engineering baseline: `P3 merge @ 8550d08651957afd7f21b91553768786cb8bcf6e`
+Roadmap target: `Enterprise Track E0-E10`
+Development version: `1.1.0.dev0`
 
 ## 1. Immutable release baseline
 
-The certified `v1.0.1` release is an immutable historical baseline. Post-v1 work starts from
-its exact release SHA and must not rewrite, reinterpret, or silently replace release evidence.
-
-Locked v1.0.1 evaluation artifacts, Gold data, certification evidence, and historical run
-outputs MUST NOT be modified in order to manufacture a PASS for later code.
-
-Any correction discovered after v1.0.1 is implemented and evaluated as a new Post-v1 change
-with a new commit SHA, new evidence, and explicit provenance.
+The certified `v1.0.1` release is an immutable historical baseline. Post-v1 work MUST NOT rewrite,
+move, reinterpret or silently replace its tag, Gold data, certification evidence or historical run
+outputs. Corrections after v1.0.1 are new Post-v1 changes with new SHA/evidence/provenance.
 
 ## 2. Governing principles
-
-This plan operationalizes `FOUNDATION.md` and does not supersede accepted ADRs, safety/privacy
-invariants, or `AGENTS.md`.
-
-The Post-v1 program follows these rules:
 
 1. Evidence Before Conclusion.
 2. Measurement Before Conclusion.
 3. Validation Before Trust.
 4. Factory != Product.
-5. Existing cognitive components are hardened and integrated before new architectural layers
-   are introduced.
-6. A module being present in the repository is not proof that the end-to-end Product contract
-   is satisfied.
-7. Unknown, unresolved, contradictory, and abstaining outcomes are first-class results.
-8. Historical evidence and locked evaluation data are immutable.
-9. Self-healing and learning paths may propose changes but cannot silently change trusted
+5. Existing cognitive components are hardened before parallel authorities are introduced.
+6. Unknown/unresolved/contradictory/abstaining outcomes are first-class results.
+7. Self-healing/learning/agents/plugins may propose or compute, but cannot silently change trusted
    epistemic state.
-10. Every release claim must be reproducible from exact code, configuration, corpus, schema,
-    and evidence identities.
+8. Every release/trust claim is reproducible from exact code, configuration, corpus, schema,
+   provider and evidence identities.
+9. Security boundaries are described only at the level actually enforced.
+10. Missing review/security/certification evidence never becomes implicit PASS.
 
-## 3. Post-v1 execution order
+## 3. Completed Post-v1 engineering programs
 
-The v1.1 program is executed in this fixed order:
+### P0/P1 — v1.1 hardening foundation
 
-1. P0-01 Governance
-2. P0-02 Gold Corpus v1.1
-3. P0-03 Cognitive Vertical Slice
-4. P0-04 Epistemic/Reasoning invariants
-5. P0-05 Renderer fidelity
-6. P0-06 Replay/Provenance
-7. P0-07 Propagation/Self-Healing safety
-8. P1-01 KQM
-9. P1-02 Failure Corpus
-10. P1-03 Controlled Learning
-11. P1-04 Performance
-12. P1-05 Security/Privacy
-13. P1-06 CI architecture
-14. P1-07 Documentation
-15. P2 strategic development
+Governance, Gold candidate corpus, cognitive vertical slice, epistemic/reasoning invariants,
+renderer fidelity, replay/provenance, propagation/self-healing safety, KQM, failure corpus,
+controlled learning, performance, security/privacy, CI and operational documentation were
+implemented as Post-v1 engineering controls.
 
-A later stage may add implementation required by an earlier contract, but it may not weaken
-or bypass an earlier gate.
+### P2 — Semantic Intelligence
 
-## 4. Certification matrix
+P2-01 through P2-10 introduced semantic regression intelligence, blast radius, cross-version replay,
+longitudinal quality, explainability v2, Gold candidate discovery, bounded agent runtime, digest-bound
+API, bounded scale/concurrency/cache and provider/plugin contracts.
 
-| Foundation requirement | Implementation authority | Required verification | Metric/evidence | Gate |
-|---|---|---|---|---|
-| Evidence Before Conclusion | Evidence/Knowledge + Reasoning Core | Gold + cognitive E2E + invariants | evidence coverage; unsupported conclusion rate | release |
-| Explicit epistemic status | EpistemicStatusMachine | transition/invariant suite | epistemic accuracy | PR + release |
-| Valid abstention | Reasoning Core | insufficient/conflicting evidence cases | abstention precision | release |
-| Contradictions remain visible | Knowledge/Reasoning | contradiction cases | contradiction detection | release |
-| Renderer cannot rewrite reasoning | Renderer adapters | semantic-fidelity suite | renderer fidelity | PR + release |
-| Deterministic reproducibility | canonical artifacts + Replay | identical-run replay tests | replay determinism | release |
-| Provenance preservation | Evidence/Reasoning/Replay | lineage + tamper tests | provenance integrity | release |
-| Safe change propagation | propagation/self-healing layer | blast-radius + promotion tests | propagation correctness | release |
-| Measurement independent of Product state | KQM/Gold | evaluator-isolation tests | KQM result bundle | release |
-| Controlled learning only | learning candidate/promotion workflow | promotion/rollback tests | audit completeness | release |
-| Privacy boundary | repository/CI/runtime contracts | synthetic-fixture + leak checks | privacy gate | PR + release |
-| Exact-SHA trust | Git/CI evidence bundle | release workflow | code/config/corpus identities | release |
+### P3 — Hardcore Hardening
 
-## 5. Change classes
+P3-01 through P3-10 introduced semantic revalidation graphs, append-only replay/provenance storage,
+case migrations, explainability dossier integration, persistent KQM, controlled experiments,
+hardened agent routing, stable API v1, realistic scale primitives and plugin isolation policy.
+
+P2/P3 engineering PASS never replaces independent analytical/security review.
+
+## 4. Enterprise Track E0-E10
+
+The current active program is defined by `docs/ENTERPRISE_ROADMAP.md` and
+`config/enterprise_v1.json` in this exact order:
+
+1. E0 Governance Reset & Release Hygiene
+2. E1 Enterprise Threat Model & Trust Architecture
+3. E2 Process Isolation Boundary
+4. E3 Cryptographic Trust & Signed Attestations
+5. E4 Software Supply Chain Security
+6. E5 Identity, Authorization & Data Isolation
+7. E6 Durable Provenance, Backup & Recovery
+8. E7 Enterprise Observability & SRE Boundary
+9. E8 Stable Enterprise API Guard
+10. E9 Resilience / Chaos / Fuzz / Scale
+11. E10 Enterprise Certification Gate
+
+A later control may strengthen an earlier one but MUST NOT weaken or bypass it.
+
+## 5. Trust boundaries
+
+The Product epistemic authority remains the existing Evidence/Knowledge/Epistemic/Reasoning chain.
+Enterprise modules protect execution and transport around it. No infrastructure layer may create a
+trusted FACT, hide a contradiction, modify locked Gold or self-certify an independent review.
+
+Agent/plugin output is untrusted until normal Product validation accepts it. External analytical
+`TRUSTED` state requires explicit authorization and, where trust crosses a process/API/release
+boundary, a verified cryptographic attestation.
+
+## 6. Change classes
 
 ### Runtime change
 
-Any change that can alter Product behavior, analytical semantics, trusted state, provenance,
-rendering, measurement, or promotion behavior. It requires applicable tests and evidence on
-the exact candidate SHA.
+Any change capable of altering Product behavior, analytical semantics, trusted state, provenance,
+rendering, measurement, authorization, isolation or promotion behavior. It requires focused tests,
+negative/adversarial tests and full regression on the exact candidate SHA.
 
 ### Evaluation change
 
-Any change to corpora, expected results, thresholds, evaluators, or certification policy.
-Evaluation changes are versioned independently and must not overwrite locked v1.0.1 data.
+Any change to corpora, expected results, thresholds, evaluators or certification policy. Evaluation
+artifacts are independently versioned and may not overwrite locked v1.0.1 evidence.
 
-### Governance/documentation change
+### Security/governance change
 
-A non-runtime change defining contracts, procedures, or evidence requirements. Governance
-cannot declare an unmeasured runtime behavior to be PASS.
+Any change to trust, release, workflow, permissions, supply chain, isolation or recovery contracts.
+Documentation alone cannot declare an unmeasured behavior PASS.
 
-## 6. Definition of Done for v1.1
+## 7. Required engineering gates
 
-v1.1 is eligible for certification only when:
+A merge candidate must pass, on one exact head SHA:
 
-- all P0 gates are implemented and passing;
-- all P1 quality, failure, learning, performance, security/privacy, CI, and documentation
-  requirements are represented by versioned artifacts;
-- the Gold corpus used for release evaluation is frozen independently of candidate tuning;
-- the cognitive vertical slice passes positive and negative-path evaluation;
-- replay and provenance integrity are demonstrated on the exact candidate SHA;
-- semantic renderer fidelity passes;
-- controlled-learning/self-healing paths cannot bypass promotion governance;
-- KQM release thresholds pass;
-- release evidence identifies code SHA, configuration version, corpus version/hash, schemas,
-  evaluators, and relevant runtime/component versions;
-- no locked v1.0.1 artifact was changed to obtain the result.
+- Ruff;
+- MyPy;
+- focused Enterprise adversarial tests;
+- P2/P3 compatibility tests;
+- full pytest regression;
+- Stage Gate;
+- Enterprise policy/supply-chain integrity checks;
+- all other repository-required status checks.
 
-## 7. Historical RC issues
+Merge MUST be SHA-bound. A moved head invalidates previous evidence.
 
-Issues originating solely as pre-v1.0.1 RC review/certification gates are historical after the
-certified v1.0.1 release. They may be closed as superseded/completed with an audit note; they
-must not be reclassified as open v1.1 blockers unless a new Post-v1 defect is independently
-reproduced and filed against a Post-v1 SHA.
+## 8. Enterprise certification semantics
 
-## 8. Source of roadmap detail
+Automated Enterprise controls may produce `ENGINEERING_PASS`, `FAIL` or `INCOMPLETE`. Even when all
+automated controls pass, the highest final state before real independent review is
+`INDEPENDENT_REVIEW_REQUIRED`.
 
-Detailed v1.1 deliverables, acceptance criteria, and gates are maintained in
-`docs/ROADMAP_V1_1.md`. P2 detail is maintained in `docs/ROADMAP_P2.md`.
+Terms such as externally certified, independently reviewed, penetration-tested, SLSA-certified or
+regulatory-compliant MUST NOT be used unless the corresponding external evidence actually exists.
 
-## 9. P2 execution order
+## 9. Release governance
 
-P2 is executed in this fixed order:
+The package development version is distinct from the immutable historical release. Development
+versions MUST NOT trigger mutation/republication of an existing release tag. A stable future release
+requires a new semantic version, exact-SHA validation evidence and a new immutable tag.
 
-1. P2-01 Semantic Regression Intelligence
-2. P2-02 Automatic Blast-Radius Analysis
-3. P2-03 Cross-Version Replay & Migration Engine
-4. P2-04 Longitudinal Quality Intelligence
-5. P2-05 Explainability Layer v2
-6. P2-06 Gold Candidate Discovery
-7. P2-07 Agent Runtime v2
-8. P2-08 API / Interoperability Layer
-9. P2-09 Scalability / Concurrency / Caching
-10. P2-10 Provider / Plugin Ecosystem
+## 10. Source of detail
 
-P2 adds semantic observability and bounded interoperability. It does not create a new
-independent epistemic authority.
+- `docs/ROADMAP_V1_1.md` — v1.1 hardening program.
+- `docs/ROADMAP_P2.md` — P2 semantic intelligence.
+- P3 implementation policy — `config/p3_v1.json` and P3 tests/docs.
+- `docs/ENTERPRISE_ROADMAP.md` — current E0-E10 program.
+- `config/enterprise_v1.json` — machine-readable Enterprise policy.
 
-## 10. Definition of Done for P2
-
-P2-01 through P2-10 are engineering-complete only when:
-
-- semantic regression exposes critical meaning changes explicitly;
-- blast-radius analysis deterministically identifies transitive dependents;
-- cross-version replay binds equivalent inputs and detects semantic output divergence;
-- longitudinal KQM trends cannot hide a regressed metric behind aggregate improvement;
-- explainability is derived from actual reasoning lineage/evidence/open questions;
-- failure patterns may become Gold candidates but never Gold automatically;
-- agent execution is bounded, capability-routed and identity-checked;
-- external API artifacts are schema/version/digest bound;
-- concurrency and caching are bounded and deterministic at contract boundaries;
-- plugins are versioned class registrations with duplicate/capability checks;
-- focused P2 tests, full regression tests, Ruff, MyPy and Stage Gate pass on one exact SHA.
-
-Engineering PASS for P2 does not replace Gold/KQM/human-review evidence required for future
-analytical certification.
+Historical documents named P3-P7 from earlier development remain historical design records and do
+not override this Master Plan or the current Enterprise Track.

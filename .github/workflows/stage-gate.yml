@@ -18,9 +18,9 @@ jobs:
       contents: read
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
       - name: Set up Python
-        uses: actions/setup-python@v7
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7
         with:
           python-version: "3.11"
       - name: Install project and development tools
@@ -40,3 +40,18 @@ jobs:
           fi
       - name: Run selected stage gate
         run: python -m factory.stage_gate --stage "${{ steps.stage.outputs.stage }}"
+      - name: Enterprise adversarial gate
+        run: pytest -q tests/test_enterprise_track.py
+      - name: Enterprise supply-chain gate
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          from core.enterprise.supply_chain import audit_workflow_action_pins
+
+          report = audit_workflow_action_pins(Path('.'))
+          for finding in report.findings:
+              print(f"UNPINNED {finding.path}: {finding.reference}")
+          if not report.passed:
+              raise SystemExit(1)
+          print("ENTERPRISE_SUPPLY_CHAIN=PASS")
+          PY
