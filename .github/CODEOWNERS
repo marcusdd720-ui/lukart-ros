@@ -1,0 +1,12 @@
+# Default ownership
+* @marcusdd720-ui
+
+# Trust, security, release and governance boundaries
+/core/p3/ @marcusdd720-ui
+/core/enterprise/ @marcusdd720-ui
+/validation/ @marcusdd720-ui
+/config/ @marcusdd720-ui
+/.github/workflows/ @marcusdd720-ui
+/SECURITY.md @marcusdd720-ui
+/MASTER_PLAN.md @marcusdd720-ui
+/docs/ENTERPRISE_ROADMAP.md @marcusdd720-ui
