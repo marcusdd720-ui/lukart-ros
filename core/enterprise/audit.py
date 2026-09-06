@@ -116,7 +116,8 @@ def build_telemetry_attributes(
         max_attributes=max_attributes,
         max_value_length=max_value_length,
     )
-    attributes: dict[str, object] = correlation.canonical_dict()
+    attributes: dict[str, object] = {}
+    attributes.update(correlation.canonical_dict())
     attributes.update({f"detail.{key}": value for key, value in redacted.items()})
     return attributes
 
