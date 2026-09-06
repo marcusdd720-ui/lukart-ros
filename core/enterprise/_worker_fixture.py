@@ -1,4 +1,4 @@
-"""Internal deterministic worker entrypoints used by Enterprise boundary tests."""
+"""Internal deterministic worker entrypoints used by Enterprise/Hardcore boundary tests."""
 
 from __future__ import annotations
 
@@ -6,6 +6,7 @@ import os
 import socket
 import time
 from collections.abc import Mapping
+from pathlib import Path
 
 
 def echo(payload: Mapping[str, object]) -> dict[str, object]:
@@ -32,3 +33,35 @@ def network_probe(_payload: Mapping[str, object]) -> dict[str, object]:
     except Exception as exc:
         return {"network": "denied", "error_type": type(exc).__name__}
     return {"network": "available"}
+
+
+def filesystem_read(payload: Mapping[str, object]) -> dict[str, object]:
+    path = Path(str(payload.get("path", "")))
+    return {"text": path.read_text(encoding="utf-8")}
+
+
+def filesystem_write(payload: Mapping[str, object]) -> dict[str, object]:
+    path = Path(str(payload.get("path", "")))
+    text = str(payload.get("text", "worker"))
+    path.write_text(text, encoding="utf-8")
+    return {"written": text, "exists": path.exists()}
+
+
+def process_spawn_probe(_payload: Mapping[str, object]) -> dict[str, object]:
+    import subprocess
+    import sys
+
+    completed = subprocess.run(
+        (sys.executable, "-c", "print('child')"),
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+    return {"stdout": completed.stdout.strip()}
+
+
+def native_ffi_probe(_payload: Mapping[str, object]) -> dict[str, object]:
+    import ctypes
+
+    ctypes.CDLL(None)
+    return {"ffi": "available"}
