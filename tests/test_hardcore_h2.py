@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-from copy import deepcopy
-
 import pytest
 
 from scripts.hardcore_h2_policy import validate_snapshot
