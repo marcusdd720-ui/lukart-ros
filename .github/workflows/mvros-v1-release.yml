@@ -6,6 +6,7 @@ on:
       - GitHub App Smoke Test
     types:
       - completed
+  workflow_dispatch:
 
 permissions:
   actions: read
@@ -18,20 +19,47 @@ concurrency:
 jobs:
   release:
     if: >-
-      ${{ github.event.workflow_run.conclusion == 'success' &&
-          github.event.workflow_run.event == 'push' &&
-          github.event.workflow_run.head_branch == 'main' }}
+      ${{ github.event_name == 'workflow_dispatch' ||
+          (github.event.workflow_run.conclusion == 'success' &&
+           github.event.workflow_run.event == 'push' &&
+           github.event.workflow_run.head_branch == 'main') }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout validated main SHA
-        uses: actions/checkout@v6
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
         with:
-          ref: ${{ github.event.workflow_run.head_sha }}
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
           fetch-depth: 0
 
+      - name: Resolve release intent
+        id: version
+        run: |
+          set -euo pipefail
+          python - <<'PY' >> "$GITHUB_OUTPUT"
+          import re
+          import tomllib
+          from pathlib import Path
+
+          version = tomllib.loads(Path("pyproject.toml").read_text(encoding="utf-8"))["project"]["version"]
+          print(f"version={version}")
+          if re.fullmatch(r"[0-9]+\.[0-9]+\.[0-9]+", version):
+              print("release=true")
+              print(f"tag=v{version}")
+          else:
+              print("release=false")
+              print("tag=")
+          PY
+
+      - name: Development build — no release mutation
+        if: steps.version.outputs.release != 'true'
+        run: |
+          echo "Project version ${{ steps.version.outputs.version }} is a development version."
+          echo "Historical release tags remain unchanged; automatic release is intentionally skipped."
+
       - name: Verify validated SHA is current main
+        if: steps.version.outputs.release == 'true'
         env:
-          VALIDATED_SHA: ${{ github.event.workflow_run.head_sha }}
+          VALIDATED_SHA: ${{ github.event.workflow_run.head_sha || github.sha }}
         run: |
           set -euo pipefail
           git fetch origin main --no-tags
@@ -41,6 +69,7 @@ jobs:
           test "$VALIDATED_SHA" = "$CURRENT_MAIN_SHA"
 
       - name: Require effective main governance for release
+        if: steps.version.outputs.release == 'true'
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
@@ -51,12 +80,14 @@ jobs:
             --rules-json /tmp/main-effective-rules.json
 
       - name: Require all release validation workflows on the same SHA
+        if: steps.version.outputs.release == 'true'
         env:
           GH_TOKEN: ${{ github.token }}
-          VALIDATED_SHA: ${{ github.event.workflow_run.head_sha }}
+          VALIDATED_SHA: ${{ github.event.workflow_run.head_sha || github.sha }}
         run: |
           set -euo pipefail
-          gh api "repos/${GITHUB_REPOSITORY}/actions/runs?head_sha=${VALIDATED_SHA}&per_page=100" > /tmp/release-workflow-runs.json
+          gh api "repos/${GITHUB_REPOSITORY}/actions/runs?head_sha=${VALIDATED_SHA}&per_page=100" \
+            > /tmp/release-workflow-runs.json
           python - <<'PY'
           import json
           import os
@@ -75,23 +106,20 @@ jobs:
           failures: list[str] = []
           for workflow_name in required:
               candidates = [
-                  run
-                  for run in runs
+                  run for run in runs
                   if run.get("name") == workflow_name and run.get("head_sha") == validated_sha
               ]
               if not candidates:
                   failures.append(f"{workflow_name}: missing for {validated_sha}")
                   continue
-              latest = max(candidates, key=lambda run: (run.get("run_number", 0), run.get("run_attempt", 0)))
-              conclusion = latest.get("conclusion")
-              status = latest.get("status")
-              print(
-                  f"RELEASE_REQUIRED_WORKFLOW name={workflow_name!r} "
-                  f"status={status!r} conclusion={conclusion!r} run_id={latest.get('id')}"
+              latest = max(
+                  candidates,
+                  key=lambda run: (run.get("run_number", 0), run.get("run_attempt", 0)),
               )
-              if status != "completed" or conclusion != "success":
+              if latest.get("status") != "completed" or latest.get("conclusion") != "success":
                   failures.append(
-                      f"{workflow_name}: status={status!r}, conclusion={conclusion!r}"
+                      f"{workflow_name}: status={latest.get('status')!r}, "
+                      f"conclusion={latest.get('conclusion')!r}"
                   )
           if failures:
               print("Release gate failed:")
@@ -101,78 +129,43 @@ jobs:
           print("RELEASE_COMPANION_WORKFLOWS=PASS")
           PY
 
-      - name: Resolve project version
-        id: version
-        run: |
-          set -euo pipefail
-          VERSION="$(python - <<'PY'
-          import tomllib
-          from pathlib import Path
-
-          data = tomllib.loads(Path("pyproject.toml").read_text(encoding="utf-8"))
-          print(data["project"]["version"])
-          PY
-          )"
-          case "$VERSION" in
-            ''|*[!0-9.]*|.*|*.)
-              echo "Invalid project version: $VERSION"
-              exit 1
-              ;;
-          esac
-          TAG="v$VERSION"
-          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
-          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
-          echo "MVROS_VERSION=$VERSION"
-          echo "MVROS_TAG=$TAG"
-
       - name: Inspect existing release state
-        id: release_state
+        if: steps.version.outputs.release == 'true'
         env:
           GH_TOKEN: ${{ github.token }}
           TAG: ${{ steps.version.outputs.tag }}
-          VALIDATED_SHA: ${{ github.event.workflow_run.head_sha }}
+          VALIDATED_SHA: ${{ github.event.workflow_run.head_sha || github.sha }}
         run: |
           set -euo pipefail
           TAG_COMMIT="$(git ls-remote origin "refs/tags/$TAG^{}" | awk '{print $1}')"
           RELEASE_EXISTS="false"
-          RELEASE_IMMUTABLE="false"
-          RELEASE_TARGET=""
-          if RELEASE_JSON="$(gh release view "$TAG" --json targetCommitish,isImmutable 2>/dev/null)"; then
+          if gh release view "$TAG" >/dev/null 2>&1; then
             RELEASE_EXISTS="true"
-            RELEASE_IMMUTABLE="$(printf '%s' "$RELEASE_JSON" | python -c 'import json,sys; print(str(json.load(sys.stdin)["isImmutable"]).lower())')"
-            RELEASE_TARGET="$(printf '%s' "$RELEASE_JSON" | python -c 'import json,sys; print(json.load(sys.stdin)["targetCommitish"])')"
           fi
           echo "TAG_COMMIT=$TAG_COMMIT"
           echo "RELEASE_EXISTS=$RELEASE_EXISTS"
-          echo "RELEASE_IMMUTABLE=$RELEASE_IMMUTABLE"
-          echo "RELEASE_TARGET=$RELEASE_TARGET"
-          echo "tag_commit=$TAG_COMMIT" >> "$GITHUB_OUTPUT"
-          echo "release_exists=$RELEASE_EXISTS" >> "$GITHUB_OUTPUT"
-          echo "release_immutable=$RELEASE_IMMUTABLE" >> "$GITHUB_OUTPUT"
-          echo "release_target=$RELEASE_TARGET" >> "$GITHUB_OUTPUT"
-
           if [ -n "$TAG_COMMIT" ] && [ "$TAG_COMMIT" != "$VALIDATED_SHA" ]; then
             echo "Release tag $TAG already points to $TAG_COMMIT, not $VALIDATED_SHA."
-            echo "Refusing to move an existing release tag. Bump the project version for a new release."
+            echo "Refusing to move an existing release tag. Bump the project version."
             exit 1
           fi
-
           if [ "$RELEASE_EXISTS" = "true" ] && [ -z "$TAG_COMMIT" ]; then
-            echo "Release $TAG exists without a resolvable remote tag; refusing automatic repair."
+            echo "Release $TAG exists without a resolvable remote tag; refusing repair."
             exit 1
           fi
 
       - name: Configure release git identity
+        if: steps.version.outputs.release == 'true'
         run: |
-          set -euo pipefail
           git config user.name "lukart-ros-release[bot]"
           git config user.email "lukart-ros-release[bot]@users.noreply.github.com"
 
       - name: Create tag and GitHub Release
+        if: steps.version.outputs.release == 'true'
         env:
           GH_TOKEN: ${{ github.token }}
           TAG: ${{ steps.version.outputs.tag }}
-          VALIDATED_SHA: ${{ github.event.workflow_run.head_sha }}
+          VALIDATED_SHA: ${{ github.event.workflow_run.head_sha || github.sha }}
           VERSION: ${{ steps.version.outputs.version }}
         run: |
           set -euo pipefail
@@ -181,29 +174,23 @@ jobs:
             git tag -a "$TAG" "$VALIDATED_SHA" -m "MVROS $VERSION"
             git push origin "$TAG"
           fi
-
           if gh release view "$TAG" >/dev/null 2>&1; then
             echo "Release $TAG already exists."
           else
-            gh release create "$TAG" \
-              --target "$VALIDATED_SHA" \
-              --title "MVROS $VERSION" \
-              --generate-notes
+            gh release create "$TAG" --target "$VALIDATED_SHA" \
+              --title "MVROS $VERSION" --generate-notes
           fi
 
       - name: Verify release state
+        if: steps.version.outputs.release == 'true'
         env:
           GH_TOKEN: ${{ github.token }}
           TAG: ${{ steps.version.outputs.tag }}
-          VALIDATED_SHA: ${{ github.event.workflow_run.head_sha }}
-          VERSION: ${{ steps.version.outputs.version }}
+          VALIDATED_SHA: ${{ github.event.workflow_run.head_sha || github.sha }}
         run: |
           set -euo pipefail
           TAG_COMMIT="$(git ls-remote origin "refs/tags/$TAG^{}" | awk '{print $1}')"
-          echo "REMOTE_TAG_COMMIT=$TAG_COMMIT"
           test "$TAG_COMMIT" = "$VALIDATED_SHA"
-
           RELEASE_TARGET="$(gh release view "$TAG" --json targetCommitish --jq '.targetCommitish')"
-          echo "RELEASE_TARGET=$RELEASE_TARGET"
           test "$RELEASE_TARGET" = "$VALIDATED_SHA" || test "$RELEASE_TARGET" = "main"
-          echo "MVROS v$VERSION release verification complete."
+          echo "Release verification complete."
