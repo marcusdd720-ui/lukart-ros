@@ -404,9 +404,7 @@ class ProcessIsolationExecutor:
             posix_memory_limit=bool(message.get("memory_limit")),
             posix_cpu_limit=bool(message.get("cpu_limit")),
             network_control=(
-                "allowed"
-                if self.policy.network_allowed
-                else "python-audit-hook+socket-guard"
+                "allowed" if self.policy.network_allowed else "python-runtime-guard"
             ),
             filesystem_control=(
                 "python-audit-hook-read-roots-workspace-write-only"
