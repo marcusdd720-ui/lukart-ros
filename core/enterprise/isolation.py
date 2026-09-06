@@ -63,17 +63,12 @@ class IsolationPolicy:
         env_keys = tuple(sorted({item.strip() for item in self.allowed_environment_keys}))
         if any(not item for item in env_keys):
             raise EnterpriseContractError("environment key allow-list cannot contain blanks")
-        read_roots = tuple(
-            sorted(
-                {
-                    str(Path(item).expanduser().resolve(strict=False))
-                    for item in self.allowed_read_roots
-                    if item.strip()
-                }
-            )
-        )
-        if len(read_roots) != len({item for item in self.allowed_read_roots if item.strip()}):
-            raise EnterpriseContractError("filesystem read-root allow-list is ambiguous")
+        normalized_roots = {
+            str(Path(item).expanduser().resolve(strict=False))
+            for item in self.allowed_read_roots
+            if item.strip()
+        }
+        read_roots = tuple(sorted(normalized_roots))
         object.__setattr__(self, "allowed_entrypoints", entrypoints)
         object.__setattr__(self, "allowed_environment_keys", env_keys)
         object.__setattr__(self, "allowed_read_roots", read_roots)
@@ -264,10 +259,12 @@ def _capability_audit_hook(
             "os.chown",
             "os.utime",
             "os.truncate",
-            "os.symlink",
         }:
             require_workspace(args[0] if args else None)
             return
+
+        if event == "os.symlink":
+            raise PermissionError("symlink creation denied by LUKART worker capability policy")
 
         if event in {"os.rename", "os.replace", "os.link"}:
             require_workspace(args[0] if args else None)
