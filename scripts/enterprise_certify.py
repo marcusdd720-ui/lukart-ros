@@ -29,12 +29,17 @@ _STAGE_ARTIFACTS: dict[str, tuple[str, ...]] = {
         "core/enterprise/supply_chain.py",
         ".github/workflows/enterprise-codeql.yml",
         ".github/workflows/enterprise-hardening.yml",
+        "build/enterprise/bom.cdx.json",
     ),
     "E5": ("core/enterprise/authorization.py",),
     "E6": ("core/enterprise/durability.py",),
     "E7": ("core/enterprise/observability.py",),
     "E8": ("core/enterprise/api_guard.py",),
-    "E9": ("core/enterprise/resilience.py", "core/p3/scale.py"),
+    "E9": (
+        "core/enterprise/resilience.py",
+        "core/p3/scale.py",
+        "build/enterprise/scale-certification.json",
+    ),
 }
 
 
