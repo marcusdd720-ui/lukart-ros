@@ -86,14 +86,17 @@ def validate_snapshot(
         declared = _document_release_shas(text)
         if declared != {release}:
             raise RuntimeError(
-                f"canonical baseline drift in {path}: declared={sorted(declared)} expected={release}"
+                "canonical baseline drift in "
+                f"{path}: declared={sorted(declared)} expected={release}"
             )
         document_digests[path] = _sha256_text(text)
 
     if "  push:\n    branches: [main]" not in workflow_text:
         raise RuntimeError("Enterprise workflow lacks post-merge push validation for main")
     if "fetch-depth: 0" not in workflow_text:
-        raise RuntimeError("Enterprise workflow cannot verify historical tag without full tag/history fetch")
+        raise RuntimeError(
+            "Enterprise workflow cannot verify historical tag without full tag/history fetch"
+        )
 
     return {
         "schema": "lukart.hardcore-h1-evidence.v1",
