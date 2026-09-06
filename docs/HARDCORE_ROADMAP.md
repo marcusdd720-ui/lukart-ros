@@ -6,6 +6,26 @@ Predecessor: Enterprise E0-E10 engineering implementation. E10 remains capped at
 
 This roadmap extends existing P2/P3/Enterprise authorities. It MUST NOT create a parallel reasoning, epistemic, provider, replay, authorization, provenance or certification authority where a canonical mechanism already exists.
 
+## Cross-cutting Long-Horizon Engineering invariant
+
+Every H-stage must evaluate significant design decisions against an indicative 5–10 year evolution horizon.
+
+The goal is not to predict specific future technologies. The goal is to keep the system safely evolvable when models, providers, schemas, data formats, infrastructure, orchestration, security requirements or workload scale change.
+
+Prefer, where justified:
+- versioned/open contracts;
+- replaceable components and bounded vendor/technology lock-in;
+- interoperability and explicit migrations;
+- backward compatibility;
+- deterministic replay and provenance identity;
+- reversible data/configuration evolution;
+- rollback/recovery paths;
+- preservation of evidence, auditability and epistemic controls across technology replacement.
+
+Do not add speculative abstraction merely for hypothetical future flexibility. A long-horizon upgrade requires a concrete failure mode, trust boundary, migration risk or credible future-change cost.
+
+Short rule: **future-resistant, not future-predictive**.
+
 ## H1 — Exact-SHA Evidence Integrity & Baseline Reconciliation
 
 Failure mode: validation can be green on a PR head while the merge SHA is never subjected to the Enterprise gate, and static governance documents/configuration can drift from the immutable release tag or confuse an annotated tag object's identity with its target commit.
