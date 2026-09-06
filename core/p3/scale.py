@@ -137,7 +137,7 @@ def measure_scale_profile(profile: ScaleProfile) -> ScaleMeasurement:
 
         change_graph = SemanticChangeGraph(case.graph_dependencies)
         change_graph.validate_acyclic()
-        blast_plan = change_graph.plan(("EV-000000",))
+        blast_plan = change_graph.plan(("EV-000000",), materialize_paths=False)
         blast_radius_size = len(blast_plan.affected_ids)
         if blast_radius_size != profile.graph_nodes + 1:
             raise P3ContractError("synthetic blast radius did not traverse full dependency chain")
