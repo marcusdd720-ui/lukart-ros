@@ -42,20 +42,20 @@ class EnterpriseRequest:
     workspace_id: str | None = None
 
     def __post_init__(self) -> None:
-        for value, field in (
+        for required_value, field in (
             (self.request_id, "request_id"),
             (self.api_version, "api_version"),
             (self.tenant_id, "tenant_id"),
             (self.nonce, "nonce"),
         ):
-            if not value.strip():
+            if not required_value.strip():
                 raise EnterpriseContractError(f"{field} is required")
-        for value, field in (
+        for optional_value, field in (
             (self.resource_id, "resource_id"),
             (self.case_id, "case_id"),
             (self.workspace_id, "workspace_id"),
         ):
-            if value is not None and not value.strip():
+            if optional_value is not None and not optional_value.strip():
                 raise EnterpriseContractError(f"{field} cannot be blank")
         if self.operation is not ApiOperation.READ:
             if self.idempotency_key is None or not self.idempotency_key.strip():
