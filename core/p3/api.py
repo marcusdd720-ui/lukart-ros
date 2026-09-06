@@ -22,6 +22,15 @@ class ApiResourceKind(StrEnum):
     EXPLAINABILITY = "explainability"
 
 
+_ANALYTICAL_TRUST_KINDS = frozenset(
+    {
+        ApiResourceKind.FACT,
+        ApiResourceKind.REASONING,
+        ApiResourceKind.RESULT,
+    }
+)
+
+
 @dataclass(frozen=True, slots=True)
 class StableApiResource:
     kind: ApiResourceKind
@@ -34,17 +43,10 @@ class StableApiResource:
     def __post_init__(self) -> None:
         if not self.resource_id.strip():
             raise P3ContractError("API resource_id is required")
-        if self.trust_level is TrustLevel.TRUSTED and self.kind in {
-            ApiResourceKind.FACT,
-            ApiResourceKind.REASONING,
-            ApiResourceKind.RESULT,
-        }:
-            # API transport may preserve a trusted state but can never create it.
-            marker = self.payload.get("trusted_state_authorization")
-            if not isinstance(marker, str) or not marker.strip():
-                raise P3ContractError(
-                    "trusted analytical API resource requires authorization marker"
-                )
+        if self.trust_level is TrustLevel.TRUSTED and self.kind in _ANALYTICAL_TRUST_KINDS:
+            raise P3ContractError(
+                "external API cannot originate trusted analytical state without signed attestation"
+            )
 
     @property
     def schema(self) -> str:
@@ -110,4 +112,13 @@ class ApiContractRegistry:
             raise P3ContractError("API inner payload is missing")
         if content_digest(payload) != payload_digest:
             raise P3ContractError("API inner payload digest mismatch")
+
+        trust_level = envelope.payload.get("trust_level")
+        kind = envelope.payload.get("kind")
+        if trust_level == TrustLevel.TRUSTED.value and kind in {
+            item.value for item in _ANALYTICAL_TRUST_KINDS
+        }:
+            raise P3ContractError(
+                "external API cannot decode trusted analytical state without signed attestation"
+            )
         return envelope
