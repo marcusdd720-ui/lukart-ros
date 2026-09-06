@@ -31,19 +31,19 @@ jobs:
       - name: Install
         run: python -m pip install -e ".[dev]"
 
-      - name: Lint Enterprise and H1
+      - name: Lint Enterprise, H1 and H2
         run: >-
           ruff check core/enterprise tests/test_enterprise_track.py
-          tests/test_hardcore_h1.py scripts/enterprise_sbom.py
+          tests/test_hardcore_h1.py tests/test_hardcore_h2.py scripts/enterprise_sbom.py
           scripts/enterprise_threat_check.py scripts/enterprise_certify.py
-          scripts/hardcore_h1_validate.py
+          scripts/hardcore_h1_validate.py scripts/hardcore_h2_policy.py
 
-      - name: Type-check Enterprise and H1
+      - name: Type-check Enterprise, H1 and H2
         run: >-
           mypy core/enterprise tests/test_enterprise_track.py
-          tests/test_hardcore_h1.py scripts/enterprise_sbom.py
+          tests/test_hardcore_h1.py tests/test_hardcore_h2.py scripts/enterprise_sbom.py
           scripts/enterprise_threat_check.py scripts/enterprise_certify.py
-          scripts/hardcore_h1_validate.py
+          scripts/hardcore_h1_validate.py scripts/hardcore_h2_policy.py
 
       - name: H1 focused and adversarial suite
         run: pytest -q tests/test_hardcore_h1.py
@@ -51,6 +51,16 @@ jobs:
       - name: H1 exact-SHA and immutable baseline integrity
         run: >-
           python scripts/hardcore_h1_validate.py
+          --candidate-sha "${CANDIDATE_SHA}"
+
+      - name: H2 focused and adversarial suite
+        run: pytest -q tests/test_hardcore_h2.py
+
+      - name: H2 live repository policy and required-check integrity
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: >-
+          python scripts/hardcore_h2_policy.py
           --candidate-sha "${CANDIDATE_SHA}"
 
       - name: Threat-model coverage gate
@@ -104,6 +114,13 @@ jobs:
           assert policy['e7_observability']['telemetry_is_product_authority'] is False
           assert policy['e8_api']['trusted_state_requires_attestation'] is True
           assert policy['e10_certification']['automated_result_can_claim_independent_certification'] is False
+          assert policy['h2_repository_policy']['strict_required_status_checks'] is True
+          assert policy['h2_repository_policy']['allowed_bypass_actors'] == []
+          required = {
+              item['context'] for item in policy['h2_repository_policy']['required_checks']
+          }
+          assert 'enterprise-gate' in required
+          assert 'codeql' in required
           print('ENTERPRISE_POLICY_INTEGRITY=PASS')
           PY
 
@@ -162,12 +179,13 @@ jobs:
           python scripts/enterprise_certify.py
           --candidate-sha "${CANDIDATE_SHA}"
 
-      - name: Upload Enterprise and H1 evidence bundle
+      - name: Upload Enterprise, H1 and H2 evidence bundle
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: enterprise-evidence-${{ github.event.pull_request.head.sha || github.sha }}
           path: |
             build/hardcore/h1-baseline-evidence.json
+            build/hardcore/h2-repository-policy-evidence.json
             build/enterprise/bom.cdx.json
             build/enterprise/scale-certification.json
             build/enterprise/enterprise-engineering-evidence.json
