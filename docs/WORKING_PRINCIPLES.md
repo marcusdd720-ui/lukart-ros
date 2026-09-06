@@ -1,6 +1,6 @@
 # LUKART ROS — Canonical Working Principles
 
-Version: 1.1
+Version: 1.2
 Status: Canonical project operating standard
 Scope: Repository-wide engineering, agents, automation, reviews, CI/CD, release governance
 
@@ -37,6 +37,36 @@ Do not ask for confirmation between already-approved sequential steps unless a g
 Default workflow:
 
 `Problem -> Evidence -> Measurement -> Design -> Implementation -> Focused Tests -> Adversarial Tests -> Full Regression -> CI -> Exact-SHA Validation -> PR -> Merge -> Post-Merge Validation -> Evidence -> Closure`
+
+### Strict stage sequence — non-negotiable
+
+For an already-open roadmap stage, the execution order is mandatory and must not be rearranged:
+
+`Identify current open stage + PR + exact candidate SHA -> Check exact-SHA CI for that candidate -> if FAIL: repair inside the same stage -> fresh SHA -> run the full required gate set on that fresh SHA -> merge that exact validated PR head -> post-merge validation on resulting main -> close the stage -> only then start the next stage`
+
+At entry to any ongoing stage:
+1. identify the **current open stage** and do not work on a later roadmap item;
+2. identify its current PR, when one exists;
+3. identify the **exact current candidate SHA / PR head SHA**;
+4. inspect exact-SHA CI for that candidate before claiming progress toward closure;
+5. if any required check is `FAIL`, incomplete, stale, or belongs to another SHA, remain in the same stage;
+6. diagnose root cause and make the smallest justified repair;
+7. every repair creates a **fresh candidate SHA** and invalidates prior merge-readiness claims for older SHAs;
+8. run the complete required focused/adversarial/regression/security/policy/gate set for the fresh SHA;
+9. merge only the exact PR head SHA that has the complete required PASS set;
+10. validate the resulting `main` SHA, post-merge workflows, regressions, release/tag side effects, and required evidence;
+11. mark the stage closed only after post-merge validation succeeds;
+12. only after closure may execution advance to the next roadmap stage.
+
+Forbidden sequencing behavior:
+- skipping an open stage;
+- beginning or implementing a later stage while the current stage is not closed;
+- declaring PASS/DONE before complete exact-SHA validation and post-merge closure;
+- combining green results from different SHAs into one merge/certification claim;
+- treating a previous candidate's PASS as valid for a fresh repaired SHA;
+- returning to or rewriting a historically closed stage during normal roadmap progression. A newly evidenced regression, incident, security issue, or dependency may create a **new repair stage**, but must not retroactively falsify or rewrite the historical closure state.
+
+This strict sequence takes precedence over convenience, parallelism, or faster roadmap progression whenever stage trust, merge readiness, or certification state is involved.
 
 For substantive repository work:
 1. verify current `main` and exact baseline SHA;
@@ -323,13 +353,16 @@ Default model:
 
 `main -> branch -> commits -> tests -> PR -> exact-SHA CI -> merge -> post-merge validation`
 
+For a stage that already has a candidate/PR, the **Strict stage sequence in Section 2** governs and must be followed before any later roadmap work.
+
 Before changes:
 - verify current `main` SHA;
 - branch from the intended baseline.
 
 After any repair:
 - create a fresh SHA;
-- validate that fresh SHA.
+- validate that fresh SHA;
+- do not reuse stale PASS results from the previous SHA.
 
 Merge only when required exact-SHA gates are green and the PR head has not moved after validation. Prefer an expected-head-SHA guard when supported.
 
@@ -339,6 +372,8 @@ After merge verify:
 - release side effects;
 - historical tag immutability;
 - regressions.
+
+Do not begin the next roadmap stage until those post-merge checks close the current stage.
 
 ## 17. Definition of Done
 
@@ -404,12 +439,13 @@ When the user has approved an ordered roadmap such as `P3-01 -> P3-10`, `E0 -> E
 
 Before implementation:
 1. verify live repository state;
-2. review the roadmap for avoidable weakness;
-3. upgrade it to a justified Hardcore Enterprise level;
-4. apply the Long-Horizon Engineering / 10-Year Design Horizon check to major architectural decisions;
-5. execute the improved roadmap end-to-end.
+2. identify whether an earlier roadmap stage is still open and, if so, continue that stage from its current exact candidate SHA under the Strict stage sequence rather than starting a later stage;
+3. review the roadmap for avoidable weakness;
+4. upgrade it to a justified Hardcore Enterprise level;
+5. apply the Long-Horizon Engineering / 10-Year Design Horizon check to major architectural decisions;
+6. execute the improved roadmap end-to-end.
 
-Do not stop between roadmap items unless a genuine blocker requires user action.
+Do not skip roadmap items, work ahead of an unclosed stage, or stop between roadmap items unless a genuine blocker requires user action.
 
 After closure, summarize and propose the next logical track.
 
