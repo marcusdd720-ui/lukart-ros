@@ -3,10 +3,11 @@
 from __future__ import annotations
 
 from collections.abc import Mapping
-from concurrent.futures import ThreadPoolExecutor, TimeoutError as FutureTimeoutError
+from concurrent.futures import ThreadPoolExecutor
+from concurrent.futures import TimeoutError as FutureTimeoutError
 from dataclasses import dataclass
 from enum import StrEnum
-from threading import Event, BoundedSemaphore, RLock
+from threading import BoundedSemaphore, Event, RLock
 
 from core.p2.runtime import AgentProvider, AgentResult, AgentTask, PluginRegistry
 
