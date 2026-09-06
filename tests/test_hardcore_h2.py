@@ -7,6 +7,7 @@ from scripts.hardcore_h2_policy import validate_snapshot
 CANDIDATE = "a" * 40
 INTEGRATION_ID = 15368
 RULESET_ID = 22352216
+RULESET_UPDATED_AT = "2026-09-06T01:07:07.958+02:00"
 
 
 def _bindings() -> list[dict[str, object]]:
@@ -91,7 +92,13 @@ def _policy() -> dict[str, object]:
             "strict_required_status_checks": True,
             "do_not_enforce_on_create": False,
             "allowed_bypass_actors": [],
-            "current_user_can_bypass": "never",
+            "privileged_ruleset_snapshot": {
+                "ruleset_id": RULESET_ID,
+                "ruleset_updated_at": RULESET_UPDATED_AT,
+                "bypass_actors": [],
+                "observer_class": "ruleset-write-visible-api",
+                "refresh_on_ruleset_update": True,
+            },
             "required_checks": _bindings(),
         }
     }
@@ -127,6 +134,7 @@ def _detail() -> dict[str, object]:
         "name": "LUKART main protection",
         "target": "branch",
         "enforcement": "active",
+        "updated_at": RULESET_UPDATED_AT,
         "conditions": {
             "ref_name": {
                 "exclude": [],
@@ -147,7 +155,6 @@ def _detail() -> dict[str, object]:
             },
         ],
         "bypass_actors": [],
-        "current_user_can_bypass": "never",
     }
 
 
@@ -209,9 +216,30 @@ def test_h2_accepts_exact_candidate_and_canonical_merge_policy() -> None:
     assert evidence["candidate_sha"] == CANDIDATE
     assert evidence["policy_visibility"] == "CONFIRMED"
     assert evidence["bypass_actors"] == []
+    assert evidence["bypass_visibility"] == "LIVE_PRIVILEGED"
     assert evidence["additional_required_checks"] == [
         {"context": "diagnostic-only", "integration_id": INTEGRATION_ID}
     ]
+
+
+def test_h2_accepts_hidden_bypass_only_when_snapshot_timestamp_matches() -> None:
+    detail = _detail()
+    detail.pop("bypass_actors")
+
+    evidence = _validate(detail=detail)
+
+    assert evidence["bypass_actors"] == []
+    assert evidence["bypass_visibility"] == "SNAPSHOT_BOUND"
+    assert evidence["ruleset_updated_at"] == RULESET_UPDATED_AT
+
+
+def test_h2_rejects_hidden_bypass_when_ruleset_changed_after_snapshot() -> None:
+    detail = _detail()
+    detail.pop("bypass_actors")
+    detail["updated_at"] = "2026-09-06T02:00:00.000+02:00"
+
+    with pytest.raises(RuntimeError, match="POLICY_SNAPSHOT_STALE"):
+        _validate(detail=detail)
 
 
 def test_h2_rejects_candidate_head_mismatch() -> None:
@@ -235,9 +263,24 @@ def test_h2_rejects_inactive_ruleset() -> None:
 
 def test_h2_rejects_undeclared_bypass_actor() -> None:
     detail = _detail()
-    detail["bypass_actors"] = [{"actor_id": 1, "actor_type": "RepositoryRole"}]
+    detail["bypass_actors"] = [
+        {"actor_id": 1, "actor_type": "RepositoryRole", "bypass_mode": "always"}
+    ]
     with pytest.raises(RuntimeError, match="undeclared bypass actors"):
         _validate(detail=detail)
+
+
+def test_h2_rejects_snapshot_bypass_conflicting_with_policy() -> None:
+    policy = _policy()
+    h2 = policy["h2_repository_policy"]
+    assert isinstance(h2, dict)
+    snapshot = h2["privileged_ruleset_snapshot"]
+    assert isinstance(snapshot, dict)
+    snapshot["bypass_actors"] = [
+        {"actor_id": 1, "actor_type": "RepositoryRole", "bypass_mode": "always"}
+    ]
+    with pytest.raises(RuntimeError, match="configuration conflict"):
+        _validate(policy=policy)
 
 
 def test_h2_rejects_non_strict_required_status_policy() -> None:
