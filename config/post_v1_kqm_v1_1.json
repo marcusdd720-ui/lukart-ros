@@ -1,0 +1,21 @@
+{
+  "schema": "lukart.kqm-policy.v1",
+  "version": "1.1.0",
+  "baseline": "measure-on-first-certified-run",
+  "metrics": {
+    "evidence_coverage": {"direction": "min", "warning_threshold": 0.98, "release_threshold": 0.95},
+    "epistemic_accuracy": {"direction": "min", "warning_threshold": 1.0, "release_threshold": 0.98},
+    "abstention_precision": {"direction": "min", "warning_threshold": 1.0, "release_threshold": 0.95},
+    "contradiction_detection": {"direction": "min", "warning_threshold": 1.0, "release_threshold": 0.95},
+    "unsupported_conclusion_rate": {"direction": "max", "warning_threshold": 0.0, "release_threshold": 0.0},
+    "renderer_fidelity": {"direction": "min", "warning_threshold": 1.0, "release_threshold": 1.0},
+    "replay_determinism": {"direction": "min", "warning_threshold": 1.0, "release_threshold": 1.0},
+    "provenance_integrity": {"direction": "min", "warning_threshold": 1.0, "release_threshold": 1.0},
+    "propagation_correctness": {"direction": "min", "warning_threshold": 1.0, "release_threshold": 0.98}
+  },
+  "policy": {
+    "missing_metric": "FAIL",
+    "threshold_relaxation_requires_versioned_policy_change": true,
+    "evaluator_may_mutate_product_state": false
+  }
+}
