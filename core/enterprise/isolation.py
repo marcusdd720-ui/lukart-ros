@@ -104,9 +104,9 @@ def _deny_network() -> None:
     def denied(*_args: object, **_kwargs: object) -> object:
         raise PermissionError("network access denied by LUKART worker policy")
 
-    socket.socket = denied  # type: ignore[assignment]
-    socket.create_connection = denied  # type: ignore[assignment]
-    socket.getaddrinfo = denied  # type: ignore[assignment]
+    setattr(socket, "socket", denied)
+    setattr(socket, "create_connection", denied)
+    setattr(socket, "getaddrinfo", denied)
 
 
 def _apply_posix_limits(memory_bytes: int, cpu_seconds: int) -> tuple[bool, bool]:
