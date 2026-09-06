@@ -169,5 +169,23 @@
         "job_id": "codeql"
       }
     ]
+  },
+  "h3_supply_chain_provenance": {
+    "schema": "lukart.hardcore.h3-provenance.v1",
+    "provenance_predicate_type": "https://slsa.dev/provenance/v1",
+    "cyclonedx_spec_version": "1.7",
+    "dependency_groups": [
+      "runtime",
+      "dev"
+    ],
+    "exact_source_sha_required": true,
+    "artifact_manifest_sha256_required": true,
+    "workflow_file_digest_required": true,
+    "workflow_context_required": true,
+    "builder_context_required": true,
+    "full_sha_actions_required": true,
+    "material_mismatch": "FAIL",
+    "unknown_digest_algorithm": "FAIL",
+    "external_slsa_certification_claimed": false
   }
 }
