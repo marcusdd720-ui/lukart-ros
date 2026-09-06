@@ -93,6 +93,72 @@ def _rule_by_type(
     raise RuntimeError(f"repository policy drift: required rule type {rule_type!r} is missing")
 
 
+def _resolve_bypass_actors(
+    *,
+    h2: Mapping[str, object],
+    summary: Mapping[str, object],
+    ruleset_detail: Mapping[str, object],
+) -> tuple[list[object], str, str]:
+    allowed_bypass = _list(
+        h2.get("allowed_bypass_actors"),
+        label="h2.allowed_bypass_actors",
+    )
+    snapshot = _mapping(
+        h2.get("privileged_ruleset_snapshot"),
+        label="h2.privileged_ruleset_snapshot",
+    )
+    snapshot_id = snapshot.get("ruleset_id")
+    snapshot_updated_at = str(snapshot.get("ruleset_updated_at", ""))
+    snapshot_bypass = _list(
+        snapshot.get("bypass_actors"),
+        label="h2.privileged_ruleset_snapshot.bypass_actors",
+    )
+    if snapshot_id != summary.get("id"):
+        raise RuntimeError(
+            "POLICY_SNAPSHOT_STALE: privileged snapshot ruleset ID does not match live policy"
+        )
+    if not snapshot_updated_at:
+        raise RuntimeError(
+            "POLICY_VISIBILITY_UNKNOWN: privileged snapshot lacks ruleset_updated_at"
+        )
+    if snapshot_bypass != allowed_bypass:
+        raise RuntimeError(
+            "repository policy configuration conflict: privileged bypass snapshot differs "
+            "from allowed_bypass_actors"
+        )
+
+    live_updated_at = ruleset_detail.get("updated_at")
+    if not isinstance(live_updated_at, str) or not live_updated_at:
+        raise RuntimeError(
+            "POLICY_VISIBILITY_UNKNOWN: live ruleset lacks updated_at needed to bind "
+            "the privileged bypass snapshot"
+        )
+    if live_updated_at != snapshot_updated_at:
+        raise RuntimeError(
+            "POLICY_SNAPSHOT_STALE: live ruleset changed after privileged bypass "
+            f"observation: live={live_updated_at!r} snapshot={snapshot_updated_at!r}"
+        )
+
+    raw_live_bypass = ruleset_detail.get("bypass_actors")
+    if raw_live_bypass is None:
+        actual_bypass = snapshot_bypass
+        visibility = "SNAPSHOT_BOUND"
+    elif isinstance(raw_live_bypass, list):
+        actual_bypass = cast(list[object], raw_live_bypass)
+        visibility = "LIVE_PRIVILEGED"
+    else:
+        raise RuntimeError(
+            "POLICY_VISIBILITY_UNKNOWN: live bypass_actors has an unexpected representation"
+        )
+
+    if actual_bypass != allowed_bypass:
+        raise RuntimeError(
+            "repository policy drift: undeclared bypass actors present: "
+            f"actual={actual_bypass!r} expected={allowed_bypass!r}"
+        )
+    return actual_bypass, visibility, live_updated_at
+
+
 def validate_snapshot(
     *,
     candidate_sha: str,
@@ -143,23 +209,11 @@ def validate_snapshot(
             "repository policy drift: ruleset does not target the canonical default branch"
         )
 
-    expected_bypass = _list(
-        h2.get("allowed_bypass_actors"),
-        label="h2.allowed_bypass_actors",
+    actual_bypass, bypass_visibility, ruleset_updated_at = _resolve_bypass_actors(
+        h2=h2,
+        summary=summary,
+        ruleset_detail=ruleset_detail,
     )
-    actual_bypass = _list(ruleset_detail.get("bypass_actors"), label="ruleset.bypass_actors")
-    if actual_bypass != expected_bypass:
-        raise RuntimeError(
-            "repository policy drift: undeclared bypass actors present: "
-            f"actual={actual_bypass!r} expected={expected_bypass!r}"
-        )
-    expected_user_bypass = str(h2.get("current_user_can_bypass", ""))
-    if ruleset_detail.get("current_user_can_bypass") != expected_user_bypass:
-        raise RuntimeError(
-            "repository policy drift: current-user bypass capability mismatch: "
-            f"actual={ruleset_detail.get('current_user_can_bypass')!r} "
-            f"expected={expected_user_bypass!r}"
-        )
 
     rules = _list(ruleset_detail.get("rules"), label="ruleset.rules")
     required_rule_types = {
@@ -249,6 +303,7 @@ def validate_snapshot(
         "ruleset_name": ruleset_name,
         "ruleset_target": target,
         "ruleset_enforcement": enforcement,
+        "ruleset_updated_at": ruleset_updated_at,
         "ruleset_digest": _canonical_json_digest(ruleset_detail),
         "ruleset_inventory_digest": _canonical_json_digest(rulesets),
         "enterprise_policy_digest": _canonical_json_digest(policy),
@@ -262,7 +317,7 @@ def validate_snapshot(
         ],
         "workflow_digests": dict(sorted(workflow_digests.items())),
         "bypass_actors": actual_bypass,
-        "current_user_can_bypass": ruleset_detail.get("current_user_can_bypass"),
+        "bypass_visibility": bypass_visibility,
         "policy_visibility": "CONFIRMED",
         "state": "CONTROL_PASS",
     }
@@ -352,6 +407,7 @@ def main() -> int:
     print(f"H2_CANDIDATE_SHA={evidence['candidate_sha']}")
     print(f"H2_RULESET_ID={evidence['ruleset_id']}")
     print(f"H2_RULESET_DIGEST={evidence['ruleset_digest']}")
+    print(f"H2_BYPASS_VISIBILITY={evidence['bypass_visibility']}")
     print(f"H2_EVIDENCE_PATH={output}")
     return 0
 
