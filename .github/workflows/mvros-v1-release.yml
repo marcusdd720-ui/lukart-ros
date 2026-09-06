@@ -26,12 +26,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout validated main SHA
-        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
         with:
           ref: ${{ github.event.workflow_run.head_sha || github.sha }}
           fetch-depth: 0
 
-      - name: Resolve release intent
+      - name: Resolve explicit release intent
         id: version
         run: |
           set -euo pipefail
@@ -40,21 +40,38 @@ jobs:
           import tomllib
           from pathlib import Path
 
-          version = tomllib.loads(Path("pyproject.toml").read_text(encoding="utf-8"))["project"]["version"]
-          print(f"version={version}")
-          if re.fullmatch(r"[0-9]+\.[0-9]+\.[0-9]+", version):
-              print("release=true")
-              print(f"tag=v{version}")
-          else:
+          data = tomllib.loads(Path("pyproject.toml").read_text(encoding="utf-8"))
+          project_version = str(data["project"]["version"])
+          enterprise = data["tool"]["lukart"]["enterprise"]
+          development_version = str(enterprise["development_version"])
+          immutable_baseline = str(enterprise["immutable_baseline_version"])
+          release_enabled = enterprise["release_enabled"] is True
+
+          print(f"version={project_version}")
+          print(f"development_version={development_version}")
+          print(f"immutable_baseline={immutable_baseline}")
+
+          if not release_enabled:
               print("release=false")
               print("tag=")
+          else:
+              if not re.fullmatch(r"[0-9]+\.[0-9]+\.[0-9]+", project_version):
+                  raise SystemExit("Release-enabled project version must be stable X.Y.Z")
+              if project_version == immutable_baseline:
+                  raise SystemExit(
+                      "Immutable baseline cannot be released again. "
+                      "Bump the project version for a new release."
+                  )
+              print("release=true")
+              print(f"tag=v{project_version}")
           PY
 
       - name: Development build — no release mutation
         if: steps.version.outputs.release != 'true'
         run: |
-          echo "Project version ${{ steps.version.outputs.version }} is a development version."
-          echo "Historical release tags remain unchanged; automatic release is intentionally skipped."
+          echo "Development version ${{ steps.version.outputs.development_version }} is active."
+          echo "Historical release ${{ steps.version.outputs.immutable_baseline }} remains immutable."
+          echo "Automatic release is intentionally disabled until explicit release intent is enabled."
 
       - name: Verify validated SHA is current main
         if: steps.version.outputs.release == 'true'
@@ -102,6 +119,10 @@ jobs:
               "Stage Gate",
               "Stage Orchestrator",
               "Production Validation Program",
+              "P2 Semantic Intelligence",
+              "P3 Hardcore Hardening",
+              "Enterprise Hardcore Gate",
+              "Enterprise CodeQL",
           )
           failures: list[str] = []
           for workflow_name in required:
@@ -146,7 +167,7 @@ jobs:
           echo "RELEASE_EXISTS=$RELEASE_EXISTS"
           if [ -n "$TAG_COMMIT" ] && [ "$TAG_COMMIT" != "$VALIDATED_SHA" ]; then
             echo "Release tag $TAG already points to $TAG_COMMIT, not $VALIDATED_SHA."
-            echo "Refusing to move an existing release tag. Bump the project version."
+            echo "Refusing to move an existing release tag. Bump the project version for a new release."
             exit 1
           fi
           if [ "$RELEASE_EXISTS" = "true" ] && [ -z "$TAG_COMMIT" ]; then
