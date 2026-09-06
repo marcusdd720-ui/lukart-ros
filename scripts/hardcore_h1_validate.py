@@ -19,7 +19,8 @@ BASELINE_DOCUMENTS = (
     "docs/ROADMAP_V1_1.md",
     "docs/ENTERPRISE_ROADMAP.md",
 )
-_RELEASE_PATTERN = re.compile(r"v1\.0\.1\s*@\s*([0-9a-f]{40})")
+_RELEASE_COMMIT_PATTERN = re.compile(r"v1\.0\.1\s*@\s*([0-9a-f]{40})")
+_TAG_OBJECT_PATTERN = re.compile(r"v1\.0\.1\s+tag object\s*@\s*([0-9a-f]{40})")
 
 
 def _sha256_bytes(payload: bytes) -> str:
@@ -40,22 +41,36 @@ def _git(*args: str) -> str:
     return completed.stdout.strip()
 
 
-def _document_release_shas(text: str) -> set[str]:
-    return set(_RELEASE_PATTERN.findall(text))
+def _document_release_commit_shas(text: str) -> set[str]:
+    return set(_RELEASE_COMMIT_PATTERN.findall(text))
+
+
+def _document_tag_object_shas(text: str) -> set[str]:
+    return set(_TAG_OBJECT_PATTERN.findall(text))
 
 
 def validate_snapshot(
     *,
     candidate_sha: str,
     head_sha: str,
-    tag_sha: str,
+    tag_object_sha: str,
+    release_commit_sha: str,
     policy: Mapping[str, object],
     documents: Mapping[str, str],
     workflow_text: str,
 ) -> dict[str, object]:
     candidate = require_hex_digest(candidate_sha, field_name="candidate_sha", lengths=(40,))
     head = require_hex_digest(head_sha, field_name="head_sha", lengths=(40,))
-    release = require_hex_digest(tag_sha, field_name="historical_release_sha", lengths=(40,))
+    tag_object = require_hex_digest(
+        tag_object_sha,
+        field_name="historical_release_tag_object_sha",
+        lengths=(40,),
+    )
+    release_commit = require_hex_digest(
+        release_commit_sha,
+        field_name="historical_release_commit_sha",
+        lengths=(40,),
+    )
 
     if head != candidate:
         raise RuntimeError(
@@ -65,15 +80,25 @@ def validate_snapshot(
     baseline = policy.get("baseline")
     if not isinstance(baseline, Mapping):
         raise RuntimeError("Enterprise policy baseline section is missing")
-    configured_release = require_hex_digest(
+    configured_release_commit = require_hex_digest(
         str(baseline.get("v1_0_1_sha", "")),
         field_name="policy.baseline.v1_0_1_sha",
         lengths=(40,),
     )
-    if configured_release != release:
+    configured_tag_object = require_hex_digest(
+        str(baseline.get("v1_0_1_tag_object_sha", "")),
+        field_name="policy.baseline.v1_0_1_tag_object_sha",
+        lengths=(40,),
+    )
+    if configured_release_commit != release_commit:
         raise RuntimeError(
-            "historical release identity mismatch: "
-            f"policy={configured_release} git-tag={release}"
+            "historical release commit identity mismatch: "
+            f"policy={configured_release_commit} git-tag-target={release_commit}"
+        )
+    if configured_tag_object != tag_object:
+        raise RuntimeError(
+            "historical annotated tag identity mismatch: "
+            f"policy={configured_tag_object} git-tag-object={tag_object}"
         )
     if baseline.get("v1_0_1_immutable") is not True:
         raise RuntimeError("historical v1.0.1 baseline is not marked immutable")
@@ -83,11 +108,17 @@ def validate_snapshot(
         text = documents.get(path)
         if text is None:
             raise RuntimeError(f"missing canonical baseline document: {path}")
-        declared = _document_release_shas(text)
-        if declared != {release}:
+        declared_commits = _document_release_commit_shas(text)
+        if declared_commits != {release_commit}:
             raise RuntimeError(
-                "canonical baseline drift in "
-                f"{path}: declared={sorted(declared)} expected={release}"
+                "canonical release commit drift in "
+                f"{path}: declared={sorted(declared_commits)} expected={release_commit}"
+            )
+        declared_tag_objects = _document_tag_object_shas(text)
+        if declared_tag_objects != {tag_object}:
+            raise RuntimeError(
+                "canonical annotated tag drift in "
+                f"{path}: declared={sorted(declared_tag_objects)} expected={tag_object}"
             )
         document_digests[path] = _sha256_text(text)
 
@@ -99,12 +130,14 @@ def validate_snapshot(
         )
 
     return {
-        "schema": "lukart.hardcore-h1-evidence.v1",
+        "schema": "lukart.hardcore-h1-evidence.v2",
         "candidate_sha": candidate,
         "checked_out_head_sha": head,
         "historical_release_tag": HISTORICAL_RELEASE_TAG,
-        "historical_release_sha": release,
-        "policy_release_sha": configured_release,
+        "historical_release_tag_object_sha": tag_object,
+        "historical_release_commit_sha": release_commit,
+        "policy_release_commit_sha": configured_release_commit,
+        "policy_tag_object_sha": configured_tag_object,
         "canonical_document_digests": document_digests,
         "enterprise_workflow_digest": _sha256_text(workflow_text),
         "state": "CONTROL_PASS",
@@ -114,11 +147,17 @@ def validate_snapshot(
 def build_h1_evidence(candidate_sha: str) -> dict[str, object]:
     head_sha = _git("rev-parse", "HEAD")
     try:
-        tag_sha = _git("rev-parse", f"{HISTORICAL_RELEASE_TAG}^{{commit}}")
+        tag_type = _git("cat-file", "-t", HISTORICAL_RELEASE_TAG)
+        tag_object_sha = _git("rev-parse", HISTORICAL_RELEASE_TAG)
+        release_commit_sha = _git("rev-parse", f"{HISTORICAL_RELEASE_TAG}^{{commit}}")
     except subprocess.CalledProcessError as exc:
         raise RuntimeError(
             f"historical release tag {HISTORICAL_RELEASE_TAG} is unavailable in checkout"
         ) from exc
+    if tag_type != "tag":
+        raise RuntimeError(
+            f"historical release tag {HISTORICAL_RELEASE_TAG} is not an annotated tag"
+        )
 
     policy = json.loads((ROOT / POLICY_PATH).read_text(encoding="utf-8"))
     documents = {
@@ -128,7 +167,8 @@ def build_h1_evidence(candidate_sha: str) -> dict[str, object]:
     return validate_snapshot(
         candidate_sha=candidate_sha,
         head_sha=head_sha,
-        tag_sha=tag_sha,
+        tag_object_sha=tag_object_sha,
+        release_commit_sha=release_commit_sha,
         policy=policy,
         documents=documents,
         workflow_text=workflow_text,
@@ -152,7 +192,8 @@ def main() -> int:
     output.write_text(json.dumps(evidence, indent=2, sort_keys=True) + "\n", encoding="utf-8")
     print("H1_EXACT_SHA_BASELINE_INTEGRITY=PASS")
     print(f"H1_CANDIDATE_SHA={evidence['candidate_sha']}")
-    print(f"H1_HISTORICAL_RELEASE_SHA={evidence['historical_release_sha']}")
+    print(f"H1_TAG_OBJECT_SHA={evidence['historical_release_tag_object_sha']}")
+    print(f"H1_RELEASE_COMMIT_SHA={evidence['historical_release_commit_sha']}")
     print(f"H1_EVIDENCE_PATH={output}")
     return 0
 
