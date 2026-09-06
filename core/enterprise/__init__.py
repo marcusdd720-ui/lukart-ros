@@ -27,7 +27,7 @@ from .contracts import (
     ThreatSeverity,
     TrustZone,
 )
-from .durability import DurableRecord, SQLiteProvenanceStore
+from .durability import DurableRecord, RecoveryIdentity, SQLiteProvenanceStore
 from .isolation import (
     IsolatedExecutionError,
     IsolatedResult,
@@ -92,6 +92,7 @@ __all__ = [
     "Permission",
     "ProcessIsolationExecutor",
     "ProvenanceMaterial",
+    "RecoveryIdentity",
     "RedactingTelemetrySink",
     "ResolvedDependency",
     "ResourceDescriptor",
