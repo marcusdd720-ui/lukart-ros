@@ -187,5 +187,19 @@
     "material_mismatch": "FAIL",
     "unknown_digest_algorithm": "FAIL",
     "external_slsa_certification_claimed": false
+  },
+  "h4_capability_isolation": {
+    "schema": "lukart.hardcore.h4-capability-isolation.v1",
+    "python_audit_hook_capability_guard": true,
+    "filesystem_mode": "explicit-read-roots-workspace-write-only",
+    "deny_symlink_creation": true,
+    "deny_process_spawn_by_default": true,
+    "deny_native_ffi_by_default": true,
+    "deny_network_when_policy_denies": true,
+    "sanitized_environment": true,
+    "resource_limits_when_available": true,
+    "hard_timeout_kill": true,
+    "unknown_capability": "FAIL",
+    "kernel_or_container_sandbox_claimed": false
   }
 }
