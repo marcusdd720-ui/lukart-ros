@@ -67,6 +67,15 @@ class AuditCorrelation:
         return content_digest(self.canonical_dict())
 
 
+def _telemetry_correlation_dict(correlation: AuditCorrelation) -> dict[str, str]:
+    """Return the E7-export representation used for telemetry correlation checks."""
+
+    return {
+        key: redact_value(key, value)
+        for key, value in correlation.canonical_dict().items()
+    }
+
+
 def _bounded_redacted_details(
     details: Mapping[str, object],
     *,
@@ -117,7 +126,7 @@ def build_telemetry_attributes(
         max_value_length=max_value_length,
     )
     attributes: dict[str, object] = {}
-    attributes.update(correlation.canonical_dict())
+    attributes.update(_telemetry_correlation_dict(correlation))
     attributes.update({f"detail.{key}": value for key, value in redacted.items()})
     return attributes
 
@@ -167,7 +176,7 @@ def _telemetry_manifest(
     manifest: list[dict[str, object]] = []
     previous = _AUDIT_GENESIS
     expected_trace_id = content_digest({"correlation_id": correlation.correlation_id})[:32]
-    expected_attributes = correlation.canonical_dict()
+    expected_attributes = _telemetry_correlation_dict(correlation)
     for sequence, event in enumerate(events):
         if event.trace_id != expected_trace_id:
             raise EnterpriseContractError("audit telemetry trace correlation mismatch")
@@ -336,7 +345,7 @@ def verify_operational_audit_bundle(
         raise EnterpriseContractError("audit telemetry count gap")
     expected_trace = content_digest({"correlation_id": correlation.correlation_id})[:32]
     previous = _AUDIT_GENESIS
-    expected_attributes = correlation.canonical_dict()
+    expected_attributes = _telemetry_correlation_dict(correlation)
     for expected_sequence, raw_event in enumerate(raw_events):
         if not isinstance(raw_event, Mapping):
             raise EnterpriseContractError("audit telemetry entry is invalid")
