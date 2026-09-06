@@ -185,5 +185,21 @@
     "corrupt_snapshot": "FAIL",
     "blast_radius_breach": "FAIL",
     "silent_partial_recovery": false
+  },
+  "h8_scale_concurrency": {
+    "schema": "lukart.hardcore.h8-scale-concurrency.v1",
+    "structural_budget_schema": "lukart.structural-scale-budget.v1",
+    "max_evidence_count": 4096,
+    "max_graph_nodes": 4096,
+    "max_replay_count": 128,
+    "max_concurrency": 8,
+    "max_blast_radius_size": 4097,
+    "required_profiles": ["small", "medium", "large", "stress"],
+    "deterministic_work_identity_required": true,
+    "concurrency_invariant_work_identity": true,
+    "runtime_memory_are_measured_evidence": true,
+    "wall_clock_is_not_sole_trust_gate": true,
+    "resource_budget_breach": "FAIL",
+    "nondeterministic_work_identity": "FAIL"
   }
 }
