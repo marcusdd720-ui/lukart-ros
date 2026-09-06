@@ -31,21 +31,21 @@ jobs:
       - name: Install
         run: python -m pip install -e ".[dev]"
 
-      - name: Lint Enterprise and H1-H3
+      - name: Lint Enterprise and H1-H4
         run: >-
           ruff check core/enterprise tests/test_enterprise_track.py
           tests/test_hardcore_h1.py tests/test_hardcore_h2.py tests/test_hardcore_h3.py
-          scripts/enterprise_sbom.py scripts/enterprise_threat_check.py scripts/enterprise_certify.py
-          scripts/hardcore_h1_validate.py scripts/hardcore_h2_policy.py
-          scripts/hardcore_h3_provenance.py
+          tests/test_hardcore_h4.py scripts/enterprise_sbom.py scripts/enterprise_threat_check.py
+          scripts/enterprise_certify.py scripts/hardcore_h1_validate.py scripts/hardcore_h2_policy.py
+          scripts/hardcore_h3_provenance.py scripts/hardcore_h4_isolation.py
 
-      - name: Type-check Enterprise and H1-H3
+      - name: Type-check Enterprise and H1-H4
         run: >-
           mypy core/enterprise tests/test_enterprise_track.py
           tests/test_hardcore_h1.py tests/test_hardcore_h2.py tests/test_hardcore_h3.py
-          scripts/enterprise_sbom.py scripts/enterprise_threat_check.py scripts/enterprise_certify.py
-          scripts/hardcore_h1_validate.py scripts/hardcore_h2_policy.py
-          scripts/hardcore_h3_provenance.py
+          tests/test_hardcore_h4.py scripts/enterprise_sbom.py scripts/enterprise_threat_check.py
+          scripts/enterprise_certify.py scripts/hardcore_h1_validate.py scripts/hardcore_h2_policy.py
+          scripts/hardcore_h3_provenance.py scripts/hardcore_h4_isolation.py
 
       - name: H1 focused and adversarial suite
         run: pytest -q tests/test_hardcore_h1.py
@@ -67,6 +67,9 @@ jobs:
 
       - name: H3 focused and adversarial suite
         run: pytest -q tests/test_hardcore_h3.py
+
+      - name: H4 focused and adversarial suite
+        run: pytest -q tests/test_hardcore_h4.py
 
       - name: Threat-model coverage gate
         run: python scripts/enterprise_threat_check.py
@@ -133,6 +136,15 @@ jobs:
           assert h3['full_sha_actions_required'] is True
           assert h3['material_mismatch'] == 'FAIL'
           assert h3['external_slsa_certification_claimed'] is False
+          h4 = policy['h4_capability_isolation']
+          assert h4['schema'] == 'lukart.hardcore.h4-capability-isolation.v1'
+          assert h4['python_audit_hook_capability_guard'] is True
+          assert h4['filesystem_mode'] == 'explicit-read-roots-workspace-write-only'
+          assert h4['deny_process_spawn_by_default'] is True
+          assert h4['deny_native_ffi_by_default'] is True
+          assert h4['deny_network_when_policy_denies'] is True
+          assert h4['unknown_capability'] == 'FAIL'
+          assert h4['kernel_or_container_sandbox_claimed'] is False
           print('ENTERPRISE_POLICY_INTEGRITY=PASS')
           PY
 
@@ -203,7 +215,13 @@ jobs:
           --runner-os "${RUNNER_OS}"
           --runner-arch "${RUNNER_ARCH}"
 
-      - name: Upload Enterprise and H1-H3 evidence bundle
+      - name: H4 exact-SHA capability isolation closure
+        run: >-
+          python scripts/hardcore_h4_isolation.py
+          --candidate-sha "${CANDIDATE_SHA}"
+          --runner-os "${RUNNER_OS}"
+
+      - name: Upload Enterprise and H1-H4 evidence bundle
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: enterprise-evidence-${{ github.event.pull_request.head.sha || github.sha }}
@@ -211,6 +229,7 @@ jobs:
             build/hardcore/h1-baseline-evidence.json
             build/hardcore/h2-repository-policy-evidence.json
             build/hardcore/h3-supply-chain-provenance.json
+            build/hardcore/h4-capability-isolation.json
             build/enterprise/bom.cdx.json
             build/enterprise/scale-certification.json
             build/enterprise/enterprise-engineering-evidence.json
