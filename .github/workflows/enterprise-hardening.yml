@@ -75,6 +75,9 @@ jobs:
       - name: H6 focused and adversarial suite
         run: pytest -q tests/test_hardcore_h6.py
 
+      - name: H7 focused and adversarial suite
+        run: pytest -q tests/test_hardcore_h7.py
+
       - name: Threat-model coverage gate
         run: python scripts/enterprise_threat_check.py
 
@@ -167,6 +170,17 @@ jobs:
           assert h6['nonce_replay_protection_required'] is True
           assert h6['trust_promotion_requires_security_review'] is True
           assert h6['legacy_trust_promotion'] == 'DENY'
+          h7 = policy['h7_recovery_rollback']
+          assert h7['schema'] == 'lukart.hardcore.h7-recovery-rollback.v1'
+          assert h7['recovery_identity_schema'] == 'lukart.recovery-identity.v1'
+          assert h7['atomic_batch_persistence'] is True
+          assert h7['staged_restore_before_replace'] is True
+          assert h7['provenance_identity_required'] is True
+          assert h7['semantic_identity_required'] is True
+          assert h7['max_restore_records'] >= 10000
+          assert h7['corrupt_snapshot'] == 'FAIL'
+          assert h7['blast_radius_breach'] == 'FAIL'
+          assert h7['silent_partial_recovery'] is False
           print('ENTERPRISE_POLICY_INTEGRITY=PASS')
           PY
 
@@ -253,7 +267,12 @@ jobs:
           python scripts/hardcore_h6_authorization.py
           --candidate-sha "${CANDIDATE_SHA}"
 
-      - name: Upload Enterprise and H1-H6 evidence bundle
+      - name: H7 exact-SHA recovery rollback closure
+        run: >-
+          python scripts/hardcore_h7_recovery.py
+          --candidate-sha "${CANDIDATE_SHA}"
+
+      - name: Upload Enterprise and H1-H7 evidence bundle
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: enterprise-evidence-${{ github.event.pull_request.head.sha || github.sha }}
@@ -264,6 +283,7 @@ jobs:
             build/hardcore/h4-capability-isolation.json
             build/hardcore/h5-replay-migration.json
             build/hardcore/h6-authorization-isolation.json
+            build/hardcore/h7-recovery-rollback.json
             build/enterprise/bom.cdx.json
             build/enterprise/scale-certification.json
             build/enterprise/enterprise-engineering-evidence.json
