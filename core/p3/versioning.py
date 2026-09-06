@@ -101,6 +101,21 @@ class CaseMigrationRegistry:
                 queue.append((neighbor, next_route))
         raise P3ContractError(f"no migration path: {source}->{target}")
 
+    def _run_route(
+        self, source_payload: Mapping[str, object], route: tuple[str, ...]
+    ) -> Mapping[str, object]:
+        payload: Mapping[str, object] = dict(source_payload)
+        for index in range(len(route) - 1):
+            left = route[index]
+            right = route[index + 1]
+            step = self._steps[(left, right)]
+            source_copy = json.loads(json.dumps(dict(payload), ensure_ascii=False))
+            result = step.migrate(source_copy)
+            if not isinstance(result, Mapping):
+                raise P3ContractError(f"migration {left}->{right} returned non-mapping")
+            payload = dict(result)
+        return payload
+
     def migrate(self, case: VersionedCase, target_version: str) -> MigrationReport:
         case.verify()
         route = self.path(case.schema_version, target_version)
@@ -108,14 +123,7 @@ class CaseMigrationRegistry:
             return MigrationReport(case, case, route, semantic_diff(case.payload, case.payload))
 
         original_digest = case.payload_digest
-        payload: Mapping[str, object] = dict(case.payload)
-        for left, right in zip(route, route[1:], strict=True):
-            step = self._steps[(left, right)]
-            source_copy = json.loads(json.dumps(dict(payload), ensure_ascii=False))
-            result = step.migrate(source_copy)
-            if not isinstance(result, Mapping):
-                raise P3ContractError(f"migration {left}->{right} returned non-mapping")
-            payload = dict(result)
+        payload = self._run_route(case.payload, route)
 
         case.verify()
         if case.payload_digest != original_digest:
@@ -127,11 +135,7 @@ class CaseMigrationRegistry:
             payload=payload,
         )
 
-        # Determinism gate: the entire path must produce identical canonical output twice.
-        replay_payload: Mapping[str, object] = dict(case.payload)
-        for left, right in zip(route, route[1:], strict=True):
-            source_copy = json.loads(json.dumps(dict(replay_payload), ensure_ascii=False))
-            replay_payload = dict(self._steps[(left, right)].migrate(source_copy))
+        replay_payload = self._run_route(case.payload, route)
         if content_digest(replay_payload) != target.payload_digest:
             raise P3ContractError("non-deterministic migration detected")
 
