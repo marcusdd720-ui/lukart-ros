@@ -81,7 +81,9 @@ def build_h8_evidence(candidate_sha: str) -> dict[str, object]:
     for profile in _profiles():
         structural = certify_profile_structure(profile, budget)
         if not structural.passed:
-            raise RuntimeError(f"H8 structural budget failed for {profile.name}: {structural.failures}")
+            raise RuntimeError(
+                f"H8 structural budget failed for {profile.name}: {structural.failures}"
+            )
         measurement = measure_scale_profile(profile)
         post_measurement = certify_profile_structure(
             profile,
@@ -163,7 +165,9 @@ def build_h8_evidence(candidate_sha: str) -> dict[str, object]:
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description="Validate H8 scale, concurrency and resource budgets")
+    parser = argparse.ArgumentParser(
+        description="Validate H8 scale, concurrency and resource budgets"
+    )
     parser.add_argument("--candidate-sha", required=True)
     parser.add_argument("--output", default="build/hardcore/h8-scale-concurrency.json")
     args = parser.parse_args()
