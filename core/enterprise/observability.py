@@ -131,8 +131,12 @@ class SloEvaluator:
         observed = {item.metric: item.value for item in observations}
         if len(observed) != len(observations):
             raise EnterpriseContractError("duplicate SLI observation")
+        policy_metrics = [policy.metric for policy in policies]
+        if len(set(policy_metrics)) != len(policy_metrics):
+            raise EnterpriseContractError("duplicate SLO policy")
+
         results: list[SloResult] = []
-        for policy in sorted(policies, key=lambda item: item.metric):
+        for policy in policies:
             value = observed.get(policy.metric)
             if value is None:
                 results.append(
