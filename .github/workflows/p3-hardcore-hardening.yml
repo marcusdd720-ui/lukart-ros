@@ -1,0 +1,54 @@
+name: P3 Hardcore Hardening
+
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  p3-hardening:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+      - name: Install
+        run: python -m pip install -e ".[dev]"
+      - name: Lint P3
+        run: >-
+          ruff check core/p3 tests/test_p3_hardcore.py
+          tests/test_p3_hardening_boundaries.py
+      - name: Type-check P3
+        run: >-
+          mypy core/p3 tests/test_p3_hardcore.py
+          tests/test_p3_hardening_boundaries.py
+      - name: Hardcore adversarial suite
+        run: >-
+          pytest -q tests/test_p3_hardcore.py
+          tests/test_p3_hardening_boundaries.py
+      - name: P2 compatibility suite
+        run: pytest -q tests/test_p2_program.py tests/test_post_v1_certification.py
+      - name: Full regression suite
+        run: pytest -q
+      - name: P3 policy integrity
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          policy = json.loads(Path('config/p3_v1.json').read_text())
+          assert policy['baseline']['v1_0_1_immutable'] is True
+          assert policy['baseline']['locked_gold_mutation_for_pass'] is False
+          assert policy['hardening_gate']['trusted_state_bypass_allowed'] is False
+          assert policy['provenance']['sha256_hash_chain'] is True
+          assert policy['controlled_experiments']['direct_candidate_to_trusted'] is False
+          assert policy['agent_runtime']['claims_process_sandbox'] is False
+          assert policy['plugins']['registry_stores_classes_not_instances'] is True
+          assert policy['plugins']['claims_os_sandbox'] is False
+          print('P3 policy integrity: PASS')
+          PY

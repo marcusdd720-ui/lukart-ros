@@ -1,0 +1,91 @@
+{
+  "schema": "lukart.p3-policy.v1",
+  "version": "3.0.0",
+  "baseline": {
+    "post_p2_main_sha": "62e959f93f4930c921429d1243e3f21772bba661",
+    "v1_0_1_immutable": true,
+    "locked_gold_mutation_for_pass": false
+  },
+  "hardening_gate": {
+    "fail_closed": true,
+    "adversarial_tests_required": true,
+    "full_regression_required": true,
+    "measurement_before_optimization": true,
+    "trusted_state_bypass_allowed": false
+  },
+  "semantic_change_graph": {
+    "explicit_dependency_orientation": true,
+    "deterministic_reason_paths": true,
+    "unknown_changed_artifact": "FAIL",
+    "cycles": "FAIL"
+  },
+  "provenance": {
+    "append_only": true,
+    "sha256_hash_chain": true,
+    "partial_write": "FAIL",
+    "tamper": "FAIL",
+    "single_writer_required_for_multi_process": true
+  },
+  "migrations": {
+    "explicit_routes_only": true,
+    "source_immutable": true,
+    "deterministic_replay": true,
+    "silent_semantic_change_allowed": false
+  },
+  "explainability": {
+    "reasoning_digest_bound": true,
+    "lineage_required": true,
+    "evidence_required": true,
+    "contradictions_visible": true,
+    "open_questions_visible": true,
+    "counterfactuals_visible": true
+  },
+  "quality": {
+    "explicit_metric_objective": true,
+    "missing_metric": "VISIBLE",
+    "release_and_corpus_identity_required": true
+  },
+  "controlled_experiments": {
+    "direct_candidate_to_trusted": false,
+    "validation_digest_required": true,
+    "explicit_approver_required": true,
+    "monitoring_before_trusted": true,
+    "rollback_required": true
+  },
+  "agent_runtime": {
+    "certified_provider_allowlist": true,
+    "health_routing": true,
+    "deterministic_fallback": true,
+    "timeout": true,
+    "cancellation": true,
+    "concurrency_budget": true,
+    "step_budget": true,
+    "audit": true,
+    "isolation_level": "logical-thread-boundary",
+    "claims_process_sandbox": false
+  },
+  "api_v1": {
+    "allowlisted_schema_version_pairs": true,
+    "outer_digest": true,
+    "inner_payload_digest": true,
+    "runtime_identity_digest": true,
+    "trusted_analytical_state_requires_authorization": true
+  },
+  "scale": {
+    "synthetic_profiles": true,
+    "latency_measurement": true,
+    "peak_memory_measurement": true,
+    "cache_efficiency_measurement": true,
+    "deterministic_work_digest": true,
+    "shared_runner_timing_is_analytical_certification": false
+  },
+  "plugins": {
+    "registry_stores_classes_not_instances": true,
+    "manifest_binding": true,
+    "permission_allowlist": true,
+    "dependency_allowlist": true,
+    "api_compatibility": true,
+    "isolation_level": "logical-manifest-boundary",
+    "claims_os_sandbox": false
+  }
+}
