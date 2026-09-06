@@ -6,6 +6,7 @@ import pytest
 
 from core.enterprise import (
     IsolatedExecutionError,
+    IsolatedResult,
     IsolatedTask,
     IsolationPolicy,
     ProcessIsolationExecutor,
@@ -31,7 +32,11 @@ def _policy(
     )
 
 
-def _run(executor: ProcessIsolationExecutor, function: str, payload: dict[str, object]) -> object:
+def _run(
+    executor: ProcessIsolationExecutor,
+    function: str,
+    payload: dict[str, object],
+) -> IsolatedResult:
     return executor.run(
         IsolatedTask(
             module=WORKER_MODULE,
