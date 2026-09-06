@@ -15,8 +15,8 @@
       "runtime": "node24"
     },
     "actions/upload-artifact": {
-      "sha": "b7c566a772e6b6bfb58ed0dc250532a479d7789f",
-      "version": "v6",
+      "sha": "043fb46d1a93c77aae656e7c1c64a875d1fc6a0a",
+      "version": "v7.0.1",
       "runtime": "node24"
     },
     "github/codeql-action/init": {
