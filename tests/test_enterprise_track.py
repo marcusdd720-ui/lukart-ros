@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import json
-import os
 import sqlite3
 from pathlib import Path
 
@@ -30,8 +29,8 @@ from core.enterprise import (
     ProcessIsolationExecutor,
     ProvenanceMaterial,
     RedactingTelemetrySink,
-    ResourceDescriptor,
     ResilienceMatrix,
+    ResourceDescriptor,
     RoleDefinition,
     SliDirection,
     SliObservation,
@@ -76,23 +75,34 @@ def _roles() -> tuple[RoleDefinition, ...]:
     )
 
 
+def _resource(tenant: str = "tenant-a") -> ResourceDescriptor:
+    return ResourceDescriptor(
+        resource_id="case-1",
+        tenant_id=tenant,
+        case_id="case-1",
+        classification=DataClassification.CONFIDENTIAL,
+    )
+
+
 def test_e0_governance_targets_enterprise_and_preserves_v1_baseline() -> None:
-    policy = json.loads((ROOT / "config" / "enterprise_v1.json").read_text(encoding="utf-8"))
+    policy = json.loads(
+        (ROOT / "config" / "enterprise_v1.json").read_text(encoding="utf-8")
+    )
     master = (ROOT / "MASTER_PLAN.md").read_text(encoding="utf-8")
     pyproject = (ROOT / "pyproject.toml").read_text(encoding="utf-8")
-    release_workflow = (ROOT / ".github" / "workflows" / "mvros-v1-release.yml").read_text(
-        encoding="utf-8"
-    )
+    release = (
+        ROOT / ".github" / "workflows" / "mvros-v1-release.yml"
+    ).read_text(encoding="utf-8")
 
     assert policy["baseline"]["v1_0_1_immutable"] is True
     assert policy["baseline"]["locked_gold_mutation_for_pass"] is False
     assert "Roadmap target: `Enterprise Track E0-E10`" in master
     assert 'version = "1.1.0.dev0"' in pyproject
-    assert "Development build — no release mutation" in release_workflow
-    assert "Refusing to move an existing release tag" in release_workflow
+    assert "Development build — no release mutation" in release
+    assert "Refusing to move an existing release tag" in release
 
 
-def test_e1_threat_model_requires_critical_mitigation_and_zone_coverage() -> None:
+def test_e1_threat_model_fails_closed_and_requires_zone_coverage() -> None:
     with pytest.raises(EnterpriseContractError):
         Threat(
             threat_id="T-CRITICAL",
@@ -129,12 +139,12 @@ def test_e1_threat_model_requires_critical_mitigation_and_zone_coverage() -> Non
             ),
         )
     )
-    with pytest.raises(EnterpriseContractError):
+    with pytest.raises(EnterpriseContractError, match="coverage missing"):
         model.require_zone_coverage((TrustZone.EXTERNAL, TrustZone.GOVERNANCE))
     assert len(model.digest()) == 64
 
 
-def test_e2_process_isolation_sanitizes_environment_and_blocks_python_network(
+def test_e2_process_isolation_sanitizes_environment_and_denies_network(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     monkeypatch.setenv("LUKART_TEST_SECRET", "must-not-cross-worker-boundary")
@@ -144,13 +154,11 @@ def test_e2_process_isolation_sanitizes_environment_and_blocks_python_network(
         cpu_seconds=2,
         network_allowed=False,
         allowed_entrypoints=(
-            f"{WORKER_MODULE}:echo",
             f"{WORKER_MODULE}:environment_snapshot",
             f"{WORKER_MODULE}:network_probe",
         ),
     )
     executor = ProcessIsolationExecutor(policy)
-
     secret = executor.run(
         IsolatedTask(
             module=WORKER_MODULE,
@@ -177,10 +185,13 @@ def test_e2_hard_timeout_terminates_worker() -> None:
         network_allowed=False,
         allowed_entrypoints=(f"{WORKER_MODULE}:delayed",),
     )
-    executor = ProcessIsolationExecutor(policy)
     with pytest.raises(IsolatedExecutionError, match="hard timeout"):
-        executor.run(
-            IsolatedTask(module=WORKER_MODULE, function="delayed", payload={"seconds": 1.0})
+        ProcessIsolationExecutor(policy).run(
+            IsolatedTask(
+                module=WORKER_MODULE,
+                function="delayed",
+                payload={"seconds": 1.0},
+            )
         )
 
 
@@ -222,7 +233,8 @@ def test_e3_ed25519_attestation_rejects_tamper_expiry_and_revocation() -> None:
             now=200,
         )
     revoked = AttestationVerifier(
-        {"release-key-1": signer.public_key_bytes()}, revoked_key_ids=("release-key-1",)
+        {"release-key-1": signer.public_key_bytes()},
+        revoked_key_ids=("release-key-1",),
     )
     with pytest.raises(EnterpriseContractError, match="revoked"):
         revoked.verify(
@@ -234,49 +246,48 @@ def test_e3_ed25519_attestation_rejects_tamper_expiry_and_revocation() -> None:
         )
 
 
-def test_e4_resolved_cyclonedx_sbom_and_slsa_style_provenance() -> None:
+def test_e4_sbom_slsa_style_provenance_and_full_sha_workflows() -> None:
     bom = build_cyclonedx_sbom(ROOT / "pyproject.toml")
     assert bom["bomFormat"] == "CycloneDX"
     assert bom["specVersion"] == "1.7"
     assert isinstance(bom["components"], list)
     assert bom["components"]
 
+    material = ProvenanceMaterial(
+        uri="git+https://github.com/marcusdd720-ui/lukart-ros",
+        digest="b" * 64,
+    )
     provenance = SlsaStyleProvenance(
         subject_name="lukart-enterprise-evidence",
         subject_digest=content_digest(bom),
         source_sha="a" * 40,
         builder_id="https://github.com/marcusdd720-ui/lukart-ros/actions",
         build_type="https://lukart.local/build/enterprise-gate/v1",
-        materials=(
-            ProvenanceMaterial(uri="git+https://github.com/marcusdd720-ui/lukart-ros", digest="b" * 64),
-        ),
+        materials=(material,),
         parameters={"profile": "enterprise"},
     )
-    predicate = provenance.predicate()
-    assert predicate["predicateType"] == "https://slsa.dev/provenance/v1"
+    assert provenance.predicate()["predicateType"] == "https://slsa.dev/provenance/v1"
     assert len(provenance.digest()) == 64
 
-
-def test_e4_all_external_github_actions_are_full_sha_pinned() -> None:
-    report = audit_workflow_action_pins(ROOT)
-    assert report.scanned_files > 0
-    assert report.external_action_references > 0
-    assert report.findings == ()
+    pin_report = audit_workflow_action_pins(ROOT)
+    assert pin_report.scanned_files > 0
+    assert pin_report.external_action_references > 0
+    assert pin_report.findings == ()
 
 
 def test_e4_pin_audit_rejects_movable_tag(tmp_path: Path) -> None:
-    workflow = tmp_path / ".github" / "workflows"
-    workflow.mkdir(parents=True)
-    (workflow / "bad.yml").write_text(
+    workflows = tmp_path / ".github" / "workflows"
+    workflows.mkdir(parents=True)
+    (workflows / "bad.yml").write_text(
         "jobs:\n  test:\n    steps:\n      - uses: actions/checkout@v4\n",
         encoding="utf-8",
     )
     report = audit_workflow_action_pins(tmp_path)
     assert report.passed is False
-    assert report.findings[0].reason.startswith("external action must be pinned")
+    assert "full 40-character commit SHA" in report.findings[0].reason
 
 
-def test_e5_authorization_is_deny_by_default_tenant_scoped_and_promotion_separated() -> None:
+def test_e5_authorization_denies_cross_tenant_and_separates_promotion() -> None:
     engine = AuthorizationEngine(_roles())
     analyst = engine.build_context(
         subject_id="analyst-1",
@@ -284,24 +295,11 @@ def test_e5_authorization_is_deny_by_default_tenant_scoped_and_promotion_separat
         roles=("analyst",),
         case_ids=("case-1",),
     )
-    resource = ResourceDescriptor(
-        resource_id="case-1",
-        tenant_id="tenant-a",
-        case_id="case-1",
-        classification=DataClassification.CONFIDENTIAL,
-    )
-    assert engine.require(analyst, Permission.CASE_READ, resource).allowed is True
-
-    foreign = ResourceDescriptor(
-        resource_id="case-1",
-        tenant_id="tenant-b",
-        case_id="case-1",
-        classification=DataClassification.CONFIDENTIAL,
-    )
+    assert engine.require(analyst, Permission.CASE_READ, _resource()).allowed is True
     with pytest.raises(EnterpriseContractError, match="cross-tenant"):
-        engine.require(analyst, Permission.CASE_READ, foreign)
+        engine.require(analyst, Permission.CASE_READ, _resource("tenant-b"))
     with pytest.raises(EnterpriseContractError, match="permission denied"):
-        engine.require(analyst, Permission.TRUST_PROMOTE, resource)
+        engine.require(analyst, Permission.TRUST_PROMOTE, _resource())
 
     reviewer = engine.build_context(
         subject_id="reviewer-1",
@@ -309,14 +307,22 @@ def test_e5_authorization_is_deny_by_default_tenant_scoped_and_promotion_separat
         roles=("security-reviewer",),
         case_ids=("case-1",),
     )
-    assert engine.require(reviewer, Permission.TRUST_PROMOTE, resource).allowed is True
+    assert engine.require(reviewer, Permission.TRUST_PROMOTE, _resource()).allowed is True
 
 
-def test_e6_sqlite_hash_chain_backup_restore_and_corruption_detection(tmp_path: Path) -> None:
+def test_e6_hash_chain_backup_restore_and_corruption_detection(tmp_path: Path) -> None:
     path = tmp_path / "ledger.db"
     with SQLiteProvenanceStore(path) as store:
-        first = store.append(stream_id="case-1", event_type="evidence", payload={"id": "EV-1"})
-        second = store.append(stream_id="case-1", event_type="reasoning", payload={"decision": "ABSTAIN"})
+        first = store.append(
+            stream_id="case-1",
+            event_type="evidence",
+            payload={"id": "EV-1"},
+        )
+        second = store.append(
+            stream_id="case-1",
+            event_type="reasoning",
+            payload={"decision": "ABSTAIN"},
+        )
         assert second.previous_digest == first.record_digest
         source_head = store.head_digest()
         snapshot = tmp_path / "snapshot.db"
@@ -331,7 +337,10 @@ def test_e6_sqlite_hash_chain_backup_restore_and_corruption_detection(tmp_path: 
 
     connection = sqlite3.connect(restored_path)
     try:
-        connection.execute("UPDATE provenance SET payload_json = ? WHERE sequence = 0", ('{"id":"EV-X"}',))
+        connection.execute(
+            "UPDATE provenance SET payload_json = ? WHERE sequence = 0",
+            ('{"id":"EV-X"}',),
+        )
         connection.commit()
     finally:
         connection.close()
@@ -341,20 +350,22 @@ def test_e6_sqlite_hash_chain_backup_restore_and_corruption_detection(tmp_path: 
 
 
 def test_e7_observability_redacts_sensitive_values_and_missing_sli_fails() -> None:
+    email = "person" + "@" + "example.com"
+    numeric_identifier = "1" * 11
     sink = RedactingTelemetrySink(max_attributes=8)
     event = sink.emit(
         "agent.result",
         {
-            "email": "person@example.com",
-            "message": "contact person@example.com ref 12345678901",
-            "token": "top-secret-token",
+            "email": email,
+            "message": f"contact {email} ref {numeric_identifier}",
+            "token": "synthetic-secret-token",
             "outcome": "ABSTAIN",
         },
         correlation_id="case-1/run-1",
     )
     assert event.attributes["email"] == "[REDACTED]"
-    assert "person@example.com" not in event.attributes["message"]
-    assert "12345678901" not in event.attributes["message"]
+    assert email not in event.attributes["message"]
+    assert numeric_identifier not in event.attributes["message"]
     assert event.attributes["token"] == "[REDACTED]"
     assert event.attributes["outcome"] == "ABSTAIN"
 
@@ -370,19 +381,13 @@ def test_e7_observability_redacts_sensitive_values_and_missing_sli_fails() -> No
     assert results[1].reason == "missing SLI evidence"
 
 
-def test_e8_api_replay_idempotency_tenant_and_attested_trust_boundaries() -> None:
+def test_e8_api_replay_idempotency_and_attested_trust_boundaries() -> None:
     engine = AuthorizationEngine(_roles())
     analyst = engine.build_context(
         subject_id="analyst-1",
         tenant_id="tenant-a",
         roles=("analyst",),
         case_ids=("case-1",),
-    )
-    resource = ResourceDescriptor(
-        resource_id="case-1",
-        tenant_id="tenant-a",
-        case_id="case-1",
-        classification=DataClassification.CONFIDENTIAL,
     )
     guard = EnterpriseApiGuard(engine, rate_limit=10)
     request = EnterpriseRequest(
@@ -395,8 +400,8 @@ def test_e8_api_replay_idempotency_tenant_and_attested_trust_boundaries() -> Non
         nonce="nonce-1",
         idempotency_key="idem-1",
     )
-    first = guard.process(request, analyst, resource, now=100)
-    assert guard.process(request, analyst, resource, now=101) == first
+    first = guard.process(request, analyst, _resource(), now=100)
+    assert guard.process(request, analyst, _resource(), now=101) == first
 
     conflicting = EnterpriseRequest(
         request_id="req-2",
@@ -409,7 +414,7 @@ def test_e8_api_replay_idempotency_tenant_and_attested_trust_boundaries() -> Non
         idempotency_key="idem-1",
     )
     with pytest.raises(EnterpriseContractError, match="idempotency key reused"):
-        guard.process(conflicting, analyst, resource, now=102)
+        guard.process(conflicting, analyst, _resource(), now=102)
 
     read = EnterpriseRequest(
         request_id="req-read",
@@ -420,9 +425,9 @@ def test_e8_api_replay_idempotency_tenant_and_attested_trust_boundaries() -> Non
         payload={},
         nonce="read-nonce",
     )
-    guard.process(read, analyst, resource, now=103)
+    guard.process(read, analyst, _resource(), now=103)
     with pytest.raises(EnterpriseContractError, match="replay nonce"):
-        guard.process(read, analyst, resource, now=104)
+        guard.process(read, analyst, _resource(), now=104)
 
     signer = AttestationSigner.generate("api-review-key")
     verifier = AttestationVerifier({"api-review-key": signer.public_key_bytes()})
@@ -463,7 +468,7 @@ def test_e8_api_replay_idempotency_tenant_and_attested_trust_boundaries() -> Non
         attestation=attestation,
     )
     trusted_guard = EnterpriseApiGuard(engine, verifier=verifier)
-    receipt = trusted_guard.process(signed, reviewer, resource, now=150)
+    receipt = trusted_guard.process(signed, reviewer, _resource(), now=150)
     assert receipt.attestation_digest == attestation.digest()
 
 
@@ -512,7 +517,10 @@ def test_e10_gate_cannot_self_claim_independent_review() -> None:
 
     signer = AttestationSigner.generate("independent-review-key")
     verifier = AttestationVerifier({"independent-review-key": signer.public_key_bytes()})
-    review_payload = {"reviewer_id": "external-reviewer-1", "scope": "E0-E10 security review"}
+    review_payload = {
+        "reviewer_id": "external-reviewer-1",
+        "scope": "E0-E10 security review",
+    }
     attestation = signer.sign(
         purpose=AttestationPurpose.SECURITY_REVIEW,
         subject_digest=result.evidence_bundle_digest,
@@ -542,6 +550,9 @@ def test_e10_failed_control_blocks_candidate() -> None:
         )
         for index in range(10)
     ]
-    result = EnterpriseCertificationGate().evaluate(candidate_sha="c" * 40, evidence=evidence)
+    result = EnterpriseCertificationGate().evaluate(
+        candidate_sha="c" * 40,
+        evidence=evidence,
+    )
     assert result.state is EnterpriseGateState.FAIL
     assert result.failed_stages == ("E4",)
