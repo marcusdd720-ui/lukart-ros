@@ -1,0 +1,23 @@
+{
+  "schema": "lukart.corpus-manifest.v1",
+  "corpus_id": "post-v1-gold-v1.1",
+  "corpus_version": "1.1.0",
+  "corpus_path": "data/quality/post_v1_gold_v1_1.json",
+  "corpus_sha256": "e5c974b6d041e7a2af5852b051bbddd84102ba642f8b14b2d86a274632a06d50",
+  "baseline_release": "v1.0.1",
+  "baseline_sha": "802013c4d0e53dc12306a97e1877ebba86af64a7",
+  "privacy": "synthetic_only",
+  "splits": {
+    "development": 5,
+    "validation": 5,
+    "locked_evaluation": 5
+  },
+  "locked_evaluation_policy": "certification_only_no_tuning",
+  "review_status": "candidate_pending_independent_freeze",
+  "reviewer": null,
+  "case_ids": [
+    "PV11-001", "PV11-002", "PV11-003", "PV11-004", "PV11-005",
+    "PV11-006", "PV11-007", "PV11-008", "PV11-009", "PV11-010",
+    "PV11-011", "PV11-012", "PV11-013", "PV11-014", "PV11-015"
+  ]
+}
