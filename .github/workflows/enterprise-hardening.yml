@@ -25,10 +25,17 @@ jobs:
         run: python -m pip install -e ".[dev]"
 
       - name: Lint Enterprise
-        run: ruff check core/enterprise tests/test_enterprise_track.py scripts/enterprise_sbom.py
+        run: >-
+          ruff check core/enterprise tests/test_enterprise_track.py
+          scripts/enterprise_sbom.py scripts/enterprise_threat_check.py
 
       - name: Type-check Enterprise
-        run: mypy core/enterprise tests/test_enterprise_track.py scripts/enterprise_sbom.py
+        run: >-
+          mypy core/enterprise tests/test_enterprise_track.py
+          scripts/enterprise_sbom.py scripts/enterprise_threat_check.py
+
+      - name: Threat-model coverage gate
+        run: python scripts/enterprise_threat_check.py
 
       - name: Enterprise adversarial suite
         run: pytest -q tests/test_enterprise_track.py
