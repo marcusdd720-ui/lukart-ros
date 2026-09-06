@@ -45,7 +45,8 @@ class StableApiResource:
             raise P3ContractError("API resource_id is required")
         if self.trust_level is TrustLevel.TRUSTED and self.kind in _ANALYTICAL_TRUST_KINDS:
             raise P3ContractError(
-                "external API cannot originate trusted analytical state without signed attestation"
+                "trusted analytical API authorization marker is insufficient; "
+                "signed attestation is required"
             )
 
     @property
@@ -115,9 +116,8 @@ class ApiContractRegistry:
 
         trust_level = envelope.payload.get("trust_level")
         kind = envelope.payload.get("kind")
-        if trust_level == TrustLevel.TRUSTED.value and kind in {
-            item.value for item in _ANALYTICAL_TRUST_KINDS
-        }:
+        analytical_kinds = {item.value for item in _ANALYTICAL_TRUST_KINDS}
+        if trust_level == TrustLevel.TRUSTED.value and kind in analytical_kinds:
             raise P3ContractError(
                 "external API cannot decode trusted analytical state without signed attestation"
             )
