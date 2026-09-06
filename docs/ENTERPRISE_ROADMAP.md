@@ -2,7 +2,8 @@
 
 Status: Engineering implementation merged through PR #123; retained as the E0-E10 control contract.
 Enterprise implementation base: `P3 merge @ 8550d08651957afd7f21b91553768786cb8bcf6e`
-Immutable historical release: `v1.0.1 @ 8020137534412bde79b9034d094625565efc3f08`
+Immutable historical release: `v1.0.1 @ 802013c4d0e53dc12306a97e1877ebba86af64a7`
+Historical tag identity: `v1.0.1 tag object @ 9f7c0b28f766c8921e63b1d517fefcc96aa991d4`
 Active continuation: `docs/HARDCORE_ROADMAP.md`
 
 ## Purpose
