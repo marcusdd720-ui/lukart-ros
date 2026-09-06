@@ -31,21 +31,23 @@ jobs:
       - name: Install
         run: python -m pip install -e ".[dev]"
 
-      - name: Lint Enterprise and H1-H4
+      - name: Lint Enterprise and H1-H5
         run: >-
-          ruff check core/enterprise tests/test_enterprise_track.py
-          tests/test_hardcore_h1.py tests/test_hardcore_h2.py tests/test_hardcore_h3.py
-          tests/test_hardcore_h4.py scripts/enterprise_sbom.py scripts/enterprise_threat_check.py
-          scripts/enterprise_certify.py scripts/hardcore_h1_validate.py scripts/hardcore_h2_policy.py
-          scripts/hardcore_h3_provenance.py scripts/hardcore_h4_isolation.py
+          ruff check core/enterprise core/p3/contracts.py core/p3/versioning.py
+          tests/test_enterprise_track.py tests/test_hardcore_h1.py tests/test_hardcore_h2.py
+          tests/test_hardcore_h3.py tests/test_hardcore_h4.py tests/test_hardcore_h5.py
+          scripts/enterprise_sbom.py scripts/enterprise_threat_check.py scripts/enterprise_certify.py
+          scripts/hardcore_h1_validate.py scripts/hardcore_h2_policy.py scripts/hardcore_h3_provenance.py
+          scripts/hardcore_h4_isolation.py scripts/hardcore_h5_replay.py
 
-      - name: Type-check Enterprise and H1-H4
+      - name: Type-check Enterprise and H1-H5
         run: >-
-          mypy core/enterprise tests/test_enterprise_track.py
-          tests/test_hardcore_h1.py tests/test_hardcore_h2.py tests/test_hardcore_h3.py
-          tests/test_hardcore_h4.py scripts/enterprise_sbom.py scripts/enterprise_threat_check.py
-          scripts/enterprise_certify.py scripts/hardcore_h1_validate.py scripts/hardcore_h2_policy.py
-          scripts/hardcore_h3_provenance.py scripts/hardcore_h4_isolation.py
+          mypy core/enterprise core/p3/contracts.py core/p3/versioning.py
+          tests/test_enterprise_track.py tests/test_hardcore_h1.py tests/test_hardcore_h2.py
+          tests/test_hardcore_h3.py tests/test_hardcore_h4.py tests/test_hardcore_h5.py
+          scripts/enterprise_sbom.py scripts/enterprise_threat_check.py scripts/enterprise_certify.py
+          scripts/hardcore_h1_validate.py scripts/hardcore_h2_policy.py scripts/hardcore_h3_provenance.py
+          scripts/hardcore_h4_isolation.py scripts/hardcore_h5_replay.py
 
       - name: H1 focused and adversarial suite
         run: pytest -q tests/test_hardcore_h1.py
@@ -70,6 +72,9 @@ jobs:
 
       - name: H4 focused and adversarial suite
         run: pytest -q tests/test_hardcore_h4.py
+
+      - name: H5 focused and adversarial suite
+        run: pytest -q tests/test_hardcore_h5.py
 
       - name: Threat-model coverage gate
         run: python scripts/enterprise_threat_check.py
@@ -145,6 +150,16 @@ jobs:
           assert h4['deny_network_when_policy_denies'] is True
           assert h4['unknown_capability'] == 'FAIL'
           assert h4['kernel_or_container_sandbox_claimed'] is False
+          h5 = policy['h5_replay_migration']
+          assert h5['schema'] == 'lukart.hardcore.h5-replay-migration.v1'
+          assert h5['runtime_identity_schema'] == 'lukart.runtime-identity.v2'
+          assert h5['complete_identity_required_for_identical'] is True
+          assert h5['provider_plugin_versions_required'] is True
+          assert h5['input_evidence_digests_required'] is True
+          assert h5['explicit_cross_version_migration_required'] is True
+          assert h5['unknown_migration_path'] == 'FAIL'
+          assert h5['ambiguous_migration_path'] == 'FAIL'
+          assert h5['semantic_divergence_visible'] is True
           print('ENTERPRISE_POLICY_INTEGRITY=PASS')
           PY
 
@@ -221,7 +236,12 @@ jobs:
           --candidate-sha "${CANDIDATE_SHA}"
           --runner-os "${RUNNER_OS}"
 
-      - name: Upload Enterprise and H1-H4 evidence bundle
+      - name: H5 exact-SHA replay migration closure
+        run: >-
+          python scripts/hardcore_h5_replay.py
+          --candidate-sha "${CANDIDATE_SHA}"
+
+      - name: Upload Enterprise and H1-H5 evidence bundle
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: enterprise-evidence-${{ github.event.pull_request.head.sha || github.sha }}
@@ -230,6 +250,7 @@ jobs:
             build/hardcore/h2-repository-policy-evidence.json
             build/hardcore/h3-supply-chain-provenance.json
             build/hardcore/h4-capability-isolation.json
+            build/hardcore/h5-replay-migration.json
             build/enterprise/bom.cdx.json
             build/enterprise/scale-certification.json
             build/enterprise/enterprise-engineering-evidence.json
