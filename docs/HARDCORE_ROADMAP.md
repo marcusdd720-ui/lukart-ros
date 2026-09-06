@@ -1,22 +1,22 @@
 # LUKART ROS — Hardcore Enterprise Roadmap H1-H10
 
 Status: Active development roadmap
-Historical release authority: live Git tag `v1.0.1`; the tag commit is validated by H1 and MUST NOT be moved by development work.
+Historical release authority: live annotated Git tag `v1.0.1`; H1 validates both the tag-object identity and its target commit, and development work MUST NOT move or reinterpret either identity.
 Predecessor: Enterprise E0-E10 engineering implementation. E10 remains capped at `INDEPENDENT_REVIEW_REQUIRED` unless genuine separately attested independent review evidence exists.
 
 This roadmap extends existing P2/P3/Enterprise authorities. It MUST NOT create a parallel reasoning, epistemic, provider, replay, authorization, provenance or certification authority where a canonical mechanism already exists.
 
 ## H1 — Exact-SHA Evidence Integrity & Baseline Reconciliation
 
-Failure mode: validation can be green on a PR head while the merge SHA is never subjected to the Enterprise gate, and static governance documents/configuration can drift from the immutable release tag.
+Failure mode: validation can be green on a PR head while the merge SHA is never subjected to the Enterprise gate, and static governance documents/configuration can drift from the immutable release tag or confuse an annotated tag object's identity with its target commit.
 
 Controls:
 - bind the Enterprise gate to the exact checked-out candidate SHA;
-- validate the configured historical `v1.0.1` SHA against the actual Git tag commit;
+- validate the configured historical `v1.0.1` target commit and annotated tag-object SHA against live Git;
 - fail closed on baseline drift in canonical governance documents;
 - run the Enterprise gate on both PR candidates and post-merge `main`;
 - fetch sufficient Git history/tags for historical baseline validation;
-- emit deterministic H1 evidence containing candidate identity and digests of canonical baseline documents/workflow.
+- emit deterministic H1 evidence containing candidate identity, both historical release identities and digests of canonical baseline documents/workflow.
 
 Acceptance:
 - wrong candidate SHA, moved/wrong historical release identity, stale canonical baseline text, missing post-merge gate or insufficient tag history all fail closed;
