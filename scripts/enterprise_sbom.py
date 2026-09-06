@@ -8,7 +8,9 @@ from core.enterprise.supply_chain import build_cyclonedx_sbom
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description="Generate LUKART resolved-dependency CycloneDX SBOM")
+    parser = argparse.ArgumentParser(
+        description="Generate LUKART resolved-dependency CycloneDX SBOM"
+    )
     parser.add_argument("--pyproject", default="pyproject.toml")
     parser.add_argument("--extra", action="append", default=[])
     parser.add_argument("--output", default="build/enterprise/bom.cdx.json")
