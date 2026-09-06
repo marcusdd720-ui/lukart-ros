@@ -223,7 +223,9 @@ class CaseMigrationRegistry:
                     migration_report.target.schema_version,
                 )
                 if expected_pair != (baseline.schema_version, candidate.schema_version):
-                    raise P3ContractError("migration report does not match replay identity versions")
+                    raise P3ContractError(
+                        "migration report does not match replay identity versions"
+                    )
                 if migration_report.path != route:
                     raise P3ContractError("migration report path does not match registry path")
                 semantic_divergence = migration_report.changed_semantics
