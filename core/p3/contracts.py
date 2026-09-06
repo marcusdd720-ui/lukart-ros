@@ -64,7 +64,8 @@ class RuntimeIdentity:
 
 def _normalize(value: object) -> object:
     if isinstance(value, Mapping):
-        return {str(key): _normalize(item) for key, item in sorted(value.items(), key=lambda x: str(x[0]))}
+        items = sorted(value.items(), key=lambda item: str(item[0]))
+        return {str(key): _normalize(item) for key, item in items}
     if isinstance(value, tuple):
         return [_normalize(item) for item in value]
     if isinstance(value, list):
