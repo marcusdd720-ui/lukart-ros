@@ -1,9 +1,10 @@
 {
   "schema": "lukart.enterprise-policy.v1",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "baseline": {
     "enterprise_base_sha": "8550d08651957afd7f21b91553768786cb8bcf6e",
     "v1_0_1_sha": "802013c4d0e53dc12306a97e1877ebba86af64a7",
+    "v1_0_1_tag_object_sha": "9f7c0b28f766c8921e63b1d517fefcc96aa991d4",
     "v1_0_1_immutable": true,
     "locked_gold_mutation_for_pass": false
   },

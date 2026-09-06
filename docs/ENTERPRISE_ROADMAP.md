@@ -1,8 +1,10 @@
 # LUKART ROS — Enterprise Hardcore Track
 
-Status: Active engineering hardening program
-Baseline: `main @ 8550d08651957afd7f21b91553768786cb8bcf6e`
+Status: Engineering implementation merged through PR #123; retained as the E0-E10 control contract.
+Enterprise implementation base: `P3 merge @ 8550d08651957afd7f21b91553768786cb8bcf6e`
 Immutable historical release: `v1.0.1 @ 802013c4d0e53dc12306a97e1877ebba86af64a7`
+Historical tag identity: `v1.0.1 tag object @ 9f7c0b28f766c8921e63b1d517fefcc96aa991d4`
+Active continuation: `docs/HARDCORE_ROADMAP.md`
 
 ## Purpose
 
@@ -142,13 +144,16 @@ The gate consumes evidence from E0-E9. It can return:
 - `INDEPENDENT_REVIEW_REQUIRED` — engineering evidence is complete but human/security review is
   still required for Enterprise Candidate status.
 
-The automated gate MUST NOT self-declare independent review or external certification.
+The automated gate MUST NOT self-declare independent review or external certification. In the
+current implementation the automated engineering bundle deliberately terminates at
+`INDEPENDENT_REVIEW_REQUIRED` until separately signed review evidence is supplied.
 
 ## Definition of Done
 
-E0-E10 are engineering-complete only when Ruff, MyPy, focused enterprise/adversarial tests, P2/P3
-compatibility tests, full regression, Stage Gate and the dedicated Enterprise workflow all pass on
-one exact PR head SHA. Merge must use that exact SHA.
+E0-E10 engineering implementation requires Ruff, MyPy, focused enterprise/adversarial tests, P2/P3
+compatibility tests, full regression, Stage Gate and the dedicated Enterprise workflow to pass on
+one exact PR head SHA. Merge must use that exact SHA. H1 additionally requires the dedicated
+Enterprise workflow to validate the resulting post-merge `main` SHA independently.
 
 A merged engineering implementation is not, by itself, an independently certified Enterprise
 release.
