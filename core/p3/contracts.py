@@ -1,7 +1,7 @@
 """Shared P3 integrity contracts.
 
 P3 treats canonical bytes, content digests and explicit trust boundaries as
-public contracts.  These helpers deliberately contain no Product reasoning
+public contracts. These helpers deliberately contain no Product reasoning
 logic; they only protect transport, persistence and orchestration boundaries.
 """
 
@@ -9,9 +9,12 @@ from __future__ import annotations
 
 import hashlib
 import json
+import string
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from enum import StrEnum
+
+_HEX_ALPHABET = frozenset(string.hexdigits.lower())
 
 
 class P3ContractError(ValueError):
@@ -35,7 +38,7 @@ def require_hex_digest(
     if len(normalized) not in lengths:
         allowed = "/".join(str(length) for length in lengths)
         raise P3ContractError(f"{field_name} must be a {allowed}-character hex digest")
-    if any(character not in "0123456789abcdef" for character in normalized):
+    if any(character not in _HEX_ALPHABET for character in normalized):
         raise P3ContractError(f"{field_name} must contain hexadecimal characters only")
     return normalized
 
