@@ -125,9 +125,13 @@ def validate_snapshot(
             f"actual={summary.get('enforcement')!r} expected={enforcement!r}"
         )
     if ruleset_detail.get("id") != summary.get("id"):
-        raise RuntimeError("repository policy visibility mismatch: ruleset detail ID is inconsistent")
+        raise RuntimeError(
+            "repository policy visibility mismatch: ruleset detail ID is inconsistent"
+        )
     if ruleset_detail.get("name") != ruleset_name or ruleset_detail.get("target") != target:
-        raise RuntimeError("repository policy visibility mismatch: ruleset detail identity is inconsistent")
+        raise RuntimeError(
+            "repository policy visibility mismatch: ruleset detail identity is inconsistent"
+        )
     if ruleset_detail.get("enforcement") != enforcement:
         raise RuntimeError("repository policy drift: detailed ruleset is not actively enforced")
 
@@ -217,7 +221,10 @@ def validate_snapshot(
         if workflow_text is None:
             raise RuntimeError(f"canonical workflow is missing: {workflow}")
         if "pull_request:" not in workflow_text:
-            raise RuntimeError(f"canonical required-check workflow lacks pull_request trigger: {workflow}")
+            raise RuntimeError(
+                "canonical required-check workflow lacks pull_request trigger: "
+                f"{workflow}"
+            )
         if f"\n  {job_id}:\n" not in workflow_text:
             raise RuntimeError(
                 f"canonical required-check job identity is missing: {workflow}#{job_id}"
@@ -273,7 +280,12 @@ def _github_json(url: str, *, token: str | None) -> object:
     try:
         with urllib.request.urlopen(request, timeout=20) as response:
             return json.loads(response.read().decode("utf-8"))
-    except (urllib.error.HTTPError, urllib.error.URLError, TimeoutError, json.JSONDecodeError) as exc:
+    except (
+        urllib.error.HTTPError,
+        urllib.error.URLError,
+        TimeoutError,
+        json.JSONDecodeError,
+    ) as exc:
         raise RuntimeError(f"POLICY_VISIBILITY_UNKNOWN: cannot read {url}: {exc}") from exc
 
 
