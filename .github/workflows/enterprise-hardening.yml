@@ -84,6 +84,9 @@ jobs:
       - name: H9 focused and adversarial suite
         run: pytest -q tests/test_hardcore_h9.py
 
+      - name: H10 focused and adversarial suite
+        run: pytest -q tests/test_hardcore_h10.py
+
       - name: Threat-model coverage gate
         run: python scripts/enterprise_threat_check.py
 
@@ -208,6 +211,21 @@ jobs:
           assert h9['unknown_schema'] == 'FAIL'
           assert h9['tamper_or_gap'] == 'FAIL'
           assert h9['cryptographic_authenticity_claimed'] is False
+          h10 = policy['h10_evidence_closure']
+          assert h10['schema'] == 'lukart.hardcore.h10-evidence-closure.v1'
+          assert h10['manifest_schema'] == 'lukart.hardcore.h10-evidence-manifest.v1'
+          assert h10['expected_stages'] == ['H1', 'H2', 'H3', 'H4', 'H5', 'H6', 'H7', 'H8', 'H9']
+          assert h10['exact_candidate_sha_required'] is True
+          assert h10['canonical_config_digest_required'] is True
+          assert h10['missing_stage'] == 'FAIL'
+          assert h10['mixed_sha'] == 'FAIL'
+          assert h10['evidence_digest_mismatch'] == 'FAIL'
+          assert h10['unknown_schema'] == 'FAIL'
+          assert h10['failed_stage'] == 'FAIL'
+          assert h10['engineering_pass_may_be_automated'] is True
+          assert h10['independent_review_state'] == 'INDEPENDENT_REVIEW_REQUIRED'
+          assert h10['independent_certification_claimed'] is False
+          assert h10['release_mutation_requested'] is False
           print('ENTERPRISE_POLICY_INTEGRITY=PASS')
           PY
 
@@ -315,7 +333,12 @@ jobs:
           --workflow-id "${GITHUB_WORKFLOW}"
           --workflow-ref "${GITHUB_WORKFLOW_REF}"
 
-      - name: Upload Enterprise and H1-H9 evidence bundle
+      - name: H10 exact-SHA evidence closure
+        run: >-
+          python scripts/hardcore_h10_closure.py
+          --candidate-sha "${CANDIDATE_SHA}"
+
+      - name: Upload Enterprise and H1-H10 evidence bundle
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: enterprise-evidence-${{ github.event.pull_request.head.sha || github.sha }}
@@ -329,6 +352,7 @@ jobs:
             build/hardcore/h7-recovery-rollback.json
             build/hardcore/h8-scale-concurrency.json
             build/hardcore/h9-tamper-evident-audit.json
+            build/hardcore/h10-engineering-evidence-manifest.json
             build/enterprise/bom.cdx.json
             build/enterprise/scale-certification.json
             build/enterprise/enterprise-engineering-evidence.json
