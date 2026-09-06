@@ -1,0 +1,244 @@
+{
+  "baseline_release": "v1.0.1",
+  "baseline_sha": "802013c4d0e53dc12306a97e1877ebba86af64a7",
+  "cases": [
+    {
+      "case_id": "PV11-001",
+      "expected": {
+        "decision": "CONCLUDE",
+        "evidence_required": true,
+        "preserve_status": "FACT"
+      },
+      "input": {
+        "evidence_refs": [
+          "EV-001"
+        ],
+        "statement": "The synthetic receipt states total 120 PLN.",
+        "status": "FACT"
+      },
+      "kind": "fact",
+      "split": "development"
+    },
+    {
+      "case_id": "PV11-002",
+      "expected": {
+        "may_promote_to_fact": false,
+        "preserve_status": "CLAIM"
+      },
+      "input": {
+        "evidence_refs": [],
+        "statement": "Party A claims payment was made.",
+        "status": "CLAIM"
+      },
+      "kind": "claim",
+      "split": "development"
+    },
+    {
+      "case_id": "PV11-003",
+      "expected": {
+        "may_promote_to_fact": false,
+        "preserve_status": "HYPOTHESIS"
+      },
+      "input": {
+        "evidence_refs": [
+          "EV-003"
+        ],
+        "statement": "The delay may result from delivery failure.",
+        "status": "HYPOTHESIS"
+      },
+      "kind": "hypothesis",
+      "split": "development"
+    },
+    {
+      "case_id": "PV11-004",
+      "expected": {
+        "preserve_status": "INTERPRETATION"
+      },
+      "input": {
+        "evidence_refs": [
+          "EV-004"
+        ],
+        "statement": "The timestamp sequence is consistent with later registration.",
+        "status": "INTERPRETATION"
+      },
+      "kind": "interpretation",
+      "split": "development"
+    },
+    {
+      "case_id": "PV11-005",
+      "expected": {
+        "preserve_status": "RECOMMENDATION"
+      },
+      "input": {
+        "evidence_refs": [],
+        "statement": "Request the missing source document.",
+        "status": "RECOMMENDATION"
+      },
+      "kind": "recommendation",
+      "split": "development"
+    },
+    {
+      "case_id": "PV11-006",
+      "expected": {
+        "fail_closed": true,
+        "transition_allowed": false
+      },
+      "input": {
+        "evidence_refs": [],
+        "source": "HYPOTHESIS",
+        "target": "FACT"
+      },
+      "kind": "illegal_transition",
+      "split": "validation"
+    },
+    {
+      "case_id": "PV11-007",
+      "expected": {
+        "transition_allowed": true
+      },
+      "input": {
+        "evidence_refs": [
+          "EV-007"
+        ],
+        "source": "HYPOTHESIS",
+        "target": "FACT"
+      },
+      "kind": "evidence_transition",
+      "split": "validation"
+    },
+    {
+      "case_id": "PV11-008",
+      "expected": {
+        "decision": "ABSTAIN",
+        "open_questions_min": 1
+      },
+      "input": {
+        "conclusion_id": "C-008",
+        "support_status": "UNKNOWN"
+      },
+      "kind": "insufficient_evidence",
+      "split": "validation"
+    },
+    {
+      "case_id": "PV11-009",
+      "expected": {
+        "auto_resolve": false,
+        "contradiction_visible": true
+      },
+      "input": {
+        "sources": [
+          {
+            "id": "EV-A",
+            "value": "2026-01-10"
+          },
+          {
+            "id": "EV-B",
+            "value": "2026-01-12"
+          }
+        ]
+      },
+      "kind": "contradiction",
+      "split": "validation"
+    },
+    {
+      "case_id": "PV11-010",
+      "expected": {
+        "decision": "ABSTAIN",
+        "unresolved_visible": true
+      },
+      "input": {
+        "question": "Which date is authoritative?",
+        "status": "UNRESOLVED"
+      },
+      "kind": "unresolved",
+      "split": "validation"
+    },
+    {
+      "case_id": "PV11-011",
+      "expected": {
+        "certainty_increase": false,
+        "preserve_evidence": true,
+        "preserve_open_questions": true,
+        "preserve_status": "HYPOTHESIS"
+      },
+      "input": {
+        "evidence_refs": [
+          "EV-011"
+        ],
+        "open_questions": [
+          "OQ-011"
+        ],
+        "status": "HYPOTHESIS"
+      },
+      "kind": "renderer_fidelity",
+      "split": "locked_evaluation"
+    },
+    {
+      "case_id": "PV11-012",
+      "expected": {
+        "deterministic": true,
+        "tamper_detected": true
+      },
+      "input": {
+        "code_sha": "synthetic-sha",
+        "config_version": "1.1",
+        "payload": {
+          "a": 1,
+          "b": [
+            "x",
+            "y"
+          ]
+        }
+      },
+      "kind": "replay",
+      "split": "locked_evaluation"
+    },
+    {
+      "case_id": "PV11-013",
+      "expected": {
+        "broken_chain_fails": true,
+        "continuity_required": true
+      },
+      "input": {
+        "evidence_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "parent_hash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+      },
+      "kind": "provenance",
+      "split": "locked_evaluation"
+    },
+    {
+      "case_id": "PV11-014",
+      "expected": {
+        "blast_radius_explicit": true,
+        "replay_required": true
+      },
+      "input": {
+        "affected": [
+          "K-014",
+          "R-014"
+        ],
+        "changed_artifact": "EV-014"
+      },
+      "kind": "propagation",
+      "split": "locked_evaluation"
+    },
+    {
+      "case_id": "PV11-015",
+      "expected": {
+        "direct_promotion_allowed": false,
+        "promotion_gate_required": true
+      },
+      "input": {
+        "candidate_status": "HYPOTHESIS",
+        "requested_target": "FACT"
+      },
+      "kind": "self_healing",
+      "split": "locked_evaluation"
+    }
+  ],
+  "corpus_id": "post-v1-gold-v1.1",
+  "privacy": "synthetic_only",
+  "schema": "lukart.gold-corpus.v1",
+  "status": "candidate",
+  "version": "1.1.0"
+}
