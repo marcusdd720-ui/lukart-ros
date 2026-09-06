@@ -17,7 +17,7 @@ from core.p3.contracts import content_digest, require_hex_digest
 
 from .contracts import EnterpriseContractError
 
-_ACTION_REF = re.compile(r"^\s*uses:\s*([^\s#]+)", re.MULTILINE)
+_ACTION_REF = re.compile(r"^\s*(?:-\s*)?uses:\s*([^\s#]+)", re.MULTILINE)
 _FULL_SHA = re.compile(r"^[0-9a-fA-F]{40}$")
 _DEP_NAME = re.compile(r"^\s*([A-Za-z0-9_.-]+)")
 
