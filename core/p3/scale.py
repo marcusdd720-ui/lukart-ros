@@ -108,7 +108,9 @@ def certify_profile_structure(
     if profile.concurrency > budget.max_concurrency:
         failures.append("concurrency")
     expected_blast_radius = profile.graph_nodes + 1
-    observed_blast_radius = expected_blast_radius if blast_radius_size is None else blast_radius_size
+    observed_blast_radius = (
+        expected_blast_radius if blast_radius_size is None else blast_radius_size
+    )
     if observed_blast_radius != expected_blast_radius:
         failures.append("blast_radius_identity")
     if observed_blast_radius > budget.max_blast_radius_size:
