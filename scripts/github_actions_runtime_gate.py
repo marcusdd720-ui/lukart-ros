@@ -3,9 +3,10 @@ from __future__ import annotations
 import argparse
 import json
 import re
+from collections.abc import Mapping
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Mapping, cast
+from typing import cast
 
 POLICY_RELATIVE_PATH = Path("config/github_actions_runtime_v1.json")
 WORKFLOWS_RELATIVE_PATH = Path(".github/workflows")
@@ -46,7 +47,10 @@ def _load_policy(root: Path) -> Mapping[str, object]:
         raise RuntimeError(f"Cannot load GitHub Actions runtime policy: {path}") from exc
     policy = _mapping(payload, label="runtime policy")
     if policy.get("schema") != POLICY_SCHEMA:
-        raise RuntimeError(f"Unknown GitHub Actions runtime policy schema: {policy.get('schema')!r}")
+        observed_schema = policy.get("schema")
+        raise RuntimeError(
+            f"Unknown GitHub Actions runtime policy schema: {observed_schema!r}"
+        )
     minimum = policy.get("minimum_node_runtime")
     if minimum != 24:
         raise RuntimeError(f"PH-01 requires minimum_node_runtime=24, got {minimum!r}")
@@ -101,7 +105,13 @@ def audit_workflow_action_runtime(root: Path) -> RuntimeAuditReport:
                 continue
             identity, ref = reference.rsplit("@", 1)
             if not FULL_SHA_RE.fullmatch(ref):
-                findings.append(RuntimeFinding(relative, reference, "external action ref is not a full SHA"))
+                findings.append(
+                    RuntimeFinding(
+                        relative,
+                        reference,
+                        "external action ref is not a full SHA",
+                    )
+                )
                 continue
             entry = approved.get(identity)
             if entry is None:
@@ -131,7 +141,9 @@ def audit_workflow_action_runtime(root: Path) -> RuntimeAuditReport:
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description="Fail-closed GitHub Actions runtime continuity gate")
+    parser = argparse.ArgumentParser(
+        description="Fail-closed GitHub Actions runtime continuity gate"
+    )
     parser.add_argument("--root", default=".", help="Repository root")
     args = parser.parse_args()
 
