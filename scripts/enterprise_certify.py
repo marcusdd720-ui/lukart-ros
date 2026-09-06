@@ -27,7 +27,7 @@ _STAGE_ARTIFACTS: dict[str, tuple[str, ...]] = {
     "E3": ("core/enterprise/contracts.py",),
     "E4": (
         "core/enterprise/supply_chain.py",
-        ".github/workflows/enterprise-codeql.yml",
+        ".github/workflows/codeql-enterprise.yml",
         ".github/workflows/enterprise-hardening.yml",
         "build/enterprise/bom.cdx.json",
     ),
