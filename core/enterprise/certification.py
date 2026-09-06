@@ -121,7 +121,9 @@ class EnterpriseCertificationGate:
         reviewer = str(review_payload.get("reviewer_id", "")).strip()
         scope = str(review_payload.get("scope", "")).strip()
         if not reviewer or not scope:
-            raise EnterpriseContractError("independent review payload lacks reviewer identity/scope")
+            raise EnterpriseContractError(
+                "independent review payload lacks reviewer identity/scope"
+            )
         return EnterpriseGateResult(
             state=EnterpriseGateState.ENTERPRISE_CANDIDATE,
             candidate_sha=result.candidate_sha,
