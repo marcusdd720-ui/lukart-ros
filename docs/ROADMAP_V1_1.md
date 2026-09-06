@@ -1,7 +1,8 @@
 # LUKART ROS — Roadmap v1.1
 
 Status: Engineering implementation completed through PR #120; retained as the P0/P1 contract.
-Baseline: `v1.0.1 @ 8020137534412bde79b9034d094625565efc3f08`
+Baseline: `v1.0.1 @ 802013c4d0e53dc12306a97e1877ebba86af64a7`
+Historical tag identity: `v1.0.1 tag object @ 9f7c0b28f766c8921e63b1d517fefcc96aa991d4`
 Governance: `MASTER_PLAN.md` + `FOUNDATION.md`
 
 This roadmap hardens, integrates, measures, and certifies the existing cognitive stack. It does
