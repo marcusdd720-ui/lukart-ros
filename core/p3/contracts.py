@@ -25,6 +25,21 @@ class TrustLevel(StrEnum):
     TRUSTED = "TRUSTED"
 
 
+def require_hex_digest(
+    value: str,
+    *,
+    field_name: str,
+    lengths: tuple[int, ...] = (64,),
+) -> str:
+    normalized = value.strip().lower()
+    if len(normalized) not in lengths:
+        allowed = "/".join(str(length) for length in lengths)
+        raise P3ContractError(f"{field_name} must be a {allowed}-character hex digest")
+    if any(character not in "0123456789abcdef" for character in normalized):
+        raise P3ContractError(f"{field_name} must contain hexadecimal characters only")
+    return normalized
+
+
 @dataclass(frozen=True, slots=True)
 class RuntimeIdentity:
     """Exact execution identity required for reproducible replay."""
@@ -36,17 +51,29 @@ class RuntimeIdentity:
     provider_identities: tuple[str, ...] = ()
 
     def __post_init__(self) -> None:
-        values = (
+        schema_version = self.schema_version.strip()
+        if not schema_version:
+            raise P3ContractError("schema_version cannot be blank")
+        code_sha = require_hex_digest(
             self.code_sha,
-            self.schema_version,
-            self.config_digest,
-            self.corpus_digest,
+            field_name="code_sha",
+            lengths=(40, 64),
         )
-        if any(not value.strip() for value in values):
-            raise P3ContractError("runtime identity fields cannot be blank")
+        config_digest = require_hex_digest(
+            self.config_digest,
+            field_name="config_digest",
+        )
+        corpus_digest = require_hex_digest(
+            self.corpus_digest,
+            field_name="corpus_digest",
+        )
         normalized = tuple(sorted({item.strip() for item in self.provider_identities}))
         if any(not item for item in normalized):
             raise P3ContractError("provider identities cannot be blank")
+        object.__setattr__(self, "code_sha", code_sha)
+        object.__setattr__(self, "schema_version", schema_version)
+        object.__setattr__(self, "config_digest", config_digest)
+        object.__setattr__(self, "corpus_digest", corpus_digest)
         object.__setattr__(self, "provider_identities", normalized)
 
     def canonical_dict(self) -> dict[str, object]:
@@ -102,8 +129,9 @@ def content_digest(value: object) -> str:
 
 
 def require_digest(value: object, expected_digest: str) -> None:
+    expected = require_hex_digest(expected_digest, field_name="expected_digest")
     actual = content_digest(value)
-    if not expected_digest or actual != expected_digest:
+    if actual != expected:
         raise P3ContractError("content digest mismatch")
 
 
