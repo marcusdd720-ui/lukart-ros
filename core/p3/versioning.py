@@ -1,15 +1,20 @@
-"""P3-03 explicit case schema versioning and deterministic migrations."""
+"""P3-03/H5 explicit case schema versioning, deterministic migrations and replay comparison."""
 
 from __future__ import annotations
 
 import json
-from collections import deque
 from collections.abc import Callable, Mapping
 from dataclasses import dataclass
 
 from core.p2.semantic import SemanticDiff, semantic_diff
 
-from .contracts import P3ContractError, content_digest
+from .contracts import (
+    P3ContractError,
+    ReplayComparison,
+    ReplayRelation,
+    RuntimeIdentity,
+    content_digest,
+)
 
 
 @dataclass(frozen=True, slots=True)
@@ -58,9 +63,20 @@ class MigrationReport:
     def changed_semantics(self) -> bool:
         return self.semantic.changed
 
+    @property
+    def path_digest(self) -> str:
+        return content_digest(
+            {
+                "schema": "lukart.migration-path.v1",
+                "path": list(self.path),
+                "source_payload_digest": self.source.payload_digest,
+                "target_payload_digest": self.target.payload_digest,
+            }
+        )
+
 
 class CaseMigrationRegistry:
-    """Explicit, deterministic migration graph; no implicit schema upgrades."""
+    """Explicit deterministic migration graph; unknown or ambiguous upgrades fail closed."""
 
     def __init__(self) -> None:
         self._steps: dict[tuple[str, str], MigrationStep] = {}
@@ -75,6 +91,33 @@ class CaseMigrationRegistry:
             raise P3ContractError(f"duplicate migration: {source}->{target}")
         self._steps[key] = MigrationStep(source, target, step.migrate)
 
+    def _all_paths(self, source: str, target: str) -> tuple[tuple[str, ...], ...]:
+        adjacency: dict[str, list[str]] = {}
+        vertices: set[str] = {source, target}
+        for left, right in self._steps:
+            adjacency.setdefault(left, []).append(right)
+            vertices.update((left, right))
+        for values in adjacency.values():
+            values.sort()
+
+        routes: list[tuple[str, ...]] = []
+
+        def visit(current: str, route: tuple[str, ...]) -> None:
+            if len(route) > len(vertices):
+                return
+            if current == target:
+                routes.append(route)
+                return
+            for neighbor in adjacency.get(current, []):
+                if neighbor in route:
+                    continue
+                visit(neighbor, (*route, neighbor))
+                if len(routes) > 1:
+                    return
+
+        visit(source, (source,))
+        return tuple(routes)
+
     def path(self, source: str, target: str) -> tuple[str, ...]:
         source = source.strip()
         target = target.strip()
@@ -82,24 +125,12 @@ class CaseMigrationRegistry:
             raise P3ContractError("migration versions cannot be blank")
         if source == target:
             return (source,)
-        queue: deque[tuple[str, tuple[str, ...]]] = deque([(source, (source,))])
-        visited: set[str] = set()
-        adjacency: dict[str, list[str]] = {}
-        for left, right in self._steps:
-            adjacency.setdefault(left, []).append(right)
-        for values in adjacency.values():
-            values.sort()
-        while queue:
-            current, route = queue.popleft()
-            if current in visited:
-                continue
-            visited.add(current)
-            for neighbor in adjacency.get(current, []):
-                next_route = (*route, neighbor)
-                if neighbor == target:
-                    return next_route
-                queue.append((neighbor, next_route))
-        raise P3ContractError(f"no migration path: {source}->{target}")
+        routes = self._all_paths(source, target)
+        if not routes:
+            raise P3ContractError(f"no migration path: {source}->{target}")
+        if len(routes) > 1:
+            raise P3ContractError(f"ambiguous migration path: {source}->{target}")
+        return routes[0]
 
     def _run_route(
         self, source_payload: Mapping[str, object], route: tuple[str, ...]
@@ -144,4 +175,73 @@ class CaseMigrationRegistry:
             target=target,
             path=route,
             semantic=semantic_diff(case.payload, target.payload),
+        )
+
+    def compare_replay(
+        self,
+        baseline: RuntimeIdentity,
+        candidate: RuntimeIdentity,
+        *,
+        migration_report: MigrationReport | None = None,
+    ) -> ReplayComparison:
+        """Classify replay identity without hiding missing identity or semantic divergence."""
+
+        missing = tuple(
+            sorted(
+                {
+                    *(f"baseline.{name}" for name in baseline.incomplete_fields()),
+                    *(f"candidate.{name}" for name in candidate.incomplete_fields()),
+                }
+            )
+        )
+        differences = baseline.differing_fields(candidate)
+        if missing:
+            return ReplayComparison(
+                relation=ReplayRelation.INCOMPLETE,
+                baseline_identity_digest=baseline.digest(),
+                candidate_identity_digest=candidate.digest(),
+                differing_fields=differences,
+                unresolved=missing,
+            )
+
+        if baseline.digest() == candidate.digest():
+            return ReplayComparison(
+                relation=ReplayRelation.IDENTICAL,
+                baseline_identity_digest=baseline.digest(),
+                candidate_identity_digest=candidate.digest(),
+                differing_fields=(),
+                semantic_divergence=False,
+            )
+
+        if baseline.schema_version != candidate.schema_version:
+            route = self.path(baseline.schema_version, candidate.schema_version)
+            semantic_divergence: bool | None = None
+            unresolved: tuple[str, ...] = ("semantic_divergence_unmeasured",)
+            if migration_report is not None:
+                expected_pair = (
+                    migration_report.source.schema_version,
+                    migration_report.target.schema_version,
+                )
+                if expected_pair != (baseline.schema_version, candidate.schema_version):
+                    raise P3ContractError("migration report does not match replay identity versions")
+                if migration_report.path != route:
+                    raise P3ContractError("migration report path does not match registry path")
+                semantic_divergence = migration_report.changed_semantics
+                unresolved = ()
+            return ReplayComparison(
+                relation=ReplayRelation.CROSS_VERSION_COMPARABLE,
+                baseline_identity_digest=baseline.digest(),
+                candidate_identity_digest=candidate.digest(),
+                differing_fields=differences,
+                migration_path=route,
+                semantic_divergence=semantic_divergence,
+                unresolved=unresolved,
+            )
+
+        return ReplayComparison(
+            relation=ReplayRelation.DIFFERENT,
+            baseline_identity_digest=baseline.digest(),
+            candidate_identity_digest=candidate.digest(),
+            differing_fields=differences,
+            semantic_divergence=None,
         )
