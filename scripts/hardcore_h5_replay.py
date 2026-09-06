@@ -3,6 +3,7 @@ from __future__ import annotations
 import argparse
 import json
 import subprocess
+from collections.abc import Callable
 from pathlib import Path
 
 from core.p3 import (
@@ -47,9 +48,9 @@ def _identity(candidate_sha: str, *, schema_version: str) -> RuntimeIdentity:
     )
 
 
-def _expect_contract_error(action: object, marker: str) -> dict[str, object]:
-    if not callable(action):
-        raise RuntimeError("H5 adversarial action must be callable")
+def _expect_contract_error(
+    action: Callable[[], object], marker: str
+) -> dict[str, object]:
     try:
         action()
     except P3ContractError as exc:
@@ -171,7 +172,9 @@ def build_h5_evidence(candidate_sha: str) -> dict[str, object]:
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description="Validate H5 deterministic replay identity and migration closure")
+    parser = argparse.ArgumentParser(
+        description="Validate H5 deterministic replay identity and migration closure"
+    )
     parser.add_argument("--candidate-sha", required=True)
     parser.add_argument("--output", default="build/hardcore/h5-replay-migration.json")
     args = parser.parse_args()
