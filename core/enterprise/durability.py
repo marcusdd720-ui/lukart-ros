@@ -74,6 +74,8 @@ class SQLiteProvenanceStore:
     @staticmethod
     def _decode_row(row: tuple[object, ...]) -> DurableRecord:
         sequence, stream_id, event_type, payload_json, payload_digest, previous, record = row
+        if not isinstance(sequence, int):
+            raise EnterpriseContractError("durable provenance sequence must be an integer")
         try:
             payload = json.loads(str(payload_json))
         except json.JSONDecodeError as exc:
@@ -81,7 +83,7 @@ class SQLiteProvenanceStore:
         if not isinstance(payload, dict):
             raise EnterpriseContractError("durable provenance payload must be an object")
         return DurableRecord(
-            sequence=int(sequence),
+            sequence=sequence,
             stream_id=str(stream_id),
             event_type=str(event_type),
             payload=payload,
