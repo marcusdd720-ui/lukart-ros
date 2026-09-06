@@ -55,7 +55,7 @@ def test_h4_reports_actual_capability_controls_without_kernel_claim() -> None:
     assert result.controls.environment_sanitized is True
     assert result.controls.temporary_workspace is True
     assert result.controls.audit_hook_enforced is True
-    assert result.controls.network_control == "python-audit-hook+socket-guard"
+    assert result.controls.network_control == "python-runtime-guard"
     assert (
         result.controls.filesystem_control
         == "python-audit-hook-read-roots-workspace-write-only"
