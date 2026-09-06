@@ -6,10 +6,11 @@ import hashlib
 import json
 from abc import ABC, abstractmethod
 from collections import OrderedDict
+from collections.abc import Callable, Mapping, Sequence
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
 from threading import RLock
-from typing import Callable, Generic, Mapping, Sequence, TypeVar
+from typing import Generic, TypeVar
 
 
 class RuntimeContractError(ValueError):
