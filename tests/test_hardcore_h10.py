@@ -289,7 +289,9 @@ def test_h10_h3_manifest_binding_gap_fails_closed() -> None:
     documents, enterprise = _documents(policy)
     target = next(item for item in documents if item.stage == "H3")
     payload = dict(target.payload)
-    artifact_manifest = dict(payload["artifact_manifest"])
+    raw_manifest = payload["artifact_manifest"]
+    assert isinstance(raw_manifest, dict)
+    artifact_manifest = dict(raw_manifest)
     artifact_manifest[STAGE_SPECS["H1"].path] = "f" * 64
     payload["artifact_manifest"] = artifact_manifest
     payload["evidence_digest"] = content_digest(
