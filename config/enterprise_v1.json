@@ -102,7 +102,7 @@
     "allowed_bypass_actors": [],
     "privileged_ruleset_snapshot": {
       "ruleset_id": 22352216,
-      "ruleset_updated_at": "2026-09-06T01:07:07.958+02:00",
+      "ruleset_updated_at": "2026-09-05T23:07:07.958Z",
       "bypass_actors": [],
       "observer_class": "ruleset-write-visible-api",
       "refresh_on_ruleset_update": true
