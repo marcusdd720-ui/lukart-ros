@@ -1,6 +1,6 @@
 # LUKART ROS — Canonical Working Principles
 
-Version: 1.2
+Version: 1.3
 Status: Canonical project operating standard
 Scope: Repository-wide engineering, agents, automation, reviews, CI/CD, release governance
 
@@ -155,6 +155,34 @@ Important capabilities should, where justified, include:
 - replayability;
 - compatibility guarantees;
 - rollback or verified recovery.
+
+### Bounded Design Search / Best-Justified Solution
+
+For a material decision involving architecture, security or a trust boundary, CI/CD, provenance/replay, migration, recovery, scale, or another long-horizon concern, do not stop at the first solution that merely works when credible alternatives could materially change the decision.
+
+When real alternatives exist:
+1. compare **2–4 credible variants** against the concrete failure modes that motivated the decision;
+2. evaluate, where applicable: correctness, epistemic safety, determinism, security, provenance, replayability, recoverability, auditability, interoperability, migration/backward compatibility, vendor lock-in, operational complexity, and 5–10 year change cost;
+3. prefer the simplest solution that meets the required trust level and is best justified by evidence;
+4. reject unnecessary abstraction or complexity that does not mitigate a concrete failure mode, trust boundary, migration risk, or measurable change cost.
+
+Do not manufacture artificial alternatives merely to satisfy this rule. Do not continue research once additional research can no longer materially change the decision.
+
+When a material decision depends on current knowledge of a technology, standard, security issue, dependency, platform, or provider, verify authoritative and current sources before treating the information as established. Clearly separate verified facts from engineering inference.
+
+For each material decision covered by this rule, preserve a concise decision record containing:
+- problem / decision need;
+- credible alternatives considered;
+- material trade-offs;
+- failure modes explicitly rejected or mitigated;
+- reason for the selected option;
+- validation required to establish the decision in practice.
+
+Decision chain:
+
+`Evidence -> Alternatives -> Trade-offs -> Decision -> Validation`
+
+Short rule: **Best-Justified Solution != Most Complex Solution**.
 
 ## 5. Epistemic and trust boundaries
 
