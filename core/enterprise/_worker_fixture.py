@@ -2,11 +2,8 @@
 
 from __future__ import annotations
 
-import ctypes
 import os
 import socket
-import subprocess
-import sys
 import time
 from collections.abc import Mapping
 from pathlib import Path
@@ -51,6 +48,9 @@ def filesystem_write(payload: Mapping[str, object]) -> dict[str, object]:
 
 
 def process_spawn_probe(_payload: Mapping[str, object]) -> dict[str, object]:
+    import subprocess
+    import sys
+
     completed = subprocess.run(
         (sys.executable, "-c", "print('child')"),
         check=True,
@@ -61,5 +61,7 @@ def process_spawn_probe(_payload: Mapping[str, object]) -> dict[str, object]:
 
 
 def native_ffi_probe(_payload: Mapping[str, object]) -> dict[str, object]:
+    import ctypes
+
     ctypes.CDLL(None)
     return {"ffi": "available"}
