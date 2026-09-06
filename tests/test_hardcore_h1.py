@@ -53,7 +53,9 @@ def test_h1_integrity_accepts_exact_candidate_and_historical_tag() -> None:
     assert evidence["state"] == "CONTROL_PASS"
     assert evidence["candidate_sha"] == CANDIDATE
     assert evidence["historical_release_sha"] == RELEASE
-    assert set(evidence["canonical_document_digests"]) == set(BASELINE_DOCUMENTS)
+    document_digests = evidence["canonical_document_digests"]
+    assert isinstance(document_digests, dict)
+    assert set(document_digests) == set(BASELINE_DOCUMENTS)
 
 
 def test_h1_integrity_rejects_candidate_head_mismatch() -> None:
