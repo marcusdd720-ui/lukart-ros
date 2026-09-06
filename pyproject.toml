@@ -1,6 +1,6 @@
 [project]
 name = "lukart-ros"
-version = "1.1.0.dev0"
+version = "1.0.1"
 description = "LukArt ROS – Knowledge Operating System and virtual chambers factory"
 readme = "README.md"
 requires-python = ">=3.11"
@@ -23,6 +23,11 @@ dev = [
   "mypy>=1.11",
   "types-PyYAML>=6.0",
 ]
+
+[tool.lukart.enterprise]
+development_version = "1.1.0.dev0"
+release_enabled = false
+immutable_baseline_version = "1.0.1"
 
 [tool.setuptools.packages.find]
 include = [
