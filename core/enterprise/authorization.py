@@ -1,4 +1,4 @@
-"""E5 identity, authorization and tenant/case data-isolation controls."""
+"""E5/H6 identity, authorization and tenant/case/workspace isolation controls."""
 
 from __future__ import annotations
 
@@ -39,12 +39,27 @@ class ResourceDescriptor:
     tenant_id: str
     case_id: str | None
     classification: DataClassification
+    workspace_id: str | None = None
 
     def __post_init__(self) -> None:
         if not self.resource_id.strip() or not self.tenant_id.strip():
             raise EnterpriseContractError("resource_id and tenant_id are required")
         if self.case_id is not None and not self.case_id.strip():
             raise EnterpriseContractError("case_id cannot be blank")
+        if self.workspace_id is not None and not self.workspace_id.strip():
+            raise EnterpriseContractError("workspace_id cannot be blank")
+
+    def canonical_dict(self) -> dict[str, object]:
+        return {
+            "resource_id": self.resource_id,
+            "tenant_id": self.tenant_id,
+            "case_id": self.case_id,
+            "workspace_id": self.workspace_id,
+            "classification": self.classification.value,
+        }
+
+    def digest(self) -> str:
+        return content_digest(self.canonical_dict())
 
 
 @dataclass(frozen=True, slots=True)
@@ -55,16 +70,24 @@ class AuthorizationDecision:
     resource_id: str
     reason: str
     context_digest: str
+    resource_digest: str
+    policy_digest: str
+    request_digest: str | None = None
+    schema: str = "lukart.authorization-decision.v2"
 
     def digest(self) -> str:
         return content_digest(
             {
+                "schema": self.schema,
                 "allowed": self.allowed,
                 "subject_id": self.subject_id,
                 "permission": self.permission.value,
                 "resource_id": self.resource_id,
                 "reason": self.reason,
                 "context_digest": self.context_digest,
+                "resource_digest": self.resource_digest,
+                "policy_digest": self.policy_digest,
+                "request_digest": self.request_digest,
             }
         )
 
@@ -95,6 +118,7 @@ class AuthorizationEngine:
         tenant_id: str,
         roles: Sequence[str],
         case_ids: Sequence[str] = (),
+        workspace_ids: Sequence[str] = (),
     ) -> AuthorizationContext:
         normalized_roles = tuple(sorted({item.strip() for item in roles}))
         if not normalized_roles or any(not item for item in normalized_roles):
@@ -113,6 +137,7 @@ class AuthorizationEngine:
             roles=normalized_roles,
             permissions=tuple(permissions),
             case_ids=tuple(case_ids),
+            workspace_ids=tuple(workspace_ids),
         )
 
     def _classification_allowed(
@@ -131,6 +156,9 @@ class AuthorizationEngine:
         context: AuthorizationContext,
         permission: Permission,
         resource: ResourceDescriptor,
+        *,
+        request_digest: str | None = None,
+        strict_scope: bool = False,
     ) -> AuthorizationDecision:
         allowed = False
         reason = "deny-by-default"
@@ -138,12 +166,16 @@ class AuthorizationEngine:
             reason = "cross-tenant access denied"
         elif permission not in context.permissions:
             reason = "permission denied"
-        elif (
-            resource.case_id is not None
-            and context.case_ids
-            and resource.case_id not in context.case_ids
+        elif resource.case_id is not None and (
+            (strict_scope and resource.case_id not in context.case_ids)
+            or (context.case_ids and resource.case_id not in context.case_ids)
         ):
             reason = "case scope denied"
+        elif resource.workspace_id is not None and (
+            (strict_scope and resource.workspace_id not in context.workspace_ids)
+            or (context.workspace_ids and resource.workspace_id not in context.workspace_ids)
+        ):
+            reason = "workspace scope denied"
         elif not self._classification_allowed(context, resource.classification):
             reason = "data classification exceeds role clearance"
         elif (
@@ -161,6 +193,9 @@ class AuthorizationEngine:
             resource_id=resource.resource_id,
             reason=reason,
             context_digest=context.digest(),
+            resource_digest=resource.digest(),
+            policy_digest=self.policy_digest(),
+            request_digest=request_digest,
         )
 
     def require(
@@ -168,8 +203,17 @@ class AuthorizationEngine:
         context: AuthorizationContext,
         permission: Permission,
         resource: ResourceDescriptor,
+        *,
+        request_digest: str | None = None,
+        strict_scope: bool = False,
     ) -> AuthorizationDecision:
-        decision = self.decide(context, permission, resource)
+        decision = self.decide(
+            context,
+            permission,
+            resource,
+            request_digest=request_digest,
+            strict_scope=strict_scope,
+        )
         if not decision.allowed:
             raise EnterpriseContractError(decision.reason)
         return decision
