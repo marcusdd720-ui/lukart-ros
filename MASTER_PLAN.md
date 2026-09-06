@@ -43,7 +43,9 @@ P0/P1/P2/P3 engineering implementation does not replace independent analytical/s
 
 ## 4. Enterprise Track E0-E10
 
-E0-E10 engineering implementation was merged through PR #123 and subsequently hardened. The control set remains defined by `docs/ENTERPRISE_ROADMAP.md` and `config/enterprise_v1.json`:
+E0-E10 engineering implementation was merged through PR #123 and subsequently hardened. The control set remains defined by `docs/ENTERPRISE_ROADMAP.md` and `config/enterprise_v1.json`.
+
+Historical Enterprise contract field: Roadmap target: `Enterprise Track E0-E10`. This identifies the completed predecessor program; the active development target is the H1-H10 roadmap declared at the top of this Master Plan.
 
 1. E0 Governance Reset & Release Hygiene
 2. E1 Enterprise Threat Model & Trust Architecture
