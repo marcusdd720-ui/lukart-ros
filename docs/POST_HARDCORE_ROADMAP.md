@@ -2,8 +2,8 @@
 
 Status: Active continuation after historical H1-H10 ENGINEERING PASS
 Program baseline: `main @ eefd7088406126c0a20baf1245742649058decc4`
-Current closed trust core: `PHX-03 @ main d01f2d6e87a900d77ee25f95fe273a855d85cf32`
-Active stage: `PHX-04 — Evidence Trust Graph`
+Current closed trust core: `PHX-04 @ main b26bc4128651367efb636d7e4d53d0b1e79cffeb`
+Active stage: `PHX-05 — Case Replay v2`
 Horizon: 10+ years
 
 This roadmap extends the existing Product, P2/P3, Enterprise and historical Hardcore
@@ -108,13 +108,12 @@ Architecture contract: `docs/EPISTEMIC_ASSERTIONS_V2.md`.
 
 ## PHX-04 — Evidence Trust Graph
 
-Status: `ACTIVE / ENGINEERING`
-Branch baseline: `main @ d01f2d6e87a900d77ee25f95fe273a855d85cf32`
+Status: `CLOSED / ENGINEERING PASS`
+Merge baseline: `main @ b26bc4128651367efb636d7e4d53d0b1e79cffeb`
+Validated PR head: `2aeb2d144944a99a47417fbc24233198fb7e083a`
+PR: `#153`
 
-Goal: provide a deterministic, bounded trust projection over exact CCL evidence,
-assertion and transition identities without creating a writable graph authority.
-
-Controls:
+Closed controls:
 
 - typed EVENT / ASSERTION / DECISION nodes bound to exact content identities;
 - exact SUPPORTS / TRANSITIONS / RECORDED_BY provenance edges;
@@ -123,24 +122,36 @@ Controls:
 - cryptographic attestation represents origin/integrity evidence, never epistemic truth;
 - cross-case/dangling references and unknown `trust.*` events fail closed;
 - graph identity binds exact case ledger head, Epistemic projection identity and policy;
-- no graph DB, graph write API or Canonical Ledger write path exists in the projection.
+- no graph DB, graph write API or Canonical Ledger write path exists in the projection;
+- exact-SHA CI, guarded merge and post-merge validation closed.
 
 Architecture contract: `docs/EVIDENCE_TRUST_GRAPH_V1.md`.
 
 ## PHX-05 — Case Replay v2
 
-Goal: independently reproduce a case result from exact identities and explicit migrations.
+Status: `ACTIVE / ENGINEERING`
+Branch baseline: `main @ b26bc4128651367efb636d7e4d53d0b1e79cffeb`
+
+Goal: independently reproduce and verify deterministic case projections from exact
+identities and explicit migrations without creating another writable truth store.
 
 Controls:
 
-- replay manifest binds ledger head, schemas, migration registry, projection versions,
-  runtime identity, provider/model/plugin/config/corpus identities and evidence blobs;
-- IDENTICAL requires complete exact identity;
-- cross-version comparison requires explicit deterministic migration;
-- unknown/ambiguous migration fails closed;
-- replay bundle is verifiable offline.
+- replay manifest binds exact case, CCL head and content-addressed ledger bundle;
+- manifest binds Epistemic v2 and Trust Graph projection/policy identities;
+- RuntimeIdentity v3 binds code/config/corpus/provider/plugin/input/evidence and execution
+  environment declarations;
+- complete replay schema identities and deterministic migration-registry identity are
+  explicit and content-addressed;
+- offline bundle rebuilds Epistemic v2 and Trust Graph without live database/provider
+  access and verifies rebuilt identities against the manifest;
+- `IDENTICAL` requires complete exact manifest identity;
+- cross-version comparison requires an explicit deterministic migration path;
+- unknown/ambiguous migration, incomplete runtime, cross-case substitution or tampering
+  fails closed;
+- replay is verification-only and exposes no Canonical Ledger write path.
 
-Indicative horizon: year 4-5.
+Architecture contract: `docs/CASE_REPLAY_V2.md`.
 
 ## PHX-06 — Semantic Change Propagation v2
 
