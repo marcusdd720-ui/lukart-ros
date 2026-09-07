@@ -79,6 +79,7 @@ module = [
   "core.p3.versioning",
   "validation.release_contract",
   "validation.release_governance",
+  "validation.release_manifest",
 ]
 disallow_untyped_defs = true
 disallow_incomplete_defs = true
