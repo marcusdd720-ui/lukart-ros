@@ -205,6 +205,12 @@ class RuntimeIdentity:
         return tuple(sorted(name for name, declared in flags.items() if not declared))
 
     def canonical_dict(self) -> dict[str, object]:
+        declared: dict[str, bool] = {
+            "providers": self.provider_inventory_declared,
+            "plugins": self.plugin_inventory_declared,
+            "inputs": self.input_inventory_declared,
+            "evidence": self.evidence_inventory_declared,
+        }
         payload: dict[str, object] = {
             "identity_schema": self.identity_schema,
             "code_sha": self.code_sha,
@@ -215,17 +221,10 @@ class RuntimeIdentity:
             "plugin_identities": list(self.plugin_identities),
             "input_digests": list(self.input_digests),
             "evidence_digests": list(self.evidence_digests),
-            "inventories_declared": {
-                "providers": self.provider_inventory_declared,
-                "plugins": self.plugin_inventory_declared,
-                "inputs": self.input_inventory_declared,
-                "evidence": self.evidence_inventory_declared,
-            },
+            "inventories_declared": declared,
         }
         if self.identity_schema == RUNTIME_IDENTITY_V3:
-            declared = dict(payload["inventories_declared"])
             declared["execution_environment"] = self.execution_environment_declared
-            payload["inventories_declared"] = declared
             payload["execution_environment"] = {
                 "dependency_lock_digest": self.dependency_lock_digest,
                 "python_implementation": self.python_implementation,
