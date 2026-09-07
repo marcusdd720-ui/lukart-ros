@@ -81,6 +81,7 @@ module = [
   "core.evaluation.contracts",
   "core.p3.contracts",
   "core.p3.versioning",
+  "core.semantic_change_v2",
   "knowledge.epistemic",
   "knowledge.epistemic_assertions",
   "knowledge.evidence_trust_graph",
