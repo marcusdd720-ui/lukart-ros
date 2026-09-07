@@ -1,6 +1,6 @@
 """PHX-03 immutable epistemic assertions and CCL-derived state projection.
 
-Canonical Case Ledger remains the only writable authority.  This module defines
+Canonical Case Ledger remains the only writable authority. This module defines
 content-addressed assertion/transition contracts, validates exact evidence event
 references, writes authoritative changes only through ``CanonicalCaseLedger``, and
 rebuilds epistemic state deterministically from ledger history.
@@ -51,7 +51,11 @@ def _identifier(value: str, *, field_name: str) -> str:
     return value
 
 
-def _canonical_mapping(value: Mapping[str, object], *, field_name: str) -> Mapping[str, object]:
+def _canonical_mapping(
+    value: Mapping[str, object],
+    *,
+    field_name: str,
+) -> Mapping[str, object]:
     if any(not isinstance(key, str) for key in value):
         raise EpistemicV2Error(f"{field_name} keys must be strings")
     try:
@@ -156,7 +160,10 @@ class EpistemicPolicyV2:
         return self._body(self.fact_evidence_event_types)
 
     def canonical_dict(self) -> dict[str, object]:
-        return {**self.canonical_body(), "policy_identity": self.policy_identity.canonical_dict()}
+        return {
+            **self.canonical_body(),
+            "policy_identity": self.policy_identity.canonical_dict(),
+        }
 
     def verify(self) -> None:
         if self.policy_identity != ContentAddress.for_value(self.canonical_body()):
@@ -197,7 +204,8 @@ class Assertion:
                 key=lambda ref: (ref.case_id.value, str(ref.event_id)),
             )
         )
-        if len({(ref.case_id.value, str(ref.event_id)) for ref in normalized}) != len(normalized):
+        ref_keys = {(ref.case_id.value, str(ref.event_id)) for ref in normalized}
+        if len(ref_keys) != len(normalized):
             raise EpistemicV2Error("assertion evidence references must be unique")
         if self.initial_status is KnowledgeStatus.FACT and not normalized:
             raise EpistemicV2Error("initial FACT requires exact evidence references")
@@ -253,18 +261,25 @@ class Assertion:
         subject_id = value.get("subject_id")
         assertion_type = value.get("assertion_type")
         content = value.get("content")
-        if not all(isinstance(item, str) for item in (schema, profile, case_id, subject_id, assertion_type)):
+        identity_fields = (schema, profile, case_id, subject_id, assertion_type)
+        if not all(isinstance(item, str) for item in identity_fields):
             raise EpistemicV2Error("invalid assertion identity fields")
         if profile != CANONICALIZATION_PROFILE_V1:
-            raise EpistemicV2Error(f"unsupported assertion canonicalization profile: {profile}")
+            raise EpistemicV2Error(
+                f"unsupported assertion canonicalization profile: {profile}"
+            )
         if not isinstance(content, Mapping):
             raise EpistemicV2Error("assertion content must be an object")
+        raw_refs = _sequence(
+            value.get("evidence_refs"),
+            field_name="assertion evidence_refs",
+        )
         refs = tuple(
             EvidenceEventRef.from_dict(cast(Mapping[str, object], item))
-            for item in _sequence(value.get("evidence_refs"), field_name="assertion evidence_refs")
+            for item in raw_refs
             if isinstance(item, Mapping)
         )
-        if len(refs) != len(_sequence(value.get("evidence_refs"), field_name="assertion evidence_refs")):
+        if len(refs) != len(raw_refs):
             raise EpistemicV2Error("assertion evidence_refs must contain objects")
         return cls(
             case_id=CaseId(cast(str, case_id)),
@@ -273,7 +288,10 @@ class Assertion:
             content=cast(Mapping[str, object], content),
             initial_status=_status(value.get("initial_status"), field_name="initial_status"),
             evidence_refs=refs,
-            policy_identity=_address(value.get("policy_identity"), field_name="policy_identity"),
+            policy_identity=_address(
+                value.get("policy_identity"),
+                field_name="policy_identity",
+            ),
             assertion_id=_address(value.get("assertion_id"), field_name="assertion_id"),
             schema=cast(str, schema),
         )
@@ -292,7 +310,10 @@ class Assertion:
         }
 
     def canonical_dict(self) -> dict[str, object]:
-        return {**self.canonical_body(), "assertion_id": self.assertion_id.canonical_dict()}
+        return {
+            **self.canonical_body(),
+            "assertion_id": self.assertion_id.canonical_dict(),
+        }
 
     def verify(self) -> None:
         if self.assertion_id != ContentAddress.for_value(self.canonical_body()):
@@ -314,13 +335,20 @@ class EpistemicDecisionV2:
 
     def __post_init__(self) -> None:
         if self.schema != TRANSITION_DECISION_SCHEMA_V2:
-            raise EpistemicV2Error(f"unsupported transition decision schema: {self.schema}")
+            raise EpistemicV2Error(
+                f"unsupported transition decision schema: {self.schema}"
+            )
         object.__setattr__(self, "rationale", self.rationale.strip())
-        object.__setattr__(self, "reason", _identifier(self.reason, field_name="decision reason"))
+        object.__setattr__(
+            self,
+            "reason",
+            _identifier(self.reason, field_name="decision reason"),
+        )
         normalized = tuple(
             sorted(self.evidence_refs, key=lambda ref: (ref.case_id.value, str(ref.event_id)))
         )
-        if len({(ref.case_id.value, str(ref.event_id)) for ref in normalized}) != len(normalized):
+        ref_keys = {(ref.case_id.value, str(ref.event_id)) for ref in normalized}
+        if len(ref_keys) != len(normalized):
             raise EpistemicV2Error("transition evidence references must be unique")
         object.__setattr__(self, "evidence_refs", normalized)
         self.verify()
@@ -374,7 +402,10 @@ class EpistemicDecisionV2:
             raise EpistemicV2Error("transition decision schema/allowed fields are invalid")
         if not isinstance(reason, str) or not isinstance(rationale, str):
             raise EpistemicV2Error("transition decision reason/rationale fields are invalid")
-        raw_refs = _sequence(value.get("evidence_refs"), field_name="transition evidence_refs")
+        raw_refs = _sequence(
+            value.get("evidence_refs"),
+            field_name="transition evidence_refs",
+        )
         refs: list[EvidenceEventRef] = []
         for raw_ref in raw_refs:
             if not isinstance(raw_ref, Mapping):
@@ -386,7 +417,10 @@ class EpistemicDecisionV2:
             target=_status(value.get("target"), field_name="transition target"),
             evidence_refs=tuple(refs),
             rationale=rationale,
-            policy_identity=_address(value.get("policy_identity"), field_name="policy_identity"),
+            policy_identity=_address(
+                value.get("policy_identity"),
+                field_name="policy_identity",
+            ),
             allowed=allowed,
             reason=reason,
             decision_id=_address(value.get("decision_id"), field_name="decision_id"),
@@ -407,7 +441,10 @@ class EpistemicDecisionV2:
         }
 
     def canonical_dict(self) -> dict[str, object]:
-        return {**self.canonical_body(), "decision_id": self.decision_id.canonical_dict()}
+        return {
+            **self.canonical_body(),
+            "decision_id": self.decision_id.canonical_dict(),
+        }
 
     def verify(self) -> None:
         if self.decision_id != ContentAddress.for_value(self.canonical_body()):
@@ -431,7 +468,9 @@ class AssertionState:
             "status": self.status.value,
             "evidence_refs": [ref.canonical_dict() for ref in self.evidence_refs],
             "last_decision_id": (
-                self.last_decision_id.canonical_dict() if self.last_decision_id else None
+                self.last_decision_id.canonical_dict()
+                if self.last_decision_id
+                else None
             ),
         }
 
@@ -459,7 +498,9 @@ class EpistemicProjectionV2:
 
         for event in events:
             if event.case_id != case_id:
-                raise EpistemicV2Error("epistemic projection received a foreign case event")
+                raise EpistemicV2Error(
+                    "epistemic projection received a foreign case event"
+                )
             event_key = str(event.event_id)
 
             if event.event_type == ASSERTION_CREATED_EVENT_V1:
@@ -467,7 +508,11 @@ class EpistemicProjectionV2:
                 if not isinstance(raw, Mapping):
                     raise EpistemicV2Error("assertion event payload is invalid")
                 assertion = Assertion.from_dict(cast(Mapping[str, object], raw))
-                if assertion.case_id != case_id or assertion.policy_identity != policy.policy_identity:
+                identity_matches = (
+                    assertion.case_id == case_id
+                    and assertion.policy_identity == policy.policy_identity
+                )
+                if not identity_matches:
                     raise EpistemicV2Error("assertion case/policy identity mismatch")
                 assertion_key = str(assertion.assertion_id)
                 if assertion_key in states:
@@ -477,7 +522,8 @@ class EpistemicProjectionV2:
                     refs=assertion.evidence_refs,
                     seen_events=seen_events,
                     policy=policy,
-                    require_fact_evidence=assertion.initial_status is KnowledgeStatus.FACT,
+                    require_fact_evidence=assertion.initial_status
+                    is KnowledgeStatus.FACT,
                 )
                 states[assertion_key] = AssertionState(
                     assertion_id=assertion.assertion_id,
@@ -491,9 +537,13 @@ class EpistemicProjectionV2:
                 raw = event.payload.get("decision")
                 if not isinstance(raw, Mapping):
                     raise EpistemicV2Error("transition event payload is invalid")
-                decision = EpistemicDecisionV2.from_dict(cast(Mapping[str, object], raw))
+                decision = EpistemicDecisionV2.from_dict(
+                    cast(Mapping[str, object], raw)
+                )
                 if not decision.allowed:
-                    raise EpistemicV2Error("denied transition cannot be part of canonical history")
+                    raise EpistemicV2Error(
+                        "denied transition cannot be part of canonical history"
+                    )
                 if decision.policy_identity != policy.policy_identity:
                     raise EpistemicV2Error("transition policy identity mismatch")
                 key = str(decision.assertion_id)
@@ -501,7 +551,9 @@ class EpistemicProjectionV2:
                 if current is None:
                     raise EpistemicV2Error("transition references an unknown assertion")
                 if current.status is not decision.source:
-                    raise EpistemicV2Error("transition source does not match projected state")
+                    raise EpistemicV2Error(
+                        "transition source does not match projected state"
+                    )
                 if decision.source is decision.target:
                     raise EpistemicV2Error("canonical transition cannot be a no-op")
                 cls._verify_evidence(
@@ -515,12 +567,16 @@ class EpistemicProjectionV2:
                     EpistemicTransitionRequest(
                         source=decision.source,
                         target=decision.target,
-                        evidence_refs=tuple(str(ref.event_id) for ref in decision.evidence_refs),
+                        evidence_refs=tuple(
+                            str(ref.event_id) for ref in decision.evidence_refs
+                        ),
                         rationale=decision.rationale,
                     )
                 )
                 if not recomputed.allowed or recomputed.reason != decision.reason:
-                    raise EpistemicV2Error("recorded transition decision violates epistemic policy")
+                    raise EpistemicV2Error(
+                        "recorded transition decision violates epistemic policy"
+                    )
                 states[key] = AssertionState(
                     assertion_id=current.assertion_id,
                     subject_id=current.subject_id,
@@ -531,7 +587,9 @@ class EpistemicProjectionV2:
                 )
 
             elif event.event_type.startswith("epistemic."):
-                raise EpistemicV2Error(f"unknown epistemic event type: {event.event_type}")
+                raise EpistemicV2Error(
+                    f"unknown epistemic event type: {event.event_type}"
+                )
 
             seen_events[event_key] = event
 
@@ -565,18 +623,29 @@ class EpistemicProjectionV2:
             raise EpistemicV2Error("FACT requires exact prior evidence events")
         for ref in refs:
             if ref.case_id != case_id:
-                raise EpistemicV2Error("cross-case evidence requires a future explicit trust contract")
+                raise EpistemicV2Error(
+                    "cross-case evidence requires a future explicit trust contract"
+                )
             source = seen_events.get(str(ref.event_id))
             if source is None:
-                raise EpistemicV2Error("evidence reference does not resolve to a prior CCL event")
-            if require_fact_evidence and source.event_type not in policy.fact_evidence_event_types:
-                raise EpistemicV2Error("FACT evidence reference has an unauthorized event type")
+                raise EpistemicV2Error(
+                    "evidence reference does not resolve to a prior CCL event"
+                )
+            if (
+                require_fact_evidence
+                and source.event_type not in policy.fact_evidence_event_types
+            ):
+                raise EpistemicV2Error(
+                    "FACT evidence reference has an unauthorized event type"
+                )
 
     def canonical_body(self) -> dict[str, object]:
         return {
             "schema": self.schema,
             "case_id": self.case_id.value,
-            "ledger_head": self.ledger_head.canonical_dict() if self.ledger_head else None,
+            "ledger_head": self.ledger_head.canonical_dict()
+            if self.ledger_head
+            else None,
             "policy_identity": self.policy_identity.canonical_dict(),
             "states": [state.canonical_dict() for state in self.states],
         }
@@ -586,7 +655,10 @@ class EpistemicProjectionV2:
             raise EpistemicV2Error("epistemic projection identity mismatch")
 
     def get(self, assertion_id: ContentAddress) -> AssertionState | None:
-        return next((state for state in self.states if state.assertion_id == assertion_id), None)
+        return next(
+            (state for state in self.states if state.assertion_id == assertion_id),
+            None,
+        )
 
 
 class EpistemicLedgerService:
@@ -733,7 +805,9 @@ class EpistemicLedgerService:
     ) -> EpistemicDecisionV2:
         actual_head = self._ledger.head(case_id)
         if actual_head != expected_head:
-            raise EpistemicV2Error("epistemic transition lost exact canonical ledger head")
+            raise EpistemicV2Error(
+                "epistemic transition lost exact canonical ledger head"
+            )
         decision = self.decide_transition(
             case_id=case_id,
             assertion_id=assertion_id,
