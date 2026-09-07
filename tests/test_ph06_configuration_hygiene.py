@@ -30,5 +30,11 @@ def test_unreferenced_inventory_digest_is_deterministic() -> None:
 
 def test_hardcore_roadmap_is_historical_not_active() -> None:
     roadmap = (ROOT / "docs" / "HARDCORE_ROADMAP.md").read_text(encoding="utf-8")
+    master_plan = (ROOT / "MASTER_PLAN.md").read_text(encoding="utf-8")
+
     assert "Status: Historical CLOSED / ENGINEERING PASS" in roadmap
     assert "Status: Active development roadmap" not in roadmap
+    assert "## 5. Historical Hardcore Enterprise H1-H10" in master_plan
+    assert "Roadmap target: `Post-Hardcore Enterprise continuation`" in master_plan
+    assert "## 5. Active Hardcore Enterprise H1-H10" not in master_plan
+    assert "Roadmap target: `Hardcore Enterprise H1-H10`" not in master_plan
