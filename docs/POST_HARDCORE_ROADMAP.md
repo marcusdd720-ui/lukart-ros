@@ -4,7 +4,7 @@ Status: Active continuation after historical H1-H10 ENGINEERING PASS
 Program baseline: `main @ eefd7088406126c0a20baf1245742649058decc4`
 Current closed trust core: `PHX-06 @ main 9c2a7812cedfe98b65af484186459300897357de`
 Latest closed durability continuation: `DR-01 implementation merge @ main 615c01946e7ca61bb0bb5488b2a3b799eb5f06ce`
-Active stage: `NONE — PHX-01..PHX-06 trust core and DR-01 closed`
+Active stage: `IV-01 — Critical Invariant Verification v1`
 Horizon: 10+ years
 
 This roadmap extends the existing Product, P2/P3, Enterprise and historical Hardcore
@@ -218,6 +218,29 @@ Closed controls:
 DR-01 is the first implemented control under the long-horizon storage portability /
 disaster-recovery continuation. No subsequent DR stage is active until separately defined,
 measured and validated.
+
+## IV-01 — Critical Invariant Verification v1
+
+Status: `IMPLEMENTATION / VALIDATION PENDING`
+Implementation baseline: `main @ 435ce414fd39335c78ac38ab40592fff35ae95c2`
+Branch: `hardening/iv-01-critical-invariants`
+
+Implemented controls pending exact-SHA validation:
+
+- one exact content-addressed registry covering CCL bundle integrity, recovery identity,
+  Case Replay rebuild, migration determinism, Epistemic rebuild and bounded semantic change;
+- the registry set is fixed for v1 and cannot be caller-reduced to manufacture PASS;
+- verification delegates to existing production contracts instead of cloning trust logic;
+- complete PASS report is content-addressed and bound to exact verifier code SHA plus exact
+  registry and result identities;
+- expected SHA mismatch or malformed Git object identity fails before checks execute;
+- any invariant failure aborts the run; no partial PASS report exists;
+- bounded state/adversarial tests exercise stale CCL heads, non-empty restore refusal,
+  tampering, recovery divergence, nondeterministic migration, cross-case Epistemic state and
+  semantic blast-radius overflow;
+- verifier has no CCL write API or persistence authority.
+
+Architecture contract: `docs/CRITICAL_INVARIANT_VERIFICATION_V1.md`.
 
 ## Years 6-10+ — Durability, portability and cryptographic renewal
 
