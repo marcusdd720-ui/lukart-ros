@@ -21,13 +21,14 @@ The long-term controlled-learning loop is:
 
 Repository decisions are governed in this order:
 
-1. Accepted architecture decision records in `docs/architecture/adr/`.
-2. Explicit safety, privacy, quality, schema, and validation invariants.
-3. `AGENTS.md` as the repository-wide operating contract for agents and automation.
-4. This foundation and the master roadmap.
-5. Component documentation and implementation notes.
+1. Explicit safety, privacy, epistemic and trust invariants, including `canon/*` where applicable.
+2. Accepted architecture decision records in `docs/architecture/adr/`.
+3. `docs/WORKING_PRINCIPLES.md` — the single canonical living execution/trust standard.
+4. Enforced CI, test, schema and release policy — executable constraints for the exact repository state.
+5. `AGENTS.md` — a thin repository-specific bootstrap/enforcement bridge to the canonical standard.
+6. This foundation, `MASTER_PLAN.md`, roadmaps and component documentation.
 
-A lower-level document must not silently override a higher-authority invariant.
+Memory, previous chats and summaries are contextual only; they do not override live GitHub state or the canonical repository standard. A lower-level document must not silently override a higher-authority invariant, and a new rule must not create a parallel operating standard.
 
 ## Factory is not Product
 

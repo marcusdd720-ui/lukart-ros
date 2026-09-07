@@ -4,6 +4,8 @@ Status: Active Post-v1 governance contract
 Immutable baseline: `v1.0.1 @ 802013c4d0e53dc12306a97e1877ebba86af64a7`
 Historical tag identity: `v1.0.1 tag object @ 9f7c0b28f766c8921e63b1d517fefcc96aa991d4`
 Enterprise implementation base: `P3 merge @ 8550d08651957afd7f21b91553768786cb8bcf6e`
+Post-Hardcore closed core: `PHX-01 @ main 796bbce41ecfa5bc8bdabea70a4d31d6b4ff2cfd`
+Active Post-Hardcore stage: `PHX-02 — Gold Corpus / KQM v2`
 Roadmap target: `Post-Hardcore Enterprise continuation`
 Development version: `1.1.0.dev0`
 
@@ -68,11 +70,19 @@ The automated E10 boundary remains `INDEPENDENT_REVIEW_REQUIRED` unless genuine 
 
 Post-Hardcore work MUST be defined as a separately versioned continuation. It may strengthen an earlier P/E/H control but MUST NOT reactivate H1-H10 as an active roadmap, create a competing authority or weaken a safety invariant.
 
-The active separately versioned continuation is `docs/POST_HARDCORE_ROADMAP.md`. Its first trust core is the Canonical Case Ledger / Object Identity Contract defined by `docs/CANONICAL_CASE_LEDGER_V1.md`.
+The active separately versioned continuation is `docs/POST_HARDCORE_ROADMAP.md`.
+
+PHX-01 — Canonical Case Ledger / Object Identity Contract v1 — is `CLOSED / ENGINEERING PASS` at `main @ 796bbce41ecfa5bc8bdabea70a4d31d6b4ff2cfd`. Its architecture contract is `docs/CANONICAL_CASE_LEDGER_V1.md`.
+
+PHX-02 — Gold Corpus / KQM v2 — is the active engineering stage. It introduces immutable/content-addressed evaluation inputs and deterministic measurement projections over exact corpus, policy, evaluator/runtime and per-case Canonical Ledger head identities. It does not introduce a writable case-history store, epistemic promotion authority or independent-review self-certification. Its architecture contract is `docs/GOLD_KQM_V2.md`.
 
 ## 6. Trust boundaries
 
 The Canonical Case Ledger is the sole authoritative writable SSOT for case history. Gold Corpus and external evidence are immutable inputs. Epistemic state, trust graphs, timelines, reasoning outputs, renderer artifacts, search indexes and later change-propagation results are deterministic/versioned projections or derived artifacts over exact ledger history; they may not become competing truth authorities.
+
+PHX-02 makes the evaluation boundary explicit: Gold source bytes, canonical corpus content, KQM policy, evaluator/runtime identity and exact per-case Canonical Ledger heads are independently identifiable immutable inputs. `EvaluationInputIdentity` binds those inputs; `KQMProjection` is a deterministic measurement artifact only. Missing metrics fail closed, unexpected or non-finite metrics are rejected, locked evaluation is certification-only, and PHX-02 exposes no Canonical Ledger write path.
+
+The current Gold candidate remains `candidate_pending_independent_freeze`. Repository text, automated tests, models, agents and PHX-02 code cannot manufacture an independent freeze/review claim. A real independent freeze requires separately verifiable external evidence and a separately versioned acceptance boundary.
 
 The historical Evidence/Knowledge/Epistemic/Reasoning chain is migrated toward this invariant stage by stage. Existing downstream components remain valid implementation assets, but authoritative state changes must be represented through the Canonical Ledger once their Post-Hardcore migration stage is active.
 
@@ -88,7 +98,7 @@ Any change capable of altering Product behavior, analytical semantics, trusted s
 
 ### Evaluation change
 
-Any change to corpora, expected results, thresholds, evaluators or certification policy. Evaluation artifacts are independently versioned and may not overwrite locked v1.0.1 evidence.
+Any change to corpora, expected results, thresholds, evaluators or certification policy. Evaluation artifacts are independently versioned and may not overwrite locked v1.0.1 evidence. Under PHX-02, changes to corpus content/source bytes, policy, evaluator/runtime identity, selected split or exact case ledger head produce a new evaluation identity and invalidate dependent measurements.
 
 ### Security/governance change
 
@@ -128,6 +138,7 @@ The package development version is distinct from the immutable historical releas
 - `docs/ENTERPRISE_ROADMAP.md` and `config/enterprise_v1.json` — E0-E10 contract/policy.
 - `docs/HARDCORE_ROADMAP.md` — historical H1-H10 closure contract and evidence roadmap.
 - `docs/POST_HARDCORE_ROADMAP.md` — active 10+ year Post-Hardcore continuation.
-- `docs/CANONICAL_CASE_LEDGER_V1.md` — Canonical Ledger/Object Identity v1 trust contract.
+- `docs/CANONICAL_CASE_LEDGER_V1.md` — PHX-01 Canonical Ledger/Object Identity v1 trust contract.
+- `docs/GOLD_KQM_V2.md` — PHX-02 immutable Gold Corpus / KQM v2 trust contract.
 
 Historical design records do not override this Master Plan, Accepted ADRs, executable trust gates or the canonical working principles.

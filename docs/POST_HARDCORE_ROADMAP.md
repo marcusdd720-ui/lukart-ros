@@ -2,6 +2,8 @@
 
 Status: Active continuation after historical H1-H10 ENGINEERING PASS
 Program baseline: `main @ eefd7088406126c0a20baf1245742649058decc4`
+Current closed trust core: `PHX-01 @ main 796bbce41ecfa5bc8bdabea70a4d31d6b4ff2cfd`
+Active stage: `PHX-02 — Gold Corpus / KQM v2`
 Horizon: 10+ years
 
 This roadmap extends the existing Product, P2/P3, Enterprise and historical Hardcore
@@ -39,37 +41,52 @@ Cross-cutting requirements:
 
 ## PHX-01 — Canonical Case Ledger / Object Identity Contract v1
 
+Status: `CLOSED / ENGINEERING PASS`
+Merge baseline: `main @ 796bbce41ecfa5bc8bdabea70a4d31d6b4ff2cfd`
+
 Goal: establish one logical case-history authority before additional cognitive layers are
 strengthened.
 
-Required controls:
+Closed controls:
 
 - stable logical Case/Object identity separated from immutable revision/event identity;
 - content-addressed revisions and events;
 - canonical event chain per case;
 - exact caller head plus transactional backend compare-and-append;
-- reuse existing Enterprise durable backend instead of adding a third store;
+- existing Enterprise durable backend reused instead of adding a third store;
 - existing P3 JSONL replay ledger explicitly non-authoritative for Product truth;
-- schema/canonicalization/hash identifiers are explicit and unknown values fail closed;
+- schema/canonicalization/hash identifiers explicit and unknown values fail closed;
 - offline content-addressed case bundle;
 - bounded case reads/exports;
-- strict type boundary and adversarial tests.
+- strict type boundary and adversarial tests;
+- exact-SHA guarded merge and post-merge workflow closure.
 
 Architecture contract: `docs/CANONICAL_CASE_LEDGER_V1.md`.
 
 ## PHX-02 — Gold Corpus / KQM v2
+
+Status: `ACTIVE / ENGINEERING`
+Branch baseline: `main @ 796bbce41ecfa5bc8bdabea70a4d31d6b4ff2cfd`
 
 Goal: make evaluation inputs immutable, content-addressed and ledger-bound without
 turning evaluation data into case truth.
 
 Controls:
 
-- Gold corpus manifests and splits are immutable/versioned inputs;
-- locked evaluation cannot be tuned against;
-- exact corpus, metric definition and evaluator identity are recorded;
-- KQM outputs are projections/measurements, never truth promotion;
-- corpus mutation produces a new identity and invalidates dependent measurements;
-- independent freeze/review evidence remains explicit rather than self-certified.
+- exact raw-file and canonical semantic Gold identities are distinct and explicit;
+- Gold corpus manifest and exact split membership are immutable/versioned inputs;
+- locked evaluation cannot be selected by development/validation flows;
+- independent freeze/review cannot be manufactured by repository text or PHX-02 code;
+- exact corpus, metric definition, evaluator/runtime identity and per-case ledger heads
+  are bound into evaluation-input identity;
+- KQM policy is versioned/content-addressed and rejects unknown/non-finite inputs;
+- missing metrics deterministically fail; unexpected metrics fail the contract;
+- KQM outputs are immutable projections/measurements, never truth promotion;
+- corpus/policy/evaluator/ledger-head mutation produces a new identity and invalidates
+  dependent measurements;
+- PHX-02 exposes no Canonical Ledger write path.
+
+Architecture contract: `docs/GOLD_KQM_V2.md`.
 
 Indicative horizon: year 1-2.
 
