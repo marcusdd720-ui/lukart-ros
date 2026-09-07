@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+from collections.abc import Mapping
 from copy import deepcopy
 from dataclasses import replace
 from pathlib import Path
@@ -289,7 +290,7 @@ def test_nondeterministic_migration_is_rejected_by_production_contract(tmp_path:
     inputs = _build_inputs(tmp_path)
     counter = 0
 
-    def unstable(payload: dict[str, object]) -> dict[str, object]:
+    def unstable(payload: Mapping[str, object]) -> Mapping[str, object]:
         nonlocal counter
         counter += 1
         return {**payload, "counter": counter}
