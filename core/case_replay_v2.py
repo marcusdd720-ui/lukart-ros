@@ -44,6 +44,67 @@ CASE_REPLAY_MANIFEST_SCHEMA_V2 = "lukart.case-replay-manifest.v2"
 CASE_REPLAY_BUNDLE_SCHEMA_V2 = "lukart.case-replay-bundle.v2"
 CASE_REPLAY_COMPARISON_SCHEMA_V2 = "lukart.case-replay-comparison.v2"
 
+_RUNTIME_KEYS = frozenset(
+    {
+        "identity_schema",
+        "code_sha",
+        "schema_version",
+        "config_digest",
+        "corpus_digest",
+        "provider_identities",
+        "plugin_identities",
+        "input_digests",
+        "evidence_digests",
+        "inventories_declared",
+        "execution_environment",
+    }
+)
+_RUNTIME_DECLARATION_KEYS = frozenset(
+    {"providers", "plugins", "inputs", "evidence", "execution_environment"}
+)
+_RUNTIME_EXECUTION_KEYS = frozenset(
+    {
+        "dependency_lock_digest",
+        "python_implementation",
+        "python_version",
+        "platform_tag",
+        "project_version",
+        "build_backend",
+    }
+)
+_MANIFEST_KEYS = frozenset(
+    {
+        "schema",
+        "case_id",
+        "ledger_head",
+        "ledger_bundle_digest",
+        "epistemic_projection_identity",
+        "trust_graph_identity",
+        "epistemic_policy_identity",
+        "trust_policy_identity",
+        "runtime_identity_digest",
+        "migration_registry_digest",
+        "case_schema_version",
+        "schema_identities",
+        "evidence_digests",
+        "manifest_identity",
+    }
+)
+_BUNDLE_KEYS = frozenset(
+    {
+        "schema",
+        "manifest",
+        "ledger_bundle",
+        "runtime_identity",
+        "migration_registry",
+        "epistemic_policy",
+        "trust_policy",
+        "bundle_identity",
+    }
+)
+_REGISTRY_KEYS = frozenset({"schema", "steps"})
+_REGISTRY_STEP_KEYS = frozenset({"source_version", "target_version"})
+
 
 class CaseReplayV2Error(ValueError):
     """Fail-closed Case Replay v2 contract violation."""
@@ -59,6 +120,27 @@ def _copy_mapping(value: Mapping[str, object], *, field_name: str) -> dict[str, 
     if not isinstance(decoded, dict):
         raise CaseReplayV2Error(f"{field_name} must be an object")
     return cast(dict[str, object], decoded)
+
+
+def _require_exact_keys(
+    value: Mapping[str, object],
+    *,
+    expected: frozenset[str],
+    field_name: str,
+) -> None:
+    actual = set(value)
+    missing = tuple(sorted(expected - actual))
+    unknown = tuple(sorted(actual - expected))
+    if not missing and not unknown:
+        return
+    details: list[str] = []
+    if missing:
+        details.append("missing=" + ",".join(missing))
+    if unknown:
+        details.append("unknown=" + ",".join(unknown))
+    raise CaseReplayV2Error(
+        f"{field_name} key contract violation: " + "; ".join(details)
+    )
 
 
 def _address(value: object, *, field_name: str) -> ContentAddress:
@@ -85,22 +167,35 @@ def _string_sequence(value: object, *, field_name: str) -> tuple[str, ...]:
 
 def _runtime_from_snapshot(value: Mapping[str, object]) -> RuntimeIdentity:
     raw = _copy_mapping(value, field_name="runtime identity")
+    _require_exact_keys(raw, expected=_RUNTIME_KEYS, field_name="runtime identity")
     declared = raw.get("inventories_declared")
     execution = raw.get("execution_environment")
     if not isinstance(declared, Mapping) or not isinstance(execution, Mapping):
         raise CaseReplayV2Error("runtime identity declarations are incomplete")
+    declared_mapping = cast(Mapping[str, object], declared)
+    execution_mapping = cast(Mapping[str, object], execution)
+    _require_exact_keys(
+        declared_mapping,
+        expected=_RUNTIME_DECLARATION_KEYS,
+        field_name="runtime declarations",
+    )
+    _require_exact_keys(
+        execution_mapping,
+        expected=_RUNTIME_EXECUTION_KEYS,
+        field_name="runtime execution environment",
+    )
 
     def sequence(name: str) -> tuple[str, ...]:
         return _string_sequence(raw.get(name), field_name=name)
 
     def declared_flag(name: str) -> bool:
-        flag = declared.get(name)
+        flag = declared_mapping.get(name)
         if not isinstance(flag, bool):
             raise CaseReplayV2Error(f"runtime declaration {name} must be boolean")
         return flag
 
     def execution_text(name: str) -> str:
-        item = execution.get(name)
+        item = execution_mapping.get(name)
         if not isinstance(item, str) or not item.strip():
             raise CaseReplayV2Error(f"runtime execution field {name} is incomplete")
         return item
@@ -191,6 +286,54 @@ def _parse_trust_policy(value: Mapping[str, object]) -> TrustPolicyV1:
     if raw != json.loads(canonical_json(policy.canonical_dict())):
         raise CaseReplayV2Error("trust policy snapshot does not match canonical policy")
     return policy
+
+
+def _validate_registry_snapshot(value: Mapping[str, object]) -> dict[str, object]:
+    raw = _copy_mapping(value, field_name="migration registry")
+    _require_exact_keys(raw, expected=_REGISTRY_KEYS, field_name="migration registry")
+    if raw.get("schema") != "lukart.case-migration-registry.v1":
+        raise CaseReplayV2Error("unsupported migration registry snapshot schema")
+    steps = raw.get("steps")
+    if not isinstance(steps, list):
+        raise CaseReplayV2Error("migration registry steps must be a list")
+
+    canonical_steps: list[dict[str, str]] = []
+    seen: set[tuple[str, str]] = set()
+    for index, item in enumerate(steps):
+        if not isinstance(item, Mapping):
+            raise CaseReplayV2Error(f"migration registry step {index} must be an object")
+        step = _copy_mapping(
+            cast(Mapping[str, object], item),
+            field_name=f"migration registry step {index}",
+        )
+        _require_exact_keys(
+            step,
+            expected=_REGISTRY_STEP_KEYS,
+            field_name=f"migration registry step {index}",
+        )
+        source = step.get("source_version")
+        target = step.get("target_version")
+        if not isinstance(source, str) or not isinstance(target, str):
+            raise CaseReplayV2Error("migration registry versions must be strings")
+        source = source.strip()
+        target = target.strip()
+        if not source or not target or source == target:
+            raise CaseReplayV2Error("migration registry contains invalid version pair")
+        pair = (source, target)
+        if pair in seen:
+            raise CaseReplayV2Error("migration registry contains duplicate version pair")
+        seen.add(pair)
+        canonical_steps.append(
+            {"source_version": source, "target_version": target}
+        )
+
+    expected_steps = sorted(
+        canonical_steps,
+        key=lambda item: (item["source_version"], item["target_version"]),
+    )
+    if canonical_steps != expected_steps or steps != canonical_steps:
+        raise CaseReplayV2Error("migration registry steps are not canonical and sorted")
+    return raw
 
 
 @dataclass(frozen=True, slots=True)
@@ -335,55 +478,57 @@ class CaseReplayManifestV2:
 
     @classmethod
     def from_dict(cls, value: Mapping[str, object]) -> CaseReplayManifestV2:
-        schema = value.get("schema")
-        case_id = value.get("case_id")
-        case_schema_version = value.get("case_schema_version")
+        raw = _copy_mapping(value, field_name="replay manifest")
+        _require_exact_keys(raw, expected=_MANIFEST_KEYS, field_name="replay manifest")
+        schema = raw.get("schema")
+        case_id = raw.get("case_id")
+        case_schema_version = raw.get("case_schema_version")
         if not all(isinstance(item, str) for item in (schema, case_id, case_schema_version)):
             raise CaseReplayV2Error("invalid replay manifest identity fields")
-        raw_head = value.get("ledger_head")
+        raw_head = raw.get("ledger_head")
         head = None if raw_head is None else _address(raw_head, field_name="ledger_head")
         return cls(
             case_id=CaseId(cast(str, case_id)),
             ledger_head=head,
             ledger_bundle_digest=_address(
-                value.get("ledger_bundle_digest"),
+                raw.get("ledger_bundle_digest"),
                 field_name="ledger_bundle_digest",
             ),
             epistemic_projection_identity=_address(
-                value.get("epistemic_projection_identity"),
+                raw.get("epistemic_projection_identity"),
                 field_name="epistemic_projection_identity",
             ),
             trust_graph_identity=_address(
-                value.get("trust_graph_identity"),
+                raw.get("trust_graph_identity"),
                 field_name="trust_graph_identity",
             ),
             epistemic_policy_identity=_address(
-                value.get("epistemic_policy_identity"),
+                raw.get("epistemic_policy_identity"),
                 field_name="epistemic_policy_identity",
             ),
             trust_policy_identity=_address(
-                value.get("trust_policy_identity"),
+                raw.get("trust_policy_identity"),
                 field_name="trust_policy_identity",
             ),
             runtime_identity_digest=_address(
-                value.get("runtime_identity_digest"),
+                raw.get("runtime_identity_digest"),
                 field_name="runtime_identity_digest",
             ),
             migration_registry_digest=_address(
-                value.get("migration_registry_digest"),
+                raw.get("migration_registry_digest"),
                 field_name="migration_registry_digest",
             ),
             case_schema_version=cast(str, case_schema_version),
             schema_identities=_string_sequence(
-                value.get("schema_identities"),
+                raw.get("schema_identities"),
                 field_name="schema_identities",
             ),
             evidence_digests=_string_sequence(
-                value.get("evidence_digests"),
+                raw.get("evidence_digests"),
                 field_name="evidence_digests",
             ),
             manifest_identity=_address(
-                value.get("manifest_identity"),
+                raw.get("manifest_identity"),
                 field_name="manifest_identity",
             ),
             schema=cast(str, schema),
@@ -551,6 +696,7 @@ def verify_case_replay_bundle(value: Mapping[str, object]) -> CaseReplayVerifica
     """Rebuild projections from bundle bytes without database or provider access."""
 
     raw = _copy_mapping(value, field_name="case replay bundle")
+    _require_exact_keys(raw, expected=_BUNDLE_KEYS, field_name="case replay bundle")
     if raw.get("schema") != CASE_REPLAY_BUNDLE_SCHEMA_V2:
         raise CaseReplayV2Error(f"unsupported replay bundle schema: {raw.get('schema')}")
     required_mappings = {
@@ -576,12 +722,9 @@ def verify_case_replay_bundle(value: Mapping[str, object]) -> CaseReplayVerifica
     runtime = _runtime_from_snapshot(
         cast(Mapping[str, object], required_mappings["runtime_identity"])
     )
-    registry_snapshot = _copy_mapping(
-        cast(Mapping[str, object], required_mappings["migration_registry"]),
-        field_name="migration registry",
+    registry_snapshot = _validate_registry_snapshot(
+        cast(Mapping[str, object], required_mappings["migration_registry"])
     )
-    if registry_snapshot.get("schema") != "lukart.case-migration-registry.v1":
-        raise CaseReplayV2Error("unsupported migration registry snapshot schema")
     epistemic_policy = _parse_epistemic_policy(
         cast(Mapping[str, object], required_mappings["epistemic_policy"])
     )
