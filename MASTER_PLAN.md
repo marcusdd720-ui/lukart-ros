@@ -4,8 +4,9 @@ Status: Active Post-v1 governance contract
 Immutable baseline: `v1.0.1 @ 802013c4d0e53dc12306a97e1877ebba86af64a7`
 Historical tag identity: `v1.0.1 tag object @ 9f7c0b28f766c8921e63b1d517fefcc96aa991d4`
 Enterprise implementation base: `P3 merge @ 8550d08651957afd7f21b91553768786cb8bcf6e`
-Post-Hardcore closed core: `PHX-01 @ main 796bbce41ecfa5bc8bdabea70a4d31d6b4ff2cfd`
-Active Post-Hardcore stage: `PHX-02 — Gold Corpus / KQM v2`
+Post-Hardcore closed trust core: `PHX-06 @ main 9c2a7812cedfe98b65af484186459300897357de`
+Latest closed durability continuation: `DR-01 implementation merge @ main 615c01946e7ca61bb0bb5488b2a3b799eb5f06ce`
+Active Post-Hardcore stage: `NONE — PHX-01..PHX-06 trust core and DR-01 closed`
 Roadmap target: `Post-Hardcore Enterprise continuation`
 Development version: `1.1.0.dev0`
 
@@ -64,7 +65,7 @@ Historical Enterprise contract field: Roadmap target: `Enterprise Track E0-E10`.
 
 The automated E10 boundary remains `INDEPENDENT_REVIEW_REQUIRED` unless genuine separately attested independent review evidence exists. No repository text or automated run may manufacture that review.
 
-## 5. Historical Hardcore Enterprise H1-H10
+## 5. Historical Hardcore Enterprise H1-H10 and Post-Hardcore continuation
 
 `docs/HARDCORE_ROADMAP.md` is historical `CLOSED / ENGINEERING PASS`. H1-H10 closed exact-SHA/post-merge evidence and baseline-identity drift, repository-policy enforcement, supply-chain provenance, capability isolation, replay/migration identity, tenant/case authorization, recovery, scale, auditability and final evidence closure.
 
@@ -72,19 +73,21 @@ Post-Hardcore work MUST be defined as a separately versioned continuation. It ma
 
 The active separately versioned continuation is `docs/POST_HARDCORE_ROADMAP.md`.
 
-PHX-01 — Canonical Case Ledger / Object Identity Contract v1 — is `CLOSED / ENGINEERING PASS` at `main @ 796bbce41ecfa5bc8bdabea70a4d31d6b4ff2cfd`. Its architecture contract is `docs/CANONICAL_CASE_LEDGER_V1.md`.
+PHX-01 through PHX-06 form the closed Post-Hardcore trust core. PHX-01 established the Canonical Case Ledger/Object Identity authority; PHX-02 bound immutable Gold/KQM evaluation inputs; PHX-03 made epistemic state a deterministic ledger projection; PHX-04 added the Evidence Trust Graph projection; PHX-05 closed Case Replay v2; and PHX-06 closed bounded Semantic Change Propagation v2. Detailed exact-SHA evidence and architecture contracts are recorded in `docs/POST_HARDCORE_ROADMAP.md`.
 
-PHX-02 — Gold Corpus / KQM v2 — is the active engineering stage. It introduces immutable/content-addressed evaluation inputs and deterministic measurement projections over exact corpus, policy, evaluator/runtime and per-case Canonical Ledger head identities. It does not introduce a writable case-history store, epistemic promotion authority or independent-review self-certification. Its architecture contract is `docs/GOLD_KQM_V2.md`.
+DR-01 — Canonical Ledger Recovery / Storage Portability v1 — is `CLOSED / ENGINEERING PASS` for the implementation merged through PR #157. The validated implementation head is `15312711bed0956d614de6fc3ee5005cc96f55dd`; the implementation merge is `main @ 615c01946e7ca61bb0bb5488b2a3b799eb5f06ce`. Exact-merge-SHA post-merge validation completed with nine successful workflow runs, including Stage Gate run ID `34155_634951` (underscore is a display separator for the repository PII gate). DR-01 preserves canonical case/event/bundle identities across portable restore, rejects tampered/unbound serialized metadata, refuses merge/overwrite into a non-empty target case stream and proves all-or-nothing rollback on injected mid-batch failure. It reuses the existing Canonical Case Ledger and Enterprise durability backend and does not introduce a second Product truth authority.
+
+No next durability stage is active until it is separately defined, measured and validated. DR-01 engineering closure does not assert independent external certification.
 
 ## 6. Trust boundaries
 
 The Canonical Case Ledger is the sole authoritative writable SSOT for case history. Gold Corpus and external evidence are immutable inputs. Epistemic state, trust graphs, timelines, reasoning outputs, renderer artifacts, search indexes and later change-propagation results are deterministic/versioned projections or derived artifacts over exact ledger history; they may not become competing truth authorities.
 
-PHX-02 makes the evaluation boundary explicit: Gold source bytes, canonical corpus content, KQM policy, evaluator/runtime identity and exact per-case Canonical Ledger heads are independently identifiable immutable inputs. `EvaluationInputIdentity` binds those inputs; `KQMProjection` is a deterministic measurement artifact only. Missing metrics fail closed, unexpected or non-finite metrics are rejected, locked evaluation is certification-only, and PHX-02 exposes no Canonical Ledger write path.
+Gold source bytes, canonical corpus content, KQM policy, evaluator/runtime identity and exact per-case Canonical Ledger heads are independently identifiable immutable inputs. `EvaluationInputIdentity` binds those inputs; `KQMProjection` is a deterministic measurement artifact only. Missing metrics fail closed, unexpected or non-finite metrics are rejected, locked evaluation is certification-only, and PHX-02 exposes no Canonical Ledger write path.
 
 The current Gold candidate remains `candidate_pending_independent_freeze`. Repository text, automated tests, models, agents and PHX-02 code cannot manufacture an independent freeze/review claim. A real independent freeze requires separately verifiable external evidence and a separately versioned acceptance boundary.
 
-The historical Evidence/Knowledge/Epistemic/Reasoning chain is migrated toward this invariant stage by stage. Existing downstream components remain valid implementation assets, but authoritative state changes must be represented through the Canonical Ledger once their Post-Hardcore migration stage is active.
+Existing downstream components remain valid implementation assets, but authoritative state changes must be represented through the Canonical Ledger once their Post-Hardcore migration stage is active.
 
 Enterprise/Hardcore modules protect execution, persistence and transport around Product semantics. Infrastructure layers may not create a trusted FACT, hide a contradiction, modify locked Gold or self-certify an independent review.
 
@@ -98,7 +101,7 @@ Any change capable of altering Product behavior, analytical semantics, trusted s
 
 ### Evaluation change
 
-Any change to corpora, expected results, thresholds, evaluators or certification policy. Evaluation artifacts are independently versioned and may not overwrite locked v1.0.1 evidence. Under PHX-02, changes to corpus content/source bytes, policy, evaluator/runtime identity, selected split or exact case ledger head produce a new evaluation identity and invalidate dependent measurements.
+Any change to corpora, expected results, thresholds, evaluators or certification policy. Evaluation artifacts are independently versioned and may not overwrite locked v1.0.1 evidence. Changes to corpus content/source bytes, policy, evaluator/runtime identity, selected split or exact case ledger head produce a new evaluation identity and invalidate dependent measurements.
 
 ### Security/governance change
 
@@ -137,8 +140,12 @@ The package development version is distinct from the immutable historical releas
 - `docs/ROADMAP_P3.md` and `config/p3_v1.json` — P3 hardening contract/policy.
 - `docs/ENTERPRISE_ROADMAP.md` and `config/enterprise_v1.json` — E0-E10 contract/policy.
 - `docs/HARDCORE_ROADMAP.md` — historical H1-H10 closure contract and evidence roadmap.
-- `docs/POST_HARDCORE_ROADMAP.md` — active 10+ year Post-Hardcore continuation.
+- `docs/POST_HARDCORE_ROADMAP.md` — active 10+ year Post-Hardcore continuation and DR closure record.
 - `docs/CANONICAL_CASE_LEDGER_V1.md` — PHX-01 Canonical Ledger/Object Identity v1 trust contract.
 - `docs/GOLD_KQM_V2.md` — PHX-02 immutable Gold Corpus / KQM v2 trust contract.
+- `docs/EPISTEMIC_ASSERTIONS_V2.md` — PHX-03 epistemic assertion/state-machine v2 trust contract.
+- `docs/EVIDENCE_TRUST_GRAPH_V1.md` — PHX-04 evidence trust graph contract.
+- `docs/CASE_REPLAY_V2.md` — PHX-05 deterministic case replay contract.
+- `docs/SEMANTIC_CHANGE_PROPAGATION_V2.md` — PHX-06 bounded change-propagation contract.
 
 Historical design records do not override this Master Plan, Accepted ADRs, executable trust gates or the canonical working principles.
