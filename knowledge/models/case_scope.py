@@ -21,6 +21,8 @@ class CaseOperationalState(StrEnum):
 
 
 class CaseEpistemicState(StrEnum):
+    """Legacy coarse CaseScope snapshot; not an authoritative epistemic state source."""
+
     INSUFFICIENT_EVIDENCE = "insufficient_evidence"
     MATERIAL_CONTRADICTION = "material_contradiction"
     OPEN_QUESTIONS = "open_questions"
@@ -116,7 +118,13 @@ class ReferenceSet:
 
 @dataclass(frozen=True, slots=True)
 class CaseScope:
-    """KCS-1.2 runtime adapter; legacy Case remains unchanged."""
+    """KCS-1.2 runtime adapter; legacy Case remains unchanged.
+
+    ``epistemic_state`` is retained only as a backward-compatible coarse snapshot.
+    PHX-03 authoritative epistemic state is derived from Canonical Case Ledger
+    Assertion/transition events. New code MUST NOT mutate this legacy field as an
+    epistemic authority.
+    """
 
     case_id: str
     scope_policy: ScopePolicy
@@ -151,9 +159,12 @@ class CaseScope:
         operational_state: CaseOperationalState | None = None,
         epistemic_state: CaseEpistemicState | None = None,
     ) -> CaseScope:
+        if epistemic_state is not None and epistemic_state is not self.epistemic_state:
+            raise ValueError(
+                "CaseScope epistemic_state is legacy/non-authoritative; use PHX-03 CCL projection"
+            )
         return replace(
             self,
             operational_state=operational_state or self.operational_state,
-            epistemic_state=epistemic_state or self.epistemic_state,
             version=self.version + 1,
         )
