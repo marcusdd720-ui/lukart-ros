@@ -57,14 +57,14 @@ def _freeze_json(value: object) -> object:
 
 
 def _canonical_mapping(value: Mapping[str, object], *, field_name: str) -> Mapping[str, object]:
+    if any(not isinstance(key, str) for key in value):
+        raise CaseLedgerContractError(f"{field_name} keys must be strings")
     try:
         decoded: object = json.loads(canonical_json(dict(value)))
     except (TypeError, ValueError, P3ContractError) as exc:
         raise CaseLedgerContractError(f"{field_name} is not canonically serializable") from exc
     if not isinstance(decoded, dict):
         raise CaseLedgerContractError(f"{field_name} must be a mapping")
-    if any(not isinstance(key, str) for key in decoded):
-        raise CaseLedgerContractError(f"{field_name} keys must be strings")
     frozen = _freeze_json(decoded)
     if not isinstance(frozen, Mapping):
         raise CaseLedgerContractError(f"{field_name} must remain a mapping")
