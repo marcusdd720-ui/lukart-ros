@@ -4,7 +4,7 @@ Status: Active Post-v1 governance contract
 Immutable baseline: `v1.0.1 @ 802013c4d0e53dc12306a97e1877ebba86af64a7`
 Historical tag identity: `v1.0.1 tag object @ 9f7c0b28f766c8921e63b1d517fefcc96aa991d4`
 Enterprise implementation base: `P3 merge @ 8550d08651957afd7f21b91553768786cb8bcf6e`
-Roadmap target: `Hardcore Enterprise H1-H10`
+Roadmap target: `Post-Hardcore Enterprise continuation`
 Development version: `1.1.0.dev0`
 
 ## 1. Immutable release baseline
@@ -46,7 +46,7 @@ P0/P1/P2/P3 engineering implementation does not replace independent analytical/s
 
 E0-E10 engineering implementation was merged through PR #123 and subsequently hardened. The control set remains defined by `docs/ENTERPRISE_ROADMAP.md` and `config/enterprise_v1.json`.
 
-Historical Enterprise contract field: Roadmap target: `Enterprise Track E0-E10`. This identifies the completed predecessor program; the active development target is the H1-H10 roadmap declared at the top of this Master Plan.
+Historical Enterprise contract field: Roadmap target: `Enterprise Track E0-E10`. This identifies the completed predecessor program; the active development target is the Post-Hardcore Enterprise continuation declared at the top of this Master Plan.
 
 1. E0 Governance Reset & Release Hygiene
 2. E1 Enterprise Threat Model & Trust Architecture
@@ -62,11 +62,11 @@ Historical Enterprise contract field: Roadmap target: `Enterprise Track E0-E10`.
 
 The automated E10 boundary remains `INDEPENDENT_REVIEW_REQUIRED` unless genuine separately attested independent review evidence exists. No repository text or automated run may manufacture that review.
 
-## 5. Active Hardcore Enterprise H1-H10
+## 5. Historical Hardcore Enterprise H1-H10
 
-The active continuation is `docs/HARDCORE_ROADMAP.md`. It starts by closing exact-SHA/post-merge evidence and baseline-identity drift before extending repository policy enforcement, supply-chain provenance, capability isolation, replay/migration identity, tenant/case authorization, recovery, scale, auditability and final evidence closure.
+`docs/HARDCORE_ROADMAP.md` is historical `CLOSED / ENGINEERING PASS`. H1-H10 closed exact-SHA/post-merge evidence and baseline-identity drift, repository-policy enforcement, supply-chain provenance, capability isolation, replay/migration identity, tenant/case authorization, recovery, scale, auditability and final evidence closure.
 
-A later H stage may strengthen an earlier P/E/H control but MUST NOT create a competing authority or weaken a safety invariant.
+Post-Hardcore work MUST be defined as a separately versioned continuation. It may strengthen an earlier P/E/H control but MUST NOT reactivate H1-H10 as an active roadmap, create a competing authority or weaken a safety invariant.
 
 ## 6. Trust boundaries
 
@@ -120,6 +120,6 @@ The package development version is distinct from the immutable historical releas
 - `docs/ROADMAP_P2.md` — P2 semantic intelligence contract.
 - `docs/ROADMAP_P3.md` and `config/p3_v1.json` — P3 hardening contract/policy.
 - `docs/ENTERPRISE_ROADMAP.md` and `config/enterprise_v1.json` — E0-E10 contract/policy.
-- `docs/HARDCORE_ROADMAP.md` — active H1-H10 continuation.
+- `docs/HARDCORE_ROADMAP.md` — historical H1-H10 closure contract and evidence roadmap.
 
 Historical design records do not override this Master Plan, Accepted ADRs, executable trust gates or the canonical working principles.
