@@ -71,6 +71,7 @@ exclude = "^(build|dist|.*\\.egg-info|validation/test_graph\\.py)(/|$)"
 
 [[tool.mypy.overrides]]
 module = [
+  "core.case_exchange_v1",
   "core.case_ledger.contracts",
   "core.case_ledger.ledger",
   "core.case_replay_v2",
