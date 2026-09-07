@@ -338,6 +338,15 @@ jobs:
           python scripts/hardcore_h10_closure.py
           --candidate-sha "${CANDIDATE_SHA}"
 
+      - name: PH-03 deterministic closure manifest
+        env:
+          REPOSITORY_VISIBILITY: ${{ github.event.repository.visibility }}
+        run: >-
+          python scripts/post_hardcore_ph03_closure.py
+          --candidate-sha "${CANDIDATE_SHA}"
+          --repository "${GITHUB_REPOSITORY}"
+          --repository-visibility "${REPOSITORY_VISIBILITY}"
+
       - name: Upload Enterprise and H1-H10 evidence bundle
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
@@ -356,5 +365,56 @@ jobs:
             build/enterprise/bom.cdx.json
             build/enterprise/scale-certification.json
             build/enterprise/enterprise-engineering-evidence.json
+            build/post-hardcore/ph03-closure-manifest.json
+          if-no-files-found: error
+          retention-days: 30
+
+  durable-attestation:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: enterprise-gate
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+      attestations: write
+    steps:
+      - name: Checkout exact main SHA
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7
+        with:
+          python-version: "3.11"
+
+      - name: Download exact Enterprise evidence bundle
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: enterprise-evidence-${{ github.sha }}
+          path: .
+
+      - name: Verify PH-03 closure manifest before attestation
+        run: >-
+          python scripts/post_hardcore_ph03_closure.py
+          --candidate-sha "${GITHUB_SHA}"
+          --verify-existing build/post-hardcore/ph03-closure-manifest.json
+
+      - name: Attest durable PH-03 closure manifest
+        id: attest
+        uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4.2.2
+        with:
+          subject-path: build/post-hardcore/ph03-closure-manifest.json
+          predicate-type: https://lukart.dev/attestation/closure-manifest/v1
+          predicate-path: build/post-hardcore/ph03-closure-manifest.json
+
+      - name: Upload offline-verification attestation bundle
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: ph03-attestation-${{ github.sha }}
+          path: |
+            build/post-hardcore/ph03-closure-manifest.json
+            ${{ steps.attest.outputs.bundle-path }}
           if-no-files-found: error
           retention-days: 30
