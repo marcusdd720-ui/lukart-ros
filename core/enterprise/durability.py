@@ -261,7 +261,7 @@ class SQLiteProvenanceStore:
                         if actual_digest != expected_digest:
                             raise EnterpriseContractError("durable stream head mismatch")
 
-                rows = self.records()
+                rows = self.verify()
                 previous = rows[-1].record_digest if rows else _GENESIS
                 sequence = len(rows)
                 for stream_id, event_type, copied, payload_digest in prepared:
