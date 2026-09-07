@@ -4,7 +4,9 @@ Status: Active continuation after historical H1-H10 ENGINEERING PASS
 Program baseline: `main @ eefd7088406126c0a20baf1245742649058decc4`
 Current closed trust core: `PHX-06 @ main 9c2a7812cedfe98b65af484186459300897357de`
 Latest closed durability continuation: `DR-01 implementation merge @ main 615c01946e7ca61bb0bb5488b2a3b799eb5f06ce`
-Active stage: `IV-01 — Critical Invariant Verification v1`
+Latest closed invariant verification: `IV-01 @ main cae560f4893b8726695e06334982927376e7a146`
+Latest closed signed exchange continuation: `XCH-01 @ main 83157c6e649ab1212ee200a453aa5240e08be24c`
+Active stage: `NONE — IV-01 and XCH-01 closed`
 Horizon: 10+ years
 
 This roadmap extends the existing Product, P2/P3, Enterprise and historical Hardcore
@@ -221,11 +223,12 @@ measured and validated.
 
 ## IV-01 — Critical Invariant Verification v1
 
-Status: `IMPLEMENTATION / VALIDATION PENDING`
-Implementation baseline: `main @ 435ce414fd39335c78ac38ab40592fff35ae95c2`
-Branch: `hardening/iv-01-critical-invariants`
+Status: `CLOSED / ENGINEERING PASS`
+Merge baseline: `main @ cae560f4893b8726695e06334982927376e7a146`
+Validated PR head: `fd17c13b60011afe549b8e6f68a1ca90486e98ef`
+PR: `#159`
 
-Implemented controls pending exact-SHA validation:
+Closed controls:
 
 - one exact content-addressed registry covering CCL bundle integrity, recovery identity,
   Case Replay rebuild, migration determinism, Epistemic rebuild and bounded semantic change;
@@ -238,9 +241,39 @@ Implemented controls pending exact-SHA validation:
 - bounded state/adversarial tests exercise stale CCL heads, non-empty restore refusal,
   tampering, recovery divergence, nondeterministic migration, cross-case Epistemic state and
   semantic blast-radius overflow;
-- verifier has no CCL write API or persistence authority.
+- verifier has no CCL write API or persistence authority;
+- exact candidate SHA passed all 11 required PR workflows before guarded exact-head merge;
+- exact merge SHA completed 12 recorded post-merge workflow runs with no failed, cancelled,
+  queued or in-progress runs when closure was evaluated;
+- engineering closure does not claim independent external certification.
 
 Architecture contract: `docs/CRITICAL_INVARIANT_VERIFICATION_V1.md`.
+
+## XCH-01 — Signed Case Exchange v1
+
+Status: `CLOSED / ENGINEERING PASS`
+Merge baseline: `main @ 83157c6e649ab1212ee200a453aa5240e08be24c`
+Validated PR head: `4da8545b4ec8584caf1a8a73aac4fc9794ba6531`
+PR: `#160`
+
+Closed controls:
+
+- exact content-addressed exchange request and envelope identity;
+- exact Case Replay v2 bundle binding with offline replay verification;
+- explicit source tenant/case authorization requiring `case:read`;
+- explicit recipient tenant/case authorization requiring `case:write`;
+- existing Enterprise Ed25519 attestation contract reused with an XCH-01 domain separator;
+- cryptographic attestation is origin/integrity evidence only and never epistemic truth;
+- strict unknown-field/schema rejection and fail-closed revoked, untrusted or expired
+  signature handling;
+- no CCL write, restore, SQLite persistence, merge/import authority or second Product truth
+  store is introduced;
+- exact candidate SHA passed all 11 required PR workflows before guarded exact-head merge;
+- exact merge SHA completed nine post-merge workflow runs with no failed, cancelled, queued
+  or in-progress runs when closure was evaluated;
+- engineering closure does not claim independent external certification.
+
+Architecture contract: `docs/SIGNED_CASE_EXCHANGE_V1.md`.
 
 ## Years 6-10+ — Durability, portability and cryptographic renewal
 
