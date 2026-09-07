@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import importlib
 import os
 import subprocess
 import tomllib
@@ -14,9 +15,7 @@ _ROOT = Path(__file__).resolve().parent
 def _setuptools_backend() -> Any:
     """Load setuptools only inside the isolated PEP 517 build environment."""
 
-    from setuptools import build_meta
-
-    return build_meta
+    return importlib.import_module("setuptools.build_meta")
 
 
 def _project_state() -> tuple[str, str, str]:
