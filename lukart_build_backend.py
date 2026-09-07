@@ -8,9 +8,15 @@ import tomllib
 from pathlib import Path
 from typing import Any
 
-from setuptools import build_meta as _setuptools
-
 _ROOT = Path(__file__).resolve().parent
+
+
+def _setuptools_backend() -> Any:
+    """Load setuptools only inside the isolated PEP 517 build environment."""
+
+    from setuptools import build_meta
+
+    return build_meta
 
 
 def _project_state() -> tuple[str, str, str]:
@@ -53,41 +59,61 @@ def _enforce_immutable_baseline() -> None:
         )
 
 
-def build_wheel(wheel_directory: str, config_settings: Any = None, metadata_directory: str | None = None) -> str:
+def build_wheel(
+    wheel_directory: str,
+    config_settings: Any = None,
+    metadata_directory: str | None = None,
+) -> str:
     _enforce_immutable_baseline()
-    return _setuptools.build_wheel(wheel_directory, config_settings, metadata_directory)
+    return _setuptools_backend().build_wheel(
+        wheel_directory, config_settings, metadata_directory
+    )
 
 
 def build_sdist(sdist_directory: str, config_settings: Any = None) -> str:
     _enforce_immutable_baseline()
-    return _setuptools.build_sdist(sdist_directory, config_settings)
+    return _setuptools_backend().build_sdist(sdist_directory, config_settings)
 
 
-def build_editable(wheel_directory: str, config_settings: Any = None, metadata_directory: str | None = None) -> str:
+def build_editable(
+    wheel_directory: str,
+    config_settings: Any = None,
+    metadata_directory: str | None = None,
+) -> str:
     _enforce_immutable_baseline()
-    return _setuptools.build_editable(wheel_directory, config_settings, metadata_directory)
+    return _setuptools_backend().build_editable(
+        wheel_directory, config_settings, metadata_directory
+    )
 
 
-def prepare_metadata_for_build_wheel(metadata_directory: str, config_settings: Any = None) -> str:
+def prepare_metadata_for_build_wheel(
+    metadata_directory: str, config_settings: Any = None
+) -> str:
     _enforce_immutable_baseline()
-    return _setuptools.prepare_metadata_for_build_wheel(metadata_directory, config_settings)
+    return _setuptools_backend().prepare_metadata_for_build_wheel(
+        metadata_directory, config_settings
+    )
 
 
-def prepare_metadata_for_build_editable(metadata_directory: str, config_settings: Any = None) -> str:
+def prepare_metadata_for_build_editable(
+    metadata_directory: str, config_settings: Any = None
+) -> str:
     _enforce_immutable_baseline()
-    return _setuptools.prepare_metadata_for_build_editable(metadata_directory, config_settings)
+    return _setuptools_backend().prepare_metadata_for_build_editable(
+        metadata_directory, config_settings
+    )
 
 
 def get_requires_for_build_wheel(config_settings: Any = None) -> list[str]:
     _enforce_immutable_baseline()
-    return _setuptools.get_requires_for_build_wheel(config_settings)
+    return _setuptools_backend().get_requires_for_build_wheel(config_settings)
 
 
 def get_requires_for_build_sdist(config_settings: Any = None) -> list[str]:
     _enforce_immutable_baseline()
-    return _setuptools.get_requires_for_build_sdist(config_settings)
+    return _setuptools_backend().get_requires_for_build_sdist(config_settings)
 
 
 def get_requires_for_build_editable(config_settings: Any = None) -> list[str]:
     _enforce_immutable_baseline()
-    return _setuptools.get_requires_for_build_editable(config_settings)
+    return _setuptools_backend().get_requires_for_build_editable(config_settings)
