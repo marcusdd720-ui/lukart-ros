@@ -17,7 +17,11 @@ from core.semantic_change_v2 import (
 )
 
 
-def _ref(case: CaseId, name: str, kind: ArtifactKind = ArtifactKind.PROJECTION) -> ImmutableArtifactRef:
+def _ref(
+    case: CaseId,
+    name: str,
+    kind: ArtifactKind = ArtifactKind.PROJECTION,
+) -> ImmutableArtifactRef:
     return ImmutableArtifactRef(
         case_id=case,
         kind=kind,
