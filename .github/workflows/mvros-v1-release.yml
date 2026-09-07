@@ -54,7 +54,7 @@ jobs:
           python -m validation.release_contract
           --github-output "${GITHUB_OUTPUT}"
 
-      - name: Development state — no release mutation
+      - name: Development build — no release mutation
         if: steps.intent.outputs.release != 'true'
         run: |
           echo "Development version ${{ steps.intent.outputs.version }} is active."
@@ -84,7 +84,7 @@ jobs:
           python -m validation.release_governance \
             --rules-json /tmp/main-effective-rules.json
 
-      - name: Require exact-SHA validation workflows
+      - name: Require all release validation workflows on the same SHA
         if: steps.intent.outputs.release == 'true'
         id: workflows
         env:
@@ -176,11 +176,13 @@ jobs:
         run: |
           set -euo pipefail
           if [ -n "$(git ls-remote origin "refs/tags/${TAG}" "refs/tags/${TAG}^{}")" ]; then
-            echo "Tag ${TAG} already exists; refusing release reuse or repair."
+            echo "Refusing to move an existing release tag ${TAG}."
+            echo "Bump the project version for a new release."
             exit 1
           fi
           if gh release view "${TAG}" >/dev/null 2>&1; then
             echo "Release ${TAG} already exists; refusing release reuse or repair."
+            echo "Bump the project version for a new release."
             exit 1
           fi
           echo "PUBLISH_ONCE_PRECONDITION=PASS"
