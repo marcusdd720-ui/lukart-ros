@@ -14,7 +14,7 @@ from threading import RLock
 
 from core.enterprise.contracts import EnterpriseContractError
 from core.enterprise.durability import DurableRecord, SQLiteProvenanceStore
-from core.p3.contracts import RuntimeIdentity
+from core.p3.contracts import RuntimeIdentity, canonical_json
 
 from .contracts import (
     CaseId,
@@ -123,6 +123,32 @@ class CanonicalCaseLedger:
         backend_head = matching[-1].record_digest if matching else _BACKEND_GENESIS
         return events, backend_head
 
+    @staticmethod
+    def _verified_export(
+        value: Mapping[str, object],
+        *,
+        max_events: int | None = None,
+    ) -> CaseLedgerBundle:
+        """Parse one serialized bundle and reject any unbound serialized fields."""
+
+        raw_events = value.get("events")
+        if not isinstance(raw_events, list):
+            raise CaseLedgerContractError("ledger bundle events are invalid")
+        if max_events is not None and len(raw_events) > max_events:
+            raise CaseLedgerContractError("canonical case ledger event limit exceeded")
+
+        bundle = CaseLedgerBundle.from_dict(value)
+        try:
+            serialized = canonical_json(dict(value))
+            reconstructed = canonical_json(bundle.canonical_dict())
+        except (TypeError, ValueError) as exc:
+            raise CaseLedgerContractError("ledger bundle is not canonically serializable") from exc
+        if serialized != reconstructed:
+            raise CaseLedgerContractError(
+                "serialized ledger bundle contains unbound or inconsistent fields"
+            )
+        return bundle
+
     def events(
         self,
         case_id: CaseId,
@@ -230,8 +256,56 @@ class CanonicalCaseLedger:
             events=self.events(case_id, max_events=max_events),
         )
 
+    def restore_case(
+        self,
+        case_id: CaseId,
+        value: Mapping[str, object],
+        *,
+        max_events: int = DEFAULT_MAX_CASE_EVENTS,
+    ) -> CaseLedgerBundle:
+        """Atomically restore one verified portable bundle into an empty case stream.
+
+        Canonical event identities are preserved exactly.  Backend record identities
+        are intentionally regenerated because they belong to the durability layer,
+        not to the Product epistemic authority.  Existing target case history is
+        never merged or overwritten.
+        """
+
+        limit = self._validate_limit(max_events)
+        bundle = self._verified_export(value, max_events=limit)
+        if bundle.case_id != case_id:
+            raise CaseLedgerContractError("restore bundle case_id does not match target case_id")
+
+        stream_id = self._stream_id(case_id)
+        with self._lock:
+            existing, backend_head = self._snapshot(case_id, max_events=limit)
+            if existing:
+                raise CaseLedgerContractError("restore target case stream is not empty")
+
+            if bundle.events:
+                batch = tuple(
+                    (stream_id, _BACKEND_EVENT_TYPE, event.canonical_dict())
+                    for event in bundle.events
+                )
+                try:
+                    inserted = self._store.append_batch(
+                        batch,
+                        expected_stream_heads={stream_id: backend_head},
+                    )
+                except Exception as exc:
+                    raise CaseLedgerContractError(
+                        "canonical case restore transaction failed"
+                    ) from exc
+                if len(inserted) != len(bundle.events):
+                    raise CaseLedgerContractError("canonical case restore record-count mismatch")
+
+            restored = self.export_case(case_id, max_events=limit)
+            if restored != bundle:
+                raise CaseLedgerContractError("canonical case restore verification mismatch")
+            return restored
+
     @staticmethod
     def verify_export(value: Mapping[str, object]) -> CaseLedgerBundle:
         """Fail-closed offline verification of a serialized case bundle."""
 
-        return CaseLedgerBundle.from_dict(value)
+        return CanonicalCaseLedger._verified_export(value)
