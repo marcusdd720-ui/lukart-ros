@@ -100,6 +100,12 @@ def _finite_float(value: object, *, field_name: str) -> float:
     return result
 
 
+def _strict_bool(value: object, *, field_name: str) -> bool:
+    if not isinstance(value, bool):
+        raise EvaluationContractError(f"{field_name} must be boolean")
+    return value
+
+
 def _content_address_from_hex(value: str, *, field_name: str) -> ContentAddress:
     try:
         digest = require_hex_digest(value, field_name=field_name)
@@ -514,29 +520,29 @@ class KQMPolicy:
                 _mapping(raw_spec, field_name=f"metric {name}")
             )
         policy = _mapping(value.get("policy"), field_name="KQM policy controls")
+        threshold_relaxation = _strict_bool(
+            policy.get("threshold_relaxation_requires_versioned_policy_change"),
+            field_name="threshold_relaxation_requires_versioned_policy_change",
+        )
+        evaluator_mutation = _strict_bool(
+            policy.get("evaluator_may_mutate_product_state"),
+            field_name="evaluator_may_mutate_product_state",
+        )
         body = cls._body(
             version=str(value.get("version", "")),
             baseline=str(value.get("baseline", "")),
             metrics=metrics,
             missing_metric=str(policy.get("missing_metric", "")),
-            threshold_relaxation_requires_versioned_policy_change=bool(
-                policy.get("threshold_relaxation_requires_versioned_policy_change", False)
-            ),
-            evaluator_may_mutate_product_state=bool(
-                policy.get("evaluator_may_mutate_product_state", True)
-            ),
+            threshold_relaxation_requires_versioned_policy_change=threshold_relaxation,
+            evaluator_may_mutate_product_state=evaluator_mutation,
         )
         return cls(
             version=str(value.get("version", "")),
             baseline=str(value.get("baseline", "")),
             metrics=metrics,
             missing_metric=str(policy.get("missing_metric", "")),
-            threshold_relaxation_requires_versioned_policy_change=bool(
-                policy.get("threshold_relaxation_requires_versioned_policy_change", False)
-            ),
-            evaluator_may_mutate_product_state=bool(
-                policy.get("evaluator_may_mutate_product_state", True)
-            ),
+            threshold_relaxation_requires_versioned_policy_change=threshold_relaxation,
+            evaluator_may_mutate_product_state=evaluator_mutation,
             policy_identity=ContentAddress.for_value(body),
         )
 
@@ -556,11 +562,13 @@ class KQMPolicy:
             baseline=str(value.get("baseline", "")),
             metrics=metrics,
             missing_metric=str(value.get("missing_metric", "")),
-            threshold_relaxation_requires_versioned_policy_change=bool(
-                value.get("threshold_relaxation_requires_versioned_policy_change", False)
+            threshold_relaxation_requires_versioned_policy_change=_strict_bool(
+                value.get("threshold_relaxation_requires_versioned_policy_change"),
+                field_name="threshold_relaxation_requires_versioned_policy_change",
             ),
-            evaluator_may_mutate_product_state=bool(
-                value.get("evaluator_may_mutate_product_state", True)
+            evaluator_may_mutate_product_state=_strict_bool(
+                value.get("evaluator_may_mutate_product_state"),
+                field_name="evaluator_may_mutate_product_state",
             ),
             policy_identity=_address_from_mapping(
                 value.get("policy_identity"), field_name="policy_identity"
