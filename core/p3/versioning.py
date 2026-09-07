@@ -91,6 +91,20 @@ class CaseMigrationRegistry:
             raise P3ContractError(f"duplicate migration: {source}->{target}")
         self._steps[key] = MigrationStep(source, target, step.migrate)
 
+    def canonical_dict(self) -> dict[str, object]:
+        """Bind registry topology; RuntimeIdentity.code_sha binds migration implementation."""
+
+        return {
+            "schema": "lukart.case-migration-registry.v1",
+            "steps": [
+                {"source_version": source, "target_version": target}
+                for source, target in sorted(self._steps)
+            ],
+        }
+
+    def digest(self) -> str:
+        return content_digest(self.canonical_dict())
+
     def _all_paths(self, source: str, target: str) -> tuple[tuple[str, ...], ...]:
         adjacency: dict[str, list[str]] = {}
         vertices: set[str] = {source, target}
