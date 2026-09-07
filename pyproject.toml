@@ -74,6 +74,7 @@ module = [
   "core.case_ledger.contracts",
   "core.case_ledger.ledger",
   "core.case_replay_v2",
+  "core.critical_invariants",
   "core.enterprise.api_guard",
   "core.enterprise.authorization",
   "core.enterprise.contracts",
