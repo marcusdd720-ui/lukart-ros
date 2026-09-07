@@ -6,7 +6,9 @@ Historical tag identity: `v1.0.1 tag object @ 9f7c0b28f766c8921e63b1d517fefcc96a
 Enterprise implementation base: `P3 merge @ 8550d08651957afd7f21b91553768786cb8bcf6e`
 Post-Hardcore closed trust core: `PHX-06 @ main 9c2a7812cedfe98b65af484186459300897357de`
 Latest closed durability continuation: `DR-01 implementation merge @ main 615c01946e7ca61bb0bb5488b2a3b799eb5f06ce`
-Active Post-Hardcore stage: `NONE — PHX-01..PHX-06 trust core and DR-01 closed`
+Latest closed invariant verification: `IV-01 @ main cae560f4893b8726695e06334982927376e7a146`
+Latest closed signed exchange continuation: `XCH-01 @ main 83157c6e649ab1212ee200a453aa5240e08be24c`
+Active Post-Hardcore stage: `NONE — PHX-01..PHX-06 trust core, DR-01, IV-01 and XCH-01 closed`
 Roadmap target: `Post-Hardcore Enterprise continuation`
 Development version: `1.1.0.dev0`
 
@@ -77,7 +79,11 @@ PHX-01 through PHX-06 form the closed Post-Hardcore trust core. PHX-01 establish
 
 DR-01 — Canonical Ledger Recovery / Storage Portability v1 — is `CLOSED / ENGINEERING PASS` for the implementation merged through PR #157. The validated implementation head is `15312711bed0956d614de6fc3ee5005cc96f55dd`; the implementation merge is `main @ 615c01946e7ca61bb0bb5488b2a3b799eb5f06ce`. Exact-merge-SHA post-merge validation completed with nine successful workflow runs, including Stage Gate run ID `34155_634951` (underscore is a display separator for the repository PII gate). DR-01 preserves canonical case/event/bundle identities across portable restore, rejects tampered/unbound serialized metadata, refuses merge/overwrite into a non-empty target case stream and proves all-or-nothing rollback on injected mid-batch failure. It reuses the existing Canonical Case Ledger and Enterprise durability backend and does not introduce a second Product truth authority.
 
-No next durability stage is active until it is separately defined, measured and validated. DR-01 engineering closure does not assert independent external certification.
+IV-01 — Critical Invariant Verification v1 — is `CLOSED / ENGINEERING PASS` for PR #159. The validated PR head is `fd17c13b60011afe549b8e6f68a1ca90486e98ef`; the merge is `main @ cae560f4893b8726695e06334982927376e7a146`. Its fixed content-addressed registry verifies CCL bundle integrity, recovery identity, replay rebuild, migration determinism, Epistemic rebuild and bounded semantic change by delegating to existing production contracts. The exact candidate SHA passed all 11 required PR workflows; post-merge evaluation found no failed, cancelled, queued or in-progress workflow run. IV-01 adds no CCL write or persistence authority and does not claim independent external certification.
+
+XCH-01 — Signed Case Exchange v1 — is `CLOSED / ENGINEERING PASS` for PR #160. The validated PR head is `4da8545b4ec8584caf1a8a73aac4fc9794ba6531`; the merge is `main @ 83157c6e649ab1212ee200a453aa5240e08be24c`. XCH-01 binds an exact Case Replay v2 bundle to content-addressed exchange identity, explicit source `case:read` and recipient `case:write` authorization evidence and the existing Enterprise Ed25519 attestation contract under a dedicated domain separator. Offline verification rejects unknown schema/fields and revoked, untrusted or expired signatures. Attestation proves origin/integrity only, never epistemic truth; XCH-01 exposes no Canonical Ledger write, restore, persistence or implicit merge/import authority. The exact candidate SHA passed all 11 required PR workflows and the merge SHA completed nine post-merge workflow runs with no failed, cancelled, queued or in-progress runs when closure was evaluated.
+
+No next Post-Hardcore stage is active until it is separately defined, measured and validated. These engineering closures do not assert independent external certification.
 
 ## 6. Trust boundaries
 
@@ -140,12 +146,14 @@ The package development version is distinct from the immutable historical releas
 - `docs/ROADMAP_P3.md` and `config/p3_v1.json` — P3 hardening contract/policy.
 - `docs/ENTERPRISE_ROADMAP.md` and `config/enterprise_v1.json` — E0-E10 contract/policy.
 - `docs/HARDCORE_ROADMAP.md` — historical H1-H10 closure contract and evidence roadmap.
-- `docs/POST_HARDCORE_ROADMAP.md` — active 10+ year Post-Hardcore continuation and DR closure record.
+- `docs/POST_HARDCORE_ROADMAP.md` — active 10+ year Post-Hardcore continuation and closure record.
 - `docs/CANONICAL_CASE_LEDGER_V1.md` — PHX-01 Canonical Ledger/Object Identity v1 trust contract.
 - `docs/GOLD_KQM_V2.md` — PHX-02 immutable Gold Corpus / KQM v2 trust contract.
 - `docs/EPISTEMIC_ASSERTIONS_V2.md` — PHX-03 epistemic assertion/state-machine v2 trust contract.
 - `docs/EVIDENCE_TRUST_GRAPH_V1.md` — PHX-04 evidence trust graph contract.
 - `docs/CASE_REPLAY_V2.md` — PHX-05 deterministic case replay contract.
 - `docs/SEMANTIC_CHANGE_PROPAGATION_V2.md` — PHX-06 bounded change-propagation contract.
+- `docs/CRITICAL_INVARIANT_VERIFICATION_V1.md` — IV-01 bounded critical-invariant verification contract.
+- `docs/SIGNED_CASE_EXCHANGE_V1.md` — XCH-01 signed offline-verifiable case exchange contract.
 
 Historical design records do not override this Master Plan, Accepted ADRs, executable trust gates or the canonical working principles.
