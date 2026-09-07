@@ -154,6 +154,7 @@ def test_ph03_workflow_separates_read_only_validation_from_attestation() -> None
     assert "attestations: write" in workflow
     assert "actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6" in workflow
     assert "actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c" in workflow
+    assert "name: enterprise-evidence-${{ github.sha }}\n          path: build" in workflow
     assert f"predicate-type: {PREDICATE_TYPE}" in workflow
     assert "build/post-hardcore/ph03-closure-manifest.json" in workflow
     assert "retention-days: 30" in workflow
