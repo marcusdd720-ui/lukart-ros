@@ -282,7 +282,9 @@ def test_policy_is_content_addressed_and_tamper_evident() -> None:
 def test_large_chain_fails_at_depth_budget_before_unbounded_traversal() -> None:
     case = CaseId("CASE-PHX06-LARGE")
     refs = tuple(_ref(case, f"node-{index}") for index in range(300))
-    dependencies = {refs[0]: ()}
+    dependencies: dict[
+        ImmutableArtifactRef, tuple[ImmutableArtifactRef, ...]
+    ] = {refs[0]: ()}
     for index in range(1, len(refs)):
         dependencies[refs[index]] = (refs[index - 1],)
     graph = SemanticChangeGraphV2(case_id=case, dependencies=dependencies)
