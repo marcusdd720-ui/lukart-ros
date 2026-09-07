@@ -194,7 +194,7 @@ class CaseExchangeRequestV1:
         source_case_id: CaseId,
         recipient_tenant_id: str,
         recipient_case_id: CaseId,
-    ) -> "CaseExchangeRequestV1":
+    ) -> CaseExchangeRequestV1:
         source_tenant = _text(source_tenant_id, field_name="source_tenant_id")
         recipient_tenant = _text(
             recipient_tenant_id,
@@ -231,7 +231,7 @@ class CaseExchangeRequestV1:
         }
 
     @classmethod
-    def from_dict(cls, value: Mapping[str, object]) -> "CaseExchangeRequestV1":
+    def from_dict(cls, value: Mapping[str, object]) -> CaseExchangeRequestV1:
         raw = _copy_mapping(value, field_name="case exchange request")
         _require_exact_keys(
             raw,
@@ -355,7 +355,7 @@ class ExchangeAuthorizationV1:
         decision: AuthorizationDecision,
         resource: ResourceDescriptor,
         request: CaseExchangeRequestV1,
-    ) -> "ExchangeAuthorizationV1":
+    ) -> ExchangeAuthorizationV1:
         request.verify()
         expected_permission = cls._required_permission(party)
         expected_tenant, expected_case = cls._expected_scope(party, request)
@@ -467,7 +467,7 @@ class ExchangeAuthorizationV1:
         value: Mapping[str, object],
         *,
         request: CaseExchangeRequestV1,
-    ) -> "ExchangeAuthorizationV1":
+    ) -> ExchangeAuthorizationV1:
         raw = _copy_mapping(value, field_name="case exchange authorization")
         _require_exact_keys(
             raw,
@@ -712,7 +712,7 @@ class SignedCaseExchangeBundleV1:
         issued_at: int,
         nonce: str,
         expires_at: int | None = None,
-    ) -> "SignedCaseExchangeBundleV1":
+    ) -> SignedCaseExchangeBundleV1:
         request.verify()
         replay_verification = replay_bundle.verify()
         if replay_bundle.manifest.case_id != request.source_case_id:
