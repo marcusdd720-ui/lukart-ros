@@ -239,5 +239,24 @@
     "independent_review_state": "INDEPENDENT_REVIEW_REQUIRED",
     "independent_certification_claimed": false,
     "release_mutation_requested": false
+  },
+  "ph03_durable_attested_evidence": {
+    "schema": "lukart.post-hardcore.ph03-durable-evidence.v1",
+    "closure_manifest_schema": "lukart.post-hardcore.ph03-closure-manifest.v1",
+    "serialization": "lukart.canonical-json.v1",
+    "runtime_identity_schema": "lukart.runtime-identity.v3",
+    "exact_candidate_sha_required": true,
+    "h10_manifest_required": true,
+    "canonical_dependency_lock_required": true,
+    "workflow_identity_required": true,
+    "github_actions_runtime_policy_required": true,
+    "attestation_predicate_type": "https://lukart.dev/attestation/closure-manifest/v1",
+    "attestation_provider": "github-actions-sigstore",
+    "public_transparency_log_required": true,
+    "attest_only_after_main_merge": true,
+    "short_lived_ci_artifact_days": 30,
+    "release_mutation_requested": false,
+    "independent_review_state": "INDEPENDENT_REVIEW_REQUIRED",
+    "missing_or_mismatched_material": "FAIL"
   }
 }
