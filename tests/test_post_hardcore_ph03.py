@@ -1,6 +1,9 @@
 from __future__ import annotations
 
 import json
+import os
+import subprocess
+import sys
 from collections.abc import Mapping
 from pathlib import Path
 from typing import cast
@@ -90,6 +93,21 @@ def test_ph03_incomplete_runtime_identity_fails_closed() -> None:
 
     with pytest.raises(RuntimeError, match="runtime identity is incomplete"):
         validate_closure_manifest(manifest, expected_candidate_sha=CANDIDATE)
+
+
+def test_ph03_standalone_verifier_bootstraps_repo_imports() -> None:
+    env = dict(os.environ)
+    env.pop("PYTHONPATH", None)
+    completed = subprocess.run(
+        [sys.executable, "scripts/post_hardcore_ph03_closure.py", "--help"],
+        cwd=ROOT,
+        env=env,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    assert completed.returncode == 0, completed.stderr
+    assert "durable attested closure manifest" in completed.stdout
 
 
 def test_ph03_policy_is_fail_closed_and_release_safe() -> None:
