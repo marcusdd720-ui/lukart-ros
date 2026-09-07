@@ -68,11 +68,17 @@ The automated E10 boundary remains `INDEPENDENT_REVIEW_REQUIRED` unless genuine 
 
 Post-Hardcore work MUST be defined as a separately versioned continuation. It may strengthen an earlier P/E/H control but MUST NOT reactivate H1-H10 as an active roadmap, create a competing authority or weaken a safety invariant.
 
+The active separately versioned continuation is `docs/POST_HARDCORE_ROADMAP.md`. Its first trust core is the Canonical Case Ledger / Object Identity Contract defined by `docs/CANONICAL_CASE_LEDGER_V1.md`.
+
 ## 6. Trust boundaries
 
-The Product epistemic authority remains the existing Evidence/Knowledge/Epistemic/Reasoning chain. Enterprise/Hardcore modules protect execution and transport around it. No infrastructure layer may create a trusted FACT, hide a contradiction, modify locked Gold or self-certify an independent review.
+The Canonical Case Ledger is the sole authoritative writable SSOT for case history. Gold Corpus and external evidence are immutable inputs. Epistemic state, trust graphs, timelines, reasoning outputs, renderer artifacts, search indexes and later change-propagation results are deterministic/versioned projections or derived artifacts over exact ledger history; they may not become competing truth authorities.
 
-Agent/plugin output is untrusted until normal Product validation accepts it. External analytical `TRUSTED` state requires explicit authorization and, where trust crosses a process/API/release boundary, a verified cryptographic attestation.
+The historical Evidence/Knowledge/Epistemic/Reasoning chain is migrated toward this invariant stage by stage. Existing downstream components remain valid implementation assets, but authoritative state changes must be represented through the Canonical Ledger once their Post-Hardcore migration stage is active.
+
+Enterprise/Hardcore modules protect execution, persistence and transport around Product semantics. Infrastructure layers may not create a trusted FACT, hide a contradiction, modify locked Gold or self-certify an independent review.
+
+Agent/plugin/model output is untrusted until normal Product validation accepts it. External analytical `TRUSTED` state requires explicit authorization and, where trust crosses a process/API/release boundary, a verified cryptographic attestation. Attestation is evidence of origin/integrity, not automatic epistemic truth.
 
 ## 7. Change classes
 
@@ -121,5 +127,7 @@ The package development version is distinct from the immutable historical releas
 - `docs/ROADMAP_P3.md` and `config/p3_v1.json` — P3 hardening contract/policy.
 - `docs/ENTERPRISE_ROADMAP.md` and `config/enterprise_v1.json` — E0-E10 contract/policy.
 - `docs/HARDCORE_ROADMAP.md` — historical H1-H10 closure contract and evidence roadmap.
+- `docs/POST_HARDCORE_ROADMAP.md` — active 10+ year Post-Hardcore continuation.
+- `docs/CANONICAL_CASE_LEDGER_V1.md` — Canonical Ledger/Object Identity v1 trust contract.
 
 Historical design records do not override this Master Plan, Accepted ADRs, executable trust gates or the canonical working principles.
