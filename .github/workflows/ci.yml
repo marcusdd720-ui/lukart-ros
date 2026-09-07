@@ -31,7 +31,9 @@ jobs:
         run: |
           uv lock --check
           uv export --format pylock.toml --frozen --all-extras --output-file /tmp/pylock.toml
-          diff -u pylock.toml /tmp/pylock.toml
+          # uv records the output path in a generated comment. Compare the
+          # canonical PEP 751 content, not that presentation-only command line.
+          diff -u <(tail -n +3 pylock.toml) <(tail -n +3 /tmp/pylock.toml)
       - name: Dependency boundary gate
         run: uv run --frozen --extra dev python scripts/dependency_boundary_check.py
       - name: Secret-scanning gate
