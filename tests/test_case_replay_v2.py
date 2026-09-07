@@ -6,6 +6,7 @@ from pathlib import Path
 import pytest
 
 from core.case_ledger import CanonicalCaseLedger, CaseId, ObjectId
+from core.case_ledger.contracts import ContentAddress
 from core.case_replay_v2 import (
     CASE_REPLAY_BUNDLE_SCHEMA_V2,
     CaseReplayBundleV2,
@@ -103,6 +104,12 @@ def _serialized(bundle: CaseReplayBundleV2) -> dict[str, object]:
     decoded = json.loads(canonical_json(bundle.canonical_dict()))
     assert isinstance(decoded, dict)
     return decoded
+
+
+def _rebind_bundle_identity(raw: dict[str, object]) -> None:
+    body = dict(raw)
+    body.pop("bundle_identity", None)
+    raw["bundle_identity"] = ContentAddress.for_value(body).canonical_dict()
 
 
 def test_offline_bundle_rebuilds_exact_epistemic_and_trust_projection(tmp_path: Path) -> None:
@@ -260,6 +267,50 @@ def test_unknown_bundle_schema_fails_closed(tmp_path: Path) -> None:
     raw["schema"] = "lukart.case-replay-bundle.v99"
 
     with pytest.raises(CaseReplayV2Error, match="unsupported replay bundle schema"):
+        verify_case_replay_bundle(raw)
+
+
+def test_unknown_top_level_field_fails_even_with_rebound_bundle_identity(tmp_path: Path) -> None:
+    raw = _serialized(_bundle(tmp_path))
+    raw["future_semantics"] = {"unsafe": True}
+    _rebind_bundle_identity(raw)
+
+    with pytest.raises(CaseReplayV2Error, match="unknown=future_semantics"):
+        verify_case_replay_bundle(raw)
+
+
+def test_unknown_manifest_field_fails_closed(tmp_path: Path) -> None:
+    raw = _serialized(_bundle(tmp_path))
+    manifest = raw["manifest"]
+    assert isinstance(manifest, dict)
+    manifest["implicit_equivalence"] = True
+
+    with pytest.raises(CaseReplayV2Error, match="unknown=implicit_equivalence"):
+        verify_case_replay_bundle(raw)
+
+
+def test_unknown_runtime_field_fails_closed(tmp_path: Path) -> None:
+    raw = _serialized(_bundle(tmp_path))
+    runtime = raw["runtime_identity"]
+    assert isinstance(runtime, dict)
+    runtime["provider_guess"] = "accepted"
+
+    with pytest.raises(CaseReplayV2Error, match="unknown=provider_guess"):
+        verify_case_replay_bundle(raw)
+
+
+def test_unknown_registry_step_field_fails_closed(tmp_path: Path) -> None:
+    registry = _registry(with_upgrade=True)
+    raw = _serialized(_bundle(tmp_path, registry=registry))
+    snapshot = raw["migration_registry"]
+    assert isinstance(snapshot, dict)
+    steps = snapshot["steps"]
+    assert isinstance(steps, list)
+    step = steps[0]
+    assert isinstance(step, dict)
+    step["implicit"] = True
+
+    with pytest.raises(CaseReplayV2Error, match="unknown=implicit"):
         verify_case_replay_bundle(raw)
 
 
