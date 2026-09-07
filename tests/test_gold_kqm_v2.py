@@ -47,7 +47,12 @@ def _evaluator(*, provider: str = "provider-a@1") -> EvaluatorIdentity:
     )
 
 
-def _heads(corpus: GoldCorpusIdentity, split: GoldSplit, *, digest_char: str = "e") -> tuple[CaseLedgerHead, ...]:
+def _heads(
+    corpus: GoldCorpusIdentity,
+    split: GoldSplit,
+    *,
+    digest_char: str = "e",
+) -> tuple[CaseLedgerHead, ...]:
     address = ContentAddress(algorithm=DigestAlgorithm.SHA256, digest=digest_char * 64)
     return tuple(
         CaseLedgerHead(case_id=CaseId(case_id), head_event_id=address)
