@@ -48,7 +48,7 @@ def _two_event_bundle(tmp_path):
         return case_id, source.export_case(case_id)
 
 
-def test_dr01_portable_restore_preserves_canonical_identity_across_backend_position(tmp_path) -> None:
+def test_dr01_restore_preserves_identity_across_backend_position(tmp_path) -> None:
     case_id, bundle = _two_event_bundle(tmp_path)
     target_path = tmp_path / "target.db"
 
@@ -107,13 +107,16 @@ def test_dr01_tampered_bundle_is_rejected_before_target_write(tmp_path) -> None:
         assert target.events(case_id) == ()
 
 
-def test_dr01_restore_rejects_wrong_case_and_nonempty_target_without_mutation(tmp_path) -> None:
+def test_dr01_wrong_case_and_nonempty_target_fail_without_mutation(tmp_path) -> None:
     case_id, bundle = _two_event_bundle(tmp_path)
     target_path = tmp_path / "conflict-target.db"
 
     with CanonicalCaseLedger(target_path) as target:
         wrong_case = CaseId("CASE-WRONG")
-        with pytest.raises(CaseLedgerContractError, match="does not match target case_id"):
+        with pytest.raises(
+            CaseLedgerContractError,
+            match="does not match target case_id",
+        ):
             target.restore_case(wrong_case, bundle.canonical_dict())
         assert target.events(wrong_case) == ()
         assert target.events(case_id) == ()
