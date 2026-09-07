@@ -48,11 +48,13 @@ def test_foundation_and_master_plan_point_to_the_same_canonical_standard() -> No
     assert "canonical living engineering standard" in master_plan
 
 
-def test_no_second_markdown_file_claims_the_canonical_standard_heading() -> None:
+def test_no_second_governance_markdown_claims_the_canonical_standard_heading() -> None:
     canonical_heading = "# LUKART ROS — KANONICZNY STANDARD INŻYNIERSKI"
+    root_markdown = list(ROOT.glob("*.md"))
+    docs_markdown = list((ROOT / "docs").rglob("*.md"))
     owners = [
         path
-        for path in ROOT.rglob("*.md")
+        for path in (*root_markdown, *docs_markdown)
         if canonical_heading in path.read_text(encoding="utf-8", errors="replace")
     ]
 
