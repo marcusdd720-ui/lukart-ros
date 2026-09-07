@@ -2,8 +2,8 @@
 
 Status: Active continuation after historical H1-H10 ENGINEERING PASS
 Program baseline: `main @ eefd7088406126c0a20baf1245742649058decc4`
-Current closed trust core: `PHX-05 @ main e8266b8dc0c76c297d63465df63b166cacb83b0a`
-Active stage: `PHX-06 — Semantic Change Propagation v2`
+Current closed trust core: `PHX-06 @ main 9c2a7812cedfe98b65af484186459300897357de`
+Active stage: `NONE — PHX-01..PHX-06 trust core closed`
 Horizon: 10+ years
 
 This roadmap extends the existing Product, P2/P3, Enterprise and historical Hardcore
@@ -155,13 +155,12 @@ Architecture contract: `docs/CASE_REPLAY_V2.md`.
 
 ## PHX-06 — Semantic Change Propagation v2
 
-Status: `ACTIVE / ENGINEERING`
-Branch baseline: `main @ e8266b8dc0c76c297d63465df63b166cacb83b0a`
+Status: `CLOSED / ENGINEERING PASS`
+Merge baseline: `main @ 9c2a7812cedfe98b65af484186459300897357de`
+Validated PR head: `05b7046404078bd79e2d15ebfb2af1dc8968b16f`
+PR: `#155`
 
-Goal: invalidate and recompute exactly the affected projections when an immutable input
-identity changes, with deterministic hard bounds and replay-bound lineage.
-
-Controls:
+Closed controls:
 
 - typed case-scoped dependency refs point only to exact immutable content identities;
 - existing P3 graph cycle/self-reference semantics are reused without breaking legacy API;
@@ -174,7 +173,11 @@ Controls:
 - stale/wrong replay identity fails closed;
 - recomputed outputs receive new lineage-bound result identity while historical results
   remain immutable;
-- no graph DB, persistence authority or CCL write path is introduced.
+- cross-case dependencies fail closed;
+- no graph DB, persistence authority or CCL write path is introduced;
+- exact-SHA CI passed 11/11 required PR workflows before guarded exact-head merge;
+- terminal post-merge validation on the implementation merge had no queued/in-progress,
+  failed or cancelled workflow runs.
 
 Architecture contract: `docs/SEMANTIC_CHANGE_PROPAGATION_V2.md`.
 
