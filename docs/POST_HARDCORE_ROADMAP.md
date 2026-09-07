@@ -3,7 +3,8 @@
 Status: Active continuation after historical H1-H10 ENGINEERING PASS
 Program baseline: `main @ eefd7088406126c0a20baf1245742649058decc4`
 Current closed trust core: `PHX-06 @ main 9c2a7812cedfe98b65af484186459300897357de`
-Active stage: `NONE — PHX-01..PHX-06 trust core closed`
+Latest closed durability continuation: `DR-01 implementation merge @ main 615c01946e7ca61bb0bb5488b2a3b799eb5f06ce`
+Active stage: `NONE — PHX-01..PHX-06 trust core and DR-01 closed`
 Horizon: 10+ years
 
 This roadmap extends the existing Product, P2/P3, Enterprise and historical Hardcore
@@ -180,6 +181,43 @@ Closed controls:
   failed or cancelled workflow runs.
 
 Architecture contract: `docs/SEMANTIC_CHANGE_PROPAGATION_V2.md`.
+
+## DR-01 — Canonical Ledger Recovery / Storage Portability v1
+
+Status: `CLOSED / ENGINEERING PASS`
+Implementation merge baseline: `main @ 615c01946e7ca61bb0bb5488b2a3b799eb5f06ce`
+Validated PR head: `15312711bed0956d614de6fc3ee5005cc96f55dd`
+PR: `#157`
+Post-merge Stage Gate: run `34155634951` — `SUCCESS`
+
+Closed controls:
+
+- existing `CaseLedgerBundle` is reused as the storage-portable case artifact; no parallel
+  backup format or second Product SSOT is introduced;
+- source bundle is fully fail-closed verified before any restore write, including rejection
+  of unbound/inconsistent serialized metadata and unknown extra fields;
+- restore requires an explicit matching target `CaseId`;
+- restore into an existing non-empty target case stream fails instead of merging,
+  overwriting or silently forking authoritative history;
+- existing Enterprise `SQLiteProvenanceStore.append_batch` is reused as the atomic
+  transactional durability primitive;
+- exact target backend stream head is checked in the same transaction used for restore;
+- injected failure on the second event proves full rollback with zero partial case history;
+- restored canonical event IDs, case head and bundle digest are exactly identical to the
+  source bundle even when unrelated target-backend records change backend-global position;
+- backend durability record identities may be regenerated because they are infrastructure
+  provenance, not Product epistemic identity;
+- bounded restore size fails before write;
+- empty bundle restore is a verified no-op;
+- exact candidate SHA passed all 11 required PR workflows before guarded exact-head merge;
+- exact implementation merge SHA completed nine post-merge workflows with no queued,
+  in-progress, failed, cancelled or timed-out runs; all nine concluded `SUCCESS`;
+- historical `v1.0.1` identity remains unchanged;
+- engineering closure does not claim independent external certification.
+
+DR-01 is the first implemented control under the long-horizon storage portability /
+disaster-recovery continuation. No subsequent DR stage is active until separately defined,
+measured and validated.
 
 ## Years 6-10+ — Durability, portability and cryptographic renewal
 
