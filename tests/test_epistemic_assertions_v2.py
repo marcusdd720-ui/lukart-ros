@@ -122,7 +122,7 @@ def test_initial_fact_requires_exact_prior_authorized_evidence_event(tmp_path: P
         assert state.evidence_refs == (ref,)
 
 
-def test_claim_to_fact_requires_resolved_evidence_and_records_policy_decision(tmp_path: Path) -> None:
+def test_claim_to_fact_records_policy_decision(tmp_path: Path) -> None:
     case_id = CaseId("CASE-EP-PROMOTE")
     with _ledger(tmp_path) as ledger:
         service = EpistemicLedgerService(ledger)
