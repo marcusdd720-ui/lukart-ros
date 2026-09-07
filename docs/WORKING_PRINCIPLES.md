@@ -1,515 +1,89 @@
-# LUKART ROS — Canonical Working Principles
-
-Version: 1.3
-Status: Canonical project operating standard
-Scope: Repository-wide engineering, agents, automation, reviews, CI/CD, release governance
-
-This document consolidates the previously distributed working rules into one canonical operating standard. It is intentionally stricter than a normal coding guide. The goal is not maximum feature velocity; the goal is increasing trustworthiness, reproducibility, security, recoverability, and auditability.
-
-If a later idea is demonstrably better, it may be added or replace an existing rule through a controlled update to this document. Do not create parallel competing rule lists. Where this document conflicts with an accepted ADR or explicit safety invariant, the stricter safety/trust requirement wins and the conflict must be made explicit.
-
-## 1. End-to-end execution
-
-When an agreed stage, roadmap, audit, repair, or implementation can continue with available tools, execute it automatically from start to finish.
-
-Do not stop merely because:
-- a branch was created;
-- a commit was created;
-- a PR was opened;
-- CI is still running;
-- a repairable error appeared;
-- only part of the matrix is green;
-- another obvious technical step remains and requires no user decision.
-
-When a failure occurs:
-1. identify the real root cause;
-2. make the smallest justified repair;
-3. run a focused validation;
-4. run the required regression;
-5. create a fresh SHA;
-6. re-run exact-SHA CI;
-7. continue automatically.
-
-Do not ask for confirmation between already-approved sequential steps unless a genuinely new business decision, authorization boundary, or irreversible action appears.
-
-## 2. Canonical delivery pipeline
-
-Default workflow:
-
-`Problem -> Evidence -> Measurement -> Design -> Implementation -> Focused Tests -> Adversarial Tests -> Full Regression -> CI -> Exact-SHA Validation -> PR -> Merge -> Post-Merge Validation -> Evidence -> Closure`
-
-### Strict stage sequence — non-negotiable
-
-For an already-open roadmap stage, the execution order is mandatory and must not be rearranged:
-
-`Identify current open stage + PR + exact candidate SHA -> Check exact-SHA CI for that candidate -> if FAIL: repair inside the same stage -> fresh SHA -> run the full required gate set on that fresh SHA -> merge that exact validated PR head -> post-merge validation on resulting main -> close the stage -> only then start the next stage`
-
-At entry to any ongoing stage:
-1. identify the **current open stage** and do not work on a later roadmap item;
-2. identify its current PR, when one exists;
-3. identify the **exact current candidate SHA / PR head SHA**;
-4. inspect exact-SHA CI for that candidate before claiming progress toward closure;
-5. if any required check is `FAIL`, incomplete, stale, or belongs to another SHA, remain in the same stage;
-6. diagnose root cause and make the smallest justified repair;
-7. every repair creates a **fresh candidate SHA** and invalidates prior merge-readiness claims for older SHAs;
-8. run the complete required focused/adversarial/regression/security/policy/gate set for the fresh SHA;
-9. merge only the exact PR head SHA that has the complete required PASS set;
-10. validate the resulting `main` SHA, post-merge workflows, regressions, release/tag side effects, and required evidence;
-11. mark the stage closed only after post-merge validation succeeds;
-12. only after closure may execution advance to the next roadmap stage.
-
-Forbidden sequencing behavior:
-- skipping an open stage;
-- beginning or implementing a later stage while the current stage is not closed;
-- declaring PASS/DONE before complete exact-SHA validation and post-merge closure;
-- combining green results from different SHAs into one merge/certification claim;
-- treating a previous candidate's PASS as valid for a fresh repaired SHA;
-- returning to or rewriting a historically closed stage during normal roadmap progression. A newly evidenced regression, incident, security issue, or dependency may create a **new repair stage**, but must not retroactively falsify or rewrite the historical closure state.
-
-This strict sequence takes precedence over convenience, parallelism, or faster roadmap progression whenever stage trust, merge readiness, or certification state is involved.
-
-For substantive repository work:
-1. verify current `main` and exact baseline SHA;
-2. define the decision need and acceptance criteria;
-3. identify affected trust/Product/Factory boundaries;
-4. implement the smallest sufficient vertical slice;
-5. add focused positive and negative tests;
-6. add adversarial tests for trust boundaries;
-7. run lint, type checks, security/policy gates, and full regression;
-8. fix failures without weakening valid gates;
-9. validate one exact candidate SHA in CI;
-10. merge using the validated head SHA;
-11. verify the resulting `main` SHA;
-12. execute post-merge validation and inspect release/tag side effects;
-13. close the stage only after its Definition of Done is satisfied.
-
-## 3. Fundamental principles
-
-Always apply:
-
-- **Evidence Before Conclusion** — prove before claiming.
-- **Decision Need First** — determine what decision actually needs to be made.
-- **Problem First** — do not design a solution before defining the problem.
-- **Measurement Before Conclusion** — use measurement where measurement is possible.
-- **Incremental Validation** — validate important changes as early as practical.
-- **Evidence Before Standard** — do not create a rule merely because it feels cleaner.
-- **Factory != Product** — infrastructure is not domain truth or Product completeness.
-- **Build First, Discuss Only When Necessary** — prefer working, tested evidence over speculative architecture discussion.
-- **Single Source of Truth** — do not create competing canonical definitions.
-- **Validation Before Trust** — unvalidated material cannot become trusted state.
-- **Planned != Implemented != Validated != Certified** — status words are not interchangeable.
-
-## 4. Hardcore Enterprise upgrade rule
+# LUKART ROS — KANONICZNY STANDARD INŻYNIERSKI
 
-Before every major new roadmap or phase, explicitly check whether the plan can be improved to a reasonable Hardcore Enterprise level.
+Living standard execution/trust Post-v1. Memory/chat nie są live state. **GitHub ma pierwszeństwo** dla main SHA, PR, candidate SHA, CI i roadmap. `v1.0.1` = immutable baseline.
 
-Do not add complexity for prestige. Raise the standard where there is:
-- a measured weakness;
-- a real trust boundary;
-- security exposure;
-- data-loss risk;
-- non-determinism;
-- semantic-regression risk;
-- scalability failure;
-- recovery/rollback weakness;
-- provenance/auditability gap.
+## 1. END-TO-END / NO-STOP
 
-Preferred design posture:
+Zaakceptowany etap jest jednym zadaniem. Start: live repo → stage/PR → exact PR-head/candidate SHA → required checks. Nie zaczynaj późniejszego etapu przed closure.
 
-`contract-first + adversarial-first + deterministic + bounded + measurable + reversible + provenance-aware + fail-closed`
+`Problem → Evidence → Measurement → Design → Implementation → Focused Tests → Adversarial Tests → Full Regression → CI → Exact-SHA Validation → PR → Merge → Post-Merge Validation → Evidence → Closure`.
 
-### Long-Horizon Engineering / 10-Year Design Horizon
+Nie zatrzymuj się na branchu, commicie, PR, partial PASS, `queued/pending/in_progress`, merge-ready ani naprawialnym FAIL. Finalna odpowiedź tylko przy:
+1. `CLOSED / ENGINEERING PASS`; albo
+2. `HARD BLOCKER`: brak wymaganej autoryzacji/sekretu/artefaktu, konieczna decyzja biznesowa, prawdziwy human/independent/external review, niezatwierdzona operacja nieodwracalna lub niedostępna/nieobsługiwana niezbędna usługa.
 
-For every major architectural, platform, provider, schema, persistence, orchestration, security-boundary, or data-format decision, also evaluate whether the design remains safely evolvable over an indicative 5–10 year horizon.
+FAIL testu, Ruff/MyPy/CodeQL, security/policy, schema/regression, stale SHA, merge conflict, fixture/manifest/dependency issue i naprawialny CI **nie są HARD BLOCKEREM**.
 
-The goal is **not** to predict which specific technologies will exist in the future. The goal is to avoid present-day decisions that unnecessarily trap trusted data, provenance, replayability, security controls, or audit evidence inside technology that is difficult to replace.
+Repair loop:
+`FAIL → evidence → root cause → smallest justified fix → fresh SHA → focused → adversarial → regression → security/policy → exact-SHA CI → re-evaluation`.
+Powtarzaj automatycznie do PASS. Nie pytaj o zgodę między zatwierdzonymi krokami. Nie osłabiaj testu, thresholda, gate'a ani trust boundary dla PASS; zmieniaj wymóg tylko gdy evidence dowodzi jego błędu.
 
-Prefer, where justified:
-- versioned and open contracts;
-- replaceable components and provider/model independence;
-- interoperability and explicit migration paths;
-- backward compatibility where practical;
-- stable/canonical data representations;
-- deterministic replay and provenance identities that survive component replacement;
-- rollback and recovery paths;
-- bounded vendor and technology lock-in;
-- preservation of evidence, auditability, and epistemic controls across technology changes.
+Każda zmiana wyniku tworzy fresh SHA i unieważnia stare PASS. Nie łącz evidence z różnych SHA. Wszystkie required checks dotyczą jednego exact candidate SHA.
 
-For a material long-horizon decision, explicitly ask:
-1. What concrete future change would make the current design expensive or unsafe to replace?
-2. Can a model, provider, database, schema, renderer, orchestration layer, or infrastructure component be replaced without losing trusted data, evidence provenance, replay identity, auditability, or security invariants?
-3. Is compatibility/migration explicit and testable?
-4. Is rollback/recovery possible if the replacement fails?
-5. Does the proposed abstraction solve a credible failure mode or change cost, rather than a hypothetical future possibility?
+CI: `poll → inspect → poll` do terminal state. FAIL → repair loop; komplet SUCCESS → następny krok.
 
-Do not use a 5–10 year horizon as justification for speculative frameworks or generalized abstractions without a concrete failure mode, trust boundary, migration risk, or measurable future-change cost.
+Exact-SHA PASS nie kończy etapu:
+`verify unchanged PR head/base → guarded merge → resulting main SHA → post-merge validation/regression/security/policy → baseline/release side effects → evidence → closure`.
+Post-merge FAIL → repair stage/PR. Po closure automatycznie rozpocznij następny zatwierdzony etap roadmapy.
 
-Short rule: **future-resistant, not future-predictive**.
+## 2. FUNDAMENTY
 
-Important capabilities should, where justified, include:
-- explicit contracts and invariants;
-- negative and adversarial tests;
-- deterministic behavior;
-- bounded resources;
-- audit trail and provenance;
-- replayability;
-- compatibility guarantees;
-- rollback or verified recovery.
+Evidence Before Conclusion; Decision Need First; Problem First; Measurement Before Conclusion; Incremental Validation; Evidence Before Standard; Factory != Product; Build First, Discuss Only When Necessary; Single Source of Truth; Validation Before Trust; Planned != Implemented != Validated != Certified.
 
-### Bounded Design Search / Best-Justified Solution
+Proste zadania: krótko. Repo audit, architecture, trust/security, provenance/replay, migration, CI/governance, merge/release: maksymalna staranność.
 
-For a material decision involving architecture, security or a trust boundary, CI/CD, provenance/replay, migration, recovery, scale, or another long-horizon concern, do not stop at the first solution that merely works when credible alternatives could materially change the decision.
+## 3. HARDCORE ENTERPRISE / LONG-HORIZON
 
-When real alternatives exist:
-1. compare **2–4 credible variants** against the concrete failure modes that motivated the decision;
-2. evaluate, where applicable: correctness, epistemic safety, determinism, security, provenance, replayability, recoverability, auditability, interoperability, migration/backward compatibility, vendor lock-in, operational complexity, and 5–10 year change cost;
-3. prefer the simplest solution that meets the required trust level and is best justified by evidence;
-4. reject unnecessary abstraction or complexity that does not mitigate a concrete failure mode, trust boundary, migration risk, or measurable change cost.
+Przed większą zmianą oceń trust boundary, data loss, nondeterminism, regression, security, scale, recovery, provenance, audit, migration i evolvability. Preferuj contract/adversarial-first, deterministic, bounded, measurable, reversible, provenance-aware, fail-closed.
 
-Do not manufacture artificial alternatives merely to satisfy this rule. Do not continue research once additional research can no longer materially change the decision.
+Istotne decyzje: 5–10+ year horizon; future-resistant, not future-predictive; versioned/open contracts, replaceable components, provider/model independence, explicit migrations, backward compatibility, canonical data, replay/recovery, bounded lock-in.
 
-When a material decision depends on current knowledge of a technology, standard, security issue, dependency, platform, or provider, verify authoritative and current sources before treating the information as established. Clearly separate verified facts from engineering inference.
+Gdy alternatywy mogą zmienić decyzję, porównaj 2–4 względem correctness, epistemic safety, determinism, security, provenance/replay, recovery, audit, interoperability, migration, lock-in, complexity i long-term cost. `Problem → Evidence → Alternatives → Trade-offs → Decision → Validation`. **Best-Justified Solution != Most Complex Solution.** Bez sztucznych wariantów. Aktualne technology/security/dependencies weryfikuj w wiarygodnych źródłach.
 
-For each material decision covered by this rule, preserve a concise decision record containing:
-- problem / decision need;
-- credible alternatives considered;
-- material trade-offs;
-- failure modes explicitly rejected or mitigated;
-- reason for the selected option;
-- validation required to establish the decision in practice.
+## 4. EPISTEMIKA / SSOT / FAIL-CLOSED
 
-Decision chain:
+Agent, plugin, model, renderer, telemetry, self-healing i learning pipeline nie są źródłem prawdy. Canonical Case Ledger = jedyny autorytatywny writable SSOT historii sprawy. Evidence/Gold = immutable inputs. Epistemic State, Trust Graph, reasoning, renderer, search, KQM i propagation = versioned/deterministic projections lub derived artifacts, nigdy konkurencyjny SSOT.
 
-`Evidence -> Alternatives -> Trade-offs -> Decision -> Validation`
+`Evidence → Canonical Ledger → Epistemic State → Trust Graph → Reasoning → Result → Invalidation → Recompute → Replay → verifiable evidence`.
 
-Short rule: **Best-Justified Solution != Most Complex Solution**.
+Nie promuj FACT bez evidence; nie ukrywaj contradictions/open questions. Brak podstaw → `UNKNOWN / UNRESOLVED / ABSTAIN`. Invalid/unknown schema/API, identity, capability, credential, provenance, migration, attestation lub authorization → odmowa.
 
-## 5. Epistemic and trust boundaries
+## 5. DETERMINIZM / PROVENANCE / REPLAY / MIGRACJE
 
-No agent, plugin, self-healing mechanism, learning pipeline, renderer, telemetry subsystem, or automated experiment may establish truth by itself.
+Krytyczne artefakty: canonical serialization, digest binding, tamper evidence, exact code/config/schema/provider/input identity. Replay identity: code SHA + config/corpus digests + schema + provider/plugin versions + input/evidence digests. Nie nazywaj replay identycznym przy niepełnej identity. Oddziel semantic change od presentation diff.
 
-Canonical trust chain:
+Migracje: explicit, versioned, deterministic, możliwie idempotentne, testowane na starych danych, fail-closed dla unknown/ambiguous path. Nie twórz drugiej authority, jeśli można rozszerzyć kanon.
 
-`Evidence -> Epistemic State -> Reasoning -> Validation -> Trusted Result`
+## 6. SECURITY / SUPPLY CHAIN / RUNTIME
 
-Automation must not:
-- promote uncertain content to `FACT` without required evidence;
-- hide contradictions;
-- remove open questions merely to obtain PASS;
-- modify locked Gold/evaluation data to improve scores;
-- self-certify its own independent review;
-- bypass a trust gate;
-- treat model output as epistemic authority.
+Defence in depth; least privilege; deny by default; tenant/case isolation; short-lived credentials; timeout/cancellation; bounded work/concurrency; tamper detection; audit trail. Preferuj full-SHA Actions, frozen dependencies, dependency audit, SBOM/provenance, CodeQL/SAST, secret/PII gates.
 
-When evidence is insufficient, prefer explicit `UNKNOWN`, `UNRESOLVED`, or `ABSTAIN` rather than forced certainty.
+Agent = bounded capability worker. Runtime: capability routing, provider/model/plugin identity/version, budgets, deterministic fallback, circuit breaker, audit. Plugin registry: jawne versions/capabilities; brak undeclared permissions.
 
-## 6. Fail-closed default
+## 7. PERFORMANCE / CONTROLLED LEARNING
 
-Unknown or invalid trust-boundary state must fail closed.
+Performance: `Measurement → profiling → budget → improvement → re-measurement`; mierz runtime, memory, concurrency, replay i blast radius; preferuj deterministyczne limity.
 
-Examples include unknown or invalid:
-- schema version;
-- provider/plugin identity;
-- capability;
-- credential;
-- evidence hash;
-- provenance record;
-- migration path;
-- API major version;
-- attestation;
-- authorization state.
+Learning/self-healing: `Failure → Candidate → Experiment → Validation → Promotion → Monitoring → optional Rollback`. Brak Candidate → Trusted bez gate. Self-healing nie rozszerza trust authority.
 
-Do not silently downgrade validation or accept unknown state for convenience.
+## 8. REVIEW / CERTYFIKACJA / RELEASE
 
-## 7. Determinism, provenance, and replay
+Nie fabrykuj human/independent/security/red-team/external review/certification. Automaty mogą dać `ENGINEERING PASS`; brak wymaganej oceny → `INDEPENDENT_REVIEW_REQUIRED`. Nie przywracaj historycznych blockerów bez nowej evidence. Zamknięty release/tag = immutable. Publikacja wymaga explicit release intent + exact-SHA validation.
 
-Critical artifacts should be, where practical:
-- canonically serialized;
-- digest-bound;
-- content-addressed;
-- replayable;
-- bound to exact code/configuration identity.
+## 9. DEFINITION OF DONE
 
-Replay identity should include, where applicable:
+DONE dopiero po: implementation; focused/adversarial; regression; lint/type-check; security/policy; exact-SHA CI; validated PR-head; merge; exact main; post-merge validation; baseline/release side effects; evidence; brak naprawialnego blockera.
 
-`code SHA + config digest + corpus digest + schema version + provider/plugin versions + input/evidence digests`
+Branch/commit/PR/fresh SHA/partial PASS/waiting CI/merge-ready != DONE. Jeśli istnieje kolejny dozwolony i wykonalny krok pipeline, wykonaj go przed finalną odpowiedzią.
 
-Do not call a run an identical replay when influential identity is unknown.
+## 10. GOVERNANCE / MEMORY / KOMUNIKACJA
 
-Separate semantic change from textual/code-format change. Presentation-only change must not automatically be treated as analytical change.
+**SSOT:** Memory = trwałe zasady, autonomiczny sposób pracy, invarianty + pointer do kanonu. `docs/WORKING_PRINCIPLES.md` = jedyny pełny living standard. GitHub = live SHA/PR/CI/roadmap/release. AGENTS/ADR/CI/testy tylko wskazują kanon lub egzekwują repo-specific constraints; nie duplikują standardu.
 
-## 8. Compatibility and migrations
+Aktualizacje są informacyjne, nigdy checkpointem. Nie kończ listą „pozostaje zrobić”, jeśli możesz działać. Po closure: `STATUS`, `WYKONANO`, `FINAL STATE` (SHA, PR/merge, gates, post-merge, baseline/release, evidence), `WNIOSEK`, `NEXT`.
 
-Migrations must be:
-- explicitly versioned;
-- deterministic;
-- idempotent where reasonably possible;
-- tested against old data;
-- fail-closed for unknown migration routes;
-- explicit about semantic changes.
+Po closure: `evidence → weaknesses → 2–4 material alternatives (gdy potrzebne) → trade-offs → best-justified scenario → improvements`. Ulepszenia w zatwierdzonym scope wdrażaj automatycznie no-stop; stop tylko na nowej decyzji/HARD BLOCKERZE.
 
-Do not create a parallel second authority for logic that can be safely extended in the existing canonical mechanism.
+## 11. NORTH STAR
 
-## 9. Security engineering
-
-Apply defence in depth and least privilege.
-
-Prefer:
-- deny-by-default authorization;
-- capability-based access;
-- tenant/case isolation;
-- short-lived credentials;
-- explicit timeout and cancellation;
-- bounded concurrency;
-- key rotation and revocation;
-- tamper detection;
-- audit trail;
-- environment/input sanitization.
-
-Do not call logical or process separation a kernel/container sandbox unless the claimed isolation actually exists.
-
-Do not claim compliance/certification with an external standard merely because the implementation is inspired by that standard.
-
-## 10. Supply chain and CI
-
-Prefer and progressively enforce:
-- external GitHub Actions pinned to immutable full commit SHA;
-- dependency auditing;
-- SBOM generation;
-- build provenance;
-- SAST/CodeQL;
-- secret scanning;
-- PII/confidentiality gates;
-- dependency-boundary checks;
-- reproducible or tightly controlled build environments.
-
-All required gates for a certification or merge decision must refer to the same exact candidate SHA.
-
-Never assemble a green certification claim from results belonging to different commits.
-
-## 11. Performance and scalability
-
-Do not optimize from intuition alone.
-
-Use:
-1. measurement;
-2. profiling;
-3. explicit budget/limit;
-4. targeted improvement;
-5. re-measurement.
-
-Test meaningful size classes such as small, medium, large, and certification/stress.
-
-Measure where relevant:
-- runtime;
-- peak memory;
-- cache behavior;
-- concurrency;
-- blast radius;
-- replay;
-- graph traversal and propagation.
-
-Avoid algorithmic behavior that becomes structurally unacceptable at realistic production sizes. Do not rely on brittle wall-clock thresholds in normal shared CI when deterministic work-based assertions are possible.
-
-## 12. Agent runtime and plugins
-
-An agent is a bounded capability worker, not a source of truth.
-
-Agent runtime should provide, as applicable:
-- capability routing;
-- maximum steps/work budget;
-- timeout;
-- cancellation;
-- concurrency limits;
-- provider identity/version;
-- audit records;
-- deterministic fallback;
-- health/circuit-breaker state.
-
-Plugin registries should:
-- store classes/definitions rather than live global instances;
-- expose explicit versions and capabilities;
-- reject duplicate identities;
-- provide deterministic discovery;
-- never grant undeclared permissions.
-
-## 13. Controlled learning and self-healing
-
-Allowed promotion lifecycle:
-
-`Failure -> Candidate -> Experiment -> Validation -> Promotion -> Monitoring -> optional Rollback`
-
-There is no direct path:
-
-`Candidate -> Trusted`
-
-Self-healing may diagnose and propose/implement a bounded repair inside approved scope, but must not expand its own trust authority.
-
-Locked evaluation/Gold must not be used as a tuning target or silently mutated to obtain PASS.
-
-## 14. Human review and certification honesty
-
-Never fabricate:
-- human review;
-- independent review;
-- security review;
-- red-team review;
-- external certification.
-
-Automated evidence may support **ENGINEERING PASS**, but not an independent certification claim without real independent evidence.
-
-Use explicit states such as `INDEPENDENT_REVIEW_REQUIRED` when engineering validation is complete but independent review has not occurred.
-
-Do not revive historical closed review blockers as new current-roadmap blockers unless the new roadmap explicitly depends on them.
-
-## 15. Baseline and release immutability
-
-A closed release is a historical artifact.
-
-Do not mutate an old baseline/tag simply because current development continues.
-
-Keep distinct:
-- historical release version;
-- development intent/version;
-- explicit release intent.
-
-A development run must not accidentally move a historical tag or publish a release. Release mutation requires explicit release intent and exact-SHA validation.
-
-## 16. Git/GitHub workflow
-
-Default model:
-
-`main -> branch -> commits -> tests -> PR -> exact-SHA CI -> merge -> post-merge validation`
-
-For a stage that already has a candidate/PR, the **Strict stage sequence in Section 2** governs and must be followed before any later roadmap work.
-
-Before changes:
-- verify current `main` SHA;
-- branch from the intended baseline.
-
-After any repair:
-- create a fresh SHA;
-- validate that fresh SHA;
-- do not reuse stale PASS results from the previous SHA.
-
-Merge only when required exact-SHA gates are green and the PR head has not moved after validation. Prefer an expected-head-SHA guard when supported.
-
-After merge verify:
-- actual `main` SHA;
-- post-merge workflows;
-- release side effects;
-- historical tag immutability;
-- regressions.
-
-Do not begin the next roadmap stage until those post-merge checks close the current stage.
-
-## 17. Definition of Done
-
-A stage is DONE only when all applicable elements are complete:
-- implementation finished;
-- focused tests PASS;
-- adversarial tests PASS;
-- full regression PASS;
-- lint PASS;
-- type-check PASS;
-- security/policy gates PASS;
-- exact-SHA CI PASS;
-- PR merged;
-- resulting `main` verified;
-- post-merge validation PASS;
-- historical baseline/release unaffected unless intentionally changed;
-- required evidence bundle exists;
-- no repairable blocker remains inside the agreed scope.
-
-Creating code, opening a PR, or obtaining partial green CI is not DONE.
-
-## 18. Communication during long work
-
-Short progress updates are allowed and useful for material findings, root causes, or state transitions, but they are not stage closure.
-
-Do not stop execution merely to provide an intermediate report when tools can continue the agreed work.
-
-Ask the user only when:
-- indispensable information is missing;
-- there are materially different business decisions;
-- user authorization is required;
-- an unapproved irreversible action would otherwise occur.
-
-When a safe, reasonable engineering assumption is available, make it explicit if material and continue.
-
-## 19. Final reporting
-
-Only after complete stage closure provide a short final report containing:
-
-### STATUS
-`DONE / PASS / BLOCKED`
-
-### EXECUTED
-The most important completed items.
-
-### FINAL STATE
-- final `main` SHA;
-- PR/merge state;
-- key gates/tests;
-- release/baseline state.
-
-### CONCLUSION
-A few sentences only.
-
-### NEXT
-A short ordered task list.
-
-Avoid long conclusion sections after intermediate technical steps.
-
-## 20. Roadmap execution
-
-When the user has approved an ordered roadmap such as `P3-01 -> P3-10`, `E0 -> E10`, or `H1 -> H10`, execute it automatically in that order.
-
-Before implementation:
-1. verify live repository state;
-2. identify whether an earlier roadmap stage is still open and, if so, continue that stage from its current exact candidate SHA under the Strict stage sequence rather than starting a later stage;
-3. review the roadmap for avoidable weakness;
-4. upgrade it to a justified Hardcore Enterprise level;
-5. apply the Long-Horizon Engineering / 10-Year Design Horizon check to major architectural decisions;
-6. execute the improved roadmap end-to-end.
-
-Do not skip roadmap items, work ahead of an unclosed stage, or stop between roadmap items unless a genuine blocker requires user action.
-
-After closure, summarize and propose the next logical track.
-
-## 21. Living-standard amendment rule
-
-This document is a living canonical standard, not a frozen checklist.
-
-A new principle may be added when it materially improves correctness, epistemic safety, determinism, security, provenance, replayability, resilience, observability, recoverability, auditability, or long-term evolvability.
-
-Before adding a new rule:
-1. identify the concrete failure mode or risk it addresses;
-2. check whether an existing rule already covers it;
-3. prefer merging/refining an existing rule over duplication;
-4. ensure the new rule does not weaken a safety invariant;
-5. update this canonical document rather than creating another competing list;
-6. update related `AGENTS.md`, ADR, CI policy, or tests only when the rule requires executable enforcement.
-
-The target is one coherent operating system for engineering behavior, not an ever-growing pile of overlapping instructions.
-
-## 22. North-star objective
-
-The purpose of LUKART ROS is not to maximize the number of features.
-
-The purpose is to create a system that becomes more trustworthy when:
-- data is incomplete;
-- evidence conflicts;
-- a source is wrong;
-- an input is malicious;
-- infrastructure partially fails;
-- code/schema/providers change;
-- workload size increases.
-
-Every major evolution should increase:
-
-`correctness + epistemic safety + determinism + security + provenance + replayability + resilience + observability + recoverability + auditability + evolvability`
-
-without unjustified complexity.
-
-Major evolutions should also preserve the ability to replace technology without losing trusted data, evidence provenance, replay identity, auditability, security boundaries, or epistemic controls.
+LUKART ROS ma zwiększać zaufanie mimo sprzecznych danych, złośliwego inputu, awarii, zmian code/schema/providerów i skali. Każdy etap ma poprawiać correctness, epistemic safety, determinism, security, provenance/replay, resilience, observability, recovery, auditability i evolvability.
