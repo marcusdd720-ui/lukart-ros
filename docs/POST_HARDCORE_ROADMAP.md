@@ -2,8 +2,8 @@
 
 Status: Active continuation after historical H1-H10 ENGINEERING PASS
 Program baseline: `main @ eefd7088406126c0a20baf1245742649058decc4`
-Current closed trust core: `PHX-04 @ main b26bc4128651367efb636d7e4d53d0b1e79cffeb`
-Active stage: `PHX-05 — Case Replay v2`
+Current closed trust core: `PHX-05 @ main e8266b8dc0c76c297d63465df63b166cacb83b0a`
+Active stage: `PHX-06 — Semantic Change Propagation v2`
 Horizon: 10+ years
 
 This roadmap extends the existing Product, P2/P3, Enterprise and historical Hardcore
@@ -129,13 +129,12 @@ Architecture contract: `docs/EVIDENCE_TRUST_GRAPH_V1.md`.
 
 ## PHX-05 — Case Replay v2
 
-Status: `ACTIVE / ENGINEERING`
-Branch baseline: `main @ b26bc4128651367efb636d7e4d53d0b1e79cffeb`
+Status: `CLOSED / ENGINEERING PASS`
+Merge baseline: `main @ e8266b8dc0c76c297d63465df63b166cacb83b0a`
+Validated PR head: `d49173e510e38c60890e91f1cbb4bae726625af8`
+PR: `#154`
 
-Goal: independently reproduce and verify deterministic case projections from exact
-identities and explicit migrations without creating another writable truth store.
-
-Controls:
+Closed controls:
 
 - replay manifest binds exact case, CCL head and content-addressed ledger bundle;
 - manifest binds Epistemic v2 and Trust Graph projection/policy identities;
@@ -147,28 +146,37 @@ Controls:
   access and verifies rebuilt identities against the manifest;
 - `IDENTICAL` requires complete exact manifest identity;
 - cross-version comparison requires an explicit deterministic migration path;
-- unknown/ambiguous migration, incomplete runtime, cross-case substitution or tampering
-  fails closed;
-- replay is verification-only and exposes no Canonical Ledger write path.
+- unknown fields/schemas, ambiguous migration, incomplete runtime, cross-case substitution
+  or tampering fail closed;
+- replay is verification-only and exposes no Canonical Ledger write path;
+- exact-SHA CI, guarded merge and terminal post-merge validation closed.
 
 Architecture contract: `docs/CASE_REPLAY_V2.md`.
 
 ## PHX-06 — Semantic Change Propagation v2
 
-Goal: invalidate and recompute exactly the affected projections when immutable input
-identity changes.
+Status: `ACTIVE / ENGINEERING`
+Branch baseline: `main @ e8266b8dc0c76c297d63465df63b166cacb83b0a`
+
+Goal: invalidate and recompute exactly the affected projections when an immutable input
+identity changes, with deterministic hard bounds and replay-bound lineage.
 
 Controls:
 
-- dependency edges point to exact immutable revision/event IDs;
-- deterministic affected set;
+- typed case-scoped dependency refs point only to exact immutable content identities;
+- existing P3 graph cycle/self-reference semantics are reused without breaking legacy API;
+- deterministic affected set and optional deterministic materialized paths;
+- content-addressed propagation-policy identity;
 - explicit node/depth/work budgets;
-- exceeding budget returns a hard explicit state such as `BLAST_RADIUS_EXCEEDED`;
-- no silent truncation;
-- recomputed outputs receive new identities and lineage;
-- replay proves propagation result.
+- exceeding a budget raises hard `BLAST_RADIUS_EXCEEDED` with NODES/DEPTH/WORK reason;
+- no silent truncation or partial PASS;
+- propagation plan binds exact graph, policy and Case Replay v2 manifest identities;
+- stale/wrong replay identity fails closed;
+- recomputed outputs receive new lineage-bound result identity while historical results
+  remain immutable;
+- no graph DB, persistence authority or CCL write path is introduced.
 
-Indicative horizon: year 5-6.
+Architecture contract: `docs/SEMANTIC_CHANGE_PROPAGATION_V2.md`.
 
 ## Years 6-10+ — Durability, portability and cryptographic renewal
 
