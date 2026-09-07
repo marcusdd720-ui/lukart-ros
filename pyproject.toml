@@ -31,6 +31,7 @@ dev = [
 
 [tool.lukart.enterprise]
 release_enabled = false
+immutable_releases_required = true
 immutable_baseline_version = "1.0.1"
 immutable_baseline_commit = "802013c4d0e53dc12306a97e1877ebba86af64a7"
 
@@ -76,7 +77,9 @@ module = [
   "core.enterprise.durability",
   "core.p3.contracts",
   "core.p3.versioning",
+  "validation.release_contract",
   "validation.release_governance",
+  "validation.release_manifest",
 ]
 disallow_untyped_defs = true
 disallow_incomplete_defs = true
