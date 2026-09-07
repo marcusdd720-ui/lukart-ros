@@ -311,7 +311,9 @@ class CriticalInvariantVerificationReport:
         _git_object_id(self.code_sha, field_name="code_sha")
         reference = CriticalInvariantRegistry.reference()
         if self.registry_identity != reference.registry_identity:
-            raise CriticalInvariantVerificationError("critical invariant registry identity mismatch")
+            raise CriticalInvariantVerificationError(
+                "critical invariant registry identity mismatch"
+            )
         expected_ids = tuple(item.invariant_id for item in reference.definitions)
         actual_ids = tuple(item.invariant_id for item in self.results)
         if actual_ids != expected_ids:
