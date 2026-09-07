@@ -826,7 +826,7 @@ def _replay_manifest(
         manifest = CaseReplayManifestV2.from_dict(
             cast(Mapping[str, object], raw_manifest)
         )
-    except CaseReplayV2Error as exc:
+    except (CaseReplayV2Error, ValueError) as exc:
         raise CaseExchangeV1Error(str(exc)) from exc
     replay_identity = _address(
         replay_raw.get("bundle_identity"),
