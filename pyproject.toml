@@ -31,6 +31,7 @@ dev = [
 
 [tool.lukart.enterprise]
 release_enabled = false
+immutable_releases_required = true
 immutable_baseline_version = "1.0.1"
 immutable_baseline_commit = "802013c4d0e53dc12306a97e1877ebba86af64a7"
 
@@ -54,7 +55,7 @@ addopts = "-q"
 [tool.ruff]
 line-length = 100
 target-version = "py311"
-extend-exclude = ["build", "dist", "*.egg-info"]
+ext-exclude = ["build", "dist", "*.egg-info"]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP"]
@@ -76,6 +77,7 @@ module = [
   "core.enterprise.durability",
   "core.p3.contracts",
   "core.p3.versioning",
+  "validation.release_contract",
   "validation.release_governance",
 ]
 disallow_untyped_defs = true
