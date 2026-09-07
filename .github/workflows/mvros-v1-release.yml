@@ -10,73 +10,61 @@ on:
 
 permissions:
   actions: read
-  contents: write
+  contents: read
 
 concurrency:
   group: mvros-v1-release
   cancel-in-progress: false
 
 jobs:
-  release:
+  release-validate:
     if: >-
       ${{ github.event_name == 'workflow_dispatch' ||
           (github.event.workflow_run.conclusion == 'success' &&
            github.event.workflow_run.event == 'push' &&
            github.event.workflow_run.head_branch == 'main') }}
     runs-on: ubuntu-latest
+    outputs:
+      release: ${{ steps.intent.outputs.release }}
+      version: ${{ steps.intent.outputs.version }}
+      tag: ${{ steps.intent.outputs.tag }}
+      validated_sha: ${{ steps.sha.outputs.validated_sha }}
+      enterprise_run_id: ${{ steps.workflows.outputs.enterprise_run_id }}
     steps:
+      - name: Resolve validated main SHA
+        id: sha
+        env:
+          VALIDATED_SHA: ${{ github.event.workflow_run.head_sha || github.sha }}
+        run: echo "validated_sha=${VALIDATED_SHA}" >> "${GITHUB_OUTPUT}"
+
       - name: Checkout validated main SHA
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
+          ref: ${{ steps.sha.outputs.validated_sha }}
           fetch-depth: 0
 
-      - name: Resolve explicit release intent
-        id: version
+      - name: Set up Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7
+        with:
+          python-version: "3.11"
+
+      - name: Resolve canonical release intent
+        id: intent
+        run: >-
+          python -m validation.release_contract
+          --github-output "${GITHUB_OUTPUT}"
+
+      - name: Development state — no release mutation
+        if: steps.intent.outputs.release != 'true'
         run: |
-          set -euo pipefail
-          python - <<'PY' >> "$GITHUB_OUTPUT"
-          import re
-          import tomllib
-          from pathlib import Path
-
-          data = tomllib.loads(Path("pyproject.toml").read_text(encoding="utf-8"))
-          project_version = str(data["project"]["version"])
-          enterprise = data["tool"]["lukart"]["enterprise"]
-          development_version = str(enterprise["development_version"])
-          immutable_baseline = str(enterprise["immutable_baseline_version"])
-          release_enabled = enterprise["release_enabled"] is True
-
-          print(f"version={project_version}")
-          print(f"development_version={development_version}")
-          print(f"immutable_baseline={immutable_baseline}")
-
-          if not release_enabled:
-              print("release=false")
-              print("tag=")
-          else:
-              if not re.fullmatch(r"[0-9]+\.[0-9]+\.[0-9]+", project_version):
-                  raise SystemExit("Release-enabled project version must be stable X.Y.Z")
-              if project_version == immutable_baseline:
-                  raise SystemExit(
-                      "Immutable baseline cannot be released again. "
-                      "Bump the project version for a new release."
-                  )
-              print("release=true")
-              print(f"tag=v{project_version}")
-          PY
-
-      - name: Development build — no release mutation
-        if: steps.version.outputs.release != 'true'
-        run: |
-          echo "Development version ${{ steps.version.outputs.development_version }} is active."
-          echo "Historical release ${{ steps.version.outputs.immutable_baseline }} remains immutable."
-          echo "Automatic release is intentionally disabled until explicit release intent is enabled."
+          echo "Development version ${{ steps.intent.outputs.version }} is active."
+          echo "Historical release ${{ steps.intent.outputs.immutable_baseline }} remains immutable."
+          echo "Release mutation is disabled by canonical policy."
 
       - name: Verify validated SHA is current main
-        if: steps.version.outputs.release == 'true'
+        if: steps.intent.outputs.release == 'true'
         env:
-          VALIDATED_SHA: ${{ github.event.workflow_run.head_sha || github.sha }}
+          VALIDATED_SHA: ${{ steps.sha.outputs.validated_sha }}
         run: |
           set -euo pipefail
           git fetch origin main --no-tags
@@ -85,8 +73,8 @@ jobs:
           echo "CURRENT_MAIN_SHA=$CURRENT_MAIN_SHA"
           test "$VALIDATED_SHA" = "$CURRENT_MAIN_SHA"
 
-      - name: Require effective main governance for release
-        if: steps.version.outputs.release == 'true'
+      - name: Require effective main governance
+        if: steps.intent.outputs.release == 'true'
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
@@ -96,16 +84,17 @@ jobs:
           python -m validation.release_governance \
             --rules-json /tmp/main-effective-rules.json
 
-      - name: Require all release validation workflows on the same SHA
-        if: steps.version.outputs.release == 'true'
+      - name: Require exact-SHA validation workflows
+        if: steps.intent.outputs.release == 'true'
+        id: workflows
         env:
           GH_TOKEN: ${{ github.token }}
-          VALIDATED_SHA: ${{ github.event.workflow_run.head_sha || github.sha }}
+          VALIDATED_SHA: ${{ steps.sha.outputs.validated_sha }}
         run: |
           set -euo pipefail
           gh api "repos/${GITHUB_REPOSITORY}/actions/runs?head_sha=${VALIDATED_SHA}&per_page=100" \
             > /tmp/release-workflow-runs.json
-          python - <<'PY'
+          python - <<'PY' >> "$GITHUB_OUTPUT"
           import json
           import os
           from pathlib import Path
@@ -118,13 +107,16 @@ jobs:
               "Architectural Audit 1.0",
               "Stage Gate",
               "Stage Orchestrator",
+              "GitHub App Smoke Test",
               "Production Validation Program",
               "P2 Semantic Intelligence",
               "P3 Hardcore Hardening",
+              "Post-v1 v1.1",
               "Enterprise Hardcore Gate",
               "Enterprise CodeQL",
           )
           failures: list[str] = []
+          selected: dict[str, dict[str, object]] = {}
           for workflow_name in required:
               candidates = [
                   run for run in runs
@@ -137,6 +129,7 @@ jobs:
                   candidates,
                   key=lambda run: (run.get("run_number", 0), run.get("run_attempt", 0)),
               )
+              selected[workflow_name] = latest
               if latest.get("status") != "completed" or latest.get("conclusion") != "success":
                   failures.append(
                       f"{workflow_name}: status={latest.get('status')!r}, "
@@ -147,71 +140,226 @@ jobs:
               for failure in failures:
                   print(f"- {failure}")
               raise SystemExit(1)
-          print("RELEASE_COMPANION_WORKFLOWS=PASS")
+          enterprise = selected["Enterprise Hardcore Gate"]
+          run_id = enterprise.get("id")
+          if not isinstance(run_id, int):
+              raise SystemExit("Enterprise run id is missing")
+          print(f"enterprise_run_id={run_id}")
           PY
 
-      - name: Inspect existing release state
-        if: steps.version.outputs.release == 'true'
+      - name: Require repository-level immutable releases
+        if: steps.intent.outputs.release == 'true'
         env:
-          GH_TOKEN: ${{ github.token }}
-          TAG: ${{ steps.version.outputs.tag }}
-          VALIDATED_SHA: ${{ github.event.workflow_run.head_sha || github.sha }}
+          GH_TOKEN: ${{ secrets.LUKART_RELEASE_POLICY_TOKEN }}
         run: |
           set -euo pipefail
-          TAG_COMMIT="$(git ls-remote origin "refs/tags/$TAG^{}" | awk '{print $1}')"
-          RELEASE_EXISTS="false"
-          if gh release view "$TAG" >/dev/null 2>&1; then
-            RELEASE_EXISTS="true"
-          fi
-          echo "TAG_COMMIT=$TAG_COMMIT"
-          echo "RELEASE_EXISTS=$RELEASE_EXISTS"
-          if [ -n "$TAG_COMMIT" ] && [ "$TAG_COMMIT" != "$VALIDATED_SHA" ]; then
-            echo "Release tag $TAG already points to $TAG_COMMIT, not $VALIDATED_SHA."
-            echo "Refusing to move an existing release tag. Bump the project version for a new release."
+          if [ -z "${GH_TOKEN:-}" ]; then
+            echo "LUKART_RELEASE_POLICY_TOKEN with repository Administration:read is required."
             exit 1
           fi
-          if [ "$RELEASE_EXISTS" = "true" ] && [ -z "$TAG_COMMIT" ]; then
-            echo "Release $TAG exists without a resolvable remote tag; refusing repair."
+          gh api "repos/${GITHUB_REPOSITORY}/immutable-releases" > /tmp/immutable-releases.json
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          payload = json.loads(Path("/tmp/immutable-releases.json").read_text(encoding="utf-8"))
+          if payload.get("enabled") is not True:
+              raise SystemExit("Repository immutable releases are not enabled")
+          print("IMMUTABLE_RELEASES=PASS")
+          PY
+
+      - name: Require publish-once tag and release state
+        if: steps.intent.outputs.release == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ steps.intent.outputs.tag }}
+        run: |
+          set -euo pipefail
+          if [ -n "$(git ls-remote origin "refs/tags/${TAG}" "refs/tags/${TAG}^{}")" ]; then
+            echo "Tag ${TAG} already exists; refusing release reuse or repair."
+            exit 1
+          fi
+          if gh release view "${TAG}" >/dev/null 2>&1; then
+            echo "Release ${TAG} already exists; refusing release reuse or repair."
+            exit 1
+          fi
+          echo "PUBLISH_ONCE_PRECONDITION=PASS"
+
+  release-build:
+    if: needs.release-validate.outputs.release == 'true'
+    needs: release-validate
+    runs-on: ubuntu-latest
+    permissions:
+      actions: read
+      contents: read
+      id-token: write
+      attestations: write
+    outputs:
+      candidate_digest: ${{ steps.candidate.outputs.artifact-digest }}
+    steps:
+      - name: Checkout exact validated SHA
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ needs.release-validate.outputs.validated_sha }}
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7
+        with:
+          python-version: "3.11"
+
+      - name: Install pinned uv and frozen environment
+        run: |
+          python -m pip install "uv==0.12.10"
+          uv sync --frozen --extra dev
+
+      - name: Download exact Enterprise closure evidence
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: enterprise-evidence-${{ needs.release-validate.outputs.validated_sha }}
+          path: build
+          github-token: ${{ github.token }}
+          repository: ${{ github.repository }}
+          run-id: ${{ needs.release-validate.outputs.enterprise_run_id }}
+
+      - name: Verify exact PH-03 closure manifest
+        env:
+          VALIDATED_SHA: ${{ needs.release-validate.outputs.validated_sha }}
+        run: >-
+          uv run --frozen --extra dev python scripts/post_hardcore_ph03_closure.py
+          --candidate-sha "${VALIDATED_SHA}"
+          --verify-existing build/post-hardcore/ph03-closure-manifest.json
+
+      - name: Build exact release wheel
+        run: uv build --wheel --out-dir dist
+
+      - name: Build content-addressed release checksums
+        run: |
+          set -euo pipefail
+          cd dist
+          sha256sum *.whl > SHA256SUMS
+
+      - name: Attest exact release artifacts
+        id: attest
+        uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4.2.2
+        with:
+          subject-path: dist/*
+
+      - name: Upload exact release candidate bundle
+        id: candidate
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: release-candidate-${{ needs.release-validate.outputs.validated_sha }}
+          path: |
+            dist/
+            build/post-hardcore/ph03-closure-manifest.json
+            build/enterprise/bom.cdx.json
+            ${{ steps.attest.outputs.bundle-path }}
+          if-no-files-found: error
+          retention-days: 30
+
+  release-publish:
+    if: needs.release-validate.outputs.release == 'true'
+    needs:
+      - release-validate
+      - release-build
+    runs-on: ubuntu-latest
+    permissions:
+      actions: read
+      contents: write
+    steps:
+      - name: Checkout exact validated SHA
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ needs.release-validate.outputs.validated_sha }}
+          fetch-depth: 0
+
+      - name: Download exact attested release candidate
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: release-candidate-${{ needs.release-validate.outputs.validated_sha }}
+          path: release-candidate
+
+      - name: Revalidate main and publish-once boundary
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ needs.release-validate.outputs.tag }}
+          VALIDATED_SHA: ${{ needs.release-validate.outputs.validated_sha }}
+        run: |
+          set -euo pipefail
+          git fetch origin main --no-tags
+          test "$(git rev-parse origin/main)" = "${VALIDATED_SHA}"
+          test -z "$(git ls-remote origin "refs/tags/${TAG}" "refs/tags/${TAG}^{}")"
+          if gh release view "${TAG}" >/dev/null 2>&1; then
+            echo "Release ${TAG} already exists; refusing mutation."
             exit 1
           fi
 
-      - name: Configure release git identity
-        if: steps.version.outputs.release == 'true'
-        run: |
-          git config user.name "lukart-ros-release[bot]"
-          git config user.email "lukart-ros-release[bot]@users.noreply.github.com"
-
-      - name: Create tag and GitHub Release
-        if: steps.version.outputs.release == 'true'
+      - name: Create draft release
         env:
           GH_TOKEN: ${{ github.token }}
-          TAG: ${{ steps.version.outputs.tag }}
-          VALIDATED_SHA: ${{ github.event.workflow_run.head_sha || github.sha }}
-          VERSION: ${{ steps.version.outputs.version }}
-        run: |
-          set -euo pipefail
-          TAG_REF="$(git ls-remote origin "refs/tags/$TAG")"
-          if [ -z "$TAG_REF" ]; then
-            git tag -a "$TAG" "$VALIDATED_SHA" -m "MVROS $VERSION"
-            git push origin "$TAG"
-          fi
-          if gh release view "$TAG" >/dev/null 2>&1; then
-            echo "Release $TAG already exists."
-          else
-            gh release create "$TAG" --target "$VALIDATED_SHA" \
-              --title "MVROS $VERSION" --generate-notes
-          fi
+          TAG: ${{ needs.release-validate.outputs.tag }}
+          VERSION: ${{ needs.release-validate.outputs.version }}
+          VALIDATED_SHA: ${{ needs.release-validate.outputs.validated_sha }}
+        run: >-
+          gh release create "${TAG}"
+          --target "${VALIDATED_SHA}"
+          --title "MVROS ${VERSION}"
+          --generate-notes
+          --draft
 
-      - name: Verify release state
-        if: steps.version.outputs.release == 'true'
+      - name: Attach all release assets before publication
         env:
           GH_TOKEN: ${{ github.token }}
-          TAG: ${{ steps.version.outputs.tag }}
-          VALIDATED_SHA: ${{ github.event.workflow_run.head_sha || github.sha }}
+          TAG: ${{ needs.release-validate.outputs.tag }}
+        run: >-
+          gh release upload "${TAG}"
+          release-candidate/dist/*
+          release-candidate/build/post-hardcore/ph03-closure-manifest.json
+          release-candidate/build/enterprise/bom.cdx.json
+
+      - name: Verify draft and publish exactly once
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ needs.release-validate.outputs.tag }}
+          VALIDATED_SHA: ${{ needs.release-validate.outputs.validated_sha }}
         run: |
           set -euo pipefail
-          TAG_COMMIT="$(git ls-remote origin "refs/tags/$TAG^{}" | awk '{print $1}')"
-          test "$TAG_COMMIT" = "$VALIDATED_SHA"
-          RELEASE_TARGET="$(gh release view "$TAG" --json targetCommitish --jq '.targetCommitish')"
-          test "$RELEASE_TARGET" = "$VALIDATED_SHA" || test "$RELEASE_TARGET" = "main"
-          echo "Release verification complete."
+          gh api "repos/${GITHUB_REPOSITORY}/releases/tags/${TAG}" > /tmp/release-draft.json
+          python - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+
+          payload = json.loads(Path("/tmp/release-draft.json").read_text(encoding="utf-8"))
+          if payload.get("draft") is not True:
+              raise SystemExit("Release must remain draft until all assets are attached")
+          if payload.get("target_commitish") != os.environ["VALIDATED_SHA"]:
+              raise SystemExit("Draft release is not bound to exact validated SHA")
+          if not payload.get("assets"):
+              raise SystemExit("Draft release has no attached assets")
+          PY
+          gh release edit "${TAG}" --draft=false
+
+      - name: Verify immutable published release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ needs.release-validate.outputs.tag }}
+          VALIDATED_SHA: ${{ needs.release-validate.outputs.validated_sha }}
+        run: |
+          set -euo pipefail
+          gh api "repos/${GITHUB_REPOSITORY}/releases/tags/${TAG}" > /tmp/release-final.json
+          python - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+
+          payload = json.loads(Path("/tmp/release-final.json").read_text(encoding="utf-8"))
+          if payload.get("draft") is not False:
+              raise SystemExit("Release publication did not complete")
+          if payload.get("immutable") is not True:
+              raise SystemExit("Published release is not immutable")
+          if payload.get("target_commitish") != os.environ["VALIDATED_SHA"]:
+              raise SystemExit("Published release target does not match exact validated SHA")
+          print("IMMUTABLE_RELEASE_PUBLICATION=PASS")
+          PY
