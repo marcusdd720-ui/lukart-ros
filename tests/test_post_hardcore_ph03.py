@@ -1,7 +1,9 @@
 from __future__ import annotations
 
 import json
+from collections.abc import Mapping
 from pathlib import Path
+from typing import cast
 
 import pytest
 
@@ -64,7 +66,7 @@ def test_ph03_manifest_is_canonical_and_deterministic() -> None:
 
 def test_ph03_manifest_tamper_fails_closed() -> None:
     manifest = _manifest()
-    trust = dict(manifest["trust_state"])  # type: ignore[arg-type]
+    trust = dict(cast(Mapping[str, object], manifest["trust_state"]))
     trust["review_state"] = "ENGINEERING_PASS"
     manifest["trust_state"] = trust
 
@@ -82,7 +84,7 @@ def test_ph03_manifest_digest_mismatch_fails_closed() -> None:
 
 def test_ph03_incomplete_runtime_identity_fails_closed() -> None:
     manifest = _manifest()
-    runtime = dict(manifest["runtime_identity"])  # type: ignore[arg-type]
+    runtime = dict(cast(Mapping[str, object], manifest["runtime_identity"]))
     runtime["complete"] = False
     manifest["runtime_identity"] = runtime
 
