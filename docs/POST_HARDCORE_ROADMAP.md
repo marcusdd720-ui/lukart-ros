@@ -2,8 +2,8 @@
 
 Status: Active continuation after historical H1-H10 ENGINEERING PASS
 Program baseline: `main @ eefd7088406126c0a20baf1245742649058decc4`
-Current closed trust core: `PHX-01 @ main 796bbce41ecfa5bc8bdabea70a4d31d6b4ff2cfd`
-Active stage: `PHX-02 — Gold Corpus / KQM v2`
+Current closed trust core: `PHX-02 @ main a0fa7e128366bc26419ae820d3ce88691a55723a`
+Active stage: `PHX-03 — Epistemic Assertion + State Machine v2`
 Horizon: 10+ years
 
 This roadmap extends the existing Product, P2/P3, Enterprise and historical Hardcore
@@ -44,65 +44,67 @@ Cross-cutting requirements:
 Status: `CLOSED / ENGINEERING PASS`
 Merge baseline: `main @ 796bbce41ecfa5bc8bdabea70a4d31d6b4ff2cfd`
 
-Goal: establish one logical case-history authority before additional cognitive layers are
-strengthened.
-
 Closed controls:
 
 - stable logical Case/Object identity separated from immutable revision/event identity;
 - content-addressed revisions and events;
 - canonical event chain per case;
 - exact caller head plus transactional backend compare-and-append;
-- existing Enterprise durable backend reused instead of adding a third store;
-- existing P3 JSONL replay ledger explicitly non-authoritative for Product truth;
+- Enterprise durable backend reused instead of adding a third store;
 - schema/canonicalization/hash identifiers explicit and unknown values fail closed;
 - offline content-addressed case bundle;
 - bounded case reads/exports;
-- strict type boundary and adversarial tests;
 - exact-SHA guarded merge and post-merge workflow closure.
 
 Architecture contract: `docs/CANONICAL_CASE_LEDGER_V1.md`.
 
 ## PHX-02 — Gold Corpus / KQM v2
 
-Status: `ACTIVE / ENGINEERING`
-Branch baseline: `main @ 796bbce41ecfa5bc8bdabea70a4d31d6b4ff2cfd`
+Status: `CLOSED / ENGINEERING PASS`
+Merge baseline: `main @ a0fa7e128366bc26419ae820d3ce88691a55723a`
+Validated PR head: `0521a798a87eae98828c2a052c2e3e2aea2040ce`
+PR: `#151`
 
-Goal: make evaluation inputs immutable, content-addressed and ledger-bound without
-turning evaluation data into case truth.
+Closed controls:
 
-Controls:
-
-- exact raw-file and canonical semantic Gold identities are distinct and explicit;
-- Gold corpus manifest and exact split membership are immutable/versioned inputs;
-- locked evaluation cannot be selected by development/validation flows;
-- independent freeze/review cannot be manufactured by repository text or PHX-02 code;
-- exact corpus, metric definition, evaluator/runtime identity and per-case ledger heads
-  are bound into evaluation-input identity;
-- KQM policy is versioned/content-addressed and rejects unknown/non-finite inputs;
-- missing metrics deterministically fail; unexpected metrics fail the contract;
-- KQM outputs are immutable projections/measurements, never truth promotion;
-- corpus/policy/evaluator/ledger-head mutation produces a new identity and invalidates
-  dependent measurements;
-- PHX-02 exposes no Canonical Ledger write path.
+- distinct raw-file and canonical semantic Gold identities;
+- immutable/versioned manifest and exact split membership;
+- locked evaluation inaccessible to development/validation;
+- independent freeze/review cannot be manufactured by repository code/text;
+- exact corpus, policy, evaluator/runtime and per-case CCL heads bound into evaluation identity;
+- KQM policy versioned/content-addressed with strict typed controls;
+- missing metric FAIL, unexpected/non-finite metric contract rejection;
+- KQM outputs immutable measurement projections, never truth promotion;
+- no Canonical Ledger write path from PHX-02;
+- canonical governance SSOT hardened: `docs/WORKING_PRINCIPLES.md` <=8000 characters,
+  thin `AGENTS.md`, authority alignment and executable duplicate/limit guards;
+- exact-SHA CI and post-merge validation closed with historical `v1.0.1` unchanged.
 
 Architecture contract: `docs/GOLD_KQM_V2.md`.
 
-Indicative horizon: year 1-2.
-
 ## PHX-03 — Epistemic Assertion + State Machine v2
 
-Goal: convert epistemic state from mutable object fields into deterministic ledger-derived
-state over immutable assertions and transition events.
+Status: `ACTIVE / ENGINEERING`
+Branch baseline: `main @ a0fa7e128366bc26419ae820d3ce88691a55723a`
+
+Goal: replace mutable/loosely referenced epistemic authority with deterministic
+ledger-derived state over immutable assertions and exact transition evidence.
 
 Controls:
 
-- first-class immutable Assertion identity;
-- exact evidence references for FACT promotion;
-- transition policy version and decision identity;
-- UNKNOWN, UNRESOLVED, REJECTED and abstention remain first-class;
-- no model/provider/plugin can silently promote trusted state;
-- state can be rebuilt from ledger history.
+- first-class immutable/content-addressed Assertion identity;
+- exact `case_id + CCL event_id` evidence references;
+- FACT creation/promotion requires prior policy-authorized evidence events;
+- transition policy identity binds the canonical transition machine and evidence-event policy;
+- transition decisions are content-addressed and replay-verified;
+- denied/no-op/unknown transitions never become authoritative state;
+- cross-case evidence fails closed until a separately versioned trust contract exists;
+- `CaseScope.epistemic_state` is legacy/non-authoritative and cannot be changed by
+  `with_states()`;
+- state is a deterministic projection over exact CCL history and ledger head;
+- no epistemic persistence authority exists outside Canonical Case Ledger.
+
+Architecture contract: `docs/EPISTEMIC_ASSERTIONS_V2.md`.
 
 Indicative horizon: year 2-3.
 
