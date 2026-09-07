@@ -1,4 +1,4 @@
-name: PH-02 Lock Bootstrap
+name: PH-02 Required Gate Migration
 
 on:
   push:
@@ -8,7 +8,7 @@ permissions:
   contents: write
 
 jobs:
-  generate-lock:
+  migrate-required-gates:
     if: github.actor != 'github-actions[bot]'
     runs-on: ubuntu-latest
     steps:
@@ -16,21 +16,87 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: post-hardcore/ph-02-build-identity-v3
-      - name: Set up Python
-        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7
-        with:
-          python-version: "3.14"
-      - name: Install pinned uv
-        run: python -m pip install "uv==0.12.10"
-      - name: Resolve canonical lock and derived PEP 751 lock
+      - name: Apply deterministic PH-02 migration
         run: |
-          uv lock
-          uv export --format pylock.toml --frozen --all-extras --output-file pylock.toml
-      - name: Commit generated lock artifacts
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          replacements = {
+              '.github/workflows/enterprise-hardening.yml': [
+                  ('          cache: pip\n', ''),
+                  (
+                      '      - name: Install\n        run: python -m pip install -e ".[dev]"\n',
+                      '      - name: Install pinned uv and frozen environment\n'
+                      '        run: |\n'
+                      '          python -m pip install "uv==0.12.10"\n'
+                      '          uv sync --frozen --extra dev\n'
+                      '          echo "$PWD/.venv/bin" >> "$GITHUB_PATH"\n',
+                  ),
+                  (
+                      "assert h5['runtime_identity_schema'] == 'lukart.runtime-identity.v2'",
+                      "assert h5['runtime_identity_schema'] == 'lukart.runtime-identity.v3'",
+                  ),
+              ],
+              '.github/workflows/architectural-audit.yml': [
+                  (
+                      '      - run: python -m pip install -e .\n',
+                      '      - name: Install pinned uv and frozen environment\n'
+                      '        run: |\n'
+                      '          python -m pip install "uv==0.12.10"\n'
+                      '          uv sync --frozen --extra dev\n'
+                      '          echo "$PWD/.venv/bin" >> "$GITHUB_PATH"\n',
+                  ),
+              ],
+          }
+          common_paths = [
+              '.github/workflows/github-app-smoke.yml',
+              '.github/workflows/production-validation-program.yml',
+              '.github/workflows/stage-orchestrator.yml',
+          ]
+          common_old = (
+              '          python -m pip install --upgrade pip\n'
+              '          python -m pip install ".[dev]"\n'
+          )
+          common_new = (
+              '          python -m pip install "uv==0.12.10"\n'
+              '          uv sync --frozen --extra dev\n'
+              '          echo "$PWD/.venv/bin" >> "$GITHUB_PATH"\n'
+          )
+          for path in common_paths:
+              replacements[path] = [(common_old, common_new)]
+
+          for path_str, rules in replacements.items():
+              path = Path(path_str)
+              text = path.read_text(encoding='utf-8')
+              for old, new in rules:
+                  if old not in text:
+                      raise SystemExit(f'PH02 expected pattern missing in {path}: {old!r}')
+                  text = text.replace(old, new)
+              path.write_text(text, encoding='utf-8')
+
+          policy_path = Path('config/enterprise_v1.json')
+          policy = json.loads(policy_path.read_text(encoding='utf-8'))
+          h5 = policy['h5_replay_migration']
+          if h5['runtime_identity_schema'] != 'lukart.runtime-identity.v2':
+              raise SystemExit('PH02 unexpected H5 source identity schema')
+          h5['runtime_identity_schema'] = 'lukart.runtime-identity.v3'
+          h5['dependency_lock_digest_required'] = True
+          h5['python_platform_build_identity_required'] = True
+          policy_path.write_text(
+              json.dumps(policy, indent=2, ensure_ascii=False) + '\n', encoding='utf-8'
+          )
+          PY
+      - name: Commit deterministic migration
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add uv.lock pylock.toml
+          git add .github/workflows/enterprise-hardening.yml \
+                  .github/workflows/architectural-audit.yml \
+                  .github/workflows/github-app-smoke.yml \
+                  .github/workflows/production-validation-program.yml \
+                  .github/workflows/stage-orchestrator.yml \
+                  config/enterprise_v1.json
           git diff --cached --exit-code && exit 0
-          git commit -m "PH-02: generate canonical dependency locks"
+          git commit -m "PH-02: migrate required gates to frozen dependencies"
           git push origin HEAD:post-hardcore/ph-02-build-identity-v3
