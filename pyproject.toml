@@ -80,6 +80,8 @@ module = [
   "core.evaluation.contracts",
   "core.p3.contracts",
   "core.p3.versioning",
+  "knowledge.epistemic",
+  "knowledge.epistemic_assertions",
   "validation.gold_kqm_v2",
   "validation.release_contract",
   "validation.release_governance",

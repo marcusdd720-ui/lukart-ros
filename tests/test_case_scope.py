@@ -72,17 +72,17 @@ def test_cross_case_reference_requires_explicit_policy() -> None:
     assert allowed.reference_set.get("REF-1") == reference
 
 
-def test_operational_and_epistemic_state_are_independent() -> None:
+def test_operational_state_remains_mutable_but_legacy_epistemic_state_is_not_authority() -> None:
     scope = _scope()
 
-    updated = scope.with_states(
-        operational_state=CaseOperationalState.ANALYSIS,
-        epistemic_state=CaseEpistemicState.MATERIAL_CONTRADICTION,
-    )
+    updated = scope.with_states(operational_state=CaseOperationalState.ANALYSIS)
 
     assert updated.operational_state is CaseOperationalState.ANALYSIS
-    assert updated.epistemic_state is CaseEpistemicState.MATERIAL_CONTRADICTION
+    assert updated.epistemic_state is CaseEpistemicState.INSUFFICIENT_EVIDENCE
     assert updated.version == 2
+
+    with pytest.raises(ValueError, match="legacy/non-authoritative"):
+        scope.with_states(epistemic_state=CaseEpistemicState.MATERIAL_CONTRADICTION)
 
 
 def test_duplicate_reference_id_fails_closed() -> None:

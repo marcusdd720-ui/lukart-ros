@@ -1,4 +1,10 @@
-"""Formal epistemic status machine for controlled knowledge promotion."""
+"""Epistemic status policy primitives.
+
+The legacy request/decision API remains for compatibility and local validation only.
+Authoritative Post-Hardcore epistemic state is established exclusively by immutable
+Assertion/transition events written through the Canonical Case Ledger and reduced by
+``knowledge.epistemic_assertions``.
+"""
 
 from __future__ import annotations
 
@@ -41,9 +47,13 @@ class EpistemicTransitionError(ValueError):
 class EpistemicStatusMachine:
     """Fail-closed transition policy for knowledge states.
 
-    The machine does not decide whether evidence is true. It only enforces the
-    minimum authority required to change epistemic state.
+    This compatibility policy determines transition shape only.  It does not resolve
+    evidence identities and MUST NOT be treated as an authoritative state writer.
+    Post-Hardcore authoritative transitions use exact CCL event references through
+    ``EpistemicLedgerService``.
     """
+
+    POLICY_VERSION = "lukart.epistemic-transition-policy.v1"
 
     _allowed_without_new_evidence = frozenset(
         {
@@ -66,6 +76,29 @@ class EpistemicStatusMachine:
             (KnowledgeStatus.UNKNOWN, KnowledgeStatus.FACT),
         }
     )
+
+    @classmethod
+    def policy_document(cls) -> dict[str, object]:
+        """Return a deterministic, versioned description for identity binding."""
+
+        def render(
+            transitions: frozenset[tuple[KnowledgeStatus, KnowledgeStatus]],
+        ) -> list[list[str]]:
+            return [
+                [source.value, target.value]
+                for source, target in sorted(
+                    transitions,
+                    key=lambda item: (item[0].value, item[1].value),
+                )
+            ]
+
+        return {
+            "schema": cls.POLICY_VERSION,
+            "allowed_without_new_evidence": render(cls._allowed_without_new_evidence),
+            "requires_evidence": render(cls._requires_evidence),
+            "rejected_requires_rationale": True,
+            "same_state_legacy_noop": True,
+        }
 
     def decide(self, request: EpistemicTransitionRequest) -> EpistemicTransitionDecision:
         if request.source is request.target:
