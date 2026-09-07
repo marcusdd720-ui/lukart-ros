@@ -239,11 +239,34 @@ jobs:
           cd dist
           sha256sum *.whl > SHA256SUMS
 
-      - name: Attest exact release artifacts
+      - name: Build content-addressed Release Manifest
+        env:
+          VALIDATED_SHA: ${{ needs.release-validate.outputs.validated_sha }}
+          VERSION: ${{ needs.release-validate.outputs.version }}
+          TAG: ${{ needs.release-validate.outputs.tag }}
+        run: >-
+          uv run --frozen --extra dev python -m validation.release_manifest
+          --candidate-sha "${VALIDATED_SHA}"
+          --version "${VERSION}"
+          --tag "${TAG}"
+
+      - name: Attest exact release artifacts and manifest
         id: attest
         uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4.2.2
         with:
-          subject-path: dist/*
+          subject-path: |
+            dist/*
+            build/release/release-manifest.json
+
+      - name: Archive offline-verification materials
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ATTESTATION_BUNDLE: ${{ steps.attest.outputs.bundle-path }}
+        run: |
+          set -euo pipefail
+          mkdir -p build/release
+          cp "${ATTESTATION_BUNDLE}" build/release/release-attestation.json
+          gh attestation trusted-root > build/release/trusted-root.jsonl
 
       - name: Upload exact release candidate bundle
         id: candidate
@@ -254,7 +277,9 @@ jobs:
             dist/
             build/post-hardcore/ph03-closure-manifest.json
             build/enterprise/bom.cdx.json
-            ${{ steps.attest.outputs.bundle-path }}
+            build/release/release-manifest.json
+            build/release/release-attestation.json
+            build/release/trusted-root.jsonl
           if-no-files-found: error
           retention-days: 30
 
@@ -317,6 +342,9 @@ jobs:
           release-candidate/dist/*
           release-candidate/build/post-hardcore/ph03-closure-manifest.json
           release-candidate/build/enterprise/bom.cdx.json
+          release-candidate/build/release/release-manifest.json
+          release-candidate/build/release/release-attestation.json
+          release-candidate/build/release/trusted-root.jsonl
 
       - name: Verify draft and publish exactly once
         env:
