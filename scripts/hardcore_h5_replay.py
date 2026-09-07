@@ -1,8 +1,12 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
+import platform
 import subprocess
+import sysconfig
+import tomllib
 from collections.abc import Callable
 from pathlib import Path
 
@@ -16,9 +20,12 @@ from core.p3 import (
     content_digest,
     require_hex_digest,
 )
+from core.p3.contracts import RUNTIME_IDENTITY_V2, RUNTIME_IDENTITY_V3
 
 ROOT = Path(__file__).resolve().parents[1]
 POLICY_PATH = ROOT / "config" / "enterprise_v1.json"
+PROJECT_PATH = ROOT / "pyproject.toml"
+LOCK_PATH = ROOT / "uv.lock"
 
 
 def _git_head() -> str:
@@ -31,7 +38,37 @@ def _git_head() -> str:
     return completed.stdout.strip()
 
 
+def _execution_identity() -> dict[str, str]:
+    if not LOCK_PATH.is_file():
+        raise RuntimeError("H5 canonical dependency lock is missing")
+    with PROJECT_PATH.open("rb") as stream:
+        project = tomllib.load(stream)
+    build_system = project.get("build-system")
+    project_table = project.get("project")
+    if not isinstance(build_system, dict) or not isinstance(project_table, dict):
+        raise RuntimeError("H5 project/build metadata is missing")
+    backend = str(build_system.get("build-backend", "")).strip()
+    requires = build_system.get("requires")
+    if not backend or not isinstance(requires, list) or not requires:
+        raise RuntimeError("H5 build backend identity is incomplete")
+    build_requires = tuple(sorted(str(item).strip() for item in requires))
+    if any(not item for item in build_requires):
+        raise RuntimeError("H5 build requirements contain blank identity")
+    project_version = str(project_table.get("version", "")).strip()
+    if not project_version:
+        raise RuntimeError("H5 project version is missing")
+    return {
+        "dependency_lock_digest": hashlib.sha256(LOCK_PATH.read_bytes()).hexdigest(),
+        "python_implementation": platform.python_implementation().lower(),
+        "python_version": platform.python_version(),
+        "platform_tag": sysconfig.get_platform(),
+        "project_version": project_version,
+        "build_backend": f"{backend}:{','.join(build_requires)}",
+    }
+
+
 def _identity(candidate_sha: str, *, schema_version: str) -> RuntimeIdentity:
+    execution = _execution_identity()
     return RuntimeIdentity(
         code_sha=candidate_sha,
         schema_version=schema_version,
@@ -45,6 +82,32 @@ def _identity(candidate_sha: str, *, schema_version: str) -> RuntimeIdentity:
         plugin_inventory_declared=True,
         input_inventory_declared=True,
         evidence_inventory_declared=True,
+        identity_schema=RUNTIME_IDENTITY_V3,
+        dependency_lock_digest=execution["dependency_lock_digest"],
+        python_implementation=execution["python_implementation"],
+        python_version=execution["python_version"],
+        platform_tag=execution["platform_tag"],
+        project_version=execution["project_version"],
+        build_backend=execution["build_backend"],
+        execution_environment_declared=True,
+    )
+
+
+def _legacy_identity(candidate_sha: str, *, schema_version: str) -> RuntimeIdentity:
+    return RuntimeIdentity(
+        code_sha=candidate_sha,
+        schema_version=schema_version,
+        config_digest=content_digest({"config": "h5"}),
+        corpus_digest=content_digest({"corpus": "h5"}),
+        provider_identities=("synthetic-provider@1.0.0",),
+        plugin_identities=("synthetic-plugin@1.0.0",),
+        input_digests=(content_digest({"input": "h5"}),),
+        evidence_digests=(content_digest({"evidence": "h5"}),),
+        provider_inventory_declared=True,
+        plugin_inventory_declared=True,
+        input_inventory_declared=True,
+        evidence_inventory_declared=True,
+        identity_schema=RUNTIME_IDENTITY_V2,
     )
 
 
@@ -71,7 +134,7 @@ def build_h5_evidence(candidate_sha: str) -> dict[str, object]:
     if not isinstance(h5, dict):
         raise RuntimeError("H5 replay/migration policy is missing")
     required_contract = {
-        "runtime_identity_schema": "lukart.runtime-identity.v2",
+        "runtime_identity_schema": RUNTIME_IDENTITY_V2,
         "complete_identity_required_for_identical": True,
         "provider_plugin_versions_required": True,
         "input_evidence_digests_required": True,
@@ -88,7 +151,14 @@ def build_h5_evidence(candidate_sha: str) -> dict[str, object]:
     exact = _identity(candidate, schema_version="v1")
     identical = registry.compare_replay(exact, exact)
     if identical.relation is not ReplayRelation.IDENTICAL or not exact.complete_for_replay:
-        raise RuntimeError("H5 complete exact identity did not classify as IDENTICAL")
+        raise RuntimeError("H5 complete v3 exact identity did not classify as IDENTICAL")
+
+    legacy = _legacy_identity(candidate, schema_version="v1")
+    legacy_result = registry.compare_replay(legacy, legacy)
+    if legacy_result.relation is not ReplayRelation.INCOMPLETE:
+        raise RuntimeError("H5 legacy v2 identity was incorrectly promoted to IDENTICAL")
+    if "baseline.execution_environment" not in legacy_result.unresolved:
+        raise RuntimeError("H5 legacy v2 incompleteness does not expose execution environment")
 
     incomplete = RuntimeIdentity(
         code_sha=candidate,
@@ -98,7 +168,7 @@ def build_h5_evidence(candidate_sha: str) -> dict[str, object]:
     )
     incomplete_result = registry.compare_replay(incomplete, incomplete)
     if incomplete_result.relation is not ReplayRelation.INCOMPLETE:
-        raise RuntimeError("H5 partial identity was incorrectly promoted to IDENTICAL")
+        raise RuntimeError("H5 partial v3 identity was incorrectly promoted to IDENTICAL")
 
     registry.register(MigrationStep("v1", "v2", lambda payload: {**payload, "schema": "v2"}))
     source = VersionedCase.build(case_id="H5-SYNTHETIC", schema_version="v1", payload={"x": 1})
@@ -137,7 +207,8 @@ def build_h5_evidence(candidate_sha: str) -> dict[str, object]:
         "checked_out_head_sha": head,
         "policy_digest": content_digest(h5),
         "runtime_identity": {
-            "schema": exact.identity_schema,
+            "legacy_policy_schema": RUNTIME_IDENTITY_V2,
+            "current_exact_schema": exact.identity_schema,
             "digest": exact.digest(),
             "complete": exact.complete_for_replay,
             "bound_dimensions": [
@@ -149,11 +220,18 @@ def build_h5_evidence(candidate_sha: str) -> dict[str, object]:
                 "plugin_identities",
                 "input_digests",
                 "evidence_digests",
+                "dependency_lock_digest",
+                "python_implementation",
+                "python_version",
+                "platform_tag",
+                "project_version",
+                "build_backend",
             ],
         },
         "replay_relations": {
-            "exact": identical.relation.value,
-            "partial": incomplete_result.relation.value,
+            "exact_v3": identical.relation.value,
+            "legacy_v2": legacy_result.relation.value,
+            "partial_v3": incomplete_result.relation.value,
             "cross_version": cross_version.relation.value,
         },
         "migration": {
