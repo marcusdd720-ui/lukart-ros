@@ -144,6 +144,7 @@ jobs:
           run_id = enterprise.get("id")
           if not isinstance(run_id, int):
               raise SystemExit("Enterprise run id is missing")
+          print("RELEASE_COMPANION_WORKFLOWS=PASS")
           print(f"enterprise_run_id={run_id}")
           PY
 
@@ -176,6 +177,7 @@ jobs:
         run: |
           set -euo pipefail
           if [ -n "$(git ls-remote origin "refs/tags/${TAG}" "refs/tags/${TAG}^{}")" ]; then
+            echo "Tag ${TAG} already exists; refusing release reuse or repair."
             echo "Refusing to move an existing release tag ${TAG}."
             echo "Bump the project version for a new release."
             exit 1
