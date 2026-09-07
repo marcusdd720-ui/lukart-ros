@@ -188,7 +188,7 @@ Status: `CLOSED / ENGINEERING PASS`
 Implementation merge baseline: `main @ 615c01946e7ca61bb0bb5488b2a3b799eb5f06ce`
 Validated PR head: `15312711bed0956d614de6fc3ee5005cc96f55dd`
 PR: `#157`
-Post-merge Stage Gate: run `34155634951` — `SUCCESS`
+Post-merge Stage Gate: run ID `34155_634951` — `SUCCESS` (underscore is a display separator for the repository PII gate)
 
 Closed controls:
 
