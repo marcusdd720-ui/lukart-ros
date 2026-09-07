@@ -20,11 +20,9 @@ from core.case_ledger.contracts import (
     ContentAddress,
 )
 from core.p3.contracts import (
-    RUNTIME_IDENTITY_V3,
     ReplayRelation,
     RuntimeIdentity,
     canonical_json,
-    content_digest,
 )
 from core.p3.versioning import CaseMigrationRegistry
 from knowledge.epistemic_assertions import (
