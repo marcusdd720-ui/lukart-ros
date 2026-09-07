@@ -82,6 +82,7 @@ module = [
   "core.p3.versioning",
   "knowledge.epistemic",
   "knowledge.epistemic_assertions",
+  "knowledge.evidence_trust_graph",
   "validation.gold_kqm_v2",
   "validation.release_contract",
   "validation.release_governance",

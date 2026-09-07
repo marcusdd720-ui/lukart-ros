@@ -2,8 +2,8 @@
 
 Status: Active continuation after historical H1-H10 ENGINEERING PASS
 Program baseline: `main @ eefd7088406126c0a20baf1245742649058decc4`
-Current closed trust core: `PHX-02 @ main a0fa7e128366bc26419ae820d3ce88691a55723a`
-Active stage: `PHX-03 — Epistemic Assertion + State Machine v2`
+Current closed trust core: `PHX-03 @ main d01f2d6e87a900d77ee25f95fe273a855d85cf32`
+Active stage: `PHX-04 — Evidence Trust Graph`
 Horizon: 10+ years
 
 This roadmap extends the existing Product, P2/P3, Enterprise and historical Hardcore
@@ -84,44 +84,48 @@ Architecture contract: `docs/GOLD_KQM_V2.md`.
 
 ## PHX-03 — Epistemic Assertion + State Machine v2
 
-Status: `ACTIVE / ENGINEERING`
-Branch baseline: `main @ a0fa7e128366bc26419ae820d3ce88691a55723a`
+Status: `CLOSED / ENGINEERING PASS`
+Merge baseline: `main @ d01f2d6e87a900d77ee25f95fe273a855d85cf32`
+Validated PR head: `e63e0898d7f50b9738ba7dddb83bfc719b28fa82`
+PR: `#152`
 
-Goal: replace mutable/loosely referenced epistemic authority with deterministic
-ledger-derived state over immutable assertions and exact transition evidence.
-
-Controls:
+Closed controls:
 
 - first-class immutable/content-addressed Assertion identity;
 - exact `case_id + CCL event_id` evidence references;
 - FACT creation/promotion requires prior policy-authorized evidence events;
-- transition policy identity binds the canonical transition machine and evidence-event policy;
+- transition policy identity binds transition machine and evidence-event policy;
 - transition decisions are content-addressed and replay-verified;
 - denied/no-op/unknown transitions never become authoritative state;
 - cross-case evidence fails closed until a separately versioned trust contract exists;
 - `CaseScope.epistemic_state` is legacy/non-authoritative and cannot be changed by
   `with_states()`;
 - state is a deterministic projection over exact CCL history and ledger head;
-- no epistemic persistence authority exists outside Canonical Case Ledger.
+- no epistemic persistence authority exists outside Canonical Case Ledger;
+- exact-SHA CI, guarded merge and post-merge validation closed.
 
 Architecture contract: `docs/EPISTEMIC_ASSERTIONS_V2.md`.
 
-Indicative horizon: year 2-3.
-
 ## PHX-04 — Evidence Trust Graph
 
-Goal: provide a deterministic trust projection over exact evidence/assertion identities.
+Status: `ACTIVE / ENGINEERING`
+Branch baseline: `main @ d01f2d6e87a900d77ee25f95fe273a855d85cf32`
+
+Goal: provide a deterministic, bounded trust projection over exact CCL evidence,
+assertion and transition identities without creating a writable graph authority.
 
 Controls:
 
-- typed evidence/assertion/trust edges;
-- provenance, authorization and contradiction edges;
-- explicit trust-policy version;
-- cryptographic attestation is evidence, not automatic epistemic truth;
-- graph rebuild from ledger and policy identity;
-- no writable graph authority separate from ledger.
+- typed EVENT / ASSERTION / DECISION nodes bound to exact content identities;
+- exact SUPPORTS / TRANSITIONS / RECORDED_BY provenance edges;
+- CONTRADICTS / AUTHORIZED_BY / ATTESTED_BY only from explicit canonical relation events;
+- explicit content-addressed trust-policy identity and hard node/edge budgets;
+- cryptographic attestation represents origin/integrity evidence, never epistemic truth;
+- cross-case/dangling references and unknown `trust.*` events fail closed;
+- graph identity binds exact case ledger head, Epistemic projection identity and policy;
+- no graph DB, graph write API or Canonical Ledger write path exists in the projection.
 
-Indicative horizon: year 3-4.
+Architecture contract: `docs/EVIDENCE_TRUST_GRAPH_V1.md`.
 
 ## PHX-05 — Case Replay v2
 
