@@ -254,7 +254,10 @@ class GoldCorpusIdentity:
             str(corpus.get("baseline_release", "")),
             field_name="baseline_release",
         )
-        baseline_sha = _require_git_sha(str(corpus.get("baseline_sha", "")), field_name="baseline_sha")
+        baseline_sha = _require_git_sha(
+            str(corpus.get("baseline_sha", "")),
+            field_name="baseline_sha",
+        )
         if (
             manifest.get("baseline_release") != baseline_release
             or manifest.get("baseline_sha") != baseline_sha
@@ -367,7 +370,10 @@ class GoldCorpusIdentity:
         return cls(
             corpus_id=str(value.get("corpus_id", "")),
             corpus_version=str(value.get("corpus_version", "")),
-            source_digest=_address_from_mapping(value.get("source_digest"), field_name="source_digest"),
+            source_digest=_address_from_mapping(
+                value.get("source_digest"),
+                field_name="source_digest",
+            ),
             canonical_content_digest=_address_from_mapping(
                 value.get("canonical_content_digest"),
                 field_name="canonical_content_digest",
@@ -504,7 +510,9 @@ class KQMPolicy:
         if self.missing_metric != "FAIL":
             raise EvaluationContractError("KQM missing_metric policy must be FAIL")
         if not self.threshold_relaxation_requires_versioned_policy_change:
-            raise EvaluationContractError("KQM threshold relaxation must require versioned policy change")
+            raise EvaluationContractError(
+                "KQM threshold relaxation must require versioned policy change"
+            )
         if self.evaluator_may_mutate_product_state:
             raise EvaluationContractError("KQM evaluator cannot mutate Product state")
         self.verify()
