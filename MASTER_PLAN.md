@@ -64,7 +64,7 @@ Historical Enterprise contract field: Roadmap target: `Enterprise Track E0-E10`.
 
 The automated E10 boundary remains `INDEPENDENT_REVIEW_REQUIRED` unless genuine separately attested independent review evidence exists. No repository text or automated run may manufacture that review.
 
-## 5. Historical Hardcore and active Post-Hardcore program
+## 5. Historical Hardcore Enterprise H1-H10
 
 `docs/HARDCORE_ROADMAP.md` is historical `CLOSED / ENGINEERING PASS`. H1-H10 closed exact-SHA/post-merge evidence and baseline-identity drift, repository-policy enforcement, supply-chain provenance, capability isolation, replay/migration identity, tenant/case authorization, recovery, scale, auditability and final evidence closure.
 
