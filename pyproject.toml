@@ -1,9 +1,14 @@
+[build-system]
+requires = ["setuptools==80.9.0"]
+build-backend = "lukart_build_backend"
+backend-path = ["."]
+
 [project]
 name = "lukart-ros"
-version = "1.0.1"
+version = "1.1.0.dev0"
 description = "LukArt ROS – Knowledge Operating System and virtual chambers factory"
 readme = "README.md"
-requires-python = ">=3.11"
+requires-python = ">=3.11,<3.15"
 authors = [
   { name = "LukArt" }
 ]
@@ -25,9 +30,9 @@ dev = [
 ]
 
 [tool.lukart.enterprise]
-development_version = "1.1.0.dev0"
 release_enabled = false
 immutable_baseline_version = "1.0.1"
+immutable_baseline_commit = "802013c4d0e53dc12306a97e1877ebba86af64a7"
 
 [tool.setuptools.packages.find]
 include = [

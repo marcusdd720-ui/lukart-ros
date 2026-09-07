@@ -20,6 +20,7 @@ TEXT_SUFFIXES = {
     ".html",
 }
 FORBIDDEN_SUFFIXES = {".pdf", ".doc", ".docx", ".odt", ".rtf"}
+GENERATED_DEPENDENCY_ARTIFACTS = frozenset({"pylock.toml"})
 CRYPTO_DIGEST = re.compile(r"(?<![0-9A-Fa-f])(?:[0-9A-Fa-f]{40}|[0-9A-Fa-f]{64})(?![0-9A-Fa-f])")
 PATTERNS = {
     "PESEL-like 11 digits": re.compile(r"(?<!\d)\d{11}(?!\d)"),
@@ -36,6 +37,19 @@ def tracked_files() -> list[Path]:
         ["git", "ls-files"], cwd=ROOT, check=True, capture_output=True, text=True
     )
     return [ROOT / item for item in result.stdout.splitlines() if item]
+
+
+def _is_pii_text_candidate(relative: str, suffix: str) -> bool:
+    """Return whether naive PII regexes are valid for this tracked text artifact.
+
+    ``pylock.toml`` is a deterministic PEP 751 dependency artifact generated
+    from ``uv.lock``. Registry URLs, sizes, timestamps and hashes contain
+    arbitrary numeric runs that resemble Polish identifiers but are not
+    user-authored personal data. The exemption is path-specific; ordinary TOML
+    and every other supported text source remain in the fail-closed PII scan.
+    """
+
+    return suffix in TEXT_SUFFIXES and relative not in GENERATED_DEPENDENCY_ARTIFACTS
 
 
 def _pii_scan_text(text: str) -> str:
@@ -58,7 +72,7 @@ def scan() -> list[str]:
         if suffix in FORBIDDEN_SUFFIXES:
             findings.append(f"forbidden legal artifact: {relative}")
             continue
-        if suffix not in TEXT_SUFFIXES or not path.is_file():
+        if not _is_pii_text_candidate(relative, suffix) or not path.is_file():
             continue
         try:
             text = path.read_text(encoding="utf-8")

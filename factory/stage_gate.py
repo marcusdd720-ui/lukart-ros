@@ -121,7 +121,7 @@ COMMANDS: dict[str, tuple[str, ...]] = {
         "python -m pytest -v",
         "python -m ruff check .",
         "python -m mypy .",
-        "python -m pip wheel . --no-deps -w dist",
+        "uv build --wheel --out-dir dist",
         "python scripts/repository_audit.py",
         "python scripts/pii_scan.py",
     ),

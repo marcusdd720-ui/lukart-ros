@@ -37,6 +37,13 @@ def _identity(
         plugin_inventory_declared=declared,
         input_inventory_declared=declared,
         evidence_inventory_declared=declared,
+        dependency_lock_digest="f" * 64,
+        python_implementation="cpython",
+        python_version="3.11.13",
+        platform_tag="linux-x86_64",
+        project_version="1.1.0.dev0",
+        build_backend="lukart_build_backend:setuptools==80.9.0",
+        execution_environment_declared=declared,
     )
 
 
@@ -58,6 +65,7 @@ def test_h5_legacy_or_partial_identity_never_becomes_identical() -> None:
     assert comparison.relation is ReplayRelation.INCOMPLETE
     assert comparison.unresolved
     assert "baseline.evidence_digests" in comparison.unresolved
+    assert "baseline.execution_environment" in comparison.unresolved
 
 
 def test_h5_same_schema_identity_drift_is_visible() -> None:
