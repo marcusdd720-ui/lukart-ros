@@ -1,6 +1,6 @@
 # LUKART ROS — Hardcore Enterprise Roadmap H1-H10
 
-Status: Active development roadmap
+Status: Historical CLOSED / ENGINEERING PASS
 Historical release authority: live annotated Git tag `v1.0.1`; H1 validates both the tag-object identity and its target commit, and development work MUST NOT move or reinterpret either identity.
 Predecessor: Enterprise E0-E10 engineering implementation. E10 remains capped at `INDEPENDENT_REVIEW_REQUIRED` unless genuine separately attested independent review evidence exists.
 

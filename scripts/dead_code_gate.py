@@ -1,8 +1,14 @@
-"""Deterministic inventory of Python modules with no in-repository imports."""
+"""Deterministic inventory of Python modules with no in-repository imports.
+
+This is an inventory signal only. A module without a static in-repository import is
+not proven dead: it may be an entry point, plugin, reflective import target, CLI,
+workflow target, test fixture, or dynamically loaded capability.
+"""
 
 from __future__ import annotations
 
 import ast
+import hashlib
 from pathlib import Path
 
 EXCLUDED_DIRS = {".git", ".venv", "venv", "__pycache__", ".pytest_cache", "build", "dist"}
@@ -46,13 +52,20 @@ def unreferenced_modules(root: Path) -> list[str]:
     return sorted(module for module in modules if module not in refs)
 
 
+def inventory_digest(modules: list[str]) -> str:
+    payload = "\n".join(modules).encode("utf-8")
+    return hashlib.sha256(payload).hexdigest()
+
+
 def main() -> int:
     root = Path.cwd().resolve()
     inventory = unreferenced_modules(root)
-    print("DEAD_CODE_INVENTORY")
+    print("UNREFERENCED_MODULE_INVENTORY")
+    print("CLASSIFICATION=INVENTORY_NOT_DEAD_CODE_PROOF")
     for module in inventory:
         print(module)
     print(f"UNREFERENCED_MODULE_COUNT={len(inventory)}")
+    print(f"UNREFERENCED_MODULE_SHA256={inventory_digest(inventory)}")
     return 0
 
 
