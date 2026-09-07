@@ -7,9 +7,9 @@ import pytest
 
 import lukart_build_backend
 from core.p3.contracts import (
-    P3ContractError,
     RUNTIME_IDENTITY_V2,
     RUNTIME_IDENTITY_V3,
+    P3ContractError,
     RuntimeIdentity,
     enrich_runtime_identity_v2,
 )
