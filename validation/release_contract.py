@@ -34,13 +34,14 @@ class ReleaseIntent:
         return f"v{self.project_version}" if self.release_enabled else ""
 
     def github_outputs(self) -> tuple[str, ...]:
+        immutable_required = "true" if self.immutable_releases_required else "false"
         return (
             f"release={'true' if self.release_enabled else 'false'}",
             f"version={self.project_version}",
             f"tag={self.tag}",
             f"immutable_baseline={self.immutable_baseline_version}",
             f"immutable_baseline_commit={self.immutable_baseline_commit}",
-            f"immutable_releases_required={'true' if self.immutable_releases_required else 'false'}",
+            f"immutable_releases_required={immutable_required}",
         )
 
 
