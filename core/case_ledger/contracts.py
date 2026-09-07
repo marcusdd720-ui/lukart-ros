@@ -76,7 +76,11 @@ class CaseId:
     value: str
 
     def __post_init__(self) -> None:
-        object.__setattr__(self, "value", _require_exact_identifier(self.value, field_name="case_id"))
+        object.__setattr__(
+            self,
+            "value",
+            _require_exact_identifier(self.value, field_name="case_id"),
+        )
 
     def canonical_dict(self) -> dict[str, object]:
         return {"value": self.value}
