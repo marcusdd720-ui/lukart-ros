@@ -4,18 +4,22 @@ import argparse
 import hashlib
 import json
 import subprocess
+import sys
 from collections.abc import Mapping, Sequence
 from pathlib import Path
 from typing import cast
 
-from core.p3.contracts import (
+ROOT = Path(__file__).resolve().parents[1]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+
+from core.p3.contracts import (  # noqa: E402
     RUNTIME_IDENTITY_V3,
     canonical_json,
     content_digest,
     require_hex_digest,
 )
 
-ROOT = Path(__file__).resolve().parents[1]
 POLICY_PATH = "config/enterprise_v1.json"
 ACTIONS_RUNTIME_POLICY_PATH = "config/github_actions_runtime_v1.json"
 WORKFLOW_PATH = ".github/workflows/enterprise-hardening.yml"
