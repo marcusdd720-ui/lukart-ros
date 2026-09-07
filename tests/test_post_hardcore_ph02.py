@@ -13,6 +13,7 @@ from core.p3.contracts import (
     RuntimeIdentity,
     enrich_runtime_identity_v2,
 )
+from factory.stage_gate import COMMANDS
 
 
 def _base_identity(**overrides: object) -> RuntimeIdentity:
@@ -116,3 +117,9 @@ def test_ph02_lock_digest_is_sha256_when_lock_exists() -> None:
     digest = hashlib.sha256(lock.read_bytes()).hexdigest()
     assert len(digest) == 64
     int(digest, 16)
+
+
+def test_ph02_release_gate_uses_canonical_uv_build_frontend() -> None:
+    release_commands = COMMANDS["release"]
+    assert "uv build --wheel --out-dir dist" in release_commands
+    assert not any("pip wheel" in command for command in release_commands)
