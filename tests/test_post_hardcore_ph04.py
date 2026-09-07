@@ -8,6 +8,8 @@ ROOT = Path(__file__).resolve().parents[1]
 PYPROJECT = ROOT / "pyproject.toml"
 
 REQUIRED_TRUST_BOUNDARIES = {
+    "core.case_ledger.contracts",
+    "core.case_ledger.ledger",
     "core.enterprise.api_guard",
     "core.enterprise.authorization",
     "core.enterprise.contracts",

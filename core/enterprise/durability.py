@@ -157,6 +157,26 @@ class SQLiteProvenanceStore:
         records = self.verify()
         return records[-1].record_digest if records else _GENESIS
 
+    def stream_head_digest(self, stream_id: str) -> str:
+        """Return the exact backend record head for one logical stream."""
+
+        normalized = stream_id.strip()
+        if not normalized:
+            raise EnterpriseContractError("stream_id is required")
+        row = self._connection.execute(
+            """
+            SELECT record_digest
+            FROM provenance
+            WHERE stream_id = ?
+            ORDER BY sequence DESC
+            LIMIT 1
+            """,
+            (normalized,),
+        ).fetchone()
+        if row is None:
+            return _GENESIS
+        return require_hex_digest(str(row[0]), field_name="durable_stream_head_digest")
+
     def state_identity(self) -> RecoveryIdentity:
         records = self.verify()
         semantic_digest = content_digest(
@@ -179,8 +199,17 @@ class SQLiteProvenanceStore:
     def append_batch(
         self,
         events: Sequence[tuple[str, str, Mapping[str, object]]],
+        *,
+        expected_stream_heads: Mapping[str, str] | None = None,
     ) -> tuple[DurableRecord, ...]:
-        """Atomically append a bounded logical batch; validation failure writes nothing."""
+        """Atomically append a bounded logical batch; validation failure writes nothing.
+
+        When ``expected_stream_heads`` is supplied, every stream in the batch must
+        provide its exact current backend head.  The comparison happens inside the
+        same ``BEGIN IMMEDIATE`` transaction as the append, giving callers a
+        fail-closed compare-and-append primitive without a parallel persistence
+        authority.
+        """
 
         if not events:
             raise EnterpriseContractError("durable append batch cannot be empty")
@@ -195,11 +224,44 @@ class SQLiteProvenanceStore:
                 raise EnterpriseContractError("durable provenance payload must be an object")
             prepared.append((stream_id, event_type, copied, content_digest(copied)))
 
+        expected: dict[str, str] | None = None
+        if expected_stream_heads is not None:
+            expected = {}
+            for raw_stream_id, raw_digest in expected_stream_heads.items():
+                stream_id = raw_stream_id.strip()
+                if not stream_id:
+                    raise EnterpriseContractError("expected stream_id cannot be blank")
+                expected[stream_id] = require_hex_digest(
+                    raw_digest,
+                    field_name="expected_stream_head_digest",
+                )
+            event_streams = {stream_id for stream_id, _event_type, _payload, _digest in prepared}
+            if set(expected) != event_streams:
+                raise EnterpriseContractError(
+                    "expected_stream_heads must exactly cover append batch streams"
+                )
+
         inserted: list[DurableRecord] = []
         with self._lock:
             self._connection.execute("BEGIN IMMEDIATE")
             try:
-                rows = self.records()
+                if expected is not None:
+                    for stream_id, expected_digest in expected.items():
+                        row = self._connection.execute(
+                            """
+                            SELECT record_digest
+                            FROM provenance
+                            WHERE stream_id = ?
+                            ORDER BY sequence DESC
+                            LIMIT 1
+                            """,
+                            (stream_id,),
+                        ).fetchone()
+                        actual_digest = _GENESIS if row is None else str(row[0])
+                        if actual_digest != expected_digest:
+                            raise EnterpriseContractError("durable stream head mismatch")
+
+                rows = self.verify()
                 previous = rows[-1].record_digest if rows else _GENESIS
                 sequence = len(rows)
                 for stream_id, event_type, copied, payload_digest in prepared:
@@ -254,8 +316,17 @@ class SQLiteProvenanceStore:
         stream_id: str,
         event_type: str,
         payload: Mapping[str, object],
+        expected_stream_head: str | None = None,
     ) -> DurableRecord:
-        return self.append_batch(((stream_id, event_type, payload),))[0]
+        expected = (
+            None
+            if expected_stream_head is None
+            else {stream_id: expected_stream_head}
+        )
+        return self.append_batch(
+            ((stream_id, event_type, payload),),
+            expected_stream_heads=expected,
+        )[0]
 
     def backup_to(self, snapshot_path: str | Path) -> str:
         with self._lock:
