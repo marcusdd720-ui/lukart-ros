@@ -8,10 +8,15 @@ EVIDENCE_PATH = (
     "evidence/governance_closure/gov-auto-01/"
     "132312e157f5d6ccc13aa40d48e34e5c3732c908.json"
 )
+PROVENANCE_DOC = "MASTER_PLAN.md"
 
 
-def _labels(text: str, *, relative: str = "") -> set[str]:
-    scan_text = _pii_scan_text(text, relative=relative)
+def _labels(
+    text: str, *, relative: str = "", governance_run_ids: frozenset[int] = frozenset()
+) -> set[str]:
+    scan_text = _pii_scan_text(
+        text, relative=relative, governance_run_ids=governance_run_ids
+    )
     return {label for label, pattern in PATTERNS.items() if pattern.search(scan_text)}
 
 
@@ -60,8 +65,6 @@ def test_non_digest_hex_sequence_is_not_blanket_ignored() -> None:
     value = "abc" + "500" + "600" + "700" + "def"
 
     assert not CRYPTO_DIGEST.fullmatch(value)
-    # The scanner does not promise to detect digits embedded in arbitrary text;
-    # this regression only proves that non-digest strings are not masked wholesale.
     assert _pii_scan_text(value) == value
 
 
@@ -89,5 +92,58 @@ def test_noncanonical_evidence_does_not_receive_run_id_exception() -> None:
     payload["authority"] = "unexpected-authority"
 
     labels = _labels(json.dumps(payload), relative=EVIDENCE_PATH)
+
+    assert "PESEL-like 11 digits" in labels
+
+
+def test_provenance_bound_run_id_in_canonical_prose_is_masked() -> None:
+    run_id = int("34239" + "068144")
+    text = f"machine evidence retains run ID `{run_id}`"
+
+    labels = _labels(
+        text,
+        relative=PROVENANCE_DOC,
+        governance_run_ids=frozenset({run_id}),
+    )
+
+    assert "PESEL-like 11 digits" not in labels
+
+
+def test_unproven_run_id_in_canonical_prose_still_fails() -> None:
+    proven_run_id = int("34239" + "068144")
+    unproven = "12345" + "678901"
+    text = f"machine evidence retains run ID `{unproven}`"
+
+    labels = _labels(
+        text,
+        relative=PROVENANCE_DOC,
+        governance_run_ids=frozenset({proven_run_id}),
+    )
+
+    assert "PESEL-like 11 digits" in labels
+
+
+def test_provenance_bound_value_without_run_context_still_fails() -> None:
+    run_id = int("34239" + "068144")
+    text = f"unrelated_number=`{run_id}`"
+
+    labels = _labels(
+        text,
+        relative=PROVENANCE_DOC,
+        governance_run_ids=frozenset({run_id}),
+    )
+
+    assert "PESEL-like 11 digits" in labels
+
+
+def test_provenance_bound_run_id_in_arbitrary_doc_still_fails() -> None:
+    run_id = int("34239" + "068144")
+    text = f"workflow run `{run_id}`"
+
+    labels = _labels(
+        text,
+        relative="docs/UNRELATED.md",
+        governance_run_ids=frozenset({run_id}),
+    )
 
     assert "PESEL-like 11 digits" in labels
