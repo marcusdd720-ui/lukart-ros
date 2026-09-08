@@ -1,6 +1,10 @@
 # KQM-03 — Identity-Preserving Longitudinal KQM v1
 
-Status: `IMPLEMENTATION / VALIDATION PENDING`
+Status: `CLOSED / ENGINEERING PASS`
+Implementation PR: `#168`
+Validated PR head: `126aee3cefe10921e17beac48cd082c1fcb4bde7`
+Implementation merge: `main @ 85d4beaae0d0c5f736a23204cbf2103f8858f935`
+Next approved stage: `CRY-01`
 
 ## Problem
 
@@ -91,18 +95,44 @@ Legacy P3 longitudinal records remain valid historical artifacts at their origin
 level. They are not silently upgraded to KQM-03 points because the missing identity fields
 cannot be reconstructed without evidence.
 
-## Validation requirements
+## Validation and closure evidence
 
-Closure requires one exact PR-head SHA to pass:
+The exact PR head `126aee3cefe10921e17beac48cd082c1fcb4bde7` passed all 11 required
+pull-request workflows:
 
-- focused point/comparison identity tests;
-- adversarial context-substitution, missing-metric and incomplete-runtime tests;
-- persistent round-trip, duplicate-release and tamper tests;
-- Ruff and MyPy;
-- full pytest regression;
-- Stage Gate and repository security/policy workflows;
-- guarded exact-head merge;
-- resulting-main post-merge validation;
-- immutable `v1.0.1` baseline/release side-effect check.
+- Architectural Audit 1.0;
+- CI Foundation;
+- Enterprise CodeQL;
+- Enterprise Hardcore Gate;
+- GitHub App Smoke Test;
+- P2 Semantic Intelligence;
+- P3 Hardcore Hardening;
+- Post-v1 v1.1;
+- Production Validation Program;
+- Stage Gate;
+- Stage Orchestrator.
 
-Engineering PASS does not imply independent certification.
+CI Foundation validated Ruff, MyPy, focused/adversarial KQM-03 tests and full pytest
+regression on that exact head. Enterprise CodeQL also completed `SUCCESS` on the same
+exact SHA.
+
+PR #168 remained on the validated head and `main` remained on the expected base before a
+guarded merge bound to `expected_head_sha`. The resulting implementation merge is
+`85d4beaae0d0c5f736a23204cbf2103f8858f935`.
+
+Post-merge validation observed nine workflow runs bound to that exact merge SHA. All nine
+were terminal `SUCCESS`; there were zero failed, cancelled, timed-out, queued or
+in-progress runs when closure was evaluated. The observed set included the downstream
+Stage Gate dispatch and MVROS v1 Release guard.
+
+The immutable release baseline remained unchanged after implementation:
+
+- `v1.0.1` annotated tag object:
+  `9f7c0b28f766c8921e63b1d517fefcc96aa991d4`;
+- tag target commit:
+  `802013c4d0e53dc12306a97e1877ebba86af64a7`;
+- no new GitHub release was published; `v1.0.1` remained the latest release.
+
+KQM-03 therefore satisfies the engineering Definition of Done for its implementation
+merge. This closure is engineering evidence only and does not assert independent,
+external, security or regulatory certification.

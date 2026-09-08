@@ -11,7 +11,8 @@ Latest closed signed exchange continuation: `XCH-01 @ main 83157c6e649ab1212ee20
 Latest closed Product runtime convergence: `PRC-01 @ main a12cd60d2a45ce0d1807588089dbf9706cac4b22`
 Latest closed Product verification evidence: `PVE-01 @ main 174b29897dcab15f7f51d5cc876aeec2b8306871`
 Latest closed governance consistency: `GOV-01 implementation merge @ main 54245df8f834661c9d36a522e46952a20a095c0f`
-Active Post-Hardcore stage: `KQM-03`
+Latest closed longitudinal KQM: `KQM-03 implementation merge @ main 85d4beaae0d0c5f736a23204cbf2103f8858f935`
+Active Post-Hardcore stage: `CRY-01`
 Roadmap target: `Post-Hardcore Enterprise continuation`
 Development version: `1.1.0.dev0`
 
@@ -92,7 +93,9 @@ PVE-01 — Product Verification Evidence v1 — is `CLOSED / ENGINEERING PASS` f
 
 GOV-01 — Governance Closure Consistency v1 — is `CLOSED / ENGINEERING PASS` for PR #166. The validated PR head is `07256f90282de080a19bca32d40c28fe10406ac5`; the implementation merge is `main @ 54245df8f834661c9d36a522e46952a20a095c0f`. All 11 fixed required PR workflows passed on that exact head. The resulting merge completed nine post-merge workflow runs, all `SUCCESS`, with no failed, cancelled, timed-out, queued or in-progress runs at closure evaluation. The externally observed live snapshot, canonical closure record and GOV-01 consistency report are content-addressed in `docs/GOVERNANCE_CLOSURE_CONSISTENCY_V1.md`; result `CONSISTENT` is governance-verification-only. Historical `v1.0.1` tag object and target commit remained unchanged and no new release was published. GOV-01 creates no Product truth, CCL write, release authority or independent certification claim.
 
-The next approved stage is `KQM-03`. Its contract must be explicitly defined, measured and validated under the active Post-Hardcore roadmap before implementation can be trusted or closed.
+KQM-03 — Identity-Preserving Longitudinal KQM v1 — is `CLOSED / ENGINEERING PASS` for PR #168. The validated PR head is `126aee3cefe10921e17beac48cd082c1fcb4bde7`; the implementation merge is `main @ 85d4beaae0d0c5f736a23204cbf2103f8858f935`. KQM-03 preserves the exact PHX-02 evaluation context, policy, evaluator and corpus identities while separately binding complete candidate runtime and exact KQM projection identity. Longitudinal comparison fails closed when evaluation input, policy, evaluator, corpus or expected metric contract changes; candidate runtime change alone remains measurable within one exact context. Persistent history reuses the existing P3 tamper-evident provenance ledger and introduces no CCL, Product, Gold or release authority. The exact candidate passed all 11 required PR workflows; the implementation merge completed nine post-merge workflow runs, all `SUCCESS`, with zero failed, cancelled, timed-out, queued or in-progress runs at closure evaluation. Historical `v1.0.1` tag object and target remained unchanged and no new release was published. No independent external certification is claimed.
+
+The next approved stage is `CRY-01`. Its contract must be explicitly defined from current cryptographic/attestation evidence and validated under the active Post-Hardcore roadmap before implementation can be trusted or closed.
 
 ## 6. Trust boundaries
 
@@ -167,5 +170,6 @@ The package development version is distinct from the immutable historical releas
 - `docs/PRODUCT_RUNTIME_CONVERGENCE_V1.md` — PRC-01 converged Product runtime and release-proof contract.
 - `docs/PRODUCT_VERIFICATION_EVIDENCE_V1.md` — PVE-01 reproducible Product verification evidence contract.
 - `docs/GOVERNANCE_CLOSURE_CONSISTENCY_V1.md` — GOV-01 governance closure consistency contract and exact live closure evidence.
+- `docs/KQM_LONGITUDINAL_V1.md` — KQM-03 identity-preserving longitudinal measurement contract and exact closure evidence.
 
 Historical design records do not override this Master Plan, Accepted ADRs, executable trust gates or the canonical working principles.
