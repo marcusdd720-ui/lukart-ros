@@ -1,8 +1,8 @@
 {
-  "architecture_doc": "docs/OPERATIONAL_READINESS_V1.md",
-  "enabled": false,
-  "implementation_pr": 184,
-  "next_stage_id": "POL-01",
+  "architecture_doc": "docs/AUTHORIZATION_POLICY_IDENTITY_V1.md",
+  "enabled": true,
+  "implementation_pr": 187,
+  "next_stage_id": "XCH-02",
   "schema": "lukart.closure-preparation-target.v1",
-  "stage_id": "OPR-01"
+  "stage_id": "POL-01"
 }
