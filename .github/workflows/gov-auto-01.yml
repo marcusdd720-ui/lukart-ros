@@ -55,7 +55,7 @@ jobs:
           assert target["schema"] == "lukart.closure-preparation-target.v1"
           assert target["stage_id"] == "GOV-AUTO-01"
           assert target["next_stage_id"] == "OPR-01"
-          assert target["implementation_pr"] == 178
+          assert target["implementation_pr"] == 179
           assert target["enabled"] is True
 
           contract = Path("docs/GOVERNANCE_CLOSURE_AUTOMATION_V1.md").read_text(
