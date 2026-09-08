@@ -28,7 +28,8 @@ OPERATIONAL_READINESS_IDENTIFIER_LITERAL_PATH = (
     "core/enterprise/operational_readiness_v1.py"
 )
 OPERATIONAL_READINESS_IDENTIFIER_LITERAL = (
-    '"abcdefghijklmnopqrstuvwxyz0123456789-_."'
+    '"abcdefghijklmnopqrstuvwxyz01234'
+    '56789-_."'
 )
 CRYPTO_DIGEST = re.compile(r"(?<![0-9A-Fa-f])(?:[0-9A-Fa-f]{40}|[0-9A-Fa-f]{64})(?![0-9A-Fa-f])")
 PATTERNS = {
