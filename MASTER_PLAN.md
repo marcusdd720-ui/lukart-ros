@@ -7,7 +7,7 @@ Enterprise implementation base: `P3 merge @ 8550d08651957afd7f21b91553768786cb8b
 Post-Hardcore closed trust core: `PHX-06 @ main 9c2a7812cedfe98b65af484186459300897357de`
 Latest closed durability continuation: `DR-01 implementation merge @ main 615c01946e7ca61bb0bb5488b2a3b799eb5f06ce`
 Latest closed invariant verification: `IV-01 @ main cae560f4893b8726695e06334982927376e7a146`
-Latest closed signed exchange continuation: `XCH-01 @ main 83157c6e649ab1212ee200a453aa5240e08be24c`
+Latest closed signed exchange continuation: `XCH-02 implementation merge @ main 7495aa185011d3ef901cb3e5694f42abca276577`
 Latest closed Product runtime convergence: `PRC-01 @ main a12cd60d2a45ce0d1807588089dbf9706cac4b22`
 Latest closed Product verification evidence: `PVE-01 @ main 174b29897dcab15f7f51d5cc876aeec2b8306871`
 Latest closed governance consistency: `GOV-01 implementation merge @ main 54245df8f834661c9d36a522e46952a20a095c0f`
@@ -19,7 +19,7 @@ Latest closed bounded invariant verification: `FIV-02 implementation merge @ mai
 Latest closed governance automation: `GOV-AUTO-01 implementation merge @ main e2808ea3df7cd89a6161af328dbcc377ec914eb4`
 Latest closed operational readiness: `OPR-01 implementation merge @ main 6f809b09e9f8a1e74a7da207f2447893c0c0127f`
 Latest closed authorization policy identity: `POL-01 final implementation merge @ main 63d0114bbd49b78ed71e337c1a7c8c0de72e0811`
-Active Post-Hardcore stage: `XCH-02`
+Active Post-Hardcore stage: `continuous LRD-01`
 Roadmap target: `Post-Hardcore Enterprise continuation`
 Development version: `1.1.0.dev0`
 
@@ -116,7 +116,9 @@ OPR-01 — Operational Readiness v1 — is `CLOSED / ENGINEERING PASS` on the fi
 
 POL-01 — Authorization Policy Identity v1 — is `CLOSED / ENGINEERING PASS` on the final repaired line through PR #187. The authorization-policy code was first merged through PR #186, after which post-merge evidence exposed a governance target gap rather than a Product/security defect: the canonical closure target still referenced disabled OPR-01. Repair PR #187 armed the exact POL-01 closure target on fresh validated head `e1eadfdd1f2fc4ab3424c50c92ba147113ca6141`; guarded final implementation merge is `main @ 63d0114bbd49b78ed71e337c1a7c8c0de72e0811`. The final head passed all 15 required PR-triggered workflows and the merge produced 13 recorded terminal successful post-merge workflows, including CI Foundation, Stage Gate, Enterprise CodeQL, FIV-02, SSC-02, OPR-01 and the `MVROS v1 Release` guard. Governance Closure PR Preparation run `34262_237223` (underscore is a display separator for the repository PII gate) created closure PR #188 with canonical preparation evidence identity `3189b5ee96f90fc6a50296f8cde1c83a17690225384c1b708e5c64efc4948208`, governance live snapshot identity `0a7d066c347b8446cea6fc061b09145019a344c8ed062608fd083d132439f3c1` and governance report identity `4a48eeadd2546821fb79c0634ffd3d55655ab45f72aaf6c7eec7bbf473ae220a`. The evidence remains preparation-only and grants no merge, release, Product, CCL, Gold, certification or independent-review authority. Historical `v1.0.1` tag object and target remained unchanged and latest release remained `v1.0.1`. Canonical closure details are recorded in `docs/AUTHORIZATION_POLICY_IDENTITY_V1.md` and `evidence/governance_closure/pol-01/63d0114bbd49b78ed71e337c1a7c8c0de72e0811.json`.
 
-The next approved stage is `XCH-02` under the execution sequence in `docs/POST_HARDCORE_ROADMAP.md`.
+XCH-02 — Signed Case Exchange v2 / Portable Authorization Verification — is `CLOSED / ENGINEERING PASS` on the exact implementation line through PR #189. The validated implementation head is `ed241a33faf2e3c2086409591f29e869c2eb1a5b`; guarded implementation merge is `main @ 7495aa185011d3ef901cb3e5694f42abca276577`. XCH-02 preserves the complete signed XCH-01 envelope and adds exact `AuthorizationPolicyV1` plus minimal source/recipient context preimages so the existing `AuthorizationEngine` can independently reconstruct both historical authorization decisions offline. Permissions are re-derived from the historical policy instead of accepted as portable authority. Policy/context/proof substitution, source/recipient proof swapping, unknown schemas/fields, non-canonical context and all inner XCH-01 failures remain fail closed. The implementation required two repair loops — Ruff formatting/import ordering and MyPy narrowing confined to adversarial tests — each producing a fresh SHA without weakening gates. The final head passed all 15 required PR-triggered workflows, including Enterprise CodeQL. The implementation merge produced 13 terminal successful post-merge workflows, including CI Foundation, Stage Gate, Enterprise CodeQL, FIV-02, SSC-02, OPR-01 and the `MVROS v1 Release` guard. Governance Closure PR Preparation run `34265_523488` (underscore is a display separator for the repository PII gate) created closure PR #190 with canonical evidence identity `56eba4f9a57c96c147c7ae4bbc0885e7d2acf8058aa9a334a4992a0f7e2e9a24`, governance live snapshot identity `6c206d8e4dfb74b5ad9a15af6cf2017182e5d81c5909ac3adcb78cc261492f1b` and governance report identity `8fc4a668561ed6837c43670f094f29cd4c06ef55286f37f2cc0619d9b3918d8f`. The machine evidence remains `PREPARED_NOT_CLOSED` with `closure-preparation-only` authority and cannot self-certify closure. Historical `v1.0.1` tag object and target remained unchanged and latest release remained `v1.0.1`. XCH-02 creates no CCL write/import/merge, Product truth, Gold mutation, release, trust-root or independent-review authority. Canonical closure details are recorded in `docs/SIGNED_CASE_EXCHANGE_V2.md` and `evidence/governance_closure/xch-02/7495aa185011d3ef901cb3e5694f42abca276577.json`.
+
+The next approved stage is continuous `LRD-01` under the execution sequence in `docs/POST_HARDCORE_ROADMAP.md`.
 
 ## 6. Trust boundaries
 
@@ -188,6 +190,7 @@ The package development version is distinct from the immutable historical releas
 - `docs/SEMANTIC_CHANGE_PROPAGATION_V2.md` — PHX-06 bounded change-propagation contract.
 - `docs/CRITICAL_INVARIANT_VERIFICATION_V1.md` — IV-01 bounded critical-invariant verification contract.
 - `docs/SIGNED_CASE_EXCHANGE_V1.md` — XCH-01 signed offline-verifiable case exchange contract.
+- `docs/SIGNED_CASE_EXCHANGE_V2.md` — XCH-02 portable offline authorization verification and exact closure record.
 - `docs/PRODUCT_RUNTIME_CONVERGENCE_V1.md` — PRC-01 converged Product runtime and release-proof contract.
 - `docs/PRODUCT_VERIFICATION_EVIDENCE_V1.md` — PVE-01 reproducible Product verification evidence contract.
 - `docs/GOVERNANCE_CLOSURE_CONSISTENCY_V1.md` — GOV-01 governance closure consistency contract and exact live closure evidence.

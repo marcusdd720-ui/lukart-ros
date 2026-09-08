@@ -1,6 +1,6 @@
 {
   "architecture_doc": "docs/SIGNED_CASE_EXCHANGE_V2.md",
-  "enabled": true,
+  "enabled": false,
   "implementation_pr": 189,
   "next_stage_id": "LRD-01",
   "schema": "lukart.closure-preparation-target.v1",
