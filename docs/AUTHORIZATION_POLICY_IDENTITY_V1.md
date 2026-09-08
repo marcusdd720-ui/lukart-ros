@@ -1,11 +1,15 @@
 # POL-01 — Authorization Policy Identity v1
 
-Status: implementation merged; canonical closure pending
+Status: `CLOSED / ENGINEERING PASS` closure record for the final repaired POL-01 line.
 Authority: Enterprise authorization policy identity/provenance only
 Base measured: `main @ b7f2cc9abb078bfb5049282cf4f5d30e11517230`
-Validated implementation head: `e1490b916499bcf9ef9d098b1773525a5d64b925`
-Implementation PR: `#186`
-Implementation merge: `1465bbbaade70346c5894b43d9261885c8d53614`
+Initial code implementation PR: `#186`
+Initial code implementation merge: `1465bbbaade70346c5894b43d9261885c8d53614`
+Final repaired implementation/closure-target PR: `#187`
+Validated final exact head: `e1eadfdd1f2fc4ab3424c50c92ba147113ca6141`
+Guarded final implementation merge: `63d0114bbd49b78ed71e337c1a7c8c0de72e0811`
+Generated closure PR: `#188`
+Next approved stage: `XCH-02`
 
 ## Problem
 
@@ -96,16 +100,56 @@ identity and reconstruction primitive it requires.
 
 ## Closure repair provenance
 
-The implementation PR and its exact merge passed the stage's implementation and post-merge
-gates. During closure preparation, the canonical target remained the disabled OPR-01 target,
-so the preparation workflow correctly performed no POL-01 closure mutation. POL-01 therefore
-remains open until a fresh exact-SHA repair candidate arms the canonical closure target,
-passes the full validation pipeline, merges, and generates closure evidence from that repair
-merge. No earlier PASS is reused across the repair SHA.
+The initial authorization-policy implementation merged through PR #186. Its post-merge
+validation exposed a governance gap rather than a Product/security defect: the canonical
+closure target still contained the disabled OPR-01 target. POL-01 was therefore not declared
+closed. Repair PR #187 armed the canonical POL-01 target, was validated on a fresh exact head,
+and was merged guardedly. Closure evidence was then regenerated from that repair merge rather
+than reusing the earlier line. No PASS evidence was mixed across the two candidate SHAs.
+
+## Exact closure record
+
+The final repaired POL-01 line is bound to live GitHub evidence rather than chat or memory:
+
+- final repaired implementation/closure-target PR: `#187`;
+- validated exact final head:
+  `e1eadfdd1f2fc4ab3424c50c92ba147113ca6141`;
+- guarded final implementation merge:
+  `63d0114bbd49b78ed71e337c1a7c8c0de72e0811`;
+- merge parents:
+  `1465bbbaade70346c5894b43d9261885c8d53614` and
+  `e1eadfdd1f2fc4ab3424c50c92ba147113ca6141`;
+- the exact final head passed all 15 required PR-triggered workflows;
+- post-merge evidence records 13 terminal successful workflows, including CI Foundation,
+  Enterprise CodeQL, Enterprise Hardcore Gate, FIV-02, SSC-02, OPR-01, Stage Gate,
+  Production Validation, GitHub App Smoke Test and the `MVROS v1 Release` guard;
+- Governance Closure PR Preparation run `34262_237223` generated closure PR `#188`
+  (underscore is a display separator for the repository PII gate);
+- machine evidence path:
+  `evidence/governance_closure/pol-01/63d0114bbd49b78ed71e337c1a7c8c0de72e0811.json`;
+- machine evidence identity:
+  `3189b5ee96f90fc6a50296f8cde1c83a17690225384c1b708e5c64efc4948208`;
+- governance live snapshot identity:
+  `0a7d066c347b8446cea6fc061b09145019a344c8ed062608fd083d132439f3c1`;
+- governance report identity:
+  `4a48eeadd2546821fb79c0634ffd3d55655ab45f72aaf6c7eec7bbf473ae220a`;
+- historical `v1.0.1` annotated tag object remained
+  `9f7c0b28f766c8921e63b1d517fefcc96aa991d4`;
+- immutable tag target remained
+  `802013c4d0e53dc12306a97e1877ebba86af64a7`;
+- latest release remained `v1.0.1`;
+- next approved stage is `XCH-02`.
+
+The generated machine evidence deliberately remains `PREPARED_NOT_CLOSED` with
+`closure-preparation-only` authority. It does not grant merge, release, Product, CCL, Gold,
+certification or independent-review authority. This document becomes the canonical POL-01
+closure record only after PR #188 itself passes complete exact-head validation, guarded merge,
+resulting-main validation and immutable baseline/release verification. Engineering closure
+does not claim independent external, regulatory or security certification.
 
 ## Acceptance criteria
 
-POL-01 implementation closure requires:
+POL-01 closure requires:
 
 1. deterministic policy identity independent of caller role ordering;
 2. canonical snapshot round-trip with exact engine reconstruction;
@@ -116,4 +160,4 @@ POL-01 implementation closure requires:
 7. focused, adversarial and full regression validation;
 8. lint, strict typing, security/policy gates and exact-SHA CI;
 9. guarded unchanged-head merge plus post-merge validation;
-10. no release/tag mutation and no fabricated independent review.
+10. immutable baseline/release identity remains unchanged and no review is fabricated.
