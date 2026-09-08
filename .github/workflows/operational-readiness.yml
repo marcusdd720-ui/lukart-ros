@@ -1,0 +1,86 @@
+name: OPR-01 Operational Readiness
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  opr01-readiness:
+    runs-on: ubuntu-latest
+    env:
+      CANDIDATE_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+    steps:
+      - name: Checkout exact candidate SHA
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+
+      - name: Verify exact checkout identity
+        run: test "$(git rev-parse HEAD)" = "${CANDIDATE_SHA}"
+
+      - name: Set up Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: Install validation environment
+        run: python -m pip install -e ".[dev]"
+
+      - name: OPR-01 lint and type-check
+        run: |
+          ruff check core/enterprise/operational_readiness_v1.py scripts/operational_readiness_v1.py tests/test_operational_readiness_v1.py
+          mypy core/enterprise/operational_readiness_v1.py scripts/operational_readiness_v1.py tests/test_operational_readiness_v1.py
+
+      - name: OPR-01 focused and adversarial suite
+        run: pytest -q tests/test_operational_readiness_v1.py
+
+      - name: Replay recovery and invariant regression
+        run: |
+          pytest -q \
+            tests/test_critical_invariants_v2.py \
+            tests/test_recovery_continuity_v1.py \
+            tests/test_case_replay_v2.py
+
+      - name: Exact-SHA executable operational drill
+        run: |
+          mkdir -p .opr01
+          python scripts/operational_readiness_v1.py \
+            --code-sha "${CANDIDATE_SHA}" \
+            --expected-code-sha "${CANDIDATE_SHA}" \
+            --output .opr01/readiness.json
+          python - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+
+          report = json.loads(Path(".opr01/readiness.json").read_text(encoding="utf-8"))
+          assert report["code_sha"] == os.environ["CANDIDATE_SHA"]
+          assert report["outcome"] == "PASS"
+          assert report["authority"] == "operational-verification-only"
+          assert len(report["sli_results"]) == 7
+          assert all(item["error_budget_remaining"] == 0 for item in report["sli_results"])
+          assert len(report["telemetry"]) == 7
+          print(f"OPR01_EVIDENCE_DIGEST={report['report_digest']}")
+          PY
+
+      - name: Privacy and authority boundary
+        run: |
+          python scripts/pii_scan.py
+          python scripts/secret_scan.py
+          python - <<'PY'
+          from dataclasses import fields
+
+          from core.enterprise.operational_readiness_v1 import TelemetryEventV1
+
+          allowed = {"event", "component", "outcome", "code_sha", "evidence_digest", "schema"}
+          assert {field.name for field in fields(TelemetryEventV1)} == allowed
+          print("OPR01_TELEMETRY_PAYLOAD_BOUNDARY=PASS")
+          PY

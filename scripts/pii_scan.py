@@ -24,6 +24,13 @@ FORBIDDEN_SUFFIXES = {".pdf", ".doc", ".docx", ".odt", ".rtf"}
 GENERATED_DEPENDENCY_ARTIFACTS = frozenset({"pylock.toml"})
 GOVERNANCE_CLOSURE_EVIDENCE_PREFIX = "evidence/governance_closure/"
 GOVERNANCE_CLOSURE_EVIDENCE_SCHEMA = "lukart.closure-preparation-evidence.v1"
+OPERATIONAL_READINESS_IDENTIFIER_LITERAL_PATH = (
+    "core/enterprise/operational_readiness_v1.py"
+)
+OPERATIONAL_READINESS_IDENTIFIER_LITERAL = (
+    '"abcdefghijklmnopqrstuvwxyz01234'
+    '56789-_."'
+)
 CRYPTO_DIGEST = re.compile(r"(?<![0-9A-Fa-f])(?:[0-9A-Fa-f]{40}|[0-9A-Fa-f]{64})(?![0-9A-Fa-f])")
 PATTERNS = {
     "PESEL-like 11 digits": re.compile(r"(?<!\d)\d{11}(?!\d)"),
@@ -99,17 +106,43 @@ def _mask_governance_run_ids(relative: str, text: str) -> str:
     return json.dumps(payload, sort_keys=True, ensure_ascii=True)
 
 
+def _mask_operational_identifier_literal(relative: str, text: str) -> str:
+    """Mask one proven non-PII identifier alphabet without widening exclusions.
+
+    The OPR-01 validator uses one executable whitelist containing lowercase
+    ASCII letters, all decimal digits, and ``-_.``. The digit run resembles a
+    Polish NIP to a regex-only scanner even though it is executable syntax, not
+    data. The exception is deliberately path- and literal-specific. If the
+    literal is absent or duplicated, no masking occurs and scanning fails closed.
+    """
+
+    if relative != OPERATIONAL_READINESS_IDENTIFIER_LITERAL_PATH:
+        return text
+    if text.count(OPERATIONAL_READINESS_IDENTIFIER_LITERAL) != 1:
+        return text
+    return text.replace(
+        OPERATIONAL_READINESS_IDENTIFIER_LITERAL,
+        '"<OPERATIONAL_IDENTIFIER_ALPHABET>"',
+        1,
+    )
+
+
 def _pii_scan_text(text: str, *, relative: str = "") -> str:
     """Mask proven machine identifiers and standalone cryptographic digests.
 
     Cryptographic bindings are expected in validation/review metadata and can
     contain 9-11 digit runs that resemble Polish identifiers. Governance
     workflow run IDs are masked only after structural validation by
-    :func:`_mask_governance_run_ids`. No adjacent or standalone phone, NIP,
-    PESEL, email, or unrelated numeric value is suppressed.
+    :func:`_mask_governance_run_ids`. The OPR-01 executable identifier alphabet
+    is masked only by exact path and exact literal. No adjacent or standalone
+    phone, NIP, PESEL, email, or unrelated numeric value is suppressed.
     """
 
     machine_safe_text = _mask_governance_run_ids(relative, text)
+    machine_safe_text = _mask_operational_identifier_literal(
+        relative,
+        machine_safe_text,
+    )
     return CRYPTO_DIGEST.sub("<CRYPTO_DIGEST>", machine_safe_text)
 
 
