@@ -1,9 +1,16 @@
 # LRD-01B — LongRangeReplayManifestV1 / Replay Capsule V1
 
-Status: implementation contract; authoritative only after exact-SHA CI, guarded merge and
-resulting-main validation
+Status: `CLOSED / ENGINEERING PASS` closure candidate; authoritative after guarded closure merge
 Parent program: `continuous LRD-01`
 Depends on: `LRD-01A CLOSED / ENGINEERING PASS`
+Implementation PR: `#193`
+Validated implementation head: `a368aa74730e77df874d2ca6c1e28beb9a85c137`
+Implementation merge: `main @ ef4b999f47930f6f832072c98d7a9434399539c6`
+Implementation PR CI: `15/15 SUCCESS`
+Implementation post-merge: `14/14 SUCCESS`, `queued=0`, `in_progress=0`, `failure=0`
+Historical baseline tag object: `v1.0.1 @ 9f7c0b28f766c8921e63b1d517fefcc96aa991d4`
+Historical baseline target: `802013c4d0e53dc12306a97e1877ebba86af64a7`
+Latest release at implementation closure: `v1.0.1`
 Writable case-history SSOT: Canonical Case Ledger (CCL) only
 
 ## 1. Problem
@@ -183,7 +190,33 @@ Content identities remain storage-backend independent so future filesystem/objec
 migration cannot silently change artifact identity. The manifest is strict enough that future
 schema evolution requires an explicit version/migration rather than permissive interpretation.
 
-## 11. LRD-01B Definition of Done
+## 11. LRD-01B closure evidence
+
+The implementation candidate `a368aa74730e77df874d2ca6c1e28beb9a85c137` passed all 15
+PR-triggered workflows on one unchanged exact head. The set included CI Foundation, Stage
+Gate, Enterprise CodeQL, Enterprise Hardcore, SSC-02, FIV-02 and OPR-01. CI Foundation ran
+its quality matrix for supported Python versions and passed frozen dependency sync,
+lock/PEP-751 consistency, dependency-boundary, secret-scanning, PII/confidentiality,
+model-usage, dead-code and automated quality gates.
+
+Guarded merge used that exact head and produced
+`ef4b999f47930f6f832072c98d7a9434399539c6`, whose direct parents are the preceding
+`main @ f7db370ecaa8eda2f38a053c1b94a1827b005cb3` and the validated implementation head.
+The resulting implementation main completed 14 post-merge workflow runs; all 14 were
+`SUCCESS`, with zero queued, in-progress or failed runs at closure evaluation. Governance
+Closure PR Preparation also completed `SUCCESS`.
+
+Historical `v1.0.1` identity remained unchanged: tag object
+`9f7c0b28f766c8921e63b1d517fefcc96aa991d4` still targets
+`802013c4d0e53dc12306a97e1877ebba86af64a7`, the latest published release remained
+`v1.0.1`, and repository policy continued to declare `release_enabled = false`.
+
+This record becomes authoritative only after this exact closure candidate itself passes its
+fresh exact-head CI, guarded merge, resulting-main validation and baseline/release
+re-verification. It records engineering evidence only and does not create Product, CCL, Gold,
+policy, trust-promotion, release or independent-certification authority.
+
+## 12. LRD-01B Definition of Done
 
 Engineering closure requires one exact candidate SHA proving:
 
@@ -202,8 +235,8 @@ Engineering closure requires one exact candidate SHA proving:
 LRD-01B engineering PASS does not claim external ten-year durability, offline execution PASS,
 provider reproducibility, independent security review or completion of continuous LRD-01.
 
-## 12. Next stage
+## 13. Next stage
 
-After LRD-01B closure, the next approved implementation slice is content-addressed Artifact
-Escrow plus the least-privilege offline runner boundary. Physical preservation and offline
+After LRD-01B closure, the next approved implementation slice is **LRD-01C — Content-Addressed
+Artifact Escrow / Least-Privilege Offline Runner**. Physical preservation and offline
 execution evidence must be proven there rather than inferred from manifest references.
