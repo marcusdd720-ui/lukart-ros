@@ -239,8 +239,8 @@ failed dogfood attempt.
 - implementation post-merge core: all required workflows terminal `SUCCESS` before closure
   preparation, including Stage Gate and `MVROS v1 Release`;
 - successful self-dogfood workflow: run `34239_068144`, attempt `2` (underscore is a
-  presentation separator for the repository PII gate; machine evidence retains run ID
-  `34239068144`);
+  presentation separator for the repository PII gate; canonical numeric identity remains
+  in machine-readable evidence);
 - generated closure PR: `#182`, created by `github-actions[bot]`;
 - generated evidence:
   `evidence/governance_closure/gov-auto-01/e2808ea3df7cd89a6161af328dbcc377ec914eb4.json`;
