@@ -5,7 +5,7 @@ Program baseline: `main @ eefd7088406126c0a20baf1245742649058decc4`
 Current closed trust core: `PHX-06 @ main 9c2a7812cedfe98b65af484186459300897357de`
 Latest closed durability continuation: `DR-01 implementation merge @ main 615c01946e7ca61bb0bb5488b2a3b799eb5f06ce`
 Latest closed invariant verification: `IV-01 @ main cae560f4893b8726695e06334982927376e7a146`
-Latest closed signed exchange continuation: `XCH-01 @ main 83157c6e649ab1212ee200a453aa5240e08be24c`
+Latest closed signed exchange continuation: `XCH-02 implementation merge @ main 7495aa185011d3ef901cb3e5694f42abca276577`
 Latest closed Product runtime convergence: `PRC-01 @ main a12cd60d2a45ce0d1807588089dbf9706cac4b22`
 Latest closed Product verification evidence: `PVE-01 @ main 174b29897dcab15f7f51d5cc876aeec2b8306871`
 Latest closed governance consistency: `GOV-01 implementation merge @ main 54245df8f834661c9d36a522e46952a20a095c0f`
@@ -17,7 +17,7 @@ Latest closed bounded invariant verification: `FIV-02 implementation merge @ mai
 Latest closed governance automation: `GOV-AUTO-01 implementation merge @ main e2808ea3df7cd89a6161af328dbcc377ec914eb4`
 Latest closed operational readiness: `OPR-01 implementation merge @ main 6f809b09e9f8a1e74a7da207f2447893c0c0127f`
 Latest closed authorization policy identity: `POL-01 final implementation merge @ main 63d0114bbd49b78ed71e337c1a7c8c0de72e0811`
-Active stage: `XCH-02`
+Active stage: `continuous LRD-01`
 Approved execution sequence: `PRC-01 -> PVE-01 -> GOV-01 -> KQM-03 -> CRY-01 -> DR-02 -> SSC-02 -> FIV-02 -> OPR-01 -> POL-01 -> XCH-02 -> continuous LRD-01`
 Horizon: 10+ years
 
@@ -760,6 +760,65 @@ Closed controls:
 
 Architecture and exact closure evidence: `docs/AUTHORIZATION_POLICY_IDENTITY_V1.md` and
 `evidence/governance_closure/pol-01/63d0114bbd49b78ed71e337c1a7c8c0de72e0811.json`.
+
+## XCH-02 — Signed Case Exchange v2 / Portable Authorization Verification
+
+Status: `CLOSED / ENGINEERING PASS`
+Implementation merge baseline: `main @ 7495aa185011d3ef901cb3e5694f42abca276577`
+Validated implementation head: `ed241a33faf2e3c2086409591f29e869c2eb1a5b`
+Implementation PR: `#189`
+Generated closure PR: `#190`
+Depends on: `XCH-01 CLOSED / ENGINEERING PASS`, `POL-01 CLOSED / ENGINEERING PASS`
+Next approved stage: `continuous LRD-01`
+
+Closed controls:
+
+- XCH-02 wraps the complete signed XCH-01 envelope instead of introducing a second exchange,
+  signature or replay authority;
+- exact `AuthorizationPolicyV1` snapshots and minimal source/recipient context preimages make
+  historical authorization independently recomputable offline;
+- permissions are never trusted as portable input and are re-derived from the exact historical
+  policy and role set by the existing `AuthorizationEngine`;
+- rebuilt source and recipient context digests must exactly equal the signed XCH-01 receipt
+  digests;
+- exact policy digests must equal the policy identities already bound into the signed XCH-01
+  receipts;
+- both historical decisions are recomputed using the existing engine with strict scope and
+  their digests must equal the signed decision digests;
+- unknown fields/schemas, non-canonical context, policy/context/proof substitution,
+  source/recipient proof swapping and all inner XCH-01 replay/request/authorization/signature
+  failures fail closed;
+- no CCL write, restore, import, merge, overwrite, Product truth, Gold, release, trust-root or
+  trust-promotion authority is introduced;
+- implementation repair loop resolved Ruff import/line-length findings and then MyPy narrowing
+  confined to adversarial tests; each repair produced a fresh SHA and no gate was weakened;
+- final exact implementation head passed all 15 required PR-triggered workflows, including
+  Enterprise CodeQL, CI Foundation, Stage Gate, Enterprise Hardcore, FIV-02, SSC-02 and OPR-01;
+- guarded implementation merge used the unchanged exact head and produced
+  `7495aa185011d3ef901cb3e5694f42abca276577` with the validated head as a direct parent;
+- all 13 post-merge workflows recorded in canonical closure evidence reached terminal
+  `SUCCESS`, including Enterprise CodeQL, Stage Gate, GitHub App Smoke Test and the
+  `MVROS v1 Release` guard;
+- Governance Closure PR Preparation run `34265_523488` generated closure PR #190 from live
+  GitHub evidence after post-merge validation (underscore is a display separator for the
+  repository PII gate);
+- canonical preparation evidence identity is
+  `56eba4f9a57c96c147c7ae4bbc0885e7d2acf8058aa9a334a4992a0f7e2e9a24`;
+- governance live snapshot identity is
+  `6c206d8e4dfb74b5ad9a15af6cf2017182e5d81c5909ac3adcb78cc261492f1b`;
+- governance report identity is
+  `8fc4a668561ed6837c43670f094f29cd4c06ef55286f37f2cc0619d9b3918d8f`;
+- generated machine evidence remains `PREPARED_NOT_CLOSED` with
+  `closure-preparation-only` authority and cannot self-certify closure;
+- historical `v1.0.1` tag object remained
+  `9f7c0b28f766c8921e63b1d517fefcc96aa991d4`, its target commit remained
+  `802013c4d0e53dc12306a97e1877ebba86af64a7`, and latest release remained `v1.0.1`;
+- no new release was published as an XCH-02 side effect;
+- engineering closure does not claim independent external, regulatory or security
+  certification.
+
+Architecture and exact closure evidence: `docs/SIGNED_CASE_EXCHANGE_V2.md` and
+`evidence/governance_closure/xch-02/7495aa185011d3ef901cb3e5694f42abca276577.json`.
 
 ## Years 6-10+ — Durability, portability and cryptographic renewal
 
