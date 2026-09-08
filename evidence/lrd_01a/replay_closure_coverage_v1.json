@@ -1,0 +1,276 @@
+{
+  "schema": "lukart.replay-closure-coverage.v1",
+  "baseline_main_sha": "a884073591295af106baf1d6d87cf178830db315",
+  "items": [
+    {
+      "item_id": "artifact_escrow_backend",
+      "classifications": ["EXTERNAL", "UNAVAILABLE"],
+      "evidence_refs": ["docs/SUPPLY_CHAIN_CONTINUITY_V2.md"],
+      "current_state": "SSC-02 explicitly does not provide a ten-year external immutable escrow backend.",
+      "required_action": "Introduce a backend-neutral content-addressed escrow adapter in a later LRD implementation stage.",
+      "exact_replay_required": true,
+      "fail_closed_outcome": "UNVERIFIABLE"
+    },
+    {
+      "item_id": "artifact_escrow_durability",
+      "classifications": ["EXTERNAL", "UNAVAILABLE"],
+      "evidence_refs": ["docs/SUPPLY_CHAIN_CONTINUITY_V2.md"],
+      "current_state": "Repository CI does not prove ten-year archival durability or multi-location retention.",
+      "required_action": "Require independently durable immutable locations plus restore evidence outside repository authority.",
+      "exact_replay_required": true,
+      "fail_closed_outcome": "UNVERIFIABLE"
+    },
+    {
+      "item_id": "authorization_policy_identities",
+      "classifications": ["BOUND", "REGENERATABLE"],
+      "evidence_refs": ["docs/AUTHORIZATION_POLICY_IDENTITY_V1.md"],
+      "current_state": "Authorization semantics have a content-addressed policy snapshot and deterministic reconstruction.",
+      "required_action": "Bind the exact authorization policy snapshot into the long-range execution-closure manifest.",
+      "exact_replay_required": true,
+      "fail_closed_outcome": "FAIL"
+    },
+    {
+      "item_id": "canonicalization_profiles",
+      "classifications": ["BOUND", "PRESERVED"],
+      "evidence_refs": ["docs/CANONICAL_CASE_LEDGER_V1.md"],
+      "current_state": "CCL records the canonicalization profile and preserved source contains its implementation.",
+      "required_action": "Bind profile identity and preserved implementation material into the replay capsule.",
+      "exact_replay_required": true,
+      "fail_closed_outcome": "FAIL"
+    },
+    {
+      "item_id": "code_sha_tree",
+      "classifications": ["BOUND", "PRESERVED"],
+      "evidence_refs": ["docs/SUPPLY_CHAIN_CONTINUITY_V2.md"],
+      "current_state": "Replay binds code SHA and SSC-02 preserves an exact source archive bound to the full Git SHA.",
+      "required_action": "Reference logical code identity and physical source-archive artifact identity together.",
+      "exact_replay_required": true,
+      "fail_closed_outcome": "FAIL"
+    },
+    {
+      "item_id": "config",
+      "classifications": ["BOUND", "UNBOUND"],
+      "evidence_refs": ["docs/CASE_REPLAY_V2.md"],
+      "current_state": "RuntimeIdentity binds config_digest but generic exact configuration bytes are not preserved by Replay v2.",
+      "required_action": "Escrow exact replay-relevant configuration artifacts or declare the execution unverifiable.",
+      "exact_replay_required": true,
+      "fail_closed_outcome": "UNVERIFIABLE"
+    },
+    {
+      "item_id": "crypto_algorithms_profiles",
+      "classifications": ["BOUND", "REGENERATABLE"],
+      "evidence_refs": ["docs/CRYPTO_AGILITY_V1.md"],
+      "current_state": "CRY-01 makes algorithm and trust-set identities explicit and rejects unknown algorithms.",
+      "required_action": "Bind exact crypto profile and trust-set identity into long-range verification material.",
+      "exact_replay_required": true,
+      "fail_closed_outcome": "FAIL"
+    },
+    {
+      "item_id": "crypto_renewal_attestations",
+      "classifications": ["UNAVAILABLE"],
+      "evidence_refs": ["docs/CRYPTO_AGILITY_V1.md"],
+      "current_state": "Historical identity preservation exists but a generic LRD renewal-attestation artifact is not implemented.",
+      "required_action": "Add immutable renewal attestations referencing original artifact digests without rewriting history.",
+      "exact_replay_required": false,
+      "fail_closed_outcome": "UNVERIFIABLE"
+    },
+    {
+      "item_id": "dependencies",
+      "classifications": ["BOUND", "PRESERVED"],
+      "evidence_refs": ["docs/SUPPLY_CHAIN_CONTINUITY_V2.md"],
+      "current_state": "SSC-02 binds resolved dependencies and physically preserves the wheelhouse used for recovery.",
+      "required_action": "Reference the continuity-bundle digest from the long-range replay manifest.",
+      "exact_replay_required": true,
+      "fail_closed_outcome": "FAIL"
+    },
+    {
+      "item_id": "epistemic_trust_policies",
+      "classifications": ["BOUND", "PRESERVED"],
+      "evidence_refs": ["docs/CASE_REPLAY_V2.md"],
+      "current_state": "Replay v2 embeds canonical epistemic and trust policy snapshots and binds their identities.",
+      "required_action": "Reuse existing policy snapshots and do not create parallel policy authority.",
+      "exact_replay_required": true,
+      "fail_closed_outcome": "FAIL"
+    },
+    {
+      "item_id": "evidence_input_digests",
+      "classifications": ["BOUND", "UNBOUND"],
+      "evidence_refs": ["docs/CASE_REPLAY_V2.md"],
+      "current_state": "Replay v2 binds input and evidence digests but arbitrary original bytes are not universally escrowed.",
+      "required_action": "Preserve every replay-critical input and evidence artifact by content address or return UNVERIFIABLE.",
+      "exact_replay_required": true,
+      "fail_closed_outcome": "UNVERIFIABLE"
+    },
+    {
+      "item_id": "exact_external_responses",
+      "classifications": ["EXTERNAL", "UNBOUND"],
+      "evidence_refs": ["docs/CASE_REPLAY_V2.md"],
+      "current_state": "Replay v2 does not claim deterministic rerun of arbitrary provider or model execution without captured artifacts.",
+      "required_action": "Preserve exact external responses as immutable content-addressed downstream replay inputs.",
+      "exact_replay_required": true,
+      "fail_closed_outcome": "ABSTAIN"
+    },
+    {
+      "item_id": "exact_requests",
+      "classifications": ["EXTERNAL", "UNBOUND"],
+      "evidence_refs": ["docs/CASE_REPLAY_V2.md"],
+      "current_state": "Provider and model identities are declared but generic exact request payloads are not preserved.",
+      "required_action": "Capture canonical request bytes and exact provider model version and capability identity.",
+      "exact_replay_required": true,
+      "fail_closed_outcome": "ABSTAIN"
+    },
+    {
+      "item_id": "lockfiles",
+      "classifications": ["BOUND", "PRESERVED"],
+      "evidence_refs": ["docs/SUPPLY_CHAIN_CONTINUITY_V2.md"],
+      "current_state": "SSC-02 preserves pyproject PEP-751 pylock and uv.lock identities and physical files.",
+      "required_action": "Bind continuity-bundle identity and lockfile digests into the replay capsule.",
+      "exact_replay_required": true,
+      "fail_closed_outcome": "FAIL"
+    },
+    {
+      "item_id": "migration_chains",
+      "classifications": ["BOUND", "PRESERVED"],
+      "evidence_refs": ["docs/CASE_REPLAY_V2.md"],
+      "current_state": "Replay v2 embeds migration-registry topology and exact implementation remains bound to preserved code.",
+      "required_action": "Require one explicit deterministic route and reject missing cyclic or ambiguous routes.",
+      "exact_replay_required": true,
+      "fail_closed_outcome": "FAIL"
+    },
+    {
+      "item_id": "offline_network_boundary",
+      "classifications": ["REGENERATABLE", "UNBOUND"],
+      "evidence_refs": ["docs/SUPPLY_CHAIN_CONTINUITY_V2.md"],
+      "current_state": "SSC-02 proves no-index recovery but a generic LRD runner with enforced network-off semantics is absent.",
+      "required_action": "Add a least-privilege replay runner that fails on network access in declared offline mode.",
+      "exact_replay_required": true,
+      "fail_closed_outcome": "FAIL"
+    },
+    {
+      "item_id": "offline_verifier",
+      "classifications": ["BOUND", "PRESERVED"],
+      "evidence_refs": ["docs/SUPPLY_CHAIN_CONTINUITY_V2.md"],
+      "current_state": "SSC-02 includes a standalone standard-library verifier inside the continuity bundle.",
+      "required_action": "Reuse preserved verifier material and add LRD capsule verification without current LUKART dependency.",
+      "exact_replay_required": true,
+      "fail_closed_outcome": "FAIL"
+    },
+    {
+      "item_id": "plugins",
+      "classifications": ["BOUND", "UNBOUND"],
+      "evidence_refs": ["docs/CASE_REPLAY_V2.md"],
+      "current_state": "RuntimeIdentity binds plugin identities but exact executable plugin artifacts are not universally escrowed.",
+      "required_action": "Escrow plugin artifacts and capability manifests whenever they affect replay semantics.",
+      "exact_replay_required": true,
+      "fail_closed_outcome": "UNVERIFIABLE"
+    },
+    {
+      "item_id": "providers_models",
+      "classifications": ["BOUND", "EXTERNAL"],
+      "evidence_refs": ["docs/CASE_REPLAY_V2.md"],
+      "current_state": "RuntimeIdentity binds provider and model identities while the providers remain external dependencies.",
+      "required_action": "Separate identity verification from reproducibility and use preserved responses for Frozen Path.",
+      "exact_replay_required": true,
+      "fail_closed_outcome": "ABSTAIN"
+    },
+    {
+      "item_id": "python_runtime_environment",
+      "classifications": ["BOUND", "EXTERNAL", "UNBOUND"],
+      "evidence_refs": ["docs/CASE_REPLAY_V2.md"],
+      "current_state": "RuntimeIdentity records Python and platform metadata but the exact interpreter is not generically escrowed.",
+      "required_action": "Preserve an executable runtime artifact or a verifiable reconstruction recipe with exact artifacts.",
+      "exact_replay_required": true,
+      "fail_closed_outcome": "UNVERIFIABLE"
+    },
+    {
+      "item_id": "renderer_identity",
+      "classifications": ["UNBOUND"],
+      "evidence_refs": ["docs/CASE_REPLAY_V2.md"],
+      "current_state": "Replay v2 stops at epistemic and trust verification and does not bind a dedicated renderer identity.",
+      "required_action": "Bind renderer identity separately so presentation drift cannot become semantic failure.",
+      "exact_replay_required": false,
+      "fail_closed_outcome": "UNKNOWN"
+    },
+    {
+      "item_id": "sbom",
+      "classifications": ["REGENERATABLE", "UNBOUND"],
+      "evidence_refs": ["docs/SUPPLY_CHAIN_CONTINUITY_V2.md"],
+      "current_state": "SBOM generation exists but SSC-02 does not claim physical preservation of every historical SBOM artifact.",
+      "required_action": "Preserve the exact SBOM and bind its digest when it participates in execution-closure evidence.",
+      "exact_replay_required": false,
+      "fail_closed_outcome": "UNVERIFIABLE"
+    },
+    {
+      "item_id": "schemas",
+      "classifications": ["BOUND", "PRESERVED"],
+      "evidence_refs": ["docs/CASE_REPLAY_V2.md"],
+      "current_state": "Replay v2 binds schema identities and preserved exact source contains their implementations.",
+      "required_action": "Require all replay-critical schema identities in the long-range manifest.",
+      "exact_replay_required": true,
+      "fail_closed_outcome": "FAIL"
+    },
+    {
+      "item_id": "semantic_result_identity",
+      "classifications": ["REGENERATABLE", "UNBOUND"],
+      "evidence_refs": ["docs/SEMANTIC_CHANGE_PROPAGATION_V2.md"],
+      "current_state": "Deterministic projection identities exist but a canonical final semantic-result identity is not yet an LRD contract.",
+      "required_action": "Define canonical semantic-result identity independently from renderer and presentation bytes.",
+      "exact_replay_required": true,
+      "fail_closed_outcome": "UNKNOWN"
+    },
+    {
+      "item_id": "source_archive",
+      "classifications": ["BOUND", "PRESERVED"],
+      "evidence_refs": ["docs/SUPPLY_CHAIN_CONTINUITY_V2.md"],
+      "current_state": "SSC-02 preserves an exact Git source archive with a full-SHA binding.",
+      "required_action": "Reference the content-addressed source archive from Frozen Path closure material.",
+      "exact_replay_required": true,
+      "fail_closed_outcome": "FAIL"
+    },
+    {
+      "item_id": "storage_identity",
+      "classifications": ["BOUND", "REGENERATABLE"],
+      "evidence_refs": ["docs/RECOVERY_CONTINUITY_V1.md"],
+      "current_state": "DR-02 defines content-addressed source and target storage profiles plus recovery-conformance evidence.",
+      "required_action": "Bind source storage identity while keeping backend location outside Product authority.",
+      "exact_replay_required": false,
+      "fail_closed_outcome": "FAIL"
+    },
+    {
+      "item_id": "supersession_lineage",
+      "classifications": ["UNBOUND"],
+      "evidence_refs": ["docs/CRYPTO_AGILITY_V1.md"],
+      "current_state": "Historical artifacts are immutable but generic Replay Capsule supersedes_digest lineage is not implemented.",
+      "required_action": "Make published capsules immutable and represent corrections as new capsules pointing to old digests.",
+      "exact_replay_required": false,
+      "fail_closed_outcome": "FAIL"
+    },
+    {
+      "item_id": "tenant_case_isolation",
+      "classifications": ["BOUND", "UNBOUND"],
+      "evidence_refs": ["docs/CANONICAL_CASE_LEDGER_V1.md"],
+      "current_state": "Case identity and enterprise isolation exist but the future LRD runner has no dedicated zero-write scope contract.",
+      "required_action": "Enforce read-only exact case scope and reject mixed tenant or case material during verification.",
+      "exact_replay_required": true,
+      "fail_closed_outcome": "FAIL"
+    },
+    {
+      "item_id": "verification_material",
+      "classifications": ["BOUND", "UNBOUND"],
+      "evidence_refs": ["docs/CRYPTO_AGILITY_V1.md"],
+      "current_state": "Trust-set and verification identities are explicit but generic LRD preservation is not guaranteed.",
+      "required_action": "Preserve exact public verification material trust-set snapshots and receipts by content address.",
+      "exact_replay_required": true,
+      "fail_closed_outcome": "UNVERIFIABLE"
+    },
+    {
+      "item_id": "wheels_sdists",
+      "classifications": ["PRESERVED", "UNBOUND"],
+      "evidence_refs": ["docs/SUPPLY_CHAIN_CONTINUITY_V2.md"],
+      "current_state": "SSC-02 preserves a physical wheelhouse but not every possible sdist or direct-source artifact generically.",
+      "required_action": "Require every executable dependency source to be physically escrowed or fail closed.",
+      "exact_replay_required": true,
+      "fail_closed_outcome": "UNVERIFIABLE"
+    }
+  ]
+}
