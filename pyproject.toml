@@ -84,6 +84,7 @@ module = [
   "core.p3.contracts",
   "core.p3.versioning",
   "core.product_runtime_v1",
+  "core.product_verification_evidence_v1",
   "core.semantic_change_v2",
   "knowledge.epistemic",
   "knowledge.epistemic_assertions",
