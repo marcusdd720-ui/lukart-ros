@@ -9,7 +9,8 @@ Latest closed signed exchange continuation: `XCH-01 @ main 83157c6e649ab1212ee20
 Latest closed Product runtime convergence: `PRC-01 @ main a12cd60d2a45ce0d1807588089dbf9706cac4b22`
 Latest closed Product verification evidence: `PVE-01 @ main 174b29897dcab15f7f51d5cc876aeec2b8306871`
 Latest closed governance consistency: `GOV-01 implementation merge @ main 54245df8f834661c9d36a522e46952a20a095c0f`
-Active stage: `KQM-03`
+Latest closed longitudinal KQM: `KQM-03 implementation merge @ main 85d4beaae0d0c5f736a23204cbf2103f8858f935`
+Active stage: `CRY-01`
 Approved execution sequence: `PRC-01 -> PVE-01 -> GOV-01 -> KQM-03 -> CRY-01 -> DR-02 -> SSC-02 -> FIV-02 -> OPR-01 -> POL-01 -> XCH-02 -> continuous LRD-01`
 Horizon: 10+ years
 
@@ -383,6 +384,46 @@ Closed controls:
   independent-review/certification claim is introduced.
 
 Architecture and exact closure evidence: `docs/GOVERNANCE_CLOSURE_CONSISTENCY_V1.md`.
+
+## KQM-03 — Identity-Preserving Longitudinal KQM v1
+
+Status: `CLOSED / ENGINEERING PASS`
+Implementation merge baseline: `main @ 85d4beaae0d0c5f736a23204cbf2103f8858f935`
+Validated PR head: `126aee3cefe10921e17beac48cd082c1fcb4bde7`
+PR: `#168`
+Depends on: `GOV-01 CLOSED / ENGINEERING PASS`
+Next approved stage: `CRY-01`
+
+Closed controls:
+
+- exact PHX-02 `EvaluationInputIdentity` is preserved as the longitudinal comparison
+  context rather than reduced to release/code/corpus labels;
+- exact corpus, policy and evaluator identities plus exact KQM projection identity remain
+  bound to each point;
+- complete candidate RuntimeIdentity is content-addressed separately so candidate code may
+  change without pretending benchmark context changed;
+- changed evaluation input, CCL heads, policy, evaluator or corpus fails closed as
+  non-comparable instead of being labeled improvement/regression;
+- existing KQM v2 metric directions are reused without threshold relaxation or hidden
+  reinterpretation;
+- missing metrics remain explicit `MISSING` and prevent a regression-free result;
+- persistent KQM history reuses the existing P3 append-only tamper-evident provenance
+  ledger and rejects duplicate release IDs, context substitution and policy substitution;
+- historical P3 longitudinal points are not silently upgraded to PHX-02-equivalent evidence;
+- no CCL write, Product truth, Gold mutation, epistemic promotion or release authority is
+  introduced;
+- exact candidate SHA passed all 11 required PR workflows;
+- guarded merge used the unchanged exact head and expected base;
+- exact implementation merge completed nine post-merge workflow runs, all `SUCCESS`, with
+  zero failed, cancelled, timed-out, queued or in-progress runs at closure evaluation;
+- historical `v1.0.1` tag object remained
+  `9f7c0b28f766c8921e63b1d517fefcc96aa991d4` and its target commit remained
+  `802013c4d0e53dc12306a97e1877ebba86af64a7`;
+- no new release was published as a KQM-03 side effect;
+- engineering closure does not claim independent, external, security or regulatory
+  certification.
+
+Architecture and exact closure evidence: `docs/KQM_LONGITUDINAL_V1.md`.
 
 ## Years 6-10+ — Durability, portability and cryptographic renewal
 
