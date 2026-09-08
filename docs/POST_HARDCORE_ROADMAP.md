@@ -643,7 +643,7 @@ Closed controls:
 - all required implementation post-merge workflows, including Stage Gate and the release
   guard, reached terminal `SUCCESS` before preparation;
 - self-dogfood run `34239_068144` attempt `2` (underscore is a display separator for the
-  repository PII gate; machine evidence retains run ID `34239068144`) successfully created
+  repository PII gate) successfully created
   PR #182 after repository policy explicitly allowed GitHub Actions to create pull requests;
 - repository-policy authorization was changed explicitly rather than bypassed in code;
 - historical `v1.0.1` tag object remained
