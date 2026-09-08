@@ -1,0 +1,232 @@
+{
+  "authority": "closure-preparation-only",
+  "baseline_tag_object_sha": "9f7c0b28f766c8921e63b1d517fefcc96aa991d4",
+  "baseline_target_commit_sha": "802013c4d0e53dc12306a97e1877ebba86af64a7",
+  "evidence_identity": "72f08204ad1263afca05d9179c05b0f4faa339c41696f46920824253e2c37a57",
+  "governance_live_snapshot_identity": "b24dd2745ee84bfcf15f32f0629e35c6465ad5b085d0b4ba47054e337a51ee77",
+  "governance_report_identity": "6fe727607a8d8f5eb5408ac8ac2d673dd5b0c11aa19225fce18bd16bac0b3fa6",
+  "implementation_merge_sha": "132312e157f5d6ccc13aa40d48e34e5c3732c908",
+  "implementation_pr": 179,
+  "latest_release_tag": "v1.0.1",
+  "merge_parent_shas": [
+    "beee25926595e28c8dc26dbb7ace3da4ac189bc9",
+    "64fd1885186a26118ccb0d415b8db5fbef4c3475"
+  ],
+  "next_stage_id": "OPR-01",
+  "post_merge_workflows": [
+    {
+      "conclusion": "success",
+      "event": "push",
+      "head_sha": "132312e157f5d6ccc13aa40d48e34e5c3732c908",
+      "name": "Architectural Audit 1.0",
+      "run_id": 34237147026,
+      "status": "completed"
+    },
+    {
+      "conclusion": "success",
+      "event": "push",
+      "head_sha": "132312e157f5d6ccc13aa40d48e34e5c3732c908",
+      "name": "CI Foundation",
+      "run_id": 34237146889,
+      "status": "completed"
+    },
+    {
+      "conclusion": "success",
+      "event": "push",
+      "head_sha": "132312e157f5d6ccc13aa40d48e34e5c3732c908",
+      "name": "Enterprise CodeQL",
+      "run_id": 34237147052,
+      "status": "completed"
+    },
+    {
+      "conclusion": "success",
+      "event": "push",
+      "head_sha": "132312e157f5d6ccc13aa40d48e34e5c3732c908",
+      "name": "Enterprise Hardcore Gate",
+      "run_id": 34237147169,
+      "status": "completed"
+    },
+    {
+      "conclusion": "success",
+      "event": "push",
+      "head_sha": "132312e157f5d6ccc13aa40d48e34e5c3732c908",
+      "name": "FIV-02 Bounded Invariant Verification",
+      "run_id": 34237147106,
+      "status": "completed"
+    },
+    {
+      "conclusion": "success",
+      "event": "push",
+      "head_sha": "132312e157f5d6ccc13aa40d48e34e5c3732c908",
+      "name": "GOV-AUTO-01 Closure Preparation",
+      "run_id": 34237146978,
+      "status": "completed"
+    },
+    {
+      "conclusion": "success",
+      "event": "push",
+      "head_sha": "132312e157f5d6ccc13aa40d48e34e5c3732c908",
+      "name": "GitHub App Smoke Test",
+      "run_id": 34237146959,
+      "status": "completed"
+    },
+    {
+      "conclusion": "success",
+      "event": "workflow_run",
+      "head_sha": "132312e157f5d6ccc13aa40d48e34e5c3732c908",
+      "name": "MVROS v1 Release",
+      "run_id": 34237243962,
+      "status": "completed"
+    },
+    {
+      "conclusion": "success",
+      "event": "push",
+      "head_sha": "132312e157f5d6ccc13aa40d48e34e5c3732c908",
+      "name": "Production Validation Program",
+      "run_id": 34237147170,
+      "status": "completed"
+    },
+    {
+      "conclusion": "success",
+      "event": "push",
+      "head_sha": "132312e157f5d6ccc13aa40d48e34e5c3732c908",
+      "name": "SSC-02 Supply Chain Continuity",
+      "run_id": 34237146983,
+      "status": "completed"
+    },
+    {
+      "conclusion": "success",
+      "event": "workflow_dispatch",
+      "head_sha": "132312e157f5d6ccc13aa40d48e34e5c3732c908",
+      "name": "Stage Gate",
+      "run_id": 34237165559,
+      "status": "completed"
+    },
+    {
+      "conclusion": "success",
+      "event": "push",
+      "head_sha": "132312e157f5d6ccc13aa40d48e34e5c3732c908",
+      "name": "Stage Orchestrator",
+      "run_id": 34237147112,
+      "status": "completed"
+    }
+  ],
+  "pr_workflows": [
+    {
+      "conclusion": "success",
+      "event": "pull_request",
+      "head_sha": "64fd1885186a26118ccb0d415b8db5fbef4c3475",
+      "name": "Architectural Audit 1.0",
+      "run_id": 34236922907,
+      "status": "completed"
+    },
+    {
+      "conclusion": "success",
+      "event": "pull_request",
+      "head_sha": "64fd1885186a26118ccb0d415b8db5fbef4c3475",
+      "name": "CI Foundation",
+      "run_id": 34236922826,
+      "status": "completed"
+    },
+    {
+      "conclusion": "success",
+      "event": "pull_request",
+      "head_sha": "64fd1885186a26118ccb0d415b8db5fbef4c3475",
+      "name": "Enterprise CodeQL",
+      "run_id": 34236922803,
+      "status": "completed"
+    },
+    {
+      "conclusion": "success",
+      "event": "pull_request",
+      "head_sha": "64fd1885186a26118ccb0d415b8db5fbef4c3475",
+      "name": "Enterprise Hardcore Gate",
+      "run_id": 34236922782,
+      "status": "completed"
+    },
+    {
+      "conclusion": "success",
+      "event": "pull_request",
+      "head_sha": "64fd1885186a26118ccb0d415b8db5fbef4c3475",
+      "name": "FIV-02 Bounded Invariant Verification",
+      "run_id": 34236922841,
+      "status": "completed"
+    },
+    {
+      "conclusion": "success",
+      "event": "pull_request",
+      "head_sha": "64fd1885186a26118ccb0d415b8db5fbef4c3475",
+      "name": "GOV-AUTO-01 Closure Preparation",
+      "run_id": 34236922838,
+      "status": "completed"
+    },
+    {
+      "conclusion": "success",
+      "event": "pull_request",
+      "head_sha": "64fd1885186a26118ccb0d415b8db5fbef4c3475",
+      "name": "GitHub App Smoke Test",
+      "run_id": 34236922938,
+      "status": "completed"
+    },
+    {
+      "conclusion": "success",
+      "event": "pull_request",
+      "head_sha": "64fd1885186a26118ccb0d415b8db5fbef4c3475",
+      "name": "P2 Semantic Intelligence",
+      "run_id": 34236922936,
+      "status": "completed"
+    },
+    {
+      "conclusion": "success",
+      "event": "pull_request",
+      "head_sha": "64fd1885186a26118ccb0d415b8db5fbef4c3475",
+      "name": "P3 Hardcore Hardening",
+      "run_id": 34236922877,
+      "status": "completed"
+    },
+    {
+      "conclusion": "success",
+      "event": "pull_request",
+      "head_sha": "64fd1885186a26118ccb0d415b8db5fbef4c3475",
+      "name": "Post-v1 v1.1",
+      "run_id": 34236922796,
+      "status": "completed"
+    },
+    {
+      "conclusion": "success",
+      "event": "pull_request",
+      "head_sha": "64fd1885186a26118ccb0d415b8db5fbef4c3475",
+      "name": "Production Validation Program",
+      "run_id": 34236922854,
+      "status": "completed"
+    },
+    {
+      "conclusion": "success",
+      "event": "pull_request",
+      "head_sha": "64fd1885186a26118ccb0d415b8db5fbef4c3475",
+      "name": "SSC-02 Supply Chain Continuity",
+      "run_id": 34236922857,
+      "status": "completed"
+    },
+    {
+      "conclusion": "success",
+      "event": "pull_request",
+      "head_sha": "64fd1885186a26118ccb0d415b8db5fbef4c3475",
+      "name": "Stage Gate",
+      "run_id": 34236922832,
+      "status": "completed"
+    },
+    {
+      "conclusion": "success",
+      "event": "pull_request",
+      "head_sha": "64fd1885186a26118ccb0d415b8db5fbef4c3475",
+      "name": "Stage Orchestrator",
+      "run_id": 34236922872,
+      "status": "completed"
+    }
+  ],
+  "result": "PREPARED_NOT_CLOSED",
+  "schema": "lukart.closure-preparation-evidence.v1",
+  "stage_id": "GOV-AUTO-01",
+  "validated_head_sha": "64fd1885186a26118ccb0d415b8db5fbef4c3475"
+}
