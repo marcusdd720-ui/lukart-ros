@@ -1,8 +1,11 @@
 # LRD-01A — Replay Closure Coverage & Architecture v1
 
-Status: LRD-01A engineering architecture contract
+Status: `CLOSED / ENGINEERING PASS` closure candidate; authoritative after guarded closure merge
 Parent program: `continuous LRD-01`
 Measured baseline: `main @ a884073591295af106baf1d6d87cf178830db315`
+Implementation PR: `#191`
+Validated implementation head: `385e7b36a8148fbd361e39d50234ded5a5456f99`
+Implementation merge: `main @ b62dd4225c46c1adef10e63fb8060ddd88a37866`
 Writable case-history SSOT: Canonical Case Ledger (CCL) only
 Machine-readable measurement: `evidence/lrd_01a/replay_closure_coverage_v1.json`
 
@@ -343,3 +346,37 @@ The best-justified implementation sequence is:
 
 Each slice requires its own fresh exact-SHA validation and may not inherit PASS evidence from
 LRD-01A.
+
+## 15. Exact LRD-01A implementation closure evidence
+
+The implementation line is bound to live GitHub evidence rather than chat or memory:
+
+- implementation PR: `#191`;
+- measured implementation base: `main @ a884073591295af106baf1d6d87cf178830db315`;
+- validated exact implementation head:
+  `385e7b36a8148fbd361e39d50234ded5a5456f99`;
+- exact-head PR CI: `15/15 SUCCESS`, including CI Foundation, Enterprise CodeQL,
+  Enterprise Hardcore Gate, Stage Gate, SSC-02, FIV-02, OPR-01, Production Validation,
+  Architectural Audit and GitHub App Smoke Test;
+- guarded merge used the unchanged validated head and unchanged measured base;
+- implementation merge: `main @ b62dd4225c46c1adef10e63fb8060ddd88a37866`;
+- merge parents are the measured base and the exact validated implementation head;
+- resulting-main post-merge validation reached `14/14 SUCCESS`, including the Stage Gate,
+  Enterprise CodeQL, Enterprise Hardcore Gate, Production Validation, the `MVROS v1 Release`
+  guard and Governance Closure PR Preparation, with zero `in_progress`, queued or failed runs
+  at closure-evidence preparation;
+- historical `v1.0.1` annotated tag object remained
+  `9f7c0b28f766c8921e63b1d517fefcc96aa991d4`;
+- historical `v1.0.1` target commit remained
+  `802013c4d0e53dc12306a97e1877ebba86af64a7`;
+- latest release remained `v1.0.1`; no LRD-01A release or tag was published;
+- the 30/30 coverage gate is classification completeness only and does not misrepresent the
+  explicitly measured `UNBOUND`, `EXTERNAL` or `UNAVAILABLE` capability gaps as preserved;
+- no second CCL/Product/Gold/policy/trust/release authority and no independent security,
+  cryptographic, external-storage or ten-year durability certification is claimed.
+
+This document is the canonical LRD-01A closure candidate. Its `CLOSED / ENGINEERING PASS`
+status becomes authoritative only after this closure-record change itself passes complete
+exact-head validation, guarded unchanged-head/base merge, resulting-main post-merge
+validation and immutable baseline/release verification. No PASS evidence from a different
+closure-record SHA may be substituted.
