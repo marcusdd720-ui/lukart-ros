@@ -12,7 +12,8 @@ Latest closed Product runtime convergence: `PRC-01 @ main a12cd60d2a45ce0d180758
 Latest closed Product verification evidence: `PVE-01 @ main 174b29897dcab15f7f51d5cc876aeec2b8306871`
 Latest closed governance consistency: `GOV-01 implementation merge @ main 54245df8f834661c9d36a522e46952a20a095c0f`
 Latest closed longitudinal KQM: `KQM-03 implementation merge @ main 85d4beaae0d0c5f736a23204cbf2103f8858f935`
-Active Post-Hardcore stage: `CRY-01`
+Latest closed crypto agility: `CRY-01 implementation merge @ main 2c705dde2c077f04b6c820e2104cb27cb320ab36`
+Active Post-Hardcore stage: `DR-02`
 Roadmap target: `Post-Hardcore Enterprise continuation`
 Development version: `1.1.0.dev0`
 
@@ -95,7 +96,9 @@ GOV-01 — Governance Closure Consistency v1 — is `CLOSED / ENGINEERING PASS` 
 
 KQM-03 — Identity-Preserving Longitudinal KQM v1 — is `CLOSED / ENGINEERING PASS` for PR #168. The validated PR head is `126aee3cefe10921e17beac48cd082c1fcb4bde7`; the implementation merge is `main @ 85d4beaae0d0c5f736a23204cbf2103f8858f935`. KQM-03 preserves the exact PHX-02 evaluation context, policy, evaluator and corpus identities while separately binding complete candidate runtime and exact KQM projection identity. Longitudinal comparison fails closed when evaluation input, policy, evaluator, corpus or expected metric contract changes; candidate runtime change alone remains measurable within one exact context. Persistent history reuses the existing P3 tamper-evident provenance ledger and introduces no CCL, Product, Gold or release authority. The exact candidate passed all 11 required PR workflows; the implementation merge completed nine post-merge workflow runs, all `SUCCESS`, with zero failed, cancelled, timed-out, queued or in-progress runs at closure evaluation. Historical `v1.0.1` tag object and target remained unchanged and no new release was published. No independent external certification is claimed.
 
-The next approved stage is `CRY-01`. Its contract must be explicitly defined from current cryptographic/attestation evidence and validated under the active Post-Hardcore roadmap before implementation can be trusted or closed.
+CRY-01 — Crypto Agility / Trust-Set / Key Lifecycle v1 — is `CLOSED / ENGINEERING PASS` for PR #170. The validated PR head is `69108c93d224803c21d9ba76b93a883eada32fe1`; the implementation merge is `main @ 2c705dde2c077f04b6c820e2104cb27cb320ab36`. CRY-01 introduces a content-addressed verification trust-set around the existing Enterprise Ed25519 primitive, distinguishes planned RETIRED keys from compromised REVOKED keys, binds activation/retirement/purpose/rotation lineage and returns deterministic verification receipts bound to the exact key, algorithm and trust-set identities. Actual signature verification remains delegated to the existing Enterprise verifier; private key material remains outside repository state. Unknown algorithms and trust contexts fail closed, and post-quantum support is not claimed without a separately implemented and validated adapter. The exact candidate passed all 11 required PR workflows; the implementation merge completed nine post-merge workflow runs, all `SUCCESS`, with zero failed, cancelled, timed-out, queued or in-progress runs at closure evaluation. Historical `v1.0.1` identity remained unchanged and no new release was published. No independent cryptographic or post-quantum certification is claimed.
+
+The next approved stage is `DR-02`. Its contract must be explicitly defined from current recovery/storage evidence and validated under the active Post-Hardcore roadmap before implementation can be trusted or closed.
 
 ## 6. Trust boundaries
 
@@ -171,5 +174,6 @@ The package development version is distinct from the immutable historical releas
 - `docs/PRODUCT_VERIFICATION_EVIDENCE_V1.md` — PVE-01 reproducible Product verification evidence contract.
 - `docs/GOVERNANCE_CLOSURE_CONSISTENCY_V1.md` — GOV-01 governance closure consistency contract and exact live closure evidence.
 - `docs/KQM_LONGITUDINAL_V1.md` — KQM-03 identity-preserving longitudinal measurement contract and exact closure evidence.
+- `docs/CRYPTO_AGILITY_V1.md` — CRY-01 crypto-agility, trust-set, key-lifecycle and exact closure contract.
 
 Historical design records do not override this Master Plan, Accepted ADRs, executable trust gates or the canonical working principles.
