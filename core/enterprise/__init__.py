@@ -14,6 +14,10 @@ from .authorization import (
     ResourceDescriptor,
     RoleDefinition,
 )
+from .authorization_policy import (
+    AUTHORIZATION_POLICY_SCHEMA_V1,
+    AuthorizationPolicyV1,
+)
 from .certification import (
     ControlEvidence,
     EnterpriseCertificationGate,
@@ -71,6 +75,7 @@ from .supply_chain import (
 )
 
 __all__ = [
+    "AUTHORIZATION_POLICY_SCHEMA_V1",
     "ApiOperation",
     "ApiReceipt",
     "AttestationPurpose",
@@ -80,6 +85,7 @@ __all__ = [
     "AuthorizationContext",
     "AuthorizationDecision",
     "AuthorizationEngine",
+    "AuthorizationPolicyV1",
     "ControlEvidence",
     "DataClassification",
     "DurableRecord",
