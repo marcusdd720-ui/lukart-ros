@@ -1,9 +1,13 @@
 # GOV-01 — Governance Closure Consistency v1
 
-Status: `IMPLEMENTATION / VALIDATION PENDING`
+Status: `CLOSED / ENGINEERING PASS`
 Authority: governance verification only
 Depends on: `PVE-01 CLOSED / ENGINEERING PASS`
 Live repository SSOT: GitHub
+Implementation PR: `#166`
+Validated PR head: `07256f90282de080a19bca32d40c28fe10406ac5`
+Implementation merge: `main @ 54245df8f834661c9d36a522e46952a20a095c0f`
+Next approved stage: `KQM-03`
 
 ## Problem
 
@@ -116,3 +120,36 @@ workflows on one exact PR-head SHA, guarded unchanged-head merge, terminal resul
 validation, baseline/release side-effect checks and canonical governance evidence.
 
 Engineering closure will not assert independent external certification.
+
+## Exact live closure evidence
+
+Observed GitHub state used for GOV-01 closure:
+
+- implementation PR: `#166`;
+- validated PR head: `07256f90282de080a19bca32d40c28fe10406ac5`;
+- base at merge: `3a5f57e113bae8cca57d4e5d7f9f8d8b4620bd21`;
+- resulting merge: `54245df8f834661c9d36a522e46952a20a095c0f`;
+- merge parents: `3a5f57e113bae8cca57d4e5d7f9f8d8b4620bd21`,
+  `07256f90282de080a19bca32d40c28fe10406ac5`;
+- required PR workflows: `11/11 SUCCESS`;
+- post-merge workflows: `9 SUCCESS`, `0 non-success`;
+- historical `v1.0.1` tag object:
+  `9f7c0b28f766c8921e63b1d517fefcc96aa991d4`;
+- historical `v1.0.1` target commit:
+  `802013c4d0e53dc12306a97e1877ebba86af64a7`;
+- no new release was published as part of GOV-01 closure;
+- next approved stage: `KQM-03`.
+
+Content-addressed GOV-01 verification identities for that exact externally observed snapshot:
+
+- live snapshot identity:
+  `6d48def33e722e413a37d8fa8992bf9b305b2ac0d601400b76af7838a478e175`;
+- closure record identity:
+  `7da55b77321466b968d3d1c033bc6e0bd2a63a96b8f7b05d911582bf581cfe23`;
+- consistency report identity:
+  `1108992adad36b901667281eecf2a142e7490193f948d07c17d8a6226c3e9536`;
+- result: `CONSISTENT`;
+- authority: `governance-verification-only`.
+
+This closure records engineering evidence only and does not claim independent external
+certification.
