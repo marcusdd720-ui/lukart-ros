@@ -16,7 +16,8 @@ Latest closed supply-chain continuity: `SSC-02 implementation merge @ main d6efd
 Latest closed bounded invariant verification: `FIV-02 implementation merge @ main 38540d95db212cfc2c80be54853202f77b41a45f`
 Latest closed governance automation: `GOV-AUTO-01 implementation merge @ main e2808ea3df7cd89a6161af328dbcc377ec914eb4`
 Latest closed operational readiness: `OPR-01 implementation merge @ main 6f809b09e9f8a1e74a7da207f2447893c0c0127f`
-Active stage: `POL-01`
+Latest closed authorization policy identity: `POL-01 final implementation merge @ main 63d0114bbd49b78ed71e337c1a7c8c0de72e0811`
+Active stage: `XCH-02`
 Approved execution sequence: `PRC-01 -> PVE-01 -> GOV-01 -> KQM-03 -> CRY-01 -> DR-02 -> SSC-02 -> FIV-02 -> OPR-01 -> POL-01 -> XCH-02 -> continuous LRD-01`
 Horizon: 10+ years
 
@@ -162,7 +163,7 @@ Closed controls:
 - cross-version comparison requires an explicit deterministic migration path;
 - unknown fields/schemas, ambiguous migration, incomplete runtime, cross-case substitution
   or tampering fail closed;
-- replay is verification-only and exposes no Canonical Ledger write path;
+- replay is verification-only and exposes no Canonical Case Ledger write path;
 - exact-SHA CI, guarded merge and terminal post-merge validation closed.
 
 Architecture contract: `docs/CASE_REPLAY_V2.md`.
@@ -705,6 +706,60 @@ Closed controls:
 
 Architecture and exact closure evidence: `docs/OPERATIONAL_READINESS_V1.md` and
 `evidence/governance_closure/opr-01/6f809b09e9f8a1e74a7da207f2447893c0c0127f.json`.
+
+## POL-01 — Authorization Policy Identity v1
+
+Status: `CLOSED / ENGINEERING PASS`
+Final implementation merge baseline: `main @ 63d0114bbd49b78ed71e337c1a7c8c0de72e0811`
+Validated final head: `e1eadfdd1f2fc4ab3424c50c92ba147113ca6141`
+Initial code implementation PR: `#186`
+Final repaired implementation/closure-target PR: `#187`
+Generated closure PR: `#188`
+Next approved stage: `XCH-02`
+
+Closed controls:
+
+- existing `AuthorizationEngine` remains the sole authorization decision authority; POL-01
+  does not introduce a parallel policy engine or policy persistence authority;
+- `AuthorizationPolicyV1` content-addresses exact role names, permissions and maximum data
+  classification together with the enforcement semantics that materially affect decisions;
+- deny-by-default, exact tenant match, case/workspace bounded-scope semantics, classification
+  ordering and the additional `security:review` requirement for `trust:promote` are bound into
+  canonical policy identity;
+- deterministic canonicalization makes policy identity independent from caller role ordering;
+- exact verified policy snapshots reconstruct the same authorization engine semantics;
+- unknown fields/schema/enums, non-canonical ordering, modified enforcement semantics and
+  digest/content mismatch fail closed;
+- historical authorization decisions remain bound to their historical policy digest rather
+  than being silently re-authorized under the current policy;
+- the initial code implementation merged through PR #186; post-merge evidence then exposed a
+  disabled OPR-01 closure target, so POL-01 remained open instead of inheriting stale PASS;
+- repair PR #187 armed the canonical POL-01 target and was validated on fresh exact head
+  `e1eadfdd1f2fc4ab3424c50c92ba147113ca6141` without weakening tests or trust boundaries;
+- the final repaired head passed all 15 required PR-triggered workflows;
+- guarded final implementation merge used that unchanged exact head and produced
+  `63d0114bbd49b78ed71e337c1a7c8c0de72e0811` with the validated head as a direct parent;
+- 13 post-merge workflows recorded in canonical closure evidence reached terminal `SUCCESS`,
+  including CI Foundation, Stage Gate, Enterprise CodeQL, FIV-02, SSC-02, OPR-01 and the
+  `MVROS v1 Release` guard;
+- Governance Closure PR Preparation run `34262237223` generated PR #188 from live GitHub
+  evidence after post-merge validation;
+- canonical preparation evidence identity is
+  `3189b5ee96f90fc6a50296f8cde1c83a17690225384c1b708e5c64efc4948208`;
+- governance live snapshot identity is
+  `0a7d066c347b8446cea6fc061b09145019a344c8ed062608fd083d132439f3c1`;
+- governance report identity is
+  `4a48eeadd2546821fb79c0634ffd3d55655ab45f72aaf6c7eec7bbf473ae220a`;
+- evidence result remains `PREPARED_NOT_CLOSED` with `closure-preparation-only` authority and
+  cannot self-certify the stage;
+- historical `v1.0.1` tag object remained
+  `9f7c0b28f766c8921e63b1d517fefcc96aa991d4`, its target commit remained
+  `802013c4d0e53dc12306a97e1877ebba86af64a7`, and latest release remained `v1.0.1`;
+- no CCL write, Product truth, Gold mutation, release, certification or fabricated
+  independent-review authority is introduced.
+
+Architecture and exact closure evidence: `docs/AUTHORIZATION_POLICY_IDENTITY_V1.md` and
+`evidence/governance_closure/pol-01/63d0114bbd49b78ed71e337c1a7c8c0de72e0811.json`.
 
 ## Years 6-10+ — Durability, portability and cryptographic renewal
 
