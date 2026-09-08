@@ -7,7 +7,8 @@ Latest closed durability continuation: `DR-01 implementation merge @ main 615c01
 Latest closed invariant verification: `IV-01 @ main cae560f4893b8726695e06334982927376e7a146`
 Latest closed signed exchange continuation: `XCH-01 @ main 83157c6e649ab1212ee200a453aa5240e08be24c`
 Latest closed Product runtime convergence: `PRC-01 @ main a12cd60d2a45ce0d1807588089dbf9706cac4b22`
-Active stage: `PVE-01 — Product Verification Evidence v1`
+Latest closed Product verification evidence: `PVE-01 @ main 174b29897dcab15f7f51d5cc876aeec2b8306871`
+Active stage: `GOV-01 — Governance Closure Consistency v1`
 Approved execution sequence: `PRC-01 -> PVE-01 -> GOV-01 -> KQM-03 -> CRY-01 -> DR-02 -> SSC-02 -> FIV-02 -> OPR-01 -> POL-01 -> XCH-02 -> continuous LRD-01`
 Horizon: 10+ years
 
@@ -312,29 +313,68 @@ Architecture contract: `docs/PRODUCT_RUNTIME_CONVERGENCE_V1.md`.
 
 ## PVE-01 — Product Verification Evidence v1
 
-Status: `ACTIVE / DEFINITION + MEASUREMENT`
+Status: `CLOSED / ENGINEERING PASS`
+Implementation merge baseline: `main @ 174b29897dcab15f7f51d5cc876aeec2b8306871`
+Validated PR head: `23c2ff32ba9b75ff055e8e08d50c89741494f56c`
+PR: `#164`
 Depends on: `PRC-01 CLOSED / ENGINEERING PASS`
 
-PVE-01 is the next approved stage. It must produce reproducible evidence that the converged
-Product runtime behaves correctly on bounded vertical slices without creating a new truth or
-certification authority.
+Closed controls:
+
+- fixed content-addressed five-check registry that cannot be caller-reduced to manufacture
+  PASS;
+- exact code-SHA binding against an externally expected candidate SHA;
+- supported `CONCLUDE` vertical-slice measurement over an exact PRC runtime proof;
+- epistemic `ABSTAIN` measurement preserving explicit open questions instead of promoting
+  uncertainty;
+- adversarial tampered reasoning-digest rejection through the production PRC verifier;
+- adversarial cross-case Product runtime proof substitution rejection;
+- repeated exact-input verification produces identical evidence identities;
+- per-check and complete PASS report identities are content-addressed and bind exact Product
+  runtime/replay/reasoning identities;
+- public CI uses synthetic/non-sensitive fixtures only; private real-case evidence remains
+  local and unavailable evidence is never fabricated;
+- no CCL write path, Product persistence, Gold promotion or certification authority;
+- exact candidate SHA passed all 11 required PR workflows before guarded merge;
+- exact implementation merge SHA completed nine post-merge workflow runs, all `SUCCESS`;
+- historical `v1.0.1` tag object and target commit remained unchanged and no new release was
+  published;
+- engineering closure does not claim private-case verification or independent external
+  certification without separately available evidence.
+
+Architecture contract: `docs/PRODUCT_VERIFICATION_EVIDENCE_V1.md`.
+
+## GOV-01 — Governance Closure Consistency v1
+
+Status: `ACTIVE / DEFINITION + IMPLEMENTATION`
+Depends on: `PVE-01 CLOSED / ENGINEERING PASS`
+
+Problem: previous closure work exposed a real governance failure mode in which implementation
+and exact-SHA CI were already closed while canonical roadmap/master-plan status remained
+stale. GitHub live state is the source of truth for SHA/PR/CI/release; repository governance
+must accurately and deterministically reflect that live evidence without becoming a second
+live authority.
 
 Initial contract:
 
-- synthetic/non-sensitive fixtures may run in public CI;
-- real private cases remain local-only and cannot be uploaded to GitHub or Actions;
-- every verification result must bind exact runtime/code/config/schema/input/evidence
-  identity sufficient to distinguish reproducible evidence from an observation;
-- verification must cover at least a successful supported chain, epistemic `ABSTAIN`,
-  contradiction/open-question behavior, stale/tampered proof rejection and cross-case
-  substitution rejection;
-- Product evidence is measurement, not automatic Gold/certification promotion;
-- missing required identity or evidence fails closed;
-- public CI closure may establish engineering evidence only; any private local real-case
-  evidence not present in the repository must be reported separately and cannot be
-  fabricated by automation.
+- define a bounded machine-verifiable closure record binding stage ID, implementation PR,
+  validated head SHA, resulting merge SHA, required workflow names/outcomes and immutable
+  release baseline identities;
+- validate canonical governance declarations against an externally supplied/live evidence
+  snapshot rather than trusting documentation text as evidence of itself;
+- missing, duplicate, stale or cross-stage identities fail closed;
+- a moved PR head or mismatched merge ancestry invalidates the record;
+- required workflow set must be fixed/versioned for the contract and cannot be caller-reduced;
+- release/tag identity checks remain separate from Product epistemic truth and cannot create
+  a certification claim;
+- closure consistency validation is governance-only and creates no CCL write path, Product
+  truth store, CI bypass or automatic independent-review claim;
+- public CI may validate synthetic/fixed governance evidence fixtures, while live GitHub
+  reconciliation remains an execution-time evidence step bound to exact SHA;
+- future governance formats require explicit versioning/migration; unknown schema fails
+  closed.
 
-PVE-01 implementation/closure requires its own exact candidate SHA, focused/adversarial/full
+GOV-01 implementation/closure requires its own exact candidate SHA, focused/adversarial/full
 validation, complete required CI, guarded merge and exact-main post-merge verification.
 
 ## Years 6-10+ — Durability, portability and cryptographic renewal
