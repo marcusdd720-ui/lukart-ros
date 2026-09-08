@@ -18,19 +18,13 @@ from core.enterprise.recovery_continuity_v1 import (
 )
 
 
-def _profile(
-    *, config: str = "default", backend: str = "sqlite-provenance"
-) -> StorageProfileV1:
+def _profile(*, config: str = "default", backend: str = "sqlite-provenance") -> StorageProfileV1:
     return StorageProfileV1.from_configuration(
         backend_kind=backend,
         implementation_id="core.enterprise.durability.SQLiteProvenanceStore",
         implementation_version="v1",
         storage_schema="provenance-v1",
-        public_configuration={
-            "profile": config,
-            "journal_mode": "WAL",
-            "synchronous": "FULL",
-        },
+        public_configuration={"profile": config, "journal_mode": "WAL", "synchronous": "FULL"},
     )
 
 
@@ -87,6 +81,7 @@ def test_recovery_drill_preserves_exact_product_bundle_and_head(tmp_path: Path) 
     assert manifest.source_profile_digest == source_profile.profile_digest
     assert manifest.target_profile_digest == target_profile.profile_digest
     assert manifest.source_bundle_digest == bundle.bundle_digest.digest
+    assert bundle.head_event_id is not None
     assert manifest.source_head_event_digest == bundle.head_event_id.digest
     assert report.state is RecoveryConformanceState.PASS
     assert report.violations == ()
