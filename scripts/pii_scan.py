@@ -109,10 +109,10 @@ def _mask_governance_run_ids(relative: str, text: str) -> str:
 def _mask_operational_identifier_literal(relative: str, text: str) -> str:
     """Mask one proven non-PII identifier alphabet without widening exclusions.
 
-    The OPR-01 identifier validator contains the exact ASCII alphabet literal
-    ``abcdefghijklmnopqrstuvwxyz0123456789-_.``. Its ten-digit suffix resembles
-    a Polish NIP to a regex-only scanner even though it is executable syntax,
-    not data. The exception is deliberately path- and literal-specific. If the
+    The OPR-01 validator uses one executable whitelist containing lowercase
+    ASCII letters, all decimal digits, and ``-_.``. The digit run resembles a
+    Polish NIP to a regex-only scanner even though it is executable syntax, not
+    data. The exception is deliberately path- and literal-specific. If the
     literal is absent or duplicated, no masking occurs and scanning fails closed.
     """
 
