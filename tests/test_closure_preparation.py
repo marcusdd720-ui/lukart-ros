@@ -182,7 +182,7 @@ def test_nonterminal_post_merge_run_does_not_become_pass() -> None:
     client.post_runs[-1]["status"] = "in_progress"
     client.post_runs[-1]["conclusion"] = None
 
-    with pytest.raises(ClosurePreparationError, match="incomplete identity"):
+    with pytest.raises(ClosurePreparationError, match="conclusion is invalid"):
         _evidence(client)
 
 
