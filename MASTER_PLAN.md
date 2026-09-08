@@ -10,7 +10,8 @@ Latest closed invariant verification: `IV-01 @ main cae560f4893b8726695e06334982
 Latest closed signed exchange continuation: `XCH-01 @ main 83157c6e649ab1212ee200a453aa5240e08be24c`
 Latest closed Product runtime convergence: `PRC-01 @ main a12cd60d2a45ce0d1807588089dbf9706cac4b22`
 Latest closed Product verification evidence: `PVE-01 @ main 174b29897dcab15f7f51d5cc876aeec2b8306871`
-Active Post-Hardcore stage: `GOV-01 — Governance Closure Consistency v1`
+Latest closed governance consistency: `GOV-01 implementation merge @ main 54245df8f834661c9d36a522e46952a20a095c0f`
+Active Post-Hardcore stage: `KQM-03`
 Roadmap target: `Post-Hardcore Enterprise continuation`
 Development version: `1.1.0.dev0`
 
@@ -89,7 +90,9 @@ PRC-01 — Product Runtime Convergence v1 — is `CLOSED / ENGINEERING PASS` for
 
 PVE-01 — Product Verification Evidence v1 — is `CLOSED / ENGINEERING PASS` for PR #164. The validated PR head is `23c2ff32ba9b75ff055e8e08d50c89741494f56c`; the implementation merge is `main @ 174b29897dcab15f7f51d5cc876aeec2b8306871`. PVE-01 adds a fixed content-addressed five-check measurement registry over PRC-01 covering a supported conclusion, epistemic ABSTAIN with explicit open questions, tamper rejection, cross-case substitution rejection and evidence-identity determinism. It is measurement-only and creates no Product truth, persistence, Gold or certification authority. The exact candidate passed all 11 required PR workflows; the exact implementation merge completed nine post-merge workflow runs, all `SUCCESS`. Historical `v1.0.1` identity remained unchanged and no new release was published. No private real-case verification or independent external certification is claimed without separately available evidence.
 
-The next approved stage is `GOV-01 — Governance Closure Consistency v1`. GOV-01 must prevent recurrence of observed drift between actual merge/CI state and canonical roadmap/master-plan status by validating exact closure evidence across GitHub live state and canonical governance, without making repository text a competing source of live truth.
+GOV-01 — Governance Closure Consistency v1 — is `CLOSED / ENGINEERING PASS` for PR #166. The validated PR head is `07256f90282de080a19bca32d40c28fe10406ac5`; the implementation merge is `main @ 54245df8f834661c9d36a522e46952a20a095c0f`. All 11 fixed required PR workflows passed on that exact head. The resulting merge completed nine post-merge workflow runs, all `SUCCESS`, with no failed, cancelled, timed-out, queued or in-progress runs at closure evaluation. The externally observed live snapshot, canonical closure record and GOV-01 consistency report are content-addressed in `docs/GOVERNANCE_CLOSURE_CONSISTENCY_V1.md`; result `CONSISTENT` is governance-verification-only. Historical `v1.0.1` tag object and target commit remained unchanged and no new release was published. GOV-01 creates no Product truth, CCL write, release authority or independent certification claim.
+
+The next approved stage is `KQM-03`. Its contract must be explicitly defined, measured and validated under the active Post-Hardcore roadmap before implementation can be trusted or closed.
 
 ## 6. Trust boundaries
 
@@ -163,5 +166,6 @@ The package development version is distinct from the immutable historical releas
 - `docs/SIGNED_CASE_EXCHANGE_V1.md` — XCH-01 signed offline-verifiable case exchange contract.
 - `docs/PRODUCT_RUNTIME_CONVERGENCE_V1.md` — PRC-01 converged Product runtime and release-proof contract.
 - `docs/PRODUCT_VERIFICATION_EVIDENCE_V1.md` — PVE-01 reproducible Product verification evidence contract.
+- `docs/GOVERNANCE_CLOSURE_CONSISTENCY_V1.md` — GOV-01 governance closure consistency contract and exact live closure evidence.
 
 Historical design records do not override this Master Plan, Accepted ADRs, executable trust gates or the canonical working principles.
