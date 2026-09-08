@@ -1,9 +1,9 @@
 """SSC-02 supply-chain continuity bundle.
 
-The bundle is intentionally directory-based and verifier-first.  It binds the exact source
-identity, lock/build inputs and physical wheels needed by an offline recovery drill.  The
-verifier uses only the Python standard library so historical bundles do not depend on the
-current LUKART runtime or third-party packages.
+The bundle is directory-based and verifier-first. It binds exact source identity,
+standard lock/build inputs, and the physical wheels required by an offline recovery drill.
+The verifier intentionally uses only the Python standard library so historical bundles do
+not depend on the current LUKART runtime or third-party packages.
 """
 
 from __future__ import annotations
@@ -27,6 +27,7 @@ MANIFEST_NAME = "continuity-manifest.json"
 _SHA256_RE = re.compile(r"^[0-9a-f]{64}$")
 _SOURCE_SHA_RE = re.compile(r"^[0-9a-f]{40}$")
 _ALLOWED_ROLES = frozenset({"identity", "source", "verifier", "wheel"})
+_DIRECT_SOURCE_KEYS = ("directory", "vcs", "archive")
 
 
 class SupplyChainContinuityError(ValueError):
@@ -64,7 +65,10 @@ def _safe_relative_path(raw: object, *, field: str = "path") -> str:
     candidate = PurePosixPath(value)
     if candidate.is_absolute() or any(part in {"", ".", ".."} for part in candidate.parts):
         raise SupplyChainContinuityError(f"unsafe {field}: {value!r}")
-    return candidate.as_posix()
+    canonical = candidate.as_posix()
+    if canonical != value:
+        raise SupplyChainContinuityError(f"non-canonical {field}: {value!r}")
+    return canonical
 
 
 def _strict_keys(
@@ -90,50 +94,6 @@ def _load_toml(path: Path) -> dict[str, object]:
     if not isinstance(loaded, dict):
         raise SupplyChainContinuityError(f"TOML root must be a table: {path}")
     return loaded
-
-
-def _locked_versions(pylock_path: Path) -> dict[str, tuple[str, frozenset[str]]]:
-    data = _load_toml(pylock_path)
-    if data.get("lock-version") != "1.0":
-        raise SupplyChainContinuityError("unsupported pylock contract")
-    raw_packages = data.get("packages")
-    if not isinstance(raw_packages, list) or not raw_packages:
-        raise SupplyChainContinuityError("pylock packages are missing")
-
-    collected: dict[str, tuple[str, set[str]]] = {}
-    for raw in raw_packages:
-        if not isinstance(raw, dict):
-            raise SupplyChainContinuityError("pylock package must be a table")
-        name = str(raw.get("name", "")).strip()
-        version = str(raw.get("version", "")).strip()
-        if not name or not version:
-            raise SupplyChainContinuityError("pylock package identity is incomplete")
-        normalized = _normalize_name(name)
-        if normalized not in collected:
-            collected[normalized] = (name, set())
-        collected[normalized][1].add(version)
-    return {
-        normalized: (display, frozenset(versions))
-        for normalized, (display, versions) in collected.items()
-    }
-
-
-def export_locked_constraints(pylock_path: str | Path, output_path: str | Path) -> None:
-    """Export exact package constraints from pylock without using uv or a resolver."""
-
-    locked = _locked_versions(Path(pylock_path))
-    lines: list[str] = []
-    for normalized in sorted(locked):
-        display, versions = locked[normalized]
-        if len(versions) != 1:
-            raise SupplyChainContinuityError(
-                f"pylock has platform-dependent versions for {display}: {sorted(versions)}"
-            )
-        version = next(iter(versions))
-        lines.append(f"{display}=={version}")
-    destination = Path(output_path)
-    destination.parent.mkdir(parents=True, exist_ok=True)
-    destination.write_text("\n".join(lines) + "\n", encoding="utf-8")
 
 
 def _project_identity(pyproject_path: Path) -> tuple[str, str, dict[str, str]]:
@@ -165,13 +125,133 @@ def _project_identity(pyproject_path: Path) -> tuple[str, str, dict[str, str]]:
     return name, version, pinned
 
 
+def _project_name_for_lock(
+    pylock_path: Path,
+    pyproject_path: str | Path | None,
+) -> str | None:
+    if pyproject_path is not None:
+        candidate = Path(pyproject_path)
+    else:
+        candidate = pylock_path.with_name("pyproject.toml")
+    if not candidate.is_file():
+        return None
+    return _project_identity(candidate)[0]
+
+
+def _registry_lock_entries(
+    pylock_path: Path,
+    *,
+    project_name: str | None,
+) -> tuple[tuple[str, str, str, str], ...]:
+    """Return registry-backed PEP 751 entries as normalized/name/version/marker tuples.
+
+    SSC-02 deliberately supports the repository project as a local ``directory.path='.'``
+    source tree because that exact source is escrowed separately as ``repository.tar``.
+    Other direct-source dependencies are rejected until their physical source material has
+    an explicit continuity adapter; silently rewriting them to an index requirement would
+    break lock identity.
+    """
+
+    data = _load_toml(pylock_path)
+    if data.get("lock-version") != "1.0":
+        raise SupplyChainContinuityError("unsupported pylock contract")
+    raw_packages = data.get("packages")
+    if not isinstance(raw_packages, list) or not raw_packages:
+        raise SupplyChainContinuityError("pylock packages are missing")
+
+    normalized_project = _normalize_name(project_name) if project_name else None
+    entries: set[tuple[str, str, str, str]] = set()
+    for raw in raw_packages:
+        if not isinstance(raw, dict):
+            raise SupplyChainContinuityError("pylock package must be a table")
+        name = str(raw.get("name", "")).strip()
+        if not name or any(char in name for char in "\r\n;"):
+            raise SupplyChainContinuityError("pylock package name is invalid")
+        normalized = _normalize_name(name)
+
+        source_keys = tuple(key for key in _DIRECT_SOURCE_KEYS if key in raw)
+        if source_keys:
+            directory = raw.get("directory")
+            is_local_project = (
+                normalized_project is not None
+                and normalized == normalized_project
+                and source_keys == ("directory",)
+                and isinstance(directory, dict)
+                and str(directory.get("path", "")).strip() == "."
+            )
+            if is_local_project:
+                continue
+            raise SupplyChainContinuityError(
+                f"unsupported direct-source dependency in pylock: {name} ({','.join(source_keys)})"
+            )
+
+        version = str(raw.get("version", "")).strip()
+        if not version or re.search(r"[;\s]", version):
+            raise SupplyChainContinuityError(
+                f"registry pylock package requires a stable version: {name}"
+            )
+
+        raw_marker = raw.get("marker")
+        marker = "" if raw_marker is None else str(raw_marker).strip()
+        if raw_marker is not None and (
+            not isinstance(raw_marker, str)
+            or not marker
+            or any(char in marker for char in "\r\n;")
+        ):
+            raise SupplyChainContinuityError(f"invalid pylock marker for {name}")
+        entries.add((normalized, name, version, marker))
+
+    if not entries:
+        raise SupplyChainContinuityError("pylock contains no registry-backed dependency entries")
+    return tuple(sorted(entries))
+
+
+def _locked_versions(
+    pylock_path: Path,
+    *,
+    project_name: str | None,
+) -> dict[str, tuple[str, frozenset[str]]]:
+    collected: dict[str, tuple[str, set[str]]] = {}
+    for normalized, display, version, _marker in _registry_lock_entries(
+        pylock_path,
+        project_name=project_name,
+    ):
+        if normalized not in collected:
+            collected[normalized] = (display, set())
+        collected[normalized][1].add(version)
+    return {
+        normalized: (display, frozenset(versions))
+        for normalized, (display, versions) in collected.items()
+    }
+
+
+def export_locked_constraints(
+    pylock_path: str | Path,
+    output_path: str | Path,
+    *,
+    pyproject_path: str | Path | None = None,
+) -> None:
+    """Export marker-preserving exact constraints without uv or dependency resolution."""
+
+    lock_path = Path(pylock_path)
+    project_name = _project_name_for_lock(lock_path, pyproject_path)
+    lines = [
+        f"{display}=={version}" + (f" ; {marker}" if marker else "")
+        for _normalized, display, version, marker in _registry_lock_entries(
+            lock_path,
+            project_name=project_name,
+        )
+    ]
+    destination = Path(output_path)
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    destination.write_text("\n".join(lines) + "\n", encoding="utf-8")
+
+
 def _wheel_identity(path: Path) -> tuple[str, str]:
     try:
         with zipfile.ZipFile(path) as archive:
             metadata_names = sorted(
-                name
-                for name in archive.namelist()
-                if name.endswith(".dist-info/METADATA")
+                name for name in archive.namelist() if name.endswith(".dist-info/METADATA")
             )
             if len(metadata_names) != 1:
                 raise SupplyChainContinuityError(
@@ -198,8 +278,9 @@ def _validate_source_archive(path: Path, *, source_sha: str) -> None:
                     "source archive commit identity does not match source_sha"
                 )
             for member in archive.getmembers():
-                safe = _safe_relative_path(member.name, field="source archive path")
-                if safe != member.name.rstrip("/"):
+                raw_name = member.name.rstrip("/")
+                safe = _safe_relative_path(raw_name, field="source archive path")
+                if safe != raw_name:
                     raise SupplyChainContinuityError(
                         f"non-canonical source archive path: {member.name!r}"
                     )
@@ -215,6 +296,18 @@ def _validate_source_archive(path: Path, *, source_sha: str) -> None:
         raise SupplyChainContinuityError("source archive is invalid") from exc
 
 
+def _regular_file(root: Path, relative: str) -> Path:
+    safe = _safe_relative_path(relative)
+    current = root
+    for part in PurePosixPath(safe).parts:
+        current = current / part
+        if current.is_symlink():
+            raise SupplyChainContinuityError(f"symlink is forbidden in bundle path: {safe}")
+    if not current.is_file():
+        raise SupplyChainContinuityError(f"bundle path is not a regular file: {safe}")
+    return current
+
+
 def _inventory_record(
     root: Path,
     relative: str,
@@ -223,12 +316,10 @@ def _inventory_record(
     package_name: str | None = None,
     package_version: str | None = None,
 ) -> dict[str, object]:
-    safe = _safe_relative_path(relative)
     if role not in _ALLOWED_ROLES:
         raise SupplyChainContinuityError(f"unsupported inventory role: {role}")
-    path = root / safe
-    if path.is_symlink() or not path.is_file():
-        raise SupplyChainContinuityError(f"inventory path is not a regular file: {safe}")
+    safe = _safe_relative_path(relative)
+    path = _regular_file(root, safe)
     record: dict[str, object] = {
         "path": safe,
         "role": role,
@@ -246,12 +337,12 @@ def _inventory_record(
 def _classify_inventory(root: Path) -> list[dict[str, object]]:
     records: list[dict[str, object]] = []
     for path in sorted(root.rglob("*"), key=lambda item: item.as_posix()):
-        if path.is_dir():
-            continue
         if path.is_symlink():
             raise SupplyChainContinuityError(
                 f"bundle must not contain symlinks: {path.relative_to(root).as_posix()}"
             )
+        if path.is_dir():
+            continue
         relative = path.relative_to(root).as_posix()
         if relative == MANIFEST_NAME:
             continue
@@ -284,8 +375,8 @@ def _validate_wheel_boundary(
 ) -> None:
     pylock = root / "identity" / "pylock.toml"
     pyproject = root / "identity" / "pyproject.toml"
-    locked = _locked_versions(pylock)
     project_name, project_version, build_requirements = _project_identity(pyproject)
+    locked = _locked_versions(pylock, project_name=project_name)
     normalized_project = _normalize_name(project_name)
 
     seen_project = 0
@@ -303,9 +394,7 @@ def _validate_wheel_boundary(
             continue
         if normalized in build_requirements:
             if version != build_requirements[normalized]:
-                raise SupplyChainContinuityError(
-                    f"build-tool wheel version mismatch: {name}"
-                )
+                raise SupplyChainContinuityError(f"build-tool wheel version mismatch: {name}")
             seen_build.add(normalized)
             continue
         locked_entry = locked.get(normalized)
@@ -410,16 +499,18 @@ def build_continuity_bundle(
 
     (root / "wheelhouse").mkdir()
     for wheel in wheel_files:
+        if wheel.is_symlink() or not wheel.is_file():
+            raise SupplyChainContinuityError(f"wheelhouse entry is not a regular file: {wheel}")
         shutil.copyfile(wheel, root / "wheelhouse" / wheel.name)
 
     (root / "identity").mkdir()
     for name in ("pyproject.toml", "pylock.toml", "uv.lock", "lukart_build_backend.py"):
         candidate = repository / name
-        if not candidate.is_file():
+        if candidate.is_symlink() or not candidate.is_file():
             raise SupplyChainContinuityError(f"repository identity input missing: {name}")
         shutil.copyfile(candidate, root / "identity" / name)
 
-    if not source.is_file():
+    if source.is_symlink() or not source.is_file():
         raise SupplyChainContinuityError("source archive is missing")
     (root / "source").mkdir()
     shutil.copyfile(source, root / "source" / "repository.tar")
@@ -525,9 +616,7 @@ def verify_continuity_bundle(bundle_root: str | Path) -> str:
         expected_digest = str(raw["sha256"]).strip().lower()
         if _SHA256_RE.fullmatch(expected_digest) is None:
             raise SupplyChainContinuityError(f"invalid inventory digest: {safe}")
-        candidate = root / safe
-        if candidate.is_symlink() or not candidate.is_file():
-            raise SupplyChainContinuityError(f"inventory file missing/non-regular: {safe}")
+        candidate = _regular_file(root, safe)
         if candidate.stat().st_size != size:
             raise SupplyChainContinuityError(f"inventory size mismatch: {safe}")
         if sha256_file(candidate) != expected_digest:
@@ -543,14 +632,15 @@ def verify_continuity_bundle(bundle_root: str | Path) -> str:
 
     actual_paths: set[str] = set()
     for path in root.rglob("*"):
+        if path.is_symlink():
+            raise SupplyChainContinuityError(
+                f"bundle contains symlink: {path.relative_to(root).as_posix()}"
+            )
         if path.is_dir():
             continue
         relative = path.relative_to(root).as_posix()
-        if relative == MANIFEST_NAME:
-            continue
-        if path.is_symlink():
-            raise SupplyChainContinuityError(f"bundle contains symlink: {relative}")
-        actual_paths.add(relative)
+        if relative != MANIFEST_NAME:
+            actual_paths.add(relative)
     if actual_paths != expected_paths:
         missing = sorted(expected_paths - actual_paths)
         unexpected = sorted(actual_paths - expected_paths)
@@ -586,6 +676,7 @@ def _cli(argv: Sequence[str] | None = None) -> int:
     constraints = sub.add_parser("constraints")
     constraints.add_argument("pylock")
     constraints.add_argument("output")
+    constraints.add_argument("--pyproject")
 
     build = sub.add_parser("build")
     build.add_argument("--bundle", required=True)
@@ -599,7 +690,7 @@ def _cli(argv: Sequence[str] | None = None) -> int:
 
     args = parser.parse_args(argv)
     if args.command == "constraints":
-        export_locked_constraints(args.pylock, args.output)
+        export_locked_constraints(args.pylock, args.output, pyproject_path=args.pyproject)
         return 0
     if args.command == "build":
         manifest = build_continuity_bundle(
