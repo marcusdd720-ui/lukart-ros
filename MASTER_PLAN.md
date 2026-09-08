@@ -9,7 +9,8 @@ Latest closed durability continuation: `DR-01 implementation merge @ main 615c01
 Latest closed invariant verification: `IV-01 @ main cae560f4893b8726695e06334982927376e7a146`
 Latest closed signed exchange continuation: `XCH-01 @ main 83157c6e649ab1212ee200a453aa5240e08be24c`
 Latest closed Product runtime convergence: `PRC-01 @ main a12cd60d2a45ce0d1807588089dbf9706cac4b22`
-Active Post-Hardcore stage: `PVE-01 — Product Verification Evidence v1`
+Latest closed Product verification evidence: `PVE-01 @ main 174b29897dcab15f7f51d5cc876aeec2b8306871`
+Active Post-Hardcore stage: `GOV-01 — Governance Closure Consistency v1`
 Roadmap target: `Post-Hardcore Enterprise continuation`
 Development version: `1.1.0.dev0`
 
@@ -86,7 +87,9 @@ XCH-01 — Signed Case Exchange v1 — is `CLOSED / ENGINEERING PASS` for PR #16
 
 PRC-01 — Product Runtime Convergence v1 — is `CLOSED / ENGINEERING PASS` for PR #162. The final validated PR head is `e13dabd2459c5097d7d6a720cbbfafeeb32f8b04`; the implementation merge is `main @ a12cd60d2a45ce0d1807588089dbf9706cac4b22`. PRC-01 composes the existing Canonical Case Ledger, Epistemic v2, Evidence Trust Graph, deterministic Reasoning Engine and Case Replay v2 into a content-addressed `ProductRuntimeProofV1`, while preserving the CCL as the sole writable case-history authority. Reasoning evidence must resolve to exact EVENT/ASSERTION trust nodes. The existing cognitive release guard remains the single release authorization boundary and now requires exactly one valid `product_runtime` proof binding. The final candidate passed all 11 required PR workflows; the exact implementation merge completed nine post-merge workflows, all `SUCCESS`, with no failed, cancelled, queued or in-progress run at closure evaluation. Historical `v1.0.1` tag object and target commit remained unchanged and no new release was published. No independent external certification is claimed.
 
-The next approved stage is `PVE-01 — Product Verification Evidence v1`. PVE-01 must measure the converged PRC-01 runtime using versioned, reproducible, privacy-safe evidence and must not promote synthetic or private-case observations into certification claims without the required authority.
+PVE-01 — Product Verification Evidence v1 — is `CLOSED / ENGINEERING PASS` for PR #164. The validated PR head is `23c2ff32ba9b75ff055e8e08d50c89741494f56c`; the implementation merge is `main @ 174b29897dcab15f7f51d5cc876aeec2b8306871`. PVE-01 adds a fixed content-addressed five-check measurement registry over PRC-01 covering a supported conclusion, epistemic ABSTAIN with explicit open questions, tamper rejection, cross-case substitution rejection and evidence-identity determinism. It is measurement-only and creates no Product truth, persistence, Gold or certification authority. The exact candidate passed all 11 required PR workflows; the exact implementation merge completed nine post-merge workflow runs, all `SUCCESS`. Historical `v1.0.1` identity remained unchanged and no new release was published. No private real-case verification or independent external certification is claimed without separately available evidence.
+
+The next approved stage is `GOV-01 — Governance Closure Consistency v1`. GOV-01 must prevent recurrence of observed drift between actual merge/CI state and canonical roadmap/master-plan status by validating exact closure evidence across GitHub live state and canonical governance, without making repository text a competing source of live truth.
 
 ## 6. Trust boundaries
 
@@ -159,5 +162,6 @@ The package development version is distinct from the immutable historical releas
 - `docs/CRITICAL_INVARIANT_VERIFICATION_V1.md` — IV-01 bounded critical-invariant verification contract.
 - `docs/SIGNED_CASE_EXCHANGE_V1.md` — XCH-01 signed offline-verifiable case exchange contract.
 - `docs/PRODUCT_RUNTIME_CONVERGENCE_V1.md` — PRC-01 converged Product runtime and release-proof contract.
+- `docs/PRODUCT_VERIFICATION_EVIDENCE_V1.md` — PVE-01 reproducible Product verification evidence contract.
 
 Historical design records do not override this Master Plan, Accepted ADRs, executable trust gates or the canonical working principles.
