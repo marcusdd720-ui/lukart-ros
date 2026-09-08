@@ -1,8 +1,11 @@
 # POL-01 — Authorization Policy Identity v1
 
-Status: implementation candidate
+Status: implementation merged; canonical closure pending
 Authority: Enterprise authorization policy identity/provenance only
 Base measured: `main @ b7f2cc9abb078bfb5049282cf4f5d30e11517230`
+Validated implementation head: `e1490b916499bcf9ef9d098b1773525a5d64b925`
+Implementation PR: `#186`
+Implementation merge: `1465bbbaade70346c5894b43d9261885c8d53614`
 
 ## Problem
 
@@ -90,6 +93,15 @@ The next approved exchange stage may embed or otherwise bind the exact
 `AuthorizationPolicyV1` snapshot needed to re-evaluate historical authorization receipts
 offline. That portability work belongs to XCH-02; POL-01 only establishes the exact policy
 identity and reconstruction primitive it requires.
+
+## Closure repair provenance
+
+The implementation PR and its exact merge passed the stage's implementation and post-merge
+gates. During closure preparation, the canonical target remained the disabled OPR-01 target,
+so the preparation workflow correctly performed no POL-01 closure mutation. POL-01 therefore
+remains open until a fresh exact-SHA repair candidate arms the canonical closure target,
+passes the full validation pipeline, merges, and generates closure evidence from that repair
+merge. No earlier PASS is reused across the repair SHA.
 
 ## Acceptance criteria
 
