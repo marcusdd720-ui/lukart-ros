@@ -18,11 +18,23 @@ from .contracts import (
     MetricDirection,
     MetricSpec,
 )
+from .longitudinal import (
+    KQM_LONGITUDINAL_COMPARISON_SCHEMA_V1,
+    KQM_LONGITUDINAL_POINT_SCHEMA_V1,
+    KQMDeltaDirection,
+    KQMLongitudinalComparison,
+    KQMLongitudinalPoint,
+    KQMMetricDelta,
+    PersistentKQMHistory,
+    compare_kqm_points,
+)
 
 __all__ = [
     "EVALUATION_INPUT_IDENTITY_SCHEMA_V1",
     "EVALUATOR_IDENTITY_SCHEMA_V1",
     "GOLD_CORPUS_IDENTITY_SCHEMA_V2",
+    "KQM_LONGITUDINAL_COMPARISON_SCHEMA_V1",
+    "KQM_LONGITUDINAL_POINT_SCHEMA_V1",
     "KQM_POLICY_SCHEMA_V2",
     "KQM_PROJECTION_SCHEMA_V2",
     "CaseLedgerHead",
@@ -32,8 +44,14 @@ __all__ = [
     "EvaluatorIdentity",
     "GoldCorpusIdentity",
     "GoldSplit",
+    "KQMDeltaDirection",
+    "KQMLongitudinalComparison",
+    "KQMLongitudinalPoint",
+    "KQMMetricDelta",
     "KQMPolicy",
     "KQMProjection",
     "MetricDirection",
     "MetricSpec",
+    "PersistentKQMHistory",
+    "compare_kqm_points",
 ]
