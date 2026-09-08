@@ -10,7 +10,8 @@ Latest closed Product runtime convergence: `PRC-01 @ main a12cd60d2a45ce0d180758
 Latest closed Product verification evidence: `PVE-01 @ main 174b29897dcab15f7f51d5cc876aeec2b8306871`
 Latest closed governance consistency: `GOV-01 implementation merge @ main 54245df8f834661c9d36a522e46952a20a095c0f`
 Latest closed longitudinal KQM: `KQM-03 implementation merge @ main 85d4beaae0d0c5f736a23204cbf2103f8858f935`
-Active stage: `CRY-01`
+Latest closed crypto agility: `CRY-01 implementation merge @ main 2c705dde2c077f04b6c820e2104cb27cb320ab36`
+Active stage: `DR-02`
 Approved execution sequence: `PRC-01 -> PVE-01 -> GOV-01 -> KQM-03 -> CRY-01 -> DR-02 -> SSC-02 -> FIV-02 -> OPR-01 -> POL-01 -> XCH-02 -> continuous LRD-01`
 Horizon: 10+ years
 
@@ -424,6 +425,51 @@ Closed controls:
   certification.
 
 Architecture and exact closure evidence: `docs/KQM_LONGITUDINAL_V1.md`.
+
+## CRY-01 — Crypto Agility / Trust-Set / Key Lifecycle v1
+
+Status: `CLOSED / ENGINEERING PASS`
+Implementation merge baseline: `main @ 2c705dde2c077f04b6c820e2104cb27cb320ab36`
+Validated PR head: `69108c93d224803c21d9ba76b93a883eada32fe1`
+PR: `#170`
+Depends on: `KQM-03 CLOSED / ENGINEERING PASS`
+Next approved stage: `DR-02`
+
+Closed controls:
+
+- existing Enterprise Ed25519 signing and verification primitives are reused rather than
+  duplicated or replaced by a second cryptographic implementation;
+- explicit `ED25519` algorithm identity is bound to trust keys and verification receipts;
+- `CryptoTrustSetV1` deterministically binds exact public-key bytes, key IDs, activation,
+  retirement, lifecycle state, least-privilege purposes and rotation predecessor lineage;
+- exact trust-set identity must be independently pinned by the caller; a lineage pointer is
+  continuity metadata and cannot self-promote a new root of trust;
+- `ACTIVE`, `RETIRED` and `REVOKED` have distinct fail-closed semantics;
+- planned retirement preserves historical verification for signatures issued before
+  retirement while prohibiting new signing with the retired key;
+- revocation rejects the key unconditionally, including a cryptographically valid backdated
+  signature, because attestation `issued_at` is not an independent trusted timestamp;
+- signer/public-key substitution under the same key ID fails closed;
+- unknown algorithms, unknown fields, malformed keys, invalid predecessor chains and trust-set
+  substitution fail closed;
+- deterministic verification receipts bind exact attestation, key, algorithm and trust-set
+  identities without claiming epistemic truth or release authority;
+- CRY-01 is algorithm-agile but does not claim ML-DSA, SLH-DSA or other post-quantum support
+  until a separately implemented and validated adapter exists;
+- no private key storage, CCL write path, Product truth, epistemic promotion, automatic trust
+  root promotion or release authority is introduced;
+- exact candidate SHA passed all 11 required PR workflows;
+- guarded merge used the unchanged exact head and expected base;
+- exact implementation merge completed nine post-merge workflow runs, all `SUCCESS`, with
+  zero failed, cancelled, timed-out, queued or in-progress runs at closure evaluation;
+- historical `v1.0.1` tag object remained
+  `9f7c0b28f766c8921e63b1d517fefcc96aa991d4` and its target commit remained
+  `802013c4d0e53dc12306a97e1877ebba86af64a7`;
+- no new release was published as a CRY-01 side effect;
+- engineering closure does not claim independent cryptographic, external, regulatory or
+  post-quantum certification.
+
+Architecture and exact closure evidence: `docs/CRYPTO_AGILITY_V1.md`.
 
 ## Years 6-10+ — Durability, portability and cryptographic renewal
 
