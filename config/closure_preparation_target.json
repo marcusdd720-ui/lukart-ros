@@ -1,0 +1,8 @@
+{
+  "architecture_doc": "docs/GOVERNANCE_CLOSURE_AUTOMATION_V1.md",
+  "enabled": true,
+  "implementation_pr": 178,
+  "next_stage_id": "OPR-01",
+  "schema": "lukart.closure-preparation-target.v1",
+  "stage_id": "GOV-AUTO-01"
+}
