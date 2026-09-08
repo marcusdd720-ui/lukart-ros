@@ -116,7 +116,7 @@ class ClosurePreparationTargetV1:
         }
 
     @classmethod
-    def from_dict(cls, raw: dict[str, object]) -> "ClosurePreparationTargetV1":
+    def from_dict(cls, raw: dict[str, object]) -> ClosurePreparationTargetV1:
         expected = {
             "schema",
             "enabled",
@@ -295,7 +295,7 @@ class ClosurePreparationGitHubClient(GitHubActionsClient):
     """Narrow GitHub App capability adapter used only for closure preparation."""
 
     @classmethod
-    def from_environment(cls) -> "ClosurePreparationGitHubClient":
+    def from_environment(cls) -> ClosurePreparationGitHubClient:
         return cast(ClosurePreparationGitHubClient, super().from_environment())
 
     def get_pull_request(self, number: int) -> dict[str, Any]:
