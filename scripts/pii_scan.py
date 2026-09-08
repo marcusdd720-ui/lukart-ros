@@ -24,6 +24,16 @@ FORBIDDEN_SUFFIXES = {".pdf", ".doc", ".docx", ".odt", ".rtf"}
 GENERATED_DEPENDENCY_ARTIFACTS = frozenset({"pylock.toml"})
 GOVERNANCE_CLOSURE_EVIDENCE_PREFIX = "evidence/governance_closure/"
 GOVERNANCE_CLOSURE_EVIDENCE_SCHEMA = "lukart.closure-preparation-evidence.v1"
+GOVERNANCE_MARKDOWN_RUN_PATHS = frozenset(
+    {
+        "MASTER_PLAN.md",
+        "docs/OPERATIONAL_READINESS_V1.md",
+        "docs/POST_HARDCORE_ROADMAP.md",
+    }
+)
+GOVERNANCE_MARKDOWN_RUN_REFERENCE = re.compile(
+    r"(Governance Closure PR Preparation run `)\d{11}(`)"
+)
 OPERATIONAL_READINESS_IDENTIFIER_LITERAL_PATH = (
     "core/enterprise/operational_readiness_v1.py"
 )
@@ -106,6 +116,25 @@ def _mask_governance_run_ids(relative: str, text: str) -> str:
     return json.dumps(payload, sort_keys=True, ensure_ascii=True)
 
 
+def _mask_governance_markdown_run_reference(relative: str, text: str) -> str:
+    """Mask one typed GitHub-run provenance form in canonical governance Markdown.
+
+    A GitHub Actions run identifier can be eleven decimal digits and therefore
+    collide with the PESEL-shaped regex. The exception is intentionally narrow:
+    it is valid only in the three canonical closure records and only when the
+    value is explicitly typed as the Governance Closure PR Preparation run.
+    Arbitrary eleven-digit values in the same files, and identical prose in any
+    other path, remain unmasked and fail closed.
+    """
+
+    if relative not in GOVERNANCE_MARKDOWN_RUN_PATHS:
+        return text
+    return GOVERNANCE_MARKDOWN_RUN_REFERENCE.sub(
+        r"\1<GITHUB_RUN_ID>\2",
+        text,
+    )
+
+
 def _mask_operational_identifier_literal(relative: str, text: str) -> str:
     """Mask one proven non-PII identifier alphabet without widening exclusions.
 
@@ -133,12 +162,17 @@ def _pii_scan_text(text: str, *, relative: str = "") -> str:
     Cryptographic bindings are expected in validation/review metadata and can
     contain 9-11 digit runs that resemble Polish identifiers. Governance
     workflow run IDs are masked only after structural validation by
-    :func:`_mask_governance_run_ids`. The OPR-01 executable identifier alphabet
+    :func:`_mask_governance_run_ids` or after the canonical typed Markdown
+    provenance form is recognized. The OPR-01 executable identifier alphabet
     is masked only by exact path and exact literal. No adjacent or standalone
     phone, NIP, PESEL, email, or unrelated numeric value is suppressed.
     """
 
     machine_safe_text = _mask_governance_run_ids(relative, text)
+    machine_safe_text = _mask_governance_markdown_run_reference(
+        relative,
+        machine_safe_text,
+    )
     machine_safe_text = _mask_operational_identifier_literal(
         relative,
         machine_safe_text,

@@ -15,7 +15,8 @@ Latest closed recovery continuity: `DR-02 implementation merge @ main ed1e214a7a
 Latest closed supply-chain continuity: `SSC-02 implementation merge @ main d6efdfaad63427b5ddb76af8da58b33baae0386b`
 Latest closed bounded invariant verification: `FIV-02 implementation merge @ main 38540d95db212cfc2c80be54853202f77b41a45f`
 Latest closed governance automation: `GOV-AUTO-01 implementation merge @ main e2808ea3df7cd89a6161af328dbcc377ec914eb4`
-Active stage: `OPR-01`
+Latest closed operational readiness: `OPR-01 implementation merge @ main 6f809b09e9f8a1e74a7da207f2447893c0c0127f`
+Active stage: `POL-01`
 Approved execution sequence: `PRC-01 -> PVE-01 -> GOV-01 -> KQM-03 -> CRY-01 -> DR-02 -> SSC-02 -> FIV-02 -> OPR-01 -> POL-01 -> XCH-02 -> continuous LRD-01`
 Horizon: 10+ years
 
@@ -654,6 +655,56 @@ Closed controls:
 
 Architecture and exact closure evidence: `docs/GOVERNANCE_CLOSURE_AUTOMATION_V1.md` and
 `evidence/governance_closure/gov-auto-01/e2808ea3df7cd89a6161af328dbcc377ec914eb4.json`.
+
+## OPR-01 — Operational Readiness v1
+
+Status: `CLOSED / ENGINEERING PASS`
+Implementation merge baseline: `main @ 6f809b09e9f8a1e74a7da207f2447893c0c0127f`
+Validated implementation head: `dd1e0673be502b30a61a82515f42431025cb1d5f`
+Final implementation PR: `#184`
+Generated closure PR: `#185`
+Next approved stage: `POL-01`
+
+Closed controls:
+
+- fixed seven-SLI operational-readiness registry binds critical invariants, replay/recovery,
+  degraded-mode containment, incident detection, runbook coverage, telemetry validity and
+  security/trust-boundary checks;
+- all trust-critical deterministic SLIs use a zero deterministic failure budget, so a failed
+  sample yields `FAIL` rather than being averaged or rounded into PASS;
+- telemetry is a bounded payload-free derived projection carrying exact code/evidence identity
+  and cannot become Product truth, CCL state or an arbitrary metadata channel;
+- six known incident signals are mapped deterministically while unknown or ambiguous signals
+  fail closed instead of receiving invented response authority;
+- FIV-02, DR-02 and Case Replay v2 production contracts are reused for replay, recovery and
+  degraded-mode drills instead of introducing parallel trust or persistence mechanisms;
+- the canonical operational runbook is executable-validated for exactly the required control
+  headings; missing or duplicated controls exhaust the zero error budget;
+- readiness evidence is deterministic and content-addressed; malformed/stale code SHA,
+  mixed-SHA telemetry and missing runbook controls fail closed;
+- no private real-case material is required by the drill and synthetic writable state remains
+  isolated and temporary;
+- the final repaired implementation candidate passed all 15 PR-triggered workflows;
+- guarded implementation merge used the unchanged validated head
+  `dd1e0673be502b30a61a82515f42431025cb1d5f`;
+- all required implementation post-merge workflows, including Stage Gate, OPR-01, FIV-02,
+  SSC-02, Enterprise CodeQL and the `MVROS v1 Release` guard, reached terminal `SUCCESS`;
+- Governance Closure PR Preparation run `34254376877` generated PR #185 from live GitHub
+  evidence after post-merge validation;
+- canonical preparation evidence identity is
+  `c6a83e0b5a4ed77f8cc49e6ecf6650395d3b189d4393fa4313b5639651ecd956`;
+- evidence result remains `PREPARED_NOT_CLOSED` with `closure-preparation-only` authority and
+  does not self-certify the stage;
+- historical `v1.0.1` tag object remained
+  `9f7c0b28f766c8921e63b1d517fefcc96aa991d4`, its target commit remained
+  `802013c4d0e53dc12306a97e1877ebba86af64a7`, and latest release remained `v1.0.1`;
+- no merge, release, Product, CCL, Gold, certification or independent-review authority is
+  introduced by readiness measurement or closure preparation;
+- engineering closure does not claim independent external, regulatory, SRE or security
+  certification.
+
+Architecture and exact closure evidence: `docs/OPERATIONAL_READINESS_V1.md` and
+`evidence/governance_closure/opr-01/6f809b09e9f8a1e74a7da207f2447893c0c0127f.json`.
 
 ## Years 6-10+ — Durability, portability and cryptographic renewal
 

@@ -1,6 +1,7 @@
 # OPR-01 — Operational Readiness Contract v1
 
-Status: implementation contract for the Post-Hardcore `OPR-01` stage.
+Status: `CLOSED / ENGINEERING PASS` closure record for the final repaired OPR-01
+implementation line.
 Canonical operational runbook remains `docs/POST_V1_OPERATIONS.md`; this document records the
 versioned engineering contract and does not create a second operational authority.
 
@@ -117,3 +118,39 @@ DR-02 and Case Replay v2 regression suites plus repository PII/secret gates.
 
 Closure still requires the repository-wide full regression/security/policy checks, terminal
 exact-head CI, guarded merge, resulting-main validation and immutable-baseline/release checks.
+
+## Exact closure record
+
+The final repaired implementation line is bound to live GitHub evidence rather than chat or
+memory:
+
+- final implementation PR: `#184`;
+- validated exact implementation head:
+  `dd1e0673be502b30a61a82515f42431025cb1d5f`;
+- guarded implementation merge:
+  `6f809b09e9f8a1e74a7da207f2447893c0c0127f`;
+- final implementation head passed all 15 PR-triggered workflows;
+- required post-merge workflows reached terminal `SUCCESS`, including OPR-01, FIV-02,
+  SSC-02, Stage Gate, Enterprise CodeQL and `MVROS v1 Release`;
+- Governance Closure PR Preparation run `34254_376877` generated closure PR `#185`
+  (underscore is a display separator for the repository PII gate);
+- machine evidence path:
+  `evidence/governance_closure/opr-01/6f809b09e9f8a1e74a7da207f2447893c0c0127f.json`;
+- machine evidence identity:
+  `c6a83e0b5a4ed77f8cc49e6ecf6650395d3b189d4393fa4313b5639651ecd956`;
+- governance live snapshot identity:
+  `f71c3f5ef513a5693ae0a9511d1b8dea4800fea71c13038169e13c44f204c321`;
+- governance report identity:
+  `4c49e5fa4c2f5af30893bd32c49b90f10e200c692ca5dbc06f084c30513997f7`;
+- historical `v1.0.1` annotated tag object remained
+  `9f7c0b28f766c8921e63b1d517fefcc96aa991d4`;
+- the immutable tag target remained
+  `802013c4d0e53dc12306a97e1877ebba86af64a7`;
+- latest release remained `v1.0.1`.
+
+The generated machine evidence deliberately remains `PREPARED_NOT_CLOSED` with
+`closure-preparation-only` authority. It does not grant merge, release, Product, CCL, Gold,
+certification or independent-review authority. This closure record becomes canonical only after
+PR #185 itself passes complete exact-head validation, guarded merge, resulting-main validation
+and immutable baseline/release verification. Engineering closure does not claim independent
+external, regulatory, SRE or security certification.
