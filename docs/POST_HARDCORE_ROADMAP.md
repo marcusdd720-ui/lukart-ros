@@ -8,7 +8,8 @@ Latest closed invariant verification: `IV-01 @ main cae560f4893b8726695e06334982
 Latest closed signed exchange continuation: `XCH-01 @ main 83157c6e649ab1212ee200a453aa5240e08be24c`
 Latest closed Product runtime convergence: `PRC-01 @ main a12cd60d2a45ce0d1807588089dbf9706cac4b22`
 Latest closed Product verification evidence: `PVE-01 @ main 174b29897dcab15f7f51d5cc876aeec2b8306871`
-Active stage: `GOV-01 — Governance Closure Consistency v1`
+Latest closed governance consistency: `GOV-01 implementation merge @ main 54245df8f834661c9d36a522e46952a20a095c0f`
+Active stage: `KQM-03`
 Approved execution sequence: `PRC-01 -> PVE-01 -> GOV-01 -> KQM-03 -> CRY-01 -> DR-02 -> SSC-02 -> FIV-02 -> OPR-01 -> POL-01 -> XCH-02 -> continuous LRD-01`
 Horizon: 10+ years
 
@@ -346,36 +347,42 @@ Architecture contract: `docs/PRODUCT_VERIFICATION_EVIDENCE_V1.md`.
 
 ## GOV-01 — Governance Closure Consistency v1
 
-Status: `ACTIVE / DEFINITION + IMPLEMENTATION`
+Status: `CLOSED / ENGINEERING PASS`
+Implementation merge baseline: `main @ 54245df8f834661c9d36a522e46952a20a095c0f`
+Validated PR head: `07256f90282de080a19bca32d40c28fe10406ac5`
+PR: `#166`
 Depends on: `PVE-01 CLOSED / ENGINEERING PASS`
+Next approved stage: `KQM-03`
 
-Problem: previous closure work exposed a real governance failure mode in which implementation
-and exact-SHA CI were already closed while canonical roadmap/master-plan status remained
-stale. GitHub live state is the source of truth for SHA/PR/CI/release; repository governance
-must accurately and deterministically reflect that live evidence without becoming a second
-live authority.
+Closed controls:
 
-Initial contract:
+- bounded machine-verifiable closure record binds stage ID, implementation PR, validated
+  head SHA, resulting merge SHA and immutable release-baseline identities;
+- externally observed GitHub live snapshot remains the evidence source; governance text is
+  compared against it and never manufactures its own live evidence;
+- fixed eleven-workflow PR registry cannot be caller-reduced to manufacture PASS;
+- missing, duplicate, failed, cancelled, stale or cross-stage workflow/identity evidence
+  fails closed;
+- direct merge ancestry proves the validated head participated in the resulting merge;
+- moved-head, stale-merge and baseline drift fail closed;
+- exact candidate SHA passed all 11 required PR workflows;
+- exact implementation merge completed nine post-merge workflow runs, all `SUCCESS`, with no
+  failed, cancelled, timed-out, queued or in-progress runs at closure evaluation;
+- historical `v1.0.1` tag object remained
+  `9f7c0b28f766c8921e63b1d517fefcc96aa991d4` and its target commit remained
+  `802013c4d0e53dc12306a97e1877ebba86af64a7`;
+- no new release was published as a GOV-01 side effect;
+- externally observed snapshot identity is
+  `6d48def33e722e413a37d8fa8992bf9b305b2ac0d601400b76af7838a478e175`;
+- canonical closure-record identity is
+  `7da55b77321466b968d3d1c033bc6e0bd2a63a96b8f7b05d911582bf581cfe23`;
+- GOV-01 consistency-report identity is
+  `1108992adad36b901667281eecf2a142e7490193f948d07c17d8a6226c3e9536`;
+- verifier result is `CONSISTENT` and its authority remains governance-verification-only;
+- no CCL write path, Product truth/Gold authority, release mutation, CI bypass or automatic
+  independent-review/certification claim is introduced.
 
-- define a bounded machine-verifiable closure record binding stage ID, implementation PR,
-  validated head SHA, resulting merge SHA, required workflow names/outcomes and immutable
-  release baseline identities;
-- validate canonical governance declarations against an externally supplied/live evidence
-  snapshot rather than trusting documentation text as evidence of itself;
-- missing, duplicate, stale or cross-stage identities fail closed;
-- a moved PR head or mismatched merge ancestry invalidates the record;
-- required workflow set must be fixed/versioned for the contract and cannot be caller-reduced;
-- release/tag identity checks remain separate from Product epistemic truth and cannot create
-  a certification claim;
-- closure consistency validation is governance-only and creates no CCL write path, Product
-  truth store, CI bypass or automatic independent-review claim;
-- public CI may validate synthetic/fixed governance evidence fixtures, while live GitHub
-  reconciliation remains an execution-time evidence step bound to exact SHA;
-- future governance formats require explicit versioning/migration; unknown schema fails
-  closed.
-
-GOV-01 implementation/closure requires its own exact candidate SHA, focused/adversarial/full
-validation, complete required CI, guarded merge and exact-main post-merge verification.
+Architecture and exact closure evidence: `docs/GOVERNANCE_CLOSURE_CONSISTENCY_V1.md`.
 
 ## Years 6-10+ — Durability, portability and cryptographic renewal
 
