@@ -441,11 +441,16 @@ def _workflow_run(raw: dict[str, Any], expected_sha: str) -> WorkflowRunEvidence
     head_sha = raw.get("head_sha")
     if not isinstance(run_id, int):
         raise ClosurePreparationError("workflow run id is invalid")
-    if not all(
-        isinstance(value, str)
-        for value in (name, event, status, conclusion, head_sha)
-    ):
-        raise ClosurePreparationError(f"workflow run {run_id} has incomplete identity")
+    if not isinstance(name, str):
+        raise ClosurePreparationError(f"workflow run {run_id} name is invalid")
+    if not isinstance(event, str):
+        raise ClosurePreparationError(f"workflow run {run_id} event is invalid")
+    if not isinstance(status, str):
+        raise ClosurePreparationError(f"workflow run {run_id} status is invalid")
+    if not isinstance(conclusion, str):
+        raise ClosurePreparationError(f"workflow run {run_id} conclusion is invalid")
+    if not isinstance(head_sha, str):
+        raise ClosurePreparationError(f"workflow run {run_id} head SHA is invalid")
     if head_sha != expected_sha:
         raise ClosurePreparationError(f"workflow run {run_id} head SHA mismatch")
     return WorkflowRunEvidenceV1(
