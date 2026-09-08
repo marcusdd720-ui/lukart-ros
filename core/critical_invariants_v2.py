@@ -98,7 +98,10 @@ def _definitions() -> tuple[FIV02InvariantDefinition, ...]:
         FIV02InvariantDefinition(
             FIV02InvariantId.RECOVERY_ATOMICITY,
             "canonical-ledger-recovery",
-            "Injected mid-restore failure leaves no partial case history and recovery remains exact.",
+            (
+                "Injected mid-restore failure leaves no partial case history "
+                "and recovery remains exact."
+            ),
         ),
     )
     return tuple(sorted(values, key=lambda item: item.invariant_id.value))
@@ -111,7 +114,7 @@ class FIV02Registry:
     schema: str = FIV02_REGISTRY_SCHEMA
 
     @classmethod
-    def reference(cls) -> "FIV02Registry":
+    def reference(cls) -> FIV02Registry:
         definitions = _definitions()
         body = {
             "schema": FIV02_REGISTRY_SCHEMA,
@@ -156,7 +159,7 @@ class FIV02TracePoint:
         action: str,
         outcome: str,
         state: Mapping[str, object],
-    ) -> "FIV02TracePoint":
+    ) -> FIV02TracePoint:
         if index < 0:
             raise FIV02VerificationError("trace index cannot be negative")
         action = action.strip()
@@ -203,7 +206,7 @@ class FIV02InvariantTrace:
         *,
         invariant_id: FIV02InvariantId,
         points: tuple[FIV02TracePoint, ...],
-    ) -> "FIV02InvariantTrace":
+    ) -> FIV02InvariantTrace:
         if not points:
             raise FIV02VerificationError("FIV-02 trace cannot be empty")
         if len(points) > FIV02_MAX_TRACE_STEPS:
@@ -279,7 +282,7 @@ class FIV02InvariantResult:
         invariant_id: FIV02InvariantId,
         trace: FIV02InvariantTrace,
         evidence: Mapping[str, object],
-    ) -> "FIV02InvariantResult":
+    ) -> FIV02InvariantResult:
         trace.verify()
         evidence_identity = ContentAddress.for_value(
             {
@@ -337,7 +340,7 @@ class FIV02VerificationReport:
         code_sha: str,
         registry: FIV02Registry,
         results: tuple[FIV02InvariantResult, ...],
-    ) -> "FIV02VerificationReport":
+    ) -> FIV02VerificationReport:
         registry.verify()
         expected_ids = tuple(item.invariant_id for item in registry.definitions)
         if tuple(result.invariant_id for result in results) != expected_ids:
@@ -581,7 +584,10 @@ def _migration_probe() -> FIV02InvariantResult:
     )
     first = stable.migrate(source, "case.v2")
     second = stable.migrate(source, "case.v2")
-    if first.target.payload_digest != second.target.payload_digest or first.path_digest != second.path_digest:
+    if (
+        first.target.payload_digest != second.target.payload_digest
+        or first.path_digest != second.path_digest
+    ):
         raise FIV02VerificationError("MIGRATION_PATH_DETERMINISM produced different targets")
     trace.add(
         "repeat-explicit-migration",
