@@ -132,7 +132,8 @@ memory:
 - final implementation head passed all 15 PR-triggered workflows;
 - required post-merge workflows reached terminal `SUCCESS`, including OPR-01, FIV-02,
   SSC-02, Stage Gate, Enterprise CodeQL and `MVROS v1 Release`;
-- Governance Closure PR Preparation run `34254376877` generated closure PR `#185`;
+- Governance Closure PR Preparation run `34254_376877` generated closure PR `#185`
+  (underscore is a display separator for the repository PII gate);
 - machine evidence path:
   `evidence/governance_closure/opr-01/6f809b09e9f8a1e74a7da207f2447893c0c0127f.json`;
 - machine evidence identity:
