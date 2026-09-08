@@ -1,9 +1,12 @@
 # PVE-01 — Product Verification Evidence v1
 
-Status: `IMPLEMENTATION / VALIDATION PENDING`
+Status: `CLOSED / ENGINEERING PASS`
 Authority: measurement-only derived evidence
 Depends on: `PRC-01 CLOSED / ENGINEERING PASS`
 Canonical Product history authority: Canonical Case Ledger (CCL)
+Validated PR head: `23c2ff32ba9b75ff055e8e08d50c89741494f56c`
+Implementation merge: `main @ 174b29897dcab15f7f51d5cc876aeec2b8306871`
+PR: `#164`
 
 ## Problem
 
@@ -101,6 +104,23 @@ PVE-01 aborts without a PASS report when, among other conditions:
 
 There is no partial PVE-01 PASS report.
 
+## Closure evidence
+
+PVE-01 implementation was merged through PR #164 from final validated head
+`23c2ff32ba9b75ff055e8e08d50c89741494f56c` to implementation merge
+`174b29897dcab15f7f51d5cc876aeec2b8306871`.
+
+The exact PR-head SHA completed all 11 required workflows with `SUCCESS`: CI Foundation,
+Architectural Audit 1.0, P2 Semantic Intelligence, P3 Hardcore Hardening, Production
+Validation Program, Post-v1 v1.1, Stage Orchestrator, Stage Gate, Enterprise Hardcore Gate,
+Enterprise CodeQL and GitHub App Smoke Test.
+
+The exact implementation merge SHA completed nine recorded post-merge workflow runs; all
+nine concluded `SUCCESS`, with no failed, cancelled, queued or in-progress runs when closure
+was evaluated. Historical `v1.0.1` tag object
+`9f7c0b28f766c8921e63b1d517fefcc96aa991d4` remained bound to commit
+`802013c4d0e53dc12306a97e1877ebba86af64a7`; no new release was published by PVE-01.
+
 ## Non-goals
 
 PVE-01 does not:
@@ -115,17 +135,11 @@ PVE-01 does not:
 
 ## Closure criteria
 
-PVE-01 becomes `CLOSED / ENGINEERING PASS` only after:
-
-- fixed registry and content-addressed evidence/report implementation exist;
-- focused and adversarial tests pass;
-- full regression, Ruff and MyPy pass;
-- security/privacy/policy gates pass;
-- all required workflows pass on one exact PR-head SHA;
-- unchanged exact head is guarded-merged;
-- resulting `main` completes terminal post-merge validation;
-- historical `v1.0.1` release/tag identity remains unchanged;
-- canonical governance records exact closure evidence.
+PVE-01 is `CLOSED / ENGINEERING PASS`: fixed registry and content-addressed evidence/report
+implementation exist; focused/adversarial/full validation passed; all required workflows
+passed on one exact PR-head SHA; the unchanged head was guarded-merged; resulting `main`
+completed terminal post-merge validation; historical `v1.0.1` identity remained unchanged;
+and exact closure evidence is recorded in canonical governance.
 
 Engineering closure does not assert independent external certification or unavailable
 private-case verification.
