@@ -329,3 +329,66 @@ def test_github_adapter_encodes_text_file_for_contents_api(
     decoded = base64.b64decode(str(body["content"])).decode("utf-8")
     assert decoded == "{\"ok\":true}\n"
     assert body["branch"] == "closure/test"
+
+
+def test_github_adapter_requires_scoped_closure_pr_token(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.delenv("LUKART_ROS_CLOSURE_PR_TOKEN", raising=False)
+    client = ClosurePreparationGitHubClient(
+        app_id=1,
+        installation_id=2,
+        private_key="key",
+        repository="owner/repo",
+    )
+
+    with pytest.raises(ClosurePreparationError, match="scoped closure PR token"):
+        client.create_pull_request(
+            title="test",
+            body="body",
+            head="closure/test",
+            base="main",
+        )
+
+
+def test_github_adapter_uses_scoped_closure_pr_token_only_for_pr_mutation(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("LUKART_ROS_CLOSURE_PR_TOKEN", "scoped-token")
+    client = ClosurePreparationGitHubClient(
+        app_id=1,
+        installation_id=2,
+        private_key="app-key",
+        repository="owner/repo",
+    )
+    captured: dict[str, Any] = {}
+
+    def fake_request(
+        method: str,
+        url: str,
+        *,
+        token: str,
+        body: bytes | None = None,
+    ) -> dict[str, Any]:
+        captured.update({"method": method, "url": url, "token": token, "body": body})
+        return {"number": 201, "html_url": "https://github.com/owner/repo/pull/201"}
+
+    monkeypatch.setattr(client, "_request", fake_request)
+
+    result = client.create_pull_request(
+        title="GOV-AUTO-01 closure",
+        body="PREPARED / NOT CLOSED",
+        head="closure/test",
+        base="main",
+    )
+
+    assert result["number"] == 201
+    assert captured["method"] == "POST"
+    assert captured["token"] == "scoped-token"
+    assert captured["url"] == "https://api.github.com/repos/owner/repo/pulls"
+    raw_body = captured["body"]
+    assert isinstance(raw_body, bytes)
+    payload = json.loads(raw_body.decode("utf-8"))
+    assert payload["head"] == "closure/test"
+    assert payload["base"] == "main"
+    assert payload["draft"] is False

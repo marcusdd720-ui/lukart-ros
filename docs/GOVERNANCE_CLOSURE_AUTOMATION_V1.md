@@ -21,8 +21,11 @@ exact-SHA CI, guarded merge and post-merge validation chain.
 
 ## 2. Decision
 
-GOV-AUTO-01 adds a bounded GitHub App worker that prepares a closure PR only after it can
-reconstruct fail-closed live evidence for the exact implementation merge.
+GOV-AUTO-01 adds a bounded worker that prepares a closure PR only after it can reconstruct
+fail-closed live evidence for the exact implementation merge. Capability is deliberately
+split: the existing LUKART ROS GitHub App performs live evidence reads plus generated-branch
+content writes, while the ephemeral workflow `GITHUB_TOKEN` is scoped only to the final
+pull-request mutation.
 
 The worker:
 
@@ -42,9 +45,11 @@ The worker:
 12. verifies the immutable `v1.0.1` annotated tag target and latest release state;
 13. delegates governance consistency verification to `core/governance_closure_v1.py`;
 14. emits content-addressed machine-readable evidence;
-15. creates a dedicated closure branch;
-16. writes the evidence and disables that stage's preparation target on the closure branch;
-17. opens a normal closure PR through the existing LUKART ROS GitHub App.
+15. creates a dedicated closure branch with the existing GitHub App;
+16. writes the evidence and disables that stage's preparation target on the closure branch
+    with the existing GitHub App;
+17. opens a normal closure PR using only the job-scoped `GITHUB_TOKEN` with
+    `pull-requests: write` and `contents: read`.
 
 The generated PR is explicitly marked:
 
@@ -66,21 +71,29 @@ The automation has **no merge authority** and no authority to:
 The closure PR still requires stage-specific canonical documentation updates, complete
 exact-head CI, a head/base drift check, guarded exact-head merge and post-merge validation.
 
-## 4. Why GitHub App instead of `GITHUB_TOKEN`
+## 4. Split capability model
 
-A pull request opened by the repository GitHub App is intended to enter the ordinary PR
-validation path. The worker does not use the workflow `GITHUB_TOKEN` as a fallback mutation
-authority because platform anti-recursion rules can prevent ordinary downstream workflow
-events from being created by that token. A missing GitHub App write capability fails closed
-instead of silently creating a weaker validation path.
+The first real post-merge dogfood proved that the existing LUKART ROS GitHub App can collect
+live evidence, create the generated branch and write the evidence/disabled target, but its
+installed permission set rejects `POST /pulls` with `403 Resource not accessible by
+integration`. The repair therefore does not silently broaden the App or introduce a PAT.
 
-Required App capabilities for live preparation are intentionally narrow:
+Instead, capabilities are split by operation:
 
-- Actions read for workflow evidence;
-- Contents write for one generated closure branch;
-- Pull requests write for opening the closure PR.
+- **GitHub App:** Actions/evidence reads and Contents write for the generated closure branch;
+- **workflow `GITHUB_TOKEN`:** `contents: read` plus `pull-requests: write`, used only for
+  the final `POST /pulls` request;
+- **no token:** merge, release, administration, secrets mutation, Product/CCL/Gold mutation
+  or certification authority.
 
-No administration, secrets mutation or release permission is required by this worker.
+The scoped PR token must be present explicitly as `LUKART_ROS_CLOSURE_PR_TOKEN`; absence
+fails closed before the pull-request request. The token is job-scoped/ephemeral and is not
+persisted in repository state or generated evidence.
+
+Repository/platform policy remains authoritative. If GitHub policy refuses Actions-created
+pull requests or places the generated PR in a validation state that cannot traverse the
+required exact-SHA gate, preparation is not treated as PASS and must be repaired or require
+an explicit authorization change. The worker never bypasses such policy.
 
 ## 5. Target contract and recursion control
 
@@ -139,7 +152,9 @@ Preparation fails closed on, among other conditions:
 - baseline tag/target drift;
 - latest-release drift;
 - malformed GitHub API responses;
-- inability to create the branch/evidence/PR with the GitHub App.
+- inability to create the branch/evidence with the GitHub App;
+- missing scoped closure-PR token;
+- inability to create the closure PR under effective repository/platform policy.
 
 Pending or not-yet-created required post-merge evidence is polled within a bounded timeout.
 A terminal failed/cancelled/skipped workflow is not retried into PASS by this worker.
@@ -162,19 +177,28 @@ validation/merge/post-merge lifecycle.
 Rejected. It would collapse preparation, validation and trust promotion into one capability
 and increase blast radius.
 
-### Workflow `GITHUB_TOKEN` PR creation
+### Broaden the existing GitHub App to Pull requests write
 
-Rejected as the primary mutation path. Platform event-recursion semantics can prevent the
-generated PR from traversing the same ordinary workflow path expected from normal changes.
+Not selected for the repair. The installed App capability boundary was observed directly and
+changing it would require a separate authorization/configuration operation. The stage can
+remain least-privilege without that change.
 
-### External SaaS/bot
+### Workflow `GITHUB_TOKEN` for all mutations
 
-Rejected. It adds provider lock-in, credentials and an unnecessary external trust surface.
+Rejected. It would unnecessarily replace the already working GitHub App content boundary and
+increase coupling to workflow-token recursion semantics.
 
-### Existing GitHub App + GOV-01 verifier
+### Split App contents + scoped workflow PR mutation
 
-Selected. It reuses current authenticated infrastructure and the existing consistency
-contract, adds no competing governance truth source and remains auditable/recoverable.
+Selected after dogfood evidence. It preserves the existing App for evidence/content work and
+uses the shortest-lived available token only for the one capability the App demonstrably
+lacks. Platform policy is still fail-closed and ordinary exact-SHA validation remains
+mandatory.
+
+### External SaaS/bot or PAT
+
+Rejected. Both add avoidable credentials/provider trust surface for a capability available
+inside GitHub Actions.
 
 ## 10. Validation and closure contract
 
@@ -187,13 +211,18 @@ GOV-AUTO-01 itself is not CLOSED until all of the following are proven:
 - exact implementation PR head is unchanged and all workflows are terminal SUCCESS;
 - guarded implementation merge succeeds;
 - resulting implementation `main` completes all post-merge workflows successfully;
-- the newly installed preparation workflow **dogfoods itself** and opens the
-  GOV-AUTO-01 closure PR from live GitHub evidence;
-- the generated evidence exactly binds the implementation head/merge/baseline;
+- the preparation workflow **dogfoods itself** and opens the GOV-AUTO-01 closure PR from
+  live GitHub evidence;
+- the generated evidence exactly binds the validated implementation head/merge/baseline;
 - the generated closure PR completes its own exact-head validation;
 - canonical roadmap/Master Plan/this contract are updated on that same closure PR;
 - guarded closure merge succeeds;
 - resulting `main` completes post-merge validation;
 - `v1.0.1` identity remains unchanged and no unintended release is published.
+
+The first implementation merge may be followed by a repair PR when post-merge dogfood finds
+a repairable integration defect. In that case only the repaired exact SHA and its subsequent
+validation may support closure; the failed dogfood remains historical evidence and is not
+reinterpreted as PASS.
 
 No automated run can replace independent review where a later stage explicitly requires it.

@@ -16,6 +16,7 @@ on:
 
 permissions:
   contents: read
+  pull-requests: write
 
 jobs:
   prepare-closure-pr:
@@ -34,6 +35,7 @@ jobs:
       LUKART_ROS_FACTORY_APP_ID: ${{ vars.LUKART_ROS_FACTORY_APP_ID }}
       LUKART_ROS_FACTORY_CLIENT_ID: ${{ vars.LUKART_ROS_FACTORY_CLIENT_ID }}
       LUKART_ROS_FACTORY_PRIVATE_KEY: ${{ secrets.LUKART_ROS_FACTORY_PRIVATE_KEY }}
+      LUKART_ROS_CLOSURE_PR_TOKEN: ${{ github.token }}
 
     steps:
       - name: Checkout exact source SHA
