@@ -2,35 +2,18 @@
 
 from __future__ import annotations
 
-from collections.abc import Mapping, Sequence
+from collections.abc import Sequence
 from dataclasses import dataclass
 
 from core.p3.contracts import content_digest
 
+from .authorization_policy import AuthorizationPolicyV1, RoleDefinition
 from .contracts import (
     AuthorizationContext,
     DataClassification,
     EnterpriseContractError,
     Permission,
 )
-
-
-@dataclass(frozen=True, slots=True)
-class RoleDefinition:
-    role: str
-    permissions: tuple[Permission, ...]
-    max_classification: DataClassification
-
-    def __post_init__(self) -> None:
-        role = self.role.strip()
-        if not role:
-            raise EnterpriseContractError("role name is required")
-        object.__setattr__(self, "role", role)
-        object.__setattr__(
-            self,
-            "permissions",
-            tuple(sorted(set(self.permissions), key=lambda item: item.value)),
-        )
 
 
 @dataclass(frozen=True, slots=True)
@@ -92,24 +75,21 @@ class AuthorizationDecision:
         )
 
 
-_CLASSIFICATION_RANK = {
-    DataClassification.PUBLIC: 0,
-    DataClassification.INTERNAL: 1,
-    DataClassification.CONFIDENTIAL: 2,
-    DataClassification.RESTRICTED: 3,
-}
-
-
 class AuthorizationEngine:
     def __init__(self, roles: Sequence[RoleDefinition]) -> None:
-        definitions: dict[str, RoleDefinition] = {}
-        for role in roles:
-            if role.role in definitions:
-                raise EnterpriseContractError(f"duplicate role definition: {role.role}")
-            definitions[role.role] = role
-        if not definitions:
-            raise EnterpriseContractError("authorization engine requires role definitions")
-        self._roles = definitions
+        self._policy = AuthorizationPolicyV1.build(roles)
+        self._roles = {definition.role: definition for definition in self._policy.roles}
+
+    @classmethod
+    def from_policy(cls, policy: AuthorizationPolicyV1) -> AuthorizationEngine:
+        policy.verify()
+        engine = cls(policy.roles)
+        if engine.policy_digest() != policy.policy_digest:
+            raise EnterpriseContractError("authorization policy reconstruction mismatch")
+        return engine
+
+    def policy_snapshot(self) -> AuthorizationPolicyV1:
+        return self._policy
 
     def build_context(
         self,
@@ -146,10 +126,13 @@ class AuthorizationEngine:
         classification: DataClassification,
     ) -> bool:
         highest = max(
-            (_CLASSIFICATION_RANK[self._roles[role].max_classification] for role in context.roles),
+            (
+                self._policy.classification_rank(self._roles[role].max_classification)
+                for role in context.roles
+            ),
             default=-1,
         )
-        return _CLASSIFICATION_RANK[classification] <= highest
+        return self._policy.classification_rank(classification) <= highest
 
     def decide(
         self,
@@ -219,11 +202,4 @@ class AuthorizationEngine:
         return decision
 
     def policy_digest(self) -> str:
-        policy: Mapping[str, object] = {
-            role: {
-                "permissions": [item.value for item in definition.permissions],
-                "max_classification": definition.max_classification.value,
-            }
-            for role, definition in sorted(self._roles.items())
-        }
-        return content_digest(policy)
+        return self._policy.policy_digest
