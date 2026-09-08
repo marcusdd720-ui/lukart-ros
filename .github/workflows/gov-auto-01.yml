@@ -50,17 +50,13 @@ jobs:
           import re
           from pathlib import Path
 
-          target = json.loads(
-              Path("config/closure_preparation_target.json").read_text(encoding="utf-8")
-          )
-          assert target["schema"] == "lukart.closure-preparation-target.v1"
-          assert target["stage_id"] == "GOV-AUTO-01"
-          assert target["next_stage_id"] == "OPR-01"
-          assert target["implementation_pr"] == 181
-          assert isinstance(target["enabled"], bool)
+          from factory.closure_preparation import load_target
 
-          if target["enabled"] is False:
-              evidence_dir = Path("evidence/governance_closure") / target["stage_id"].lower()
+          target = load_target()
+          assert Path(target.architecture_doc).is_file(), "target architecture document is missing"
+
+          if target.enabled is False:
+              evidence_dir = Path("evidence/governance_closure") / target.stage_id.lower()
               evidence_files = sorted(evidence_dir.glob("*.json"))
               assert evidence_files, "disabled closure target requires generated closure evidence"
 
@@ -73,9 +69,9 @@ jobs:
                       evidence.get("schema") == "lukart.closure-preparation-evidence.v1"
                       and evidence.get("authority") == "closure-preparation-only"
                       and evidence.get("result") == "PREPARED_NOT_CLOSED"
-                      and evidence.get("stage_id") == target["stage_id"]
-                      and evidence.get("next_stage_id") == target["next_stage_id"]
-                      and evidence.get("implementation_pr") == target["implementation_pr"]
+                      and evidence.get("stage_id") == target.stage_id
+                      and evidence.get("next_stage_id") == target.next_stage_id
+                      and evidence.get("implementation_pr") == target.implementation_pr
                       and isinstance(merge_sha, str)
                       and re.fullmatch(r"[0-9a-f]{40}", merge_sha)
                       and evidence_path.stem == merge_sha
