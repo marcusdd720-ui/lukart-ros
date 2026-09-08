@@ -5,13 +5,14 @@ from pathlib import Path
 
 import pytest
 
-from core.case_ledger import CanonicalCaseLedger, CaseId, ContentAddress, ObjectId
+from core.case_ledger import CanonicalCaseLedger, CaseId, CaseLedgerBundle, ContentAddress, ObjectId
 from core.p3.contracts import RuntimeIdentity
 from core.p3.versioning import CaseMigrationRegistry
 from core.product_runtime_v1 import (
     PRODUCT_RUNTIME_ARTIFACT_TYPE,
     PRODUCT_RUNTIME_ARTIFACT_VERSION,
     ProductRuntimeProofV1,
+    ProductRuntimeRunV1,
     ProductRuntimeV1Error,
     converge_product_runtime_v1,
 )
@@ -49,8 +50,13 @@ def _runtime() -> RuntimeIdentity:
     )
 
 
-def _ledger_bundle(tmp_path: Path, *, case_id: CaseId | None = None):
+def _ledger_bundle(
+    tmp_path: Path,
+    *,
+    case_id: CaseId | None = None,
+) -> tuple[CaseLedgerBundle, ContentAddress]:
     selected = case_id or CaseId("CASE-PRC-001")
+    tmp_path.mkdir(parents=True, exist_ok=True)
     with CanonicalCaseLedger(tmp_path / f"{selected.value}.db") as ledger:
         evidence = ledger.append_event(
             case_id=selected,
@@ -89,7 +95,7 @@ def _reasoning(evidence_id: ContentAddress) -> tuple[ReasoningArtifact, ...]:
     return fact, conclusion
 
 
-def _run(tmp_path: Path):
+def _run(tmp_path: Path) -> ProductRuntimeRunV1:
     ledger_bundle, evidence_id = _ledger_bundle(tmp_path)
     return converge_product_runtime_v1(
         ledger_bundle=ledger_bundle,
@@ -109,8 +115,8 @@ def _proof_body_with_case(proof: ProductRuntimeProofV1, case_id: CaseId) -> dict
 
 
 def test_converged_runtime_binds_exact_chain_and_is_deterministic(tmp_path: Path) -> None:
-    first = _run(tmp_path)
-    second = _run(tmp_path)
+    first = _run(tmp_path / "first")
+    second = _run(tmp_path / "second")
 
     assert first.proof == second.proof
     assert first.proof.case_id == CaseId("CASE-PRC-001")
