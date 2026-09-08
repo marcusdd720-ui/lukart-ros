@@ -1,6 +1,10 @@
 # CRY-01 — Crypto Agility / Trust-Set / Key Lifecycle v1
 
-Status: `IMPLEMENTATION / VALIDATION PENDING`
+Status: `CLOSED / ENGINEERING PASS`
+
+Implementation PR: `#170`
+Validated PR head: `69108c93d224803c21d9ba76b93a883eada32fe1`
+Implementation merge: `main @ 2c705dde2c077f04b6c820e2104cb27cb320ab36`
 
 ## Problem
 
@@ -170,5 +174,15 @@ Closure requires one exact PR-head SHA to pass:
 - guarded exact-head merge;
 - resulting-main post-merge validation;
 - immutable `v1.0.1` baseline/release side-effect check.
+
+## Exact closure evidence
+
+- PR #170 exact validated head `69108c93d224803c21d9ba76b93a883eada32fe1` passed all 11 required PR workflows, including CI Foundation, Stage Gate, Enterprise Hardcore Gate and Enterprise CodeQL.
+- Guarded merge used the unchanged validated head and expected `main` base.
+- Implementation merge is `main @ 2c705dde2c077f04b6c820e2104cb27cb320ab36`.
+- The implementation merge completed nine post-merge workflow runs, all `SUCCESS`, with zero queued or in-progress runs at closure evaluation and no failed run observed.
+- Historical `v1.0.1` tag object remained `9f7c0b28f766c8921e63b1d517fefcc96aa991d4` and its target commit remained `802013c4d0e53dc12306a97e1877ebba86af64a7`.
+- No new release was published as a CRY-01 side effect.
+- Engineering closure does not claim independent cryptographic, external, regulatory or post-quantum certification.
 
 Engineering PASS does not imply independent cryptographic review or certification.
