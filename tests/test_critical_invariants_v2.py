@@ -76,7 +76,11 @@ def test_all_six_production_boundary_traces_are_present(tmp_path: Path) -> None:
     by_id = {result.invariant_id: result for result in report.results}
 
     assert set(by_id) == set(FIV02InvariantId)
-    assert [point.outcome for point in by_id[FIV02InvariantId.APPEND_ONLY_EXACT_HEAD].trace.points] == [
+    append_outcomes = [
+        point.outcome
+        for point in by_id[FIV02InvariantId.APPEND_ONLY_EXACT_HEAD].trace.points
+    ]
+    assert append_outcomes == [
         "accepted",
         "rejected",
         "accepted",
@@ -85,12 +89,20 @@ def test_all_six_production_boundary_traces_are_present(tmp_path: Path) -> None:
         point.outcome
         for point in by_id[FIV02InvariantId.CONTENT_IDENTITY_DOMAIN_SEPARATION].trace.points
     ] == ["stable", "separated", "separated"]
-    assert [point.outcome for point in by_id[FIV02InvariantId.MIGRATION_PATH_DETERMINISM].trace.points] == [
+    migration_outcomes = [
+        point.outcome
+        for point in by_id[FIV02InvariantId.MIGRATION_PATH_DETERMINISM].trace.points
+    ]
+    assert migration_outcomes == [
         "stable",
         "rejected",
         "rejected",
     ]
-    assert [point.outcome for point in by_id[FIV02InvariantId.AUTHORIZATION_ISOLATION].trace.points] == [
+    authorization_outcomes = [
+        point.outcome
+        for point in by_id[FIV02InvariantId.AUTHORIZATION_ISOLATION].trace.points
+    ]
+    assert authorization_outcomes == [
         "allowed",
         "denied",
         "denied",
