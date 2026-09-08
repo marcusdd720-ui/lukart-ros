@@ -1,0 +1,66 @@
+name: FIV-02 Bounded Invariant Verification
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  fiv02-bounded-invariants:
+    runs-on: ubuntu-latest
+    env:
+      CANDIDATE_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+    steps:
+      - name: Checkout exact candidate SHA
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: Install validation environment
+        run: python -m pip install -e ".[dev]"
+
+      - name: FIV-02 lint and type-check
+        run: |
+          ruff check core/critical_invariants_v2.py tests/test_critical_invariants_v2.py
+          mypy core/critical_invariants_v2.py tests/test_critical_invariants_v2.py
+
+      - name: FIV-02 focused and adversarial suite
+        run: pytest -q tests/test_critical_invariants_v2.py
+
+      - name: IV-01 and recovery regression
+        run: pytest -q tests/test_critical_invariants.py tests/test_case_ledger_dr01.py
+
+      - name: Exact-SHA synthetic verification drill
+        run: |
+          python - <<'PY'
+          import os
+          import tempfile
+          from pathlib import Path
+
+          from core.critical_invariants_v2 import verify_fiv02
+
+          sha = os.environ["CANDIDATE_SHA"]
+          with tempfile.TemporaryDirectory(prefix="fiv02-ci-") as directory:
+              report = verify_fiv02(
+                  code_sha=sha,
+                  expected_code_sha=sha,
+                  workspace=Path(directory),
+              )
+          report.verify()
+          assert report.outcome == "PASS"
+          assert len(report.results) == 6
+          print("FIV02_EXACT_SHA=PASS")
+          print(f"FIV02_REPORT_ID={report.report_identity}")
+          PY
