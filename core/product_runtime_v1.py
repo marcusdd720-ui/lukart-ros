@@ -184,7 +184,10 @@ class ProductRuntimeRunV1:
             raise ProductRuntimeV1Error("runtime proof ledger head does not match Case Replay")
         if self.proof.ledger_bundle_digest != self.replay_bundle.ledger_bundle.bundle_digest:
             raise ProductRuntimeV1Error("runtime proof ledger bundle digest does not match replay")
-        if self.proof.epistemic_projection_identity != self.epistemic_projection.projection_identity:
+        if (
+            self.proof.epistemic_projection_identity
+            != self.epistemic_projection.projection_identity
+        ):
             raise ProductRuntimeV1Error("runtime proof epistemic identity mismatch")
         if self.proof.trust_graph_identity != self.trust_graph.graph_identity:
             raise ProductRuntimeV1Error("runtime proof trust graph identity mismatch")
