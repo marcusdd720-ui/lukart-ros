@@ -220,6 +220,10 @@ def test_v2_verifies_xch1_and_recomputes_both_historical_authorizations(
     bundle, signer = _bundle(tmp_path)
 
     result = bundle.verify(verifier=_verifier(signer), now=1_500)
+    source_authorization = bundle.signed_exchange_v1["source_authorization"]
+    recipient_authorization = bundle.signed_exchange_v1["recipient_authorization"]
+    assert isinstance(source_authorization, dict)
+    assert isinstance(recipient_authorization, dict)
 
     assert result.exchange_identity == bundle.exchange_identity
     assert result.signed_exchange_v1_identity.digest
@@ -228,12 +232,8 @@ def test_v2_verifies_xch1_and_recomputes_both_historical_authorizations(
     assert result.recipient_policy_digest == (
         bundle.recipient_authorization_proof.policy.policy_digest
     )
-    assert result.source_context_digest == (
-        bundle.signed_exchange_v1["source_authorization"]["context_digest"]
-    )
-    assert result.recipient_context_digest == (
-        bundle.signed_exchange_v1["recipient_authorization"]["context_digest"]
-    )
+    assert result.source_context_digest == source_authorization["context_digest"]
+    assert result.recipient_context_digest == recipient_authorization["context_digest"]
 
 
 def test_same_inputs_produce_same_v2_identity(tmp_path: Path) -> None:
