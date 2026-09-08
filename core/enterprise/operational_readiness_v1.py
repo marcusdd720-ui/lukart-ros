@@ -6,12 +6,15 @@ contracts. Telemetry is derived observability, never Product or CCL authority.
 
 from __future__ import annotations
 
-from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from enum import StrEnum
 from pathlib import Path
 
-from core.critical_invariants_v2 import FIV02InvariantId, FIV02VerificationReport, verify_fiv02
+from core.critical_invariants_v2 import (
+    FIV02InvariantId,
+    FIV02VerificationReport,
+    verify_fiv02,
+)
 from core.p3.contracts import content_digest, require_hex_digest
 
 POLICY_SCHEMA = "lukart.operational-readiness-policy.v1"
@@ -49,7 +52,9 @@ class TelemetryEventName(StrEnum):
 
 def _text(value: str, *, field_name: str, limit: int = 192) -> str:
     if not isinstance(value, str) or not value or value != value.strip():
-        raise OperationalReadinessV1Error(f"{field_name} must be nonblank and canonical")
+        raise OperationalReadinessV1Error(
+            f"{field_name} must be nonblank and canonical"
+        )
     if len(value) > limit:
         raise OperationalReadinessV1Error(f"{field_name} exceeds bounded length")
     return value
@@ -59,7 +64,9 @@ def _identifier(value: str, *, field_name: str) -> str:
     value = _text(value, field_name=field_name, limit=96)
     allowed = "abcdefghijklmnopqrstuvwxyz0123456789-_."
     if any(character not in allowed for character in value):
-        raise OperationalReadinessV1Error(f"{field_name} has invalid identifier characters")
+        raise OperationalReadinessV1Error(
+            f"{field_name} has invalid identifier characters"
+        )
     return value
 
 
@@ -91,14 +98,22 @@ class SLISpecV1:
     def __post_init__(self) -> None:
         _identifier(self.sli_id, field_name="sli_id")
         values = (self.total_samples, self.required_successes, self.max_failures)
-        if any(not isinstance(value, int) or isinstance(value, bool) or value < 0 for value in values):
-            raise OperationalReadinessV1Error("SLI counts must be nonnegative integers")
+        invalid = any(
+            not isinstance(value, int) or isinstance(value, bool) or value < 0
+            for value in values
+        )
+        if invalid:
+            raise OperationalReadinessV1Error(
+                "SLI counts must be nonnegative integers"
+            )
         if self.total_samples <= 0 or self.required_successes > self.total_samples:
             raise OperationalReadinessV1Error("invalid SLI sample/SLO contract")
         if self.max_failures > self.total_samples:
             raise OperationalReadinessV1Error("invalid SLI error budget")
         if self.required_successes + self.max_failures < self.total_samples:
-            raise OperationalReadinessV1Error("SLI contract permits an unbudgeted result gap")
+            raise OperationalReadinessV1Error(
+                "SLI contract permits an unbudgeted result gap"
+            )
 
     def canonical_dict(self) -> dict[str, object]:
         return {
@@ -117,7 +132,9 @@ class IncidentRuleV1:
     schema: str = INCIDENT_SCHEMA
 
     def __post_init__(self) -> None:
-        if self.schema != INCIDENT_SCHEMA or not isinstance(self.severity, IncidentSeverity):
+        if self.schema != INCIDENT_SCHEMA or not isinstance(
+            self.severity, IncidentSeverity
+        ):
             raise OperationalReadinessV1Error("unsupported incident rule")
         _identifier(self.signal, field_name="incident signal")
         _text(self.runbook_section, field_name="runbook_section")
@@ -151,12 +168,36 @@ class OperationalReadinessPolicyV1:
                 SLISpecV1("security_trust_boundary_pass_ratio", 2, 2, 0),
             ),
             incident_rules=(
-                IncidentRuleV1("private_or_secret_boundary_breach", IncidentSeverity.FATAL, "## Incident procedure"),
-                IncidentRuleV1("unauthorized_trust_promotion", IncidentSeverity.FATAL, "## Security and privacy procedure"),
-                IncidentRuleV1("replay_identity_mismatch", IncidentSeverity.HIGH, "## Replay procedure"),
-                IncidentRuleV1("recovery_identity_mismatch", IncidentSeverity.HIGH, "## Recovery/replay drills and degraded-mode tests"),
-                IncidentRuleV1("operational_error_budget_exhausted", IncidentSeverity.HIGH, "## Operational readiness / SLI-SLO and error budgets"),
-                IncidentRuleV1("telemetry_contract_violation", IncidentSeverity.MEDIUM, "## Observability and telemetry contract"),
+                IncidentRuleV1(
+                    "private_or_secret_boundary_breach",
+                    IncidentSeverity.FATAL,
+                    "## Incident procedure",
+                ),
+                IncidentRuleV1(
+                    "unauthorized_trust_promotion",
+                    IncidentSeverity.FATAL,
+                    "## Security and privacy procedure",
+                ),
+                IncidentRuleV1(
+                    "replay_identity_mismatch",
+                    IncidentSeverity.HIGH,
+                    "## Replay procedure",
+                ),
+                IncidentRuleV1(
+                    "recovery_identity_mismatch",
+                    IncidentSeverity.HIGH,
+                    "## Recovery/replay drills and degraded-mode tests",
+                ),
+                IncidentRuleV1(
+                    "operational_error_budget_exhausted",
+                    IncidentSeverity.HIGH,
+                    "## Operational readiness / SLI-SLO and error budgets",
+                ),
+                IncidentRuleV1(
+                    "telemetry_contract_violation",
+                    IncidentSeverity.MEDIUM,
+                    "## Observability and telemetry contract",
+                ),
             ),
             required_runbook_headings=(
                 "## Replay procedure",
@@ -172,17 +213,54 @@ class OperationalReadinessPolicyV1:
 
     def __post_init__(self) -> None:
         if self.schema != POLICY_SCHEMA:
-            raise OperationalReadinessV1Error("unsupported operational policy schema")
-        sli_ids = tuple(spec.sli_id for spec in self.sli_specs)
-        signals = tuple(rule.signal for rule in self.incident_rules)
-        headings = tuple(_text(item, field_name="runbook heading") for item in self.required_runbook_headings)
-        if len(sli_ids) != 7 or len(set(sli_ids)) != 7:
-            raise OperationalReadinessV1Error("OPR-01 requires fixed seven-SLI registry")
-        if len(signals) != 6 or len(set(signals)) != 6:
-            raise OperationalReadinessV1Error("OPR-01 requires fixed six-signal incident registry")
-        if len(headings) != 8 or len(set(headings)) != 8:
-            raise OperationalReadinessV1Error("OPR-01 requires fixed eight-section runbook")
+            raise OperationalReadinessV1Error(
+                "unsupported operational policy schema"
+            )
+        headings = tuple(
+            _text(item, field_name="runbook heading")
+            for item in self.required_runbook_headings
+        )
         object.__setattr__(self, "required_runbook_headings", headings)
+
+        reference_sli_ids = (
+            "critical_invariant_pass_ratio",
+            "replay_recovery_drill_pass_ratio",
+            "degraded_mode_containment_ratio",
+            "incident_detection_coverage_ratio",
+            "runbook_contract_coverage_ratio",
+            "telemetry_contract_validity_ratio",
+            "security_trust_boundary_pass_ratio",
+        )
+        reference_signals = (
+            "private_or_secret_boundary_breach",
+            "unauthorized_trust_promotion",
+            "replay_identity_mismatch",
+            "recovery_identity_mismatch",
+            "operational_error_budget_exhausted",
+            "telemetry_contract_violation",
+        )
+        reference_headings = (
+            "## Replay procedure",
+            "## Security and privacy procedure",
+            "## Incident procedure",
+            "## Evidence retention",
+            "## Operational readiness / SLI-SLO and error budgets",
+            "## Observability and telemetry contract",
+            "## Recovery/replay drills and degraded-mode tests",
+            "## Runbook validation",
+        )
+        if tuple(spec.sli_id for spec in self.sli_specs) != reference_sli_ids:
+            raise OperationalReadinessV1Error(
+                "OPR-01 requires fixed seven-SLI registry"
+            )
+        if tuple(rule.signal for rule in self.incident_rules) != reference_signals:
+            raise OperationalReadinessV1Error(
+                "OPR-01 requires fixed six-signal incident registry"
+            )
+        if headings != reference_headings:
+            raise OperationalReadinessV1Error(
+                "OPR-01 requires fixed eight-section runbook"
+            )
 
     def canonical_dict(self) -> dict[str, object]:
         return {
@@ -207,13 +285,23 @@ class TelemetryEventV1:
     schema: str = TELEMETRY_SCHEMA
 
     def __post_init__(self) -> None:
-        if self.schema != TELEMETRY_SCHEMA or not isinstance(self.event, TelemetryEventName):
+        if self.schema != TELEMETRY_SCHEMA or not isinstance(
+            self.event, TelemetryEventName
+        ):
             raise OperationalReadinessV1Error("unknown telemetry schema/event")
         if not isinstance(self.outcome, ReadinessOutcome):
             raise OperationalReadinessV1Error("unknown telemetry outcome")
         _identifier(self.component, field_name="telemetry component")
-        object.__setattr__(self, "code_sha", _git_sha(self.code_sha, field_name="code_sha"))
-        object.__setattr__(self, "evidence_digest", _digest(self.evidence_digest, field_name="evidence_digest"))
+        object.__setattr__(
+            self,
+            "code_sha",
+            _git_sha(self.code_sha, field_name="code_sha"),
+        )
+        object.__setattr__(
+            self,
+            "evidence_digest",
+            _digest(self.evidence_digest, field_name="evidence_digest"),
+        )
 
     def canonical_dict(self) -> dict[str, object]:
         return {
@@ -237,13 +325,24 @@ class SLIResultV1:
     def __post_init__(self) -> None:
         if self.schema != SLI_RESULT_SCHEMA:
             raise OperationalReadinessV1Error("unsupported SLI result schema")
-        if self.successes < 0 or self.failures < 0 or self.successes + self.failures != self.spec.total_samples:
+        counts = (self.successes, self.failures)
+        if any(
+            not isinstance(value, int) or isinstance(value, bool) or value < 0
+            for value in counts
+        ):
+            raise OperationalReadinessV1Error("SLI counts must be nonnegative integers")
+        if self.successes + self.failures != self.spec.total_samples:
             raise OperationalReadinessV1Error("SLI sample count mismatch")
-        expected = ReadinessOutcome.PASS if (
-            self.successes >= self.spec.required_successes and self.failures <= self.spec.max_failures
-        ) else ReadinessOutcome.FAIL
+        expected = (
+            ReadinessOutcome.PASS
+            if self.successes >= self.spec.required_successes
+            and self.failures <= self.spec.max_failures
+            else ReadinessOutcome.FAIL
+        )
         if self.outcome is not expected:
-            raise OperationalReadinessV1Error("SLI outcome contradicts SLO/error budget")
+            raise OperationalReadinessV1Error(
+                "SLI outcome contradicts SLO/error budget"
+            )
 
     @property
     def error_budget_consumed(self) -> int:
@@ -265,40 +364,69 @@ class SLIResultV1:
         }
 
 
-def evaluate_sli(spec: SLISpecV1, *, successes: int, failures: int) -> SLIResultV1:
-    outcome = ReadinessOutcome.PASS if (
-        successes >= spec.required_successes and failures <= spec.max_failures
-    ) else ReadinessOutcome.FAIL
+def evaluate_sli(
+    spec: SLISpecV1,
+    *,
+    successes: int,
+    failures: int,
+) -> SLIResultV1:
+    outcome = (
+        ReadinessOutcome.PASS
+        if successes >= spec.required_successes and failures <= spec.max_failures
+        else ReadinessOutcome.FAIL
+    )
     return SLIResultV1(spec, successes, failures, outcome)
 
 
 def detect_incident(signal: str) -> IncidentRuleV1:
     signal = _identifier(signal, field_name="incident signal")
-    matches = tuple(rule for rule in OperationalReadinessPolicyV1.reference().incident_rules if rule.signal == signal)
+    matches = tuple(
+        rule
+        for rule in OperationalReadinessPolicyV1.reference().incident_rules
+        if rule.signal == signal
+    )
     if len(matches) != 1:
         raise OperationalReadinessV1Error("unknown or ambiguous incident signal")
     return matches[0]
 
 
-def validate_runbook(text: str, policy: OperationalReadinessPolicyV1) -> tuple[str, ...]:
+def validate_runbook(
+    text: str,
+    policy: OperationalReadinessPolicyV1,
+) -> tuple[str, ...]:
     if not isinstance(text, str) or not text.strip():
         raise OperationalReadinessV1Error("runbook text must be nonblank")
     lines = tuple(line.strip() for line in text.splitlines())
-    return tuple(heading for heading in policy.required_runbook_headings if lines.count(heading) == 1)
+    return tuple(
+        heading
+        for heading in policy.required_runbook_headings
+        if lines.count(heading) == 1
+    )
 
 
-def _fiv_pass(report: FIV02VerificationReport, invariant: FIV02InvariantId) -> bool:
-    matches = tuple(result for result in report.results if result.invariant_id is invariant)
+def _fiv_pass(
+    report: FIV02VerificationReport,
+    invariant: FIV02InvariantId,
+) -> bool:
+    matches = tuple(
+        result for result in report.results if result.invariant_id is invariant
+    )
     return len(matches) == 1 and matches[0].outcome == "PASS"
 
 
-def _telemetry(event: TelemetryEventName, component: str, code_sha: str, evidence: object, passed: bool) -> TelemetryEventV1:
+def _telemetry(
+    event: TelemetryEventName,
+    component: str,
+    code_sha: str,
+    evidence: object,
+    passed: bool,
+) -> TelemetryEventV1:
     return TelemetryEventV1(
-        event,
-        component,
-        ReadinessOutcome.PASS if passed else ReadinessOutcome.FAIL,
-        code_sha,
-        content_digest(evidence),
+        event=event,
+        component=component,
+        outcome=ReadinessOutcome.PASS if passed else ReadinessOutcome.FAIL,
+        code_sha=code_sha,
+        evidence_digest=content_digest(evidence),
     )
 
 
@@ -316,21 +444,53 @@ class OperationalReadinessReportV1:
 
     def __post_init__(self) -> None:
         if self.schema != REPORT_SCHEMA:
-            raise OperationalReadinessV1Error("unsupported readiness report schema")
-        object.__setattr__(self, "code_sha", _git_sha(self.code_sha, field_name="code_sha"))
+            raise OperationalReadinessV1Error(
+                "unsupported readiness report schema"
+            )
+        object.__setattr__(
+            self,
+            "code_sha",
+            _git_sha(self.code_sha, field_name="code_sha"),
+        )
         for name in ("policy_digest", "fiv02_report_digest", "runbook_digest"):
-            object.__setattr__(self, name, _digest(getattr(self, name), field_name=name))
-        if len(self.sli_results) != 7 or len(self.telemetry) != 7 or len(self.telemetry) > MAX_TELEMETRY_EVENTS:
+            object.__setattr__(
+                self,
+                name,
+                _digest(getattr(self, name), field_name=name),
+            )
+        if len(self.sli_results) != 7 or len(self.telemetry) != 7:
             raise OperationalReadinessV1Error("incomplete readiness registry")
+        if len(self.telemetry) > MAX_TELEMETRY_EVENTS:
+            raise OperationalReadinessV1Error("telemetry event budget exceeded")
         if any(event.code_sha != self.code_sha for event in self.telemetry):
-            raise OperationalReadinessV1Error("telemetry is not bound to report code_sha")
-        rules = tuple(_digest(item, field_name="incident_rule_digest") for item in self.incident_rule_digests)
+            raise OperationalReadinessV1Error(
+                "telemetry is not bound to report code_sha"
+            )
+        rules = tuple(
+            _digest(item, field_name="incident_rule_digest")
+            for item in self.incident_rule_digests
+        )
         if len(rules) != 6 or len(set(rules)) != 6:
             raise OperationalReadinessV1Error("incomplete incident registry")
         object.__setattr__(self, "incident_rule_digests", rules)
-        expected = ReadinessOutcome.PASS if all(item.outcome is ReadinessOutcome.PASS for item in self.sli_results) else ReadinessOutcome.FAIL
+        expected = (
+            ReadinessOutcome.PASS
+            if all(
+                item.outcome is ReadinessOutcome.PASS
+                for item in self.sli_results
+            )
+            else ReadinessOutcome.FAIL
+        )
         if self.outcome is not expected:
-            raise OperationalReadinessV1Error("readiness outcome contradicts SLI results")
+            raise OperationalReadinessV1Error(
+                "readiness outcome contradicts SLI results"
+            )
+        if self.outcome is ReadinessOutcome.PASS and any(
+            event.outcome is not ReadinessOutcome.PASS for event in self.telemetry
+        ):
+            raise OperationalReadinessV1Error(
+                "PASS report cannot contain failed telemetry"
+            )
 
     def canonical_body(self) -> dict[str, object]:
         return {
@@ -356,25 +516,54 @@ class OperationalReadinessReportV1:
     def verify(self) -> None:
         policy = OperationalReadinessPolicyV1.reference()
         if self.policy_digest != policy.policy_digest:
-            raise OperationalReadinessV1Error("operational policy identity mismatch")
-        if tuple(item.spec.sli_id for item in self.sli_results) != tuple(item.sli_id for item in policy.sli_specs):
+            raise OperationalReadinessV1Error(
+                "operational policy identity mismatch"
+            )
+        actual_specs = tuple(item.spec.canonical_dict() for item in self.sli_results)
+        expected_specs = tuple(item.canonical_dict() for item in policy.sli_specs)
+        if actual_specs != expected_specs:
             raise OperationalReadinessV1Error("SLI registry mismatch")
-        expected_rules = tuple(content_digest(rule.canonical_dict()) for rule in policy.incident_rules)
+        expected_events = tuple(TelemetryEventName)
+        if tuple(item.event for item in self.telemetry) != expected_events:
+            raise OperationalReadinessV1Error("telemetry registry mismatch")
+        expected_rules = tuple(
+            content_digest(rule.canonical_dict()) for rule in policy.incident_rules
+        )
         if self.incident_rule_digests != expected_rules:
-            raise OperationalReadinessV1Error("incident registry identity mismatch")
+            raise OperationalReadinessV1Error(
+                "incident registry identity mismatch"
+            )
 
 
-def run_operational_readiness_drill(*, code_sha: str, expected_code_sha: str, workspace: Path, runbook_text: str) -> OperationalReadinessReportV1:
+def run_operational_readiness_drill(
+    *,
+    code_sha: str,
+    expected_code_sha: str,
+    workspace: Path,
+    runbook_text: str,
+) -> OperationalReadinessReportV1:
     code_sha = _git_sha(code_sha, field_name="code_sha")
-    expected_code_sha = _git_sha(expected_code_sha, field_name="expected_code_sha")
+    expected_code_sha = _git_sha(
+        expected_code_sha,
+        field_name="expected_code_sha",
+    )
     if code_sha != expected_code_sha:
-        raise OperationalReadinessV1Error("code_sha does not match expected_code_sha")
+        raise OperationalReadinessV1Error(
+            "code_sha does not match expected_code_sha"
+        )
 
     policy = OperationalReadinessPolicyV1.reference()
-    fiv = verify_fiv02(code_sha=code_sha, expected_code_sha=expected_code_sha, workspace=Path(workspace))
+    fiv = verify_fiv02(
+        code_sha=code_sha,
+        expected_code_sha=expected_code_sha,
+        workspace=Path(workspace),
+    )
     fiv.verify()
     fiv_passes = sum(result.outcome == "PASS" for result in fiv.results)
-    replay = _fiv_pass(fiv, FIV02InvariantId.REPLAY_PROJECTION_EQUIVALENCE)
+    replay = _fiv_pass(
+        fiv,
+        FIV02InvariantId.REPLAY_PROJECTION_EQUIVALENCE,
+    )
     recovery = _fiv_pass(fiv, FIV02InvariantId.RECOVERY_ATOMICITY)
     degraded_ids = (
         FIV02InvariantId.APPEND_ONLY_EXACT_HEAD,
@@ -383,41 +572,110 @@ def run_operational_readiness_drill(*, code_sha: str, expected_code_sha: str, wo
         FIV02InvariantId.RECOVERY_ATOMICITY,
     )
     degraded = sum(_fiv_pass(fiv, item) for item in degraded_ids)
-    authorization = _fiv_pass(fiv, FIV02InvariantId.AUTHORIZATION_ISOLATION)
+    authorization = _fiv_pass(
+        fiv,
+        FIV02InvariantId.AUTHORIZATION_ISOLATION,
+    )
     rules = tuple(detect_incident(rule.signal) for rule in policy.incident_rules)
-    rule_digests = tuple(content_digest(rule.canonical_dict()) for rule in rules)
+    rule_digests = tuple(
+        content_digest(rule.canonical_dict()) for rule in rules
+    )
     headings = validate_runbook(runbook_text, policy)
     runbook_digest = content_digest({"utf8_text": runbook_text})
 
-    counts = {
+    replay_recovery_successes = int(replay) + int(recovery)
+    security_successes = int(authorization) + int(len(rules) == 6)
+    counts: dict[str, tuple[int, int]] = {
         "critical_invariant_pass_ratio": (fiv_passes, 6 - fiv_passes),
-        "replay_recovery_drill_pass_ratio": (int(replay) + int(recovery), 2 - int(replay) - int(recovery)),
+        "replay_recovery_drill_pass_ratio": (
+            replay_recovery_successes,
+            2 - replay_recovery_successes,
+        ),
         "degraded_mode_containment_ratio": (degraded, 4 - degraded),
         "incident_detection_coverage_ratio": (len(rules), 6 - len(rules)),
         "runbook_contract_coverage_ratio": (len(headings), 8 - len(headings)),
         "telemetry_contract_validity_ratio": (7, 0),
-        "security_trust_boundary_pass_ratio": (int(authorization) + int(len(rules) == 6), 2 - int(authorization) - int(len(rules) == 6)),
+        "security_trust_boundary_pass_ratio": (
+            security_successes,
+            2 - security_successes,
+        ),
     }
-    results = tuple(evaluate_sli(spec, successes=counts[spec.sli_id][0], failures=counts[spec.sli_id][1]) for spec in policy.sli_specs)
-    telemetry = (
-        _telemetry(TelemetryEventName.CRITICAL_INVARIANTS, "fiv02", code_sha, fiv.report_identity.canonical_dict(), fiv_passes == 6),
-        _telemetry(TelemetryEventName.REPLAY_DRILL, "case-replay-v2", code_sha, FIV02InvariantId.REPLAY_PROJECTION_EQUIVALENCE.value, replay),
-        _telemetry(TelemetryEventName.RECOVERY_DRILL, "recovery-continuity-v1", code_sha, FIV02InvariantId.RECOVERY_ATOMICITY.value, recovery),
-        _telemetry(TelemetryEventName.DEGRADED_MODE, "fiv02-negative-probes", code_sha, [item.value for item in degraded_ids], degraded == 4),
-        _telemetry(TelemetryEventName.AUTHORIZATION_BOUNDARY, "enterprise-authorization", code_sha, FIV02InvariantId.AUTHORIZATION_ISOLATION.value, authorization),
-        _telemetry(TelemetryEventName.INCIDENT_DETECTION, "operational-incident-registry", code_sha, rule_digests, len(rules) == 6),
-        _telemetry(TelemetryEventName.RUNBOOK_VALIDATION, "post-v1-operations-runbook", code_sha, {"runbook_digest": runbook_digest, "headings": list(headings)}, len(headings) == 8),
+    results = tuple(
+        evaluate_sli(
+            spec,
+            successes=counts[spec.sli_id][0],
+            failures=counts[spec.sli_id][1],
+        )
+        for spec in policy.sli_specs
     )
-    outcome = ReadinessOutcome.PASS if all(item.outcome is ReadinessOutcome.PASS for item in results) else ReadinessOutcome.FAIL
+    telemetry = (
+        _telemetry(
+            TelemetryEventName.CRITICAL_INVARIANTS,
+            "fiv02",
+            code_sha,
+            fiv.report_identity.canonical_dict(),
+            fiv_passes == 6,
+        ),
+        _telemetry(
+            TelemetryEventName.REPLAY_DRILL,
+            "case-replay-v2",
+            code_sha,
+            FIV02InvariantId.REPLAY_PROJECTION_EQUIVALENCE.value,
+            replay,
+        ),
+        _telemetry(
+            TelemetryEventName.RECOVERY_DRILL,
+            "recovery-continuity-v1",
+            code_sha,
+            FIV02InvariantId.RECOVERY_ATOMICITY.value,
+            recovery,
+        ),
+        _telemetry(
+            TelemetryEventName.DEGRADED_MODE,
+            "fiv02-negative-probes",
+            code_sha,
+            [item.value for item in degraded_ids],
+            degraded == 4,
+        ),
+        _telemetry(
+            TelemetryEventName.AUTHORIZATION_BOUNDARY,
+            "enterprise-authorization",
+            code_sha,
+            FIV02InvariantId.AUTHORIZATION_ISOLATION.value,
+            authorization,
+        ),
+        _telemetry(
+            TelemetryEventName.INCIDENT_DETECTION,
+            "operational-incident-registry",
+            code_sha,
+            rule_digests,
+            len(rules) == 6,
+        ),
+        _telemetry(
+            TelemetryEventName.RUNBOOK_VALIDATION,
+            "post-v1-operations-runbook",
+            code_sha,
+            {
+                "runbook_digest": runbook_digest,
+                "headings": list(headings),
+            },
+            len(headings) == 8,
+        ),
+    )
+    outcome = (
+        ReadinessOutcome.PASS
+        if all(item.outcome is ReadinessOutcome.PASS for item in results)
+        else ReadinessOutcome.FAIL
+    )
     report = OperationalReadinessReportV1(
-        code_sha,
-        policy.policy_digest,
-        fiv.report_identity.digest,
-        runbook_digest,
-        results,
-        telemetry,
-        rule_digests,
-        outcome,
+        code_sha=code_sha,
+        policy_digest=policy.policy_digest,
+        fiv02_report_digest=fiv.report_identity.digest,
+        runbook_digest=runbook_digest,
+        sli_results=results,
+        telemetry=telemetry,
+        incident_rule_digests=rule_digests,
+        outcome=outcome,
     )
     report.verify()
     return report
