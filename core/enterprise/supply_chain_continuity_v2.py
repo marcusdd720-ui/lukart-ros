@@ -251,11 +251,14 @@ def _wheel_identity(path: Path) -> tuple[str, str]:
     try:
         with zipfile.ZipFile(path) as archive:
             metadata_names = sorted(
-                name for name in archive.namelist() if name.endswith(".dist-info/METADATA")
+                name
+                for name in archive.namelist()
+                if name.endswith(".dist-info/METADATA")
+                and len(PurePosixPath(name).parts) == 2
             )
             if len(metadata_names) != 1:
                 raise SupplyChainContinuityError(
-                    f"wheel must contain exactly one METADATA file: {path.name}"
+                    f"wheel must contain exactly one top-level METADATA file: {path.name}"
                 )
             raw = archive.read(metadata_names[0]).decode("utf-8")
     except (OSError, UnicodeError, zipfile.BadZipFile, KeyError) as exc:
