@@ -1,7 +1,7 @@
 {
   "architecture_doc": "docs/OPERATIONAL_READINESS_V1.md",
   "enabled": true,
-  "implementation_pr": 183,
+  "implementation_pr": 184,
   "next_stage_id": "POL-01",
   "schema": "lukart.closure-preparation-target.v1",
   "stage_id": "OPR-01"
