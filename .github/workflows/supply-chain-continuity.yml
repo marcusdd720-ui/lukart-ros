@@ -1,0 +1,124 @@
+name: SSC-02 Supply Chain Continuity
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  ssc02-continuity:
+    runs-on: ubuntu-latest
+    env:
+      CANDIDATE_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+      PIP_DISABLE_PIP_VERSION_CHECK: "1"
+    steps:
+      - name: Checkout exact candidate SHA
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: Install validation environment
+        run: python -m pip install -e ".[dev]"
+
+      - name: SSC-02 lint and type-check
+        run: |
+          ruff check core/enterprise/supply_chain_continuity_v2.py tests/test_supply_chain_continuity_v2.py
+          mypy core/enterprise/supply_chain_continuity_v2.py tests/test_supply_chain_continuity_v2.py
+
+      - name: SSC-02 focused and adversarial contract suite
+        run: pytest -q tests/test_supply_chain_continuity_v2.py
+
+      - name: Export exact constraints from standard pylock
+        run: |
+          mkdir -p .ssc02/wheelhouse
+          python -m core.enterprise.supply_chain_continuity_v2 \
+            constraints pylock.toml .ssc02/constraints.txt
+
+      - name: Materialize locked physical wheelhouse
+        run: |
+          python -m pip wheel \
+            --constraint .ssc02/constraints.txt \
+            --wheel-dir .ssc02/wheelhouse \
+            ".[dev]"
+          python -m pip wheel \
+            --no-deps \
+            --wheel-dir .ssc02/wheelhouse \
+            "setuptools==80.9.0"
+
+      - name: Materialize exact source archive
+        run: |
+          git archive --format=tar --output=.ssc02/repository.tar "${CANDIDATE_SHA}"
+          test "$(git get-tar-commit-id < .ssc02/repository.tar)" = "${CANDIDATE_SHA}"
+
+      - name: Build and independently verify continuity bundle
+        run: |
+          python -m core.enterprise.supply_chain_continuity_v2 build \
+            --bundle .ssc02/bundle \
+            --wheelhouse .ssc02/wheelhouse \
+            --source-archive .ssc02/repository.tar \
+            --repo-root . \
+            --source-sha "${CANDIDATE_SHA}"
+          python .ssc02/bundle/verifier.py verify .ssc02/bundle
+
+      - name: Offline install and import recovery drill
+        env:
+          PIP_NO_INDEX: "1"
+          PIP_FIND_LINKS: .ssc02/bundle/wheelhouse
+        run: |
+          python -m venv .ssc02/recovery
+          .ssc02/recovery/bin/python -m pip install "setuptools==80.9.0"
+          .ssc02/recovery/bin/python -m pip install "lukart-ros[dev]==1.1.0.dev0"
+          .ssc02/recovery/bin/python - <<'PY'
+          import core.enterprise.supply_chain_continuity_v2 as continuity
+          assert continuity.CONTINUITY_SCHEMA == "lukart.supply-chain-continuity.v2"
+          print("SSC02_OFFLINE_INSTALL=PASS")
+          PY
+
+      - name: Offline exact-source rebuild drill
+        env:
+          PIP_NO_INDEX: "1"
+          PIP_FIND_LINKS: .ssc02/bundle/wheelhouse
+        run: |
+          mkdir -p .ssc02/source-tree .ssc02/rebuilt
+          tar -xf .ssc02/bundle/source/repository.tar -C .ssc02/source-tree
+          .ssc02/recovery/bin/python -m pip wheel \
+            --no-build-isolation \
+            --no-deps \
+            --wheel-dir .ssc02/rebuilt \
+            .ssc02/source-tree
+          test -n "$(find .ssc02/rebuilt -maxdepth 1 -name 'lukart_ros-1.1.0.dev0-*.whl' -print -quit)"
+          echo "SSC02_OFFLINE_SOURCE_REBUILD=PASS"
+
+      - name: Fail-closed live tamper drill
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import shutil
+          import subprocess
+          import sys
+
+          source = Path(".ssc02/bundle")
+          target = Path(".ssc02/tampered")
+          shutil.copytree(source, target)
+          wheel = next((target / "wheelhouse").glob("*.whl"))
+          wheel.write_bytes(wheel.read_bytes() + b"tamper")
+          result = subprocess.run(
+              [sys.executable, str(target / "verifier.py"), "verify", str(target)],
+              check=False,
+          )
+          if result.returncode == 0:
+              raise SystemExit("tampered bundle was accepted")
+          print("SSC02_LIVE_TAMPER_DRILL=PASS")
+          PY
