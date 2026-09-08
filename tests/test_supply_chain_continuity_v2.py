@@ -76,6 +76,10 @@ created-by = "test"
 requires-python = ">=3.11"
 
 [[packages]]
+name = "demo-project"
+directory = { path = ".", editable = true }
+
+[[packages]]
 name = "foo"
 version = "2.0"
 """.strip()
@@ -216,3 +220,84 @@ version = "1.2"
     export_locked_constraints(pylock, output)
 
     assert output.read_text(encoding="utf-8") == "alpha-pkg==1.2\nZulu_Pkg==3.4\n"
+
+
+def test_ssc02_preserves_pep751_markers_and_skips_local_project_source(tmp_path: Path) -> None:
+    (tmp_path / "pyproject.toml").write_text(
+        """
+[build-system]
+requires = ["setuptools==80.9.0"]
+build-backend = "example"
+
+[project]
+name = "demo-project"
+version = "1.0.0"
+""".strip()
+        + "\n",
+        encoding="utf-8",
+    )
+    pylock = tmp_path / "pylock.toml"
+    pylock.write_text(
+        """
+lock-version = "1.0"
+
+[[packages]]
+name = "demo-project"
+directory = { path = ".", editable = true }
+
+[[packages]]
+name = "ast-serialize"
+version = "0.9.0"
+marker = "python_full_version >= '3.14'"
+
+[[packages]]
+name = "ast-serialize"
+version = "0.10.0"
+marker = "python_full_version < '3.14'"
+""".strip()
+        + "\n",
+        encoding="utf-8",
+    )
+    output = tmp_path / "constraints.txt"
+
+    export_locked_constraints(pylock, output)
+
+    assert set(output.read_text(encoding="utf-8").splitlines()) == {
+        "ast-serialize==0.9.0 ; python_full_version >= '3.14'",
+        "ast-serialize==0.10.0 ; python_full_version < '3.14'",
+    }
+
+
+def test_ssc02_rejects_unescrowed_direct_source_dependency(tmp_path: Path) -> None:
+    (tmp_path / "pyproject.toml").write_text(
+        """
+[build-system]
+requires = ["setuptools==80.9.0"]
+build-backend = "example"
+
+[project]
+name = "demo-project"
+version = "1.0.0"
+""".strip()
+        + "\n",
+        encoding="utf-8",
+    )
+    pylock = tmp_path / "pylock.toml"
+    pylock.write_text(
+        """
+lock-version = "1.0"
+
+[[packages]]
+name = "demo-project"
+directory = { path = ".", editable = true }
+
+[[packages]]
+name = "unescrowed-dep"
+directory = { path = "../dep" }
+""".strip()
+        + "\n",
+        encoding="utf-8",
+    )
+
+    with pytest.raises(SupplyChainContinuityError, match="unsupported direct-source dependency"):
+        export_locked_constraints(pylock, tmp_path / "constraints.txt")
