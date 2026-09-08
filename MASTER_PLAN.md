@@ -14,7 +14,8 @@ Latest closed governance consistency: `GOV-01 implementation merge @ main 54245d
 Latest closed longitudinal KQM: `KQM-03 implementation merge @ main 85d4beaae0d0c5f736a23204cbf2103f8858f935`
 Latest closed crypto agility: `CRY-01 implementation merge @ main 2c705dde2c077f04b6c820e2104cb27cb320ab36`
 Latest closed recovery continuity: `DR-02 implementation merge @ main ed1e214a7a16897d7e1e8cb3dc719ebf9cf72e04`
-Active Post-Hardcore stage: `SSC-02`
+Latest closed supply-chain continuity: `SSC-02 implementation merge @ main d6efdfaad63427b5ddb76af8da58b33baae0386b`
+Active Post-Hardcore stage: `FIV-02`
 Roadmap target: `Post-Hardcore Enterprise continuation`
 Development version: `1.1.0.dev0`
 
@@ -101,7 +102,9 @@ CRY-01 — Crypto Agility / Trust-Set / Key Lifecycle v1 — is `CLOSED / ENGINE
 
 DR-02 — Recovery Continuity & Backend Conformance v1 — is `CLOSED / ENGINEERING PASS` for PR #172. The validated exact PR head is `498e8ac5ad788a2bd26f9ba2329f427e30e9c1e7`; the implementation merge is `main @ ed1e214a7a16897d7e1e8cb3dc719ebf9cf72e04`. DR-02 adds content-addressed storage-profile, recovery-drill and conformance evidence over the existing `CaseLedgerBundle`, `CanonicalCaseLedger.restore_case()` and Enterprise `RecoveryIdentity` boundaries. It proves exact Product bundle/head/event-count continuity through the real recovery path, records independently verified source/target durability identities, preserves non-empty-target refusal and requires a separately implemented/tested adapter before any future backend is considered supported. Deterministic semantic PASS is deliberately independent of wall-clock RTO/RPO telemetry. The exact candidate passed all 11 required PR workflows; the implementation merge completed nine post-merge workflow runs, all `SUCCESS`, with zero failed, cancelled, timed-out, queued or in-progress runs at closure evaluation. Historical `v1.0.1` tag object remained `9f7c0b28f766c8921e63b1d517fefcc96aa991d4`, its target remained `802013c4d0e53dc12306a97e1877ebba86af64a7`, and no new release was published. DR-02 introduces no second Product SSOT, backup format, persistence/Gold/release authority or independent external certification claim.
 
-The next approved stage is `SSC-02`. Its contract must be explicitly defined from current software-supply-chain evidence and validated under the active Post-Hardcore roadmap before implementation can be trusted or closed.
+SSC-02 — Supply Chain Continuity v2 — is `CLOSED / ENGINEERING PASS` for PR #174. The final validated exact PR head is `90fe300d8d81876e9d690410eef2c1dc564820e8`; the implementation merge is `main @ d6efdfaad63427b5ddb76af8da58b33baae0386b`. SSC-02 adds a content-addressed continuity bundle containing exact project/lock/build identities, an exact Git source archive, a physical wheelhouse and a standalone stdlib-only verifier. PEP 751 marker-separated variants are preserved, the locally escrowed repository project is distinguished from registry dependencies, and undeclared direct-source dependencies fail closed. The exact candidate passed all 12 PR workflows; the implementation merge completed ten post-merge workflow runs, all `SUCCESS`, with zero failed, cancelled, timed-out, queued or in-progress runs at closure evaluation. Offline installation, exact-source rebuild and live tamper rejection were exercised without package-index access. Historical `v1.0.1` tag object remained `9f7c0b28f766c8921e63b1d517fefcc96aa991d4`, its target remained `802013c4d0e53dc12306a97e1877ebba86af64a7`, and no new release was published. SSC-02 validates the continuity mechanism but does not claim external ten-year escrow durability, independent security review or SLSA certification.
+
+The next approved stage is `FIV-02` under the execution sequence in `docs/POST_HARDCORE_ROADMAP.md`.
 
 ## 6. Trust boundaries
 
@@ -179,5 +182,6 @@ The package development version is distinct from the immutable historical releas
 - `docs/KQM_LONGITUDINAL_V1.md` — KQM-03 identity-preserving longitudinal measurement contract and exact closure evidence.
 - `docs/CRYPTO_AGILITY_V1.md` — CRY-01 crypto-agility, trust-set, key-lifecycle and exact closure contract.
 - `docs/RECOVERY_CONTINUITY_V1.md` — DR-02 recovery continuity/backend conformance contract and exact closure evidence.
+- `docs/SUPPLY_CHAIN_CONTINUITY_V2.md` — SSC-02 long-horizon supply-chain continuity contract and exact closure evidence.
 
 Historical design records do not override this Master Plan, Accepted ADRs, executable trust gates or the canonical working principles.
