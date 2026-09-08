@@ -44,6 +44,12 @@ def _has_binding_ref(
     )
 
 
+def _is_lower_sha256_hex(value: str) -> bool:
+    return len(value) == 64 and all(
+        "0" <= character <= "9" or "a" <= character <= "f" for character in value
+    )
+
+
 def _product_runtime_binding_reasons(binding: DocumentBinding) -> tuple[str, ...]:
     refs = tuple(
         ref
@@ -61,9 +67,7 @@ def _product_runtime_binding_reasons(binding: DocumentBinding) -> tuple[str, ...
         reasons.append("product_runtime_version_unsupported")
     if not ref.artifact_id.startswith("case:") or len(ref.artifact_id) <= len("case:"):
         reasons.append("product_runtime_case_identity_invalid")
-    if len(ref.digest) != 64 or any(
-        character not in "0123456789abcdef" for character in ref.digest
-    ):
+    if not _is_lower_sha256_hex(ref.digest):
         reasons.append("product_runtime_digest_invalid")
     return tuple(reasons)
 
