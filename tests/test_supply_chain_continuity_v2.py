@@ -301,3 +301,17 @@ directory = { path = "../dep" }
 
     with pytest.raises(SupplyChainContinuityError, match="unsupported direct-source dependency"):
         export_locked_constraints(pylock, tmp_path / "constraints.txt")
+
+
+def test_ssc02_uses_only_top_level_wheel_metadata_for_identity(tmp_path: Path) -> None:
+    root = _bundle(tmp_path)
+    setuptools = root / "wheelhouse" / "setuptools-80.9.0-py3-none-any.whl"
+    with zipfile.ZipFile(setuptools, "a", compression=zipfile.ZIP_STORED) as archive:
+        archive.writestr(
+            "setuptools/_vendor/example-1.0.dist-info/METADATA",
+            "Metadata-Version: 2.1\nName: example\nVersion: 1.0\n\n",
+        )
+
+    manifest = write_manifest(root, source_sha=SOURCE_SHA)
+
+    assert verify_continuity_bundle(root) == manifest["manifest_digest"]
