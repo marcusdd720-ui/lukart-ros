@@ -1,9 +1,12 @@
 # FIV-02 — Bounded Critical Invariant Verification v2
 
-Status: `IMPLEMENTATION / VALIDATION PENDING`
+Status: `CLOSED / ENGINEERING PASS`
 Authority: verification-only derived control
 Canonical Product history authority: Canonical Case Ledger (CCL)
-Baseline: `main @ 8ec20cc14ed43aa045f35b28796ed3a973c7f10a`
+Implementation baseline: `main @ 8ec20cc14ed43aa045f35b28796ed3a973c7f10a`
+Validated implementation PR head: `a221a9d56d7134b7e23d769eb56027ba3f862063`
+Implementation PR: `#176`
+Implementation merge: `main @ 38540d95db212cfc2c80be54853202f77b41a45f`
 
 ## 1. Problem
 
@@ -74,5 +77,19 @@ FIV-02 is CLOSED only after:
 - resulting `main` completes post-merge validation without failure or pending state;
 - immutable `v1.0.1` tag/target remains unchanged and no unintended release is created;
 - canonical roadmap/Master Plan closure evidence records exact SHAs.
+
+## 8. Exact implementation evidence
+
+The first implementation candidate failed repository lint only; the repair changed typing/formatting syntax without weakening a verifier, test, threshold or trust boundary. That earlier candidate is stale and is not closure evidence.
+
+The final implementation candidate was `a221a9d56d7134b7e23d769eb56027ba3f862063`. All 13 PR-triggered workflows for that exact unchanged head completed `SUCCESS`, including the dedicated FIV-02 workflow, Stage Gate, Stage Orchestrator, CI Foundation, Enterprise Hardcore Gate, Enterprise CodeQL, GitHub App Smoke Test, Production Validation, P2/P3 compatibility and SSC-02 continuity.
+
+PR #176 was guarded-merged with `expected_head_sha=a221a9d56d7134b7e23d769eb56027ba3f862063`. The resulting implementation merge is `main @ 38540d95db212cfc2c80be54853202f77b41a45f`.
+
+Post-merge evaluation of that exact implementation merge observed 11 workflow runs after the release guard completed. Every run was terminal `SUCCESS`; there were no failed, cancelled or in-progress runs when implementation closure evidence was captured. The dedicated FIV-02 push validation succeeded on the exact merge SHA.
+
+The immutable historical identity remained unchanged: annotated tag object `9f7c0b28f766c8921e63b1d517fefcc96aa991d4` still targets commit `802013c4d0e53dc12306a97e1877ebba86af64a7`. The latest release remained historical `v1.0.1`; FIV-02 did not publish a new release.
+
+This is bounded engineering verification of executable trust-critical invariants. It is not independent external review, mathematical whole-system proof or formal-methods certification.
 
 Independent external/formal certification is not implied by engineering closure.

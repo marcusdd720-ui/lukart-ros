@@ -13,7 +13,8 @@ Latest closed longitudinal KQM: `KQM-03 implementation merge @ main 85d4beaae0d0
 Latest closed crypto agility: `CRY-01 implementation merge @ main 2c705dde2c077f04b6c820e2104cb27cb320ab36`
 Latest closed recovery continuity: `DR-02 implementation merge @ main ed1e214a7a16897d7e1e8cb3dc719ebf9cf72e04`
 Latest closed supply-chain continuity: `SSC-02 implementation merge @ main d6efdfaad63427b5ddb76af8da58b33baae0386b`
-Active stage: `FIV-02`
+Latest closed bounded invariant verification: `FIV-02 implementation merge @ main 38540d95db212cfc2c80be54853202f77b41a45f`
+Active stage: `OPR-01`
 Approved execution sequence: `PRC-01 -> PVE-01 -> GOV-01 -> KQM-03 -> CRY-01 -> DR-02 -> SSC-02 -> FIV-02 -> OPR-01 -> POL-01 -> XCH-02 -> continuous LRD-01`
 Horizon: 10+ years
 
@@ -563,6 +564,52 @@ Closed controls:
 
 Architecture and exact closure evidence: `docs/SUPPLY_CHAIN_CONTINUITY_V2.md`.
 
+## FIV-02 — Bounded Critical Invariant Verification v2
+
+Status: `CLOSED / ENGINEERING PASS`
+Implementation merge baseline: `main @ 38540d95db212cfc2c80be54853202f77b41a45f`
+Validated PR head: `a221a9d56d7134b7e23d769eb56027ba3f862063`
+PR: `#176`
+Depends on: `SSC-02 CLOSED / ENGINEERING PASS`
+Next approved stage: `OPR-01`
+
+Closed controls:
+
+- fixed content-addressed six-invariant registry cannot be caller-reduced to manufacture PASS;
+- exact Git candidate SHA is bound into the complete report and stale/malformed SHA identity
+  fails before probe execution;
+- deterministic bounded trace points bind action, outcome and exact content-addressed state;
+- hard trace budget fails closed rather than truncating or producing partial PASS;
+- exact-head CCL probe proves stale-head rejection and append-only canonical chain continuity;
+- immutable object revision probe proves deterministic identity and separation across both
+  logical object identity and changed content;
+- migration probe proves repeated target/path identity and rejects ambiguous and
+  nondeterministic migration paths through the existing migration contract;
+- authorization probe exercises allowed own-case read plus denied cross-case, cross-tenant,
+  over-classification and undeclared-write requests through the existing authorization engine;
+- replay probe independently rebuilds the exact synthetic Case Replay v2 bundle twice and
+  requires exact manifest, Epistemic projection and Trust Graph identity equivalence;
+- recovery probe injects a failure on the second canonical restore insert, proves zero
+  partial history after rollback and then proves exact retry restore identity;
+- writable verification state is synthetic and isolated; no private/real case data is read or
+  mutated and no Product/CCL persistence or release authority is introduced;
+- no external SMT/model checker or provider is introduced as a trust authority;
+- the first implementation candidate failed Ruff only; the smallest formatting/typing repair
+  produced a fresh SHA without weakening tests, thresholds or trust boundaries;
+- final exact candidate SHA passed all 13 PR-triggered workflows before guarded exact-head
+  merge, including FIV-02, Stage Gate, CI Foundation, Enterprise Hardcore, CodeQL and SSC-02;
+- guarded merge used `expected_head_sha=a221a9d56d7134b7e23d769eb56027ba3f862063`;
+- exact implementation merge completed 11 post-merge workflow runs, all terminal `SUCCESS`,
+  including the dedicated FIV-02 push validation and release guard;
+- historical `v1.0.1` tag object remained
+  `9f7c0b28f766c8921e63b1d517fefcc96aa991d4` and its target commit remained
+  `802013c4d0e53dc12306a97e1877ebba86af64a7`;
+- no new release was published as an FIV-02 side effect;
+- engineering closure does not claim independent external review, whole-system mathematical
+  proof or formal-methods certification.
+
+Architecture and exact closure evidence: `docs/FORMAL_INVARIANT_VERIFICATION_V2.md`.
+
 ## Years 6-10+ — Durability, portability and cryptographic renewal
 
 ### Storage portability / disaster recovery
@@ -581,10 +628,9 @@ implication.
 
 ### Critical-invariant verification
 
-Apply property/state-machine/model checking to small trust-critical contracts such as
-append-only history, identity uniqueness, deterministic migration, authorization,
-projection rebuild equivalence, concurrent-head rejection and crash recovery. Do not
-attempt speculative formal verification of the whole product.
+FIV-02 closes the first bounded state/property verification layer over small trust-critical
+production contracts. Any future expansion must be separately versioned and measured; it
+must not inherit FIV-02 PASS or claim speculative whole-product formal verification.
 
 ### Cryptographic renewal
 
