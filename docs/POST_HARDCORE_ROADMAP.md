@@ -11,7 +11,8 @@ Latest closed Product verification evidence: `PVE-01 @ main 174b29897dcab15f7f51
 Latest closed governance consistency: `GOV-01 implementation merge @ main 54245df8f834661c9d36a522e46952a20a095c0f`
 Latest closed longitudinal KQM: `KQM-03 implementation merge @ main 85d4beaae0d0c5f736a23204cbf2103f8858f935`
 Latest closed crypto agility: `CRY-01 implementation merge @ main 2c705dde2c077f04b6c820e2104cb27cb320ab36`
-Active stage: `DR-02`
+Latest closed recovery continuity: `DR-02 implementation merge @ main ed1e214a7a16897d7e1e8cb3dc719ebf9cf72e04`
+Active stage: `SSC-02`
 Approved execution sequence: `PRC-01 -> PVE-01 -> GOV-01 -> KQM-03 -> CRY-01 -> DR-02 -> SSC-02 -> FIV-02 -> OPR-01 -> POL-01 -> XCH-02 -> continuous LRD-01`
 Horizon: 10+ years
 
@@ -223,9 +224,9 @@ Closed controls:
 - historical `v1.0.1` identity remains unchanged;
 - engineering closure does not claim independent external certification.
 
-DR-01 is the first implemented control under the long-horizon storage portability /
-disaster-recovery continuation. No subsequent DR stage is active until separately defined,
-measured and validated.
+DR-01 was the first implemented control under the long-horizon storage portability /
+disaster-recovery continuation. Any subsequent DR stage requires separate definition,
+measurement and validation rather than inheriting DR-01 PASS.
 
 ## IV-01 — Critical Invariant Verification v1
 
@@ -470,6 +471,48 @@ Closed controls:
   post-quantum certification.
 
 Architecture and exact closure evidence: `docs/CRYPTO_AGILITY_V1.md`.
+
+## DR-02 — Recovery Continuity & Backend Conformance v1
+
+Status: `CLOSED / ENGINEERING PASS`
+Implementation merge baseline: `main @ ed1e214a7a16897d7e1e8cb3dc719ebf9cf72e04`
+Validated PR head: `498e8ac5ad788a2bd26f9ba2329f427e30e9c1e7`
+PR: `#172`
+Depends on: `CRY-01 CLOSED / ENGINEERING PASS`
+Next approved stage: `SSC-02`
+
+Closed controls:
+
+- existing DR-01 `CaseLedgerBundle`, `CanonicalCaseLedger.restore_case()` and Enterprise
+  durability primitives are reused instead of introducing another recovery/write authority;
+- `StorageProfileV1` content-addresses exact storage implementation/profile identity using
+  secret-free configuration identity;
+- `RecoveryDrillManifestV1` binds source/target profile identities, exact Product bundle,
+  CCL head/event count and source backend `RecoveryIdentity`;
+- `RecoveryConformanceReportV1` binds the exact manifest to restored Product identity and the
+  independently verified target backend identity;
+- the SQLite conformance adapter exercises the real CCL restore boundary rather than a
+  parallel emulation path;
+- non-empty target refusal remains fail closed and tests prove target history is not
+  overwritten;
+- case/bundle/head/event-count divergence produces explicit deterministic FAIL evidence;
+- unknown fields, schema/digest tampering and undeclared future backend support fail closed;
+- naming a backend in a profile does not certify it; each future backend needs a separately
+  implemented adapter and focused/adversarial conformance evidence;
+- semantic recovery PASS is deterministic and independent from nondeterministic wall-clock
+  RTO/RPO telemetry;
+- exact candidate SHA passed all 11 required PR workflows;
+- guarded merge used the unchanged exact head and base;
+- exact implementation merge completed nine post-merge workflow runs, all `SUCCESS`, with
+  zero failed, cancelled, timed-out, queued or in-progress runs at closure evaluation;
+- historical `v1.0.1` tag object remained
+  `9f7c0b28f766c8921e63b1d517fefcc96aa991d4` and its target commit remained
+  `802013c4d0e53dc12306a97e1877ebba86af64a7`;
+- no new release was published as a DR-02 side effect;
+- no second Product SSOT, backup format, persistence/Gold/release authority or independent
+  external/security/disaster-recovery certification claim is introduced.
+
+Architecture and exact closure evidence: `docs/RECOVERY_CONTINUITY_V1.md`.
 
 ## Years 6-10+ — Durability, portability and cryptographic renewal
 

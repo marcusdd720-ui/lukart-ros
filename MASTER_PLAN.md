@@ -13,7 +13,8 @@ Latest closed Product verification evidence: `PVE-01 @ main 174b29897dcab15f7f51
 Latest closed governance consistency: `GOV-01 implementation merge @ main 54245df8f834661c9d36a522e46952a20a095c0f`
 Latest closed longitudinal KQM: `KQM-03 implementation merge @ main 85d4beaae0d0c5f736a23204cbf2103f8858f935`
 Latest closed crypto agility: `CRY-01 implementation merge @ main 2c705dde2c077f04b6c820e2104cb27cb320ab36`
-Active Post-Hardcore stage: `DR-02`
+Latest closed recovery continuity: `DR-02 implementation merge @ main ed1e214a7a16897d7e1e8cb3dc719ebf9cf72e04`
+Active Post-Hardcore stage: `SSC-02`
 Roadmap target: `Post-Hardcore Enterprise continuation`
 Development version: `1.1.0.dev0`
 
@@ -98,7 +99,9 @@ KQM-03 — Identity-Preserving Longitudinal KQM v1 — is `CLOSED / ENGINEERING 
 
 CRY-01 — Crypto Agility / Trust-Set / Key Lifecycle v1 — is `CLOSED / ENGINEERING PASS` for PR #170. The validated PR head is `69108c93d224803c21d9ba76b93a883eada32fe1`; the implementation merge is `main @ 2c705dde2c077f04b6c820e2104cb27cb320ab36`. CRY-01 introduces a content-addressed verification trust-set around the existing Enterprise Ed25519 primitive, distinguishes planned RETIRED keys from compromised REVOKED keys, binds activation/retirement/purpose/rotation lineage and returns deterministic verification receipts bound to the exact key, algorithm and trust-set identities. Actual signature verification remains delegated to the existing Enterprise verifier; private key material remains outside repository state. Unknown algorithms and trust contexts fail closed, and post-quantum support is not claimed without a separately implemented and validated adapter. The exact candidate passed all 11 required PR workflows; the implementation merge completed nine post-merge workflow runs, all `SUCCESS`, with zero failed, cancelled, timed-out, queued or in-progress runs at closure evaluation. Historical `v1.0.1` identity remained unchanged and no new release was published. No independent cryptographic or post-quantum certification is claimed.
 
-The next approved stage is `DR-02`. Its contract must be explicitly defined from current recovery/storage evidence and validated under the active Post-Hardcore roadmap before implementation can be trusted or closed.
+DR-02 — Recovery Continuity & Backend Conformance v1 — is `CLOSED / ENGINEERING PASS` for PR #172. The validated exact PR head is `498e8ac5ad788a2bd26f9ba2329f427e30e9c1e7`; the implementation merge is `main @ ed1e214a7a16897d7e1e8cb3dc719ebf9cf72e04`. DR-02 adds content-addressed storage-profile, recovery-drill and conformance evidence over the existing `CaseLedgerBundle`, `CanonicalCaseLedger.restore_case()` and Enterprise `RecoveryIdentity` boundaries. It proves exact Product bundle/head/event-count continuity through the real recovery path, records independently verified source/target durability identities, preserves non-empty-target refusal and requires a separately implemented/tested adapter before any future backend is considered supported. Deterministic semantic PASS is deliberately independent of wall-clock RTO/RPO telemetry. The exact candidate passed all 11 required PR workflows; the implementation merge completed nine post-merge workflow runs, all `SUCCESS`, with zero failed, cancelled, timed-out, queued or in-progress runs at closure evaluation. Historical `v1.0.1` tag object remained `9f7c0b28f766c8921e63b1d517fefcc96aa991d4`, its target remained `802013c4d0e53dc12306a97e1877ebba86af64a7`, and no new release was published. DR-02 introduces no second Product SSOT, backup format, persistence/Gold/release authority or independent external certification claim.
+
+The next approved stage is `SSC-02`. Its contract must be explicitly defined from current software-supply-chain evidence and validated under the active Post-Hardcore roadmap before implementation can be trusted or closed.
 
 ## 6. Trust boundaries
 
@@ -175,5 +178,6 @@ The package development version is distinct from the immutable historical releas
 - `docs/GOVERNANCE_CLOSURE_CONSISTENCY_V1.md` — GOV-01 governance closure consistency contract and exact live closure evidence.
 - `docs/KQM_LONGITUDINAL_V1.md` — KQM-03 identity-preserving longitudinal measurement contract and exact closure evidence.
 - `docs/CRYPTO_AGILITY_V1.md` — CRY-01 crypto-agility, trust-set, key-lifecycle and exact closure contract.
+- `docs/RECOVERY_CONTINUITY_V1.md` — DR-02 recovery continuity/backend conformance contract and exact closure evidence.
 
 Historical design records do not override this Master Plan, Accepted ADRs, executable trust gates or the canonical working principles.
