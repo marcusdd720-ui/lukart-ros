@@ -85,6 +85,7 @@ module = [
   "core.enterprise.operational_readiness_v1",
   "core.evaluation.contracts",
   "core.governance_closure_v1",
+  "core.lrd_replay_closure_v1",
   "core.p3.contracts",
   "core.p3.versioning",
   "core.product_runtime_v1",
