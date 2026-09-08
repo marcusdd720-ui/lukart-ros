@@ -26,7 +26,7 @@ from core.case_exchange_v1 import (
 from core.case_ledger.contracts import ContentAddress
 from core.enterprise.authorization import AuthorizationEngine
 from core.enterprise.authorization_policy import AuthorizationPolicyV1
-from core.enterprise.contracts import AuthorizationContext, AttestationVerifier
+from core.enterprise.contracts import AttestationVerifier, AuthorizationContext
 from core.p3.contracts import canonical_json
 
 CASE_EXCHANGE_V2_SCHEMA = "lukart.signed-case-exchange.v2"
@@ -448,7 +448,9 @@ def verify_signed_case_exchange_v2(
     raw = _copy_mapping(value, field_name="signed case exchange v2")
     _require_exact_keys(raw, expected=_BUNDLE_KEYS, field_name="signed case exchange v2")
     if raw.get("schema") != CASE_EXCHANGE_V2_SCHEMA:
-        raise CaseExchangeV2Error(f"unsupported signed case exchange v2 schema: {raw.get('schema')}")
+        raise CaseExchangeV2Error(
+            f"unsupported signed case exchange v2 schema: {raw.get('schema')}"
+        )
     if raw.get("semantics") != CASE_EXCHANGE_V2_SEMANTICS:
         raise CaseExchangeV2Error("unknown signed case exchange v2 semantics")
 
