@@ -12,7 +12,8 @@ Latest closed governance consistency: `GOV-01 implementation merge @ main 54245d
 Latest closed longitudinal KQM: `KQM-03 implementation merge @ main 85d4beaae0d0c5f736a23204cbf2103f8858f935`
 Latest closed crypto agility: `CRY-01 implementation merge @ main 2c705dde2c077f04b6c820e2104cb27cb320ab36`
 Latest closed recovery continuity: `DR-02 implementation merge @ main ed1e214a7a16897d7e1e8cb3dc719ebf9cf72e04`
-Active stage: `SSC-02`
+Latest closed supply-chain continuity: `SSC-02 implementation merge @ main d6efdfaad63427b5ddb76af8da58b33baae0386b`
+Active stage: `FIV-02`
 Approved execution sequence: `PRC-01 -> PVE-01 -> GOV-01 -> KQM-03 -> CRY-01 -> DR-02 -> SSC-02 -> FIV-02 -> OPR-01 -> POL-01 -> XCH-02 -> continuous LRD-01`
 Horizon: 10+ years
 
@@ -513,6 +514,54 @@ Closed controls:
   external/security/disaster-recovery certification claim is introduced.
 
 Architecture and exact closure evidence: `docs/RECOVERY_CONTINUITY_V1.md`.
+
+## SSC-02 — Supply Chain Continuity v2
+
+Status: `CLOSED / ENGINEERING PASS`
+Implementation merge baseline: `main @ d6efdfaad63427b5ddb76af8da58b33baae0386b`
+Validated PR head: `90fe300d8d81876e9d690410eef2c1dc564820e8`
+PR: `#174`
+Depends on: `DR-02 CLOSED / ENGINEERING PASS`
+Next approved stage: `FIV-02`
+
+Closed controls:
+
+- existing `pylock.toml`, `uv.lock`, project/build metadata and Enterprise supply-chain
+  authority are reused instead of introducing a second dependency SSOT;
+- a versioned content-addressed continuity manifest binds exact full Git source SHA,
+  runtime/platform declarations and an exhaustive physical artifact inventory;
+- exact Git source is carried as a tar archive whose PAX comment is bound to the full source
+  commit SHA;
+- a physical wheelhouse carries dependency and build-tool material for the measured target
+  environment;
+- a standalone verifier is copied into the bundle and uses only Python standard-library
+  facilities, so verification does not depend on the current LUKART runtime or `uv`;
+- standard PEP 751 source-tree semantics and environment markers are preserved rather than
+  flattened to a false one-name/one-version model;
+- the local project `directory.path = "."` is accepted only because the exact repository
+  source is separately escrowed; any other directory/VCS/archive direct source fails closed
+  until a separately implemented escrow adapter exists;
+- wheel package identity is taken from exactly one top-level `*.dist-info/METADATA`; nested
+  vendored metadata cannot become a competing wheel identity;
+- unknown schema/fields, unsafe paths, symlinks, missing/extra artifacts, size/hash mismatch,
+  package mismatch and source-SHA substitution fail closed;
+- exact candidate SHA passed all 12 PR workflows;
+- dedicated SSC-02 integration proved physical wheelhouse materialization, standalone bundle
+  verification, offline no-index install/import, offline exact-source rebuild and live tamper
+  rejection;
+- guarded merge used the unchanged exact head and expected base;
+- exact implementation merge completed ten post-merge workflow runs, all `SUCCESS`, with
+  zero failed, cancelled, timed-out, queued or in-progress runs at closure evaluation;
+- historical `v1.0.1` tag object remained
+  `9f7c0b28f766c8921e63b1d517fefcc96aa991d4` and its target commit remained
+  `802013c4d0e53dc12306a97e1877ebba86af64a7`;
+- no new release was published as an SSC-02 side effect;
+- GitHub Actions artifact retention is not treated as ten-year escrow; external durable
+  multi-location storage and restore operations remain separately evidenced infrastructure;
+- no Product/CCL/Gold/release authority, independent security/SLSA certification or external
+  ten-year storage durability claim is introduced.
+
+Architecture and exact closure evidence: `docs/SUPPLY_CHAIN_CONTINUITY_V2.md`.
 
 ## Years 6-10+ — Durability, portability and cryptographic renewal
 
