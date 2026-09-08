@@ -6,10 +6,10 @@ import pytest
 
 from core.governance_closure_v1 import (
     GOVERNANCE_CLOSURE_SCHEMA_V1,
+    REQUIRED_PR_WORKFLOWS_V1,
     GovernanceClosureError,
     GovernanceClosureRecordV1,
     GovernanceLiveSnapshotV1,
-    REQUIRED_PR_WORKFLOWS_V1,
     WorkflowEvidenceV1,
     WorkflowOutcome,
     verify_governance_closure_v1,
