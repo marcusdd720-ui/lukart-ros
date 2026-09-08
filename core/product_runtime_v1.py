@@ -40,6 +40,12 @@ def _require_canonical_identifier(value: str, *, field_name: str) -> str:
     return value
 
 
+def _is_lower_sha256_hex(value: str) -> bool:
+    return len(value) == 64 and all(
+        "0" <= character <= "9" or "a" <= character <= "f" for character in value
+    )
+
+
 def _reasoning_evidence_nodes(
     result: ReasoningRunResult,
     trust_graph: EvidenceTrustGraph,
@@ -99,9 +105,7 @@ class ProductRuntimeProofV1:
                 field_name="reasoning_target_id",
             ),
         )
-        if len(self.reasoning_result_digest) != 64 or any(
-            character not in "0123456789abcdef" for character in self.reasoning_result_digest
-        ):
+        if not _is_lower_sha256_hex(self.reasoning_result_digest):
             raise ProductRuntimeV1Error("reasoning_result_digest must be lowercase sha256 hex")
         normalized_refs = tuple(sorted(set(self.reasoning_evidence_node_ids)))
         if normalized_refs != self.reasoning_evidence_node_ids:
