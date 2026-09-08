@@ -11,6 +11,7 @@ import argparse
 import base64
 import hashlib
 import json
+import os
 import re
 import time
 import tomllib
@@ -292,7 +293,7 @@ class ClosureGitHubPort(Protocol):
 
 
 class ClosurePreparationGitHubClient(GitHubActionsClient):
-    """Narrow GitHub App capability adapter used only for closure preparation."""
+    """Narrow GitHub capability adapter used only for closure preparation."""
 
     @classmethod
     def from_environment(cls) -> ClosurePreparationGitHubClient:
@@ -392,17 +393,24 @@ class ClosurePreparationGitHubClient(GitHubActionsClient):
     def create_pull_request(
         self, *, title: str, body: str, head: str, base: str
     ) -> dict[str, Any]:
-        return self._api(
-            "POST",
-            f"/repos/{self.repository}/pulls",
-            body={
+        pull_request_token = os.environ.get("LUKART_ROS_CLOSURE_PR_TOKEN", "").strip()
+        if not pull_request_token:
+            raise ClosurePreparationError("scoped closure PR token is unavailable")
+        payload = json.dumps(
+            {
                 "title": title,
                 "body": body,
                 "head": head,
                 "base": base,
                 "draft": False,
                 "maintainer_can_modify": True,
-            },
+            }
+        ).encode("utf-8")
+        return self._request(
+            "POST",
+            f"{self.api_base}/repos/{self.repository}/pulls",
+            token=pull_request_token,
+            body=payload,
         )
 
 
