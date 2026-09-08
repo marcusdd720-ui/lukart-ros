@@ -160,9 +160,48 @@ unauthorized path can promote untrusted state to trusted state.
 8. Re-run security/privacy, provenance/replay, Gold/KQM and applicable release gates.
 9. Record root cause, containment, validation evidence and rollback/recovery decision.
 
+## Operational readiness / SLI-SLO and error budgets
+
+OPR-01 extends this runbook with the executable contract in `docs/OPERATIONAL_READINESS_V1.md`.
+The fixed v1 registry measures critical invariants, replay/recovery, degraded-mode containment,
+incident detection, runbook coverage, telemetry validity and security/trust boundaries. These are
+exact-SHA deterministic readiness drills, so the v1 failure budget is zero: any failed sample
+exhausts the corresponding budget and the operational readiness result is `FAIL`.
+
+Wall-clock latency, RTO and RPO remain useful measurement telemetry but are environment-dependent;
+they do not become correctness evidence merely because a shared runner met a timing target.
+
+## Observability and telemetry contract
+
+Operational telemetry is a derived observation and never a Product, CCL, Gold or epistemic
+authority. The OPR-01 event surface is closed and bounded to event name, component, outcome,
+exact code SHA, evidence digest and schema. Do not emit raw Case/evidence content, PII, secrets,
+free-form payloads or unbounded labels. Unknown event/schema/outcome or malformed identity fails
+closed. Deterministic readiness events must be reproducible from the same exact inputs.
+
+## Recovery/replay drills and degraded-mode tests
+
+OPR-01 reuses FIV-02, Case Replay v2 and DR-02 instead of creating another recovery or replay
+engine. The executable drill requires replay projection equivalence and recovery atomicity plus
+bounded adversarial containment for stale exact-head writes, migration ambiguity/nondeterminism,
+authorization isolation and injected recovery failure with zero partial canonical history and an
+exact retry. A failed drill creates a fresh failed evidence line; do not rewrite historical PASS.
+
+## Runbook validation
+
+The OPR-01 gate verifies the required operational headings exactly once. Missing or duplicated
+mandatory controls are ambiguous operational state and consume the zero error budget. Runbook
+validation is structural evidence only: it does not prove a human executed an external incident,
+secret rotation, disaster recovery or independent review that did not actually occur.
+
 ## Evidence retention
 
 Certification evidence is useful only when it can reconstruct the gate decision. Preserve the
 exact candidate SHA and version identities, machine-readable results, failures/blocked gates,
 corpus manifest, KQM policy/result, replay/provenance result, security/privacy result and
 performance measurement. Never convert BLOCKED or NOT RUN into PASS.
+
+For OPR-01 additionally preserve the exact policy identity, FIV-02 report identity, runbook
+digest, seven SLI/error-budget results, bounded telemetry event identities, incident-rule
+identities and final operational-readiness report digest. Runner timestamps and timing may be
+retained as observations but are not part of deterministic readiness identity.
