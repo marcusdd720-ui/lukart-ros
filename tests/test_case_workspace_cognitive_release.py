@@ -23,7 +23,10 @@ def _workspace(tmp_path: Path) -> CaseWorkspace:
     )
 
 
-def _approved_chain() -> tuple[DecisionModel, StrategyModel, ActionPlan, DocumentBinding]:
+def _approved_chain(
+    *,
+    include_runtime: bool = True,
+) -> tuple[DecisionModel, StrategyModel, ActionPlan, DocumentBinding]:
     decision = DecisionModel(
         decision_id="decision-1",
         problem_id="problem-1",
@@ -52,17 +55,20 @@ def _approved_chain() -> tuple[DecisionModel, StrategyModel, ActionPlan, Documen
         tasks=(),
         status=PlanStatus.ACTIVE,
     )
+    refs = [
+        ArtifactRef("decision", decision.decision_id, decision.version, "d" * 64),
+        ArtifactRef("strategy", strategy.strategy_id, strategy.version, "e" * 64),
+        ArtifactRef("plan", plan.plan_id, plan.version, "f" * 64),
+    ]
+    if include_runtime:
+        refs.append(ArtifactRef("product_runtime", "case:CASE-1", 1, "1" * 64))
     binding = DocumentBinding(
         document_id="document-1",
         renderer_id="kdoc-dumb-renderer",
         renderer_version="1.0",
         template_id="submission",
         template_version="1.0",
-        input_refs=(
-            ArtifactRef("decision", decision.decision_id, decision.version, "d" * 64),
-            ArtifactRef("strategy", strategy.strategy_id, strategy.version, "e" * 64),
-            ArtifactRef("plan", plan.plan_id, plan.version, "f" * 64),
-        ),
+        input_refs=tuple(refs),
         source_digest="a" * 64,
         generated_at="2026-09-05T00:00:00Z",
         communication_target="external-recipient",
@@ -101,7 +107,25 @@ def test_enforced_workspace_blocks_outbound_and_release_without_chain(
     assert workspace.run_stage("RELEASE") == 1
 
 
-def test_approved_bound_chain_unlocks_workspace_release_boundary(tmp_path: Path) -> None:
+def test_approved_bound_chain_without_runtime_proof_stays_blocked(tmp_path: Path) -> None:
+    workspace = _workspace(tmp_path)
+    decision, strategy, plan, binding = _approved_chain(include_runtime=False)
+    workspace.bind_cognitive_release(
+        binding=binding,
+        decision=decision,
+        strategy=strategy,
+        plan=plan,
+    )
+
+    assert workspace.cognitive_release_enforced is True
+    assert workspace.cognitive_release_blockers() == ("product_runtime_binding_missing",)
+    with pytest.raises(PermissionError, match="product_runtime_binding_missing"):
+        workspace.sync_outbound()
+
+
+def test_approved_bound_chain_with_runtime_proof_unlocks_workspace_release_boundary(
+    tmp_path: Path,
+) -> None:
     workspace = _workspace(tmp_path)
     decision, strategy, plan, binding = _approved_chain()
     workspace.bind_cognitive_release(

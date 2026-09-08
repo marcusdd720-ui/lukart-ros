@@ -39,22 +39,31 @@ def _selected_chain() -> tuple[DecisionModel, StrategyModel, ActionPlan]:
     return decision, strategy, plan
 
 
+def _runtime_ref() -> ArtifactRef:
+    return ArtifactRef("product_runtime", "case:CASE-1", 1, "1" * 64)
+
+
 def _approved_binding(
     decision: DecisionModel,
     strategy: StrategyModel,
     plan: ActionPlan,
+    *,
+    include_runtime: bool = True,
 ) -> DocumentBinding:
+    refs = [
+        ArtifactRef("decision", decision.decision_id, decision.version, "d" * 64),
+        ArtifactRef("strategy", strategy.strategy_id, strategy.version, "e" * 64),
+        ArtifactRef("plan", plan.plan_id, plan.version, "f" * 64),
+    ]
+    if include_runtime:
+        refs.append(_runtime_ref())
     return DocumentBinding(
         document_id="document-1",
         renderer_id="kdoc-dumb-renderer",
         renderer_version="1.0",
         template_id="submission",
         template_version="1.0",
-        input_refs=(
-            ArtifactRef("decision", decision.decision_id, decision.version, "d" * 64),
-            ArtifactRef("strategy", strategy.strategy_id, strategy.version, "e" * 64),
-            ArtifactRef("plan", plan.plan_id, plan.version, "f" * 64),
-        ),
+        input_refs=tuple(refs),
         source_digest="a" * 64,
         generated_at="2026-09-05T00:00:00Z",
         communication_target="external-recipient",
@@ -64,7 +73,7 @@ def _approved_binding(
     )
 
 
-def test_release_allows_only_complete_approved_chain() -> None:
+def test_release_allows_only_complete_approved_chain_with_runtime_proof() -> None:
     decision, strategy, plan = _selected_chain()
     binding = _approved_binding(decision, strategy, plan)
 
@@ -77,6 +86,21 @@ def test_release_allows_only_complete_approved_chain() -> None:
 
     assert result.allowed is True
     assert result.reasons == ()
+
+
+def test_release_blocks_missing_product_runtime_binding() -> None:
+    decision, strategy, plan = _selected_chain()
+    binding = _approved_binding(decision, strategy, plan, include_runtime=False)
+
+    result = authorize_cognitive_release(
+        binding=binding,
+        decision=decision,
+        strategy=strategy,
+        plan=plan,
+    )
+
+    assert result.allowed is False
+    assert result.reasons == ("product_runtime_binding_missing",)
 
 
 def test_release_blocks_abstention_and_missing_plan() -> None:
@@ -106,6 +130,7 @@ def test_release_blocks_abstention_and_missing_plan() -> None:
         input_refs=(
             ArtifactRef("decision", decision.decision_id, decision.version, "d" * 64),
             ArtifactRef("strategy", strategy.strategy_id, strategy.version, "e" * 64),
+            _runtime_ref(),
         ),
         source_digest="a" * 64,
         generated_at="2026-09-05T00:00:00Z",
@@ -141,6 +166,7 @@ def test_release_blocks_chain_binding_mismatch() -> None:
             ArtifactRef("decision", decision.decision_id, decision.version, "d" * 64),
             ArtifactRef("strategy", strategy.strategy_id, strategy.version, "e" * 64),
             ArtifactRef("plan", "another-plan", plan.version, "f" * 64),
+            _runtime_ref(),
         ),
         source_digest="a" * 64,
         generated_at="2026-09-05T00:00:00Z",

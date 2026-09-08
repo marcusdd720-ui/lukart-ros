@@ -4,6 +4,10 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
+from core.product_runtime_v1 import (
+    PRODUCT_RUNTIME_ARTIFACT_TYPE,
+    PRODUCT_RUNTIME_ARTIFACT_VERSION,
+)
 from knowledge.models.action_plan import ActionPlan, PlanStatus
 from knowledge.models.decision_model import DecisionModel, DecisionStatus
 from knowledge.models.document_binding import DocumentBinding, DocumentStatus
@@ -40,6 +44,34 @@ def _has_binding_ref(
     )
 
 
+def _is_lower_sha256_hex(value: str) -> bool:
+    return len(value) == 64 and all(
+        "0" <= character <= "9" or "a" <= character <= "f" for character in value
+    )
+
+
+def _product_runtime_binding_reasons(binding: DocumentBinding) -> tuple[str, ...]:
+    refs = tuple(
+        ref
+        for ref in binding.input_refs
+        if ref.artifact_type == PRODUCT_RUNTIME_ARTIFACT_TYPE
+    )
+    if not refs:
+        return ("product_runtime_binding_missing",)
+    if len(refs) != 1:
+        return ("product_runtime_binding_ambiguous",)
+
+    ref = refs[0]
+    reasons: list[str] = []
+    if ref.version != PRODUCT_RUNTIME_ARTIFACT_VERSION:
+        reasons.append("product_runtime_version_unsupported")
+    if not ref.artifact_id.startswith("case:") or len(ref.artifact_id) <= len("case:"):
+        reasons.append("product_runtime_case_identity_invalid")
+    if not _is_lower_sha256_hex(ref.digest):
+        reasons.append("product_runtime_digest_invalid")
+    return tuple(reasons)
+
+
 def authorize_cognitive_release(
     *,
     binding: DocumentBinding,
@@ -47,7 +79,7 @@ def authorize_cognitive_release(
     strategy: StrategyModel,
     plan: ActionPlan | None,
 ) -> ReleaseAuthorization:
-    """Authorize external release only for a complete, approved cognitive chain."""
+    """Authorize release only for an approved chain bound to converged Product runtime."""
 
     reasons: list[str] = []
 
@@ -89,6 +121,8 @@ def authorize_cognitive_release(
         plan.version,
     ):
         reasons.append("plan_binding_missing")
+
+    reasons.extend(_product_runtime_binding_reasons(binding))
 
     unique_reasons = tuple(dict.fromkeys(reasons))
     return ReleaseAuthorization(
