@@ -18,7 +18,8 @@ Latest closed supply-chain continuity: `SSC-02 implementation merge @ main d6efd
 Latest closed bounded invariant verification: `FIV-02 implementation merge @ main 38540d95db212cfc2c80be54853202f77b41a45f`
 Latest closed governance automation: `GOV-AUTO-01 implementation merge @ main e2808ea3df7cd89a6161af328dbcc377ec914eb4`
 Latest closed operational readiness: `OPR-01 implementation merge @ main 6f809b09e9f8a1e74a7da207f2447893c0c0127f`
-Active Post-Hardcore stage: `POL-01`
+Latest closed authorization policy identity: `POL-01 final implementation merge @ main 63d0114bbd49b78ed71e337c1a7c8c0de72e0811`
+Active Post-Hardcore stage: `XCH-02`
 Roadmap target: `Post-Hardcore Enterprise continuation`
 Development version: `1.1.0.dev0`
 
@@ -113,7 +114,9 @@ GOV-AUTO-01 — Automated Governance Closure PR Preparation v1 — is `CLOSED / 
 
 OPR-01 — Operational Readiness v1 — is `CLOSED / ENGINEERING PASS` on the final repaired implementation line through PR #184. The validated exact implementation head is `dd1e0673be502b30a61a82515f42431025cb1d5f`; guarded implementation merge is `main @ 6f809b09e9f8a1e74a7da207f2447893c0c0127f`. The exact implementation candidate passed all 15 PR-triggered workflows, including OPR-01, CI Foundation, Stage Gate, FIV-02, SSC-02, Enterprise Hardcore, GitHub App smoke and Enterprise CodeQL. Required post-merge validation completed terminal `SUCCESS`, including the `MVROS v1 Release` guard, before Governance Closure PR Preparation run `34254_376877` (underscore is a display separator for the repository PII gate) created closure PR #185. Canonical preparation evidence identity is `c6a83e0b5a4ed77f8cc49e6ecf6650395d3b189d4393fa4313b5639651ecd956`; the evidence remains preparation-only and preserves the observed implementation identities without granting merge, release, Product, CCL, Gold, certification or independent-review authority. Historical `v1.0.1` tag object remained `9f7c0b28f766c8921e63b1d517fefcc96aa991d4`, its target remained `802013c4d0e53dc12306a97e1877ebba86af64a7`, and latest release remained `v1.0.1`. Canonical closure details are recorded in `docs/OPERATIONAL_READINESS_V1.md` and `evidence/governance_closure/opr-01/6f809b09e9f8a1e74a7da207f2447893c0c0127f.json`.
 
-The next approved stage is `POL-01` under the execution sequence in `docs/POST_HARDCORE_ROADMAP.md`.
+POL-01 — Authorization Policy Identity v1 — is `CLOSED / ENGINEERING PASS` on the final repaired line through PR #187. The authorization-policy code was first merged through PR #186, after which post-merge evidence exposed a governance target gap rather than a Product/security defect: the canonical closure target still referenced disabled OPR-01. Repair PR #187 armed the exact POL-01 closure target on fresh validated head `e1eadfdd1f2fc4ab3424c50c92ba147113ca6141`; guarded final implementation merge is `main @ 63d0114bbd49b78ed71e337c1a7c8c0de72e0811`. The final head passed all 15 required PR-triggered workflows and the merge produced 13 recorded terminal successful post-merge workflows, including CI Foundation, Stage Gate, Enterprise CodeQL, FIV-02, SSC-02, OPR-01 and the `MVROS v1 Release` guard. Governance Closure PR Preparation run `34262_237223` (underscore is a display separator for the repository PII gate) created closure PR #188 with canonical preparation evidence identity `3189b5ee96f90fc6a50296f8cde1c83a17690225384c1b708e5c64efc4948208`, governance live snapshot identity `0a7d066c347b8446cea6fc061b09145019a344c8ed062608fd083d132439f3c1` and governance report identity `4a48eeadd2546821fb79c0634ffd3d55655ab45f72aaf6c7eec7bbf473ae220a`. The evidence remains preparation-only and grants no merge, release, Product, CCL, Gold, certification or independent-review authority. Historical `v1.0.1` tag object and target remained unchanged and latest release remained `v1.0.1`. Canonical closure details are recorded in `docs/AUTHORIZATION_POLICY_IDENTITY_V1.md` and `evidence/governance_closure/pol-01/63d0114bbd49b78ed71e337c1a7c8c0de72e0811.json`.
+
+The next approved stage is `XCH-02` under the execution sequence in `docs/POST_HARDCORE_ROADMAP.md`.
 
 ## 6. Trust boundaries
 
@@ -195,5 +198,6 @@ The package development version is distinct from the immutable historical releas
 - `docs/FORMAL_INVARIANT_VERIFICATION_V2.md` — FIV-02 bounded invariant engineering verification contract and exact closure evidence.
 - `docs/GOVERNANCE_CLOSURE_AUTOMATION_V1.md` — GOV-AUTO-01 automated closure-preparation architecture and exact closure record.
 - `docs/OPERATIONAL_READINESS_V1.md` — OPR-01 operational readiness architecture and exact closure record.
+- `docs/AUTHORIZATION_POLICY_IDENTITY_V1.md` — POL-01 authorization policy identity and exact closure record.
 
 Historical design records do not override this Master Plan, Accepted ADRs, executable trust gates or the canonical working principles.
