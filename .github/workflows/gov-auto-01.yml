@@ -1,0 +1,67 @@
+name: GOV-AUTO-01 Closure Preparation
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  gov-auto-01:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout exact candidate SHA
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Set up Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7
+        with:
+          python-version: "3.11"
+
+      - name: Install frozen validation environment
+        run: |
+          python -m pip install "uv==0.12.10"
+          uv sync --frozen --extra dev
+
+      - name: GOV-AUTO-01 lint and type-check
+        run: |
+          uv run --frozen --extra dev ruff check \
+            factory/closure_preparation.py \
+            tests/test_closure_preparation.py
+          uv run --frozen --extra dev mypy \
+            factory/closure_preparation.py \
+            tests/test_closure_preparation.py
+
+      - name: GOV-AUTO-01 focused and adversarial tests
+        run: |
+          uv run --frozen --extra dev pytest \
+            tests/test_closure_preparation.py \
+            tests/test_governance_closure_v1.py \
+            tests/test_github_actions_client.py
+
+      - name: Governance automation contract checks
+        run: |
+          uv run --frozen --extra dev python - <<'PY'
+          import json
+          from pathlib import Path
+
+          target = json.loads(
+              Path("config/closure_preparation_target.json").read_text(encoding="utf-8")
+          )
+          assert target["schema"] == "lukart.closure-preparation-target.v1"
+          assert target["stage_id"] == "GOV-AUTO-01"
+          assert target["next_stage_id"] == "OPR-01"
+          assert target["implementation_pr"] == 178
+          assert target["enabled"] is True
+
+          contract = Path("docs/GOVERNANCE_CLOSURE_AUTOMATION_V1.md").read_text(
+              encoding="utf-8"
+          )
+          assert "PREPARED / NOT CLOSED" in contract
+          assert "guarded exact-head merge" in contract
+          assert "no merge authority" in contract.lower()
+          PY
