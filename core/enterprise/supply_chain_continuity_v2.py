@@ -18,9 +18,9 @@ import sys
 import tarfile
 import tomllib
 import zipfile
+from collections.abc import Mapping, Sequence
 from email.parser import Parser
 from pathlib import Path, PurePosixPath
-from typing import Mapping, Sequence
 
 CONTINUITY_SCHEMA = "lukart.supply-chain-continuity.v2"
 MANIFEST_NAME = "continuity-manifest.json"
