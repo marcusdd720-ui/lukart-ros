@@ -81,6 +81,7 @@ module = [
   "core.enterprise.contracts",
   "core.enterprise.durability",
   "core.evaluation.contracts",
+  "core.governance_closure_v1",
   "core.p3.contracts",
   "core.p3.versioning",
   "core.product_runtime_v1",
