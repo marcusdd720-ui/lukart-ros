@@ -80,6 +80,7 @@ module = [
   "core.enterprise.authorization",
   "core.enterprise.contracts",
   "core.enterprise.durability",
+  "core.enterprise.operational_readiness_v1",
   "core.evaluation.contracts",
   "core.governance_closure_v1",
   "core.p3.contracts",
