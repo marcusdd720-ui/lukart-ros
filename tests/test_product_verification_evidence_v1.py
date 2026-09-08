@@ -5,7 +5,13 @@ from pathlib import Path
 
 import pytest
 
-from core.case_ledger import CanonicalCaseLedger, CaseId, CaseLedgerBundle, ContentAddress, ObjectId
+from core.case_ledger import (
+    CanonicalCaseLedger,
+    CaseId,
+    CaseLedgerBundle,
+    ContentAddress,
+    ObjectId,
+)
 from core.p3.contracts import RuntimeIdentity
 from core.p3.versioning import CaseMigrationRegistry
 from core.product_runtime_v1 import ProductRuntimeRunV1, converge_product_runtime_v1
@@ -240,7 +246,8 @@ def test_report_cannot_drop_required_check(tmp_path: Path) -> None:
         code_sha=_candidate_sha(),
         expected_code_sha=_candidate_sha(),
     )
-    with pytest.raises(ProductVerificationEvidenceV1Error, match="missing, duplicated or reorders"):
+    error = "missing, duplicated or reorders"
+    with pytest.raises(ProductVerificationEvidenceV1Error, match=error):
         replace(report, results=report.results[:-1])
 
 
