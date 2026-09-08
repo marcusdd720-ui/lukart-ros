@@ -47,6 +47,7 @@ jobs:
         run: |
           uv run --frozen --extra dev python - <<'PY'
           import json
+          import re
           from pathlib import Path
 
           target = json.loads(
@@ -56,7 +57,33 @@ jobs:
           assert target["stage_id"] == "GOV-AUTO-01"
           assert target["next_stage_id"] == "OPR-01"
           assert target["implementation_pr"] == 179
-          assert target["enabled"] is True
+          assert isinstance(target["enabled"], bool)
+
+          if target["enabled"] is False:
+              evidence_dir = Path("evidence/governance_closure") / target["stage_id"].lower()
+              evidence_files = sorted(evidence_dir.glob("*.json"))
+              assert evidence_files, "disabled closure target requires generated closure evidence"
+
+              matching = []
+              for evidence_path in evidence_files:
+                  evidence = json.loads(evidence_path.read_text(encoding="utf-8"))
+                  merge_sha = evidence.get("implementation_merge_sha")
+                  validated_head_sha = evidence.get("validated_head_sha")
+                  if (
+                      evidence.get("schema") == "lukart.closure-preparation-evidence.v1"
+                      and evidence.get("authority") == "closure-preparation-only"
+                      and evidence.get("result") == "PREPARED_NOT_CLOSED"
+                      and evidence.get("stage_id") == target["stage_id"]
+                      and evidence.get("next_stage_id") == target["next_stage_id"]
+                      and evidence.get("implementation_pr") == target["implementation_pr"]
+                      and isinstance(merge_sha, str)
+                      and re.fullmatch(r"[0-9a-f]{40}", merge_sha)
+                      and evidence_path.stem == merge_sha
+                      and isinstance(validated_head_sha, str)
+                      and re.fullmatch(r"[0-9a-f]{40}", validated_head_sha)
+                  ):
+                      matching.append(evidence_path)
+              assert matching, "disabled closure target is not bound to valid generated evidence"
 
           contract = Path("docs/GOVERNANCE_CLOSURE_AUTOMATION_V1.md").read_text(
               encoding="utf-8"
