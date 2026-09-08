@@ -8,7 +8,8 @@ Post-Hardcore closed trust core: `PHX-06 @ main 9c2a7812cedfe98b65af484186459300
 Latest closed durability continuation: `DR-01 implementation merge @ main 615c01946e7ca61bb0bb5488b2a3b799eb5f06ce`
 Latest closed invariant verification: `IV-01 @ main cae560f4893b8726695e06334982927376e7a146`
 Latest closed signed exchange continuation: `XCH-01 @ main 83157c6e649ab1212ee200a453aa5240e08be24c`
-Active Post-Hardcore stage: `NONE — PHX-01..PHX-06 trust core, DR-01, IV-01 and XCH-01 closed`
+Latest closed Product runtime convergence: `PRC-01 @ main a12cd60d2a45ce0d1807588089dbf9706cac4b22`
+Active Post-Hardcore stage: `PVE-01 — Product Verification Evidence v1`
 Roadmap target: `Post-Hardcore Enterprise continuation`
 Development version: `1.1.0.dev0`
 
@@ -83,7 +84,9 @@ IV-01 — Critical Invariant Verification v1 — is `CLOSED / ENGINEERING PASS` 
 
 XCH-01 — Signed Case Exchange v1 — is `CLOSED / ENGINEERING PASS` for PR #160. The validated PR head is `4da8545b4ec8584caf1a8a73aac4fc9794ba6531`; the merge is `main @ 83157c6e649ab1212ee200a453aa5240e08be24c`. XCH-01 binds an exact Case Replay v2 bundle to content-addressed exchange identity, explicit source `case:read` and recipient `case:write` authorization evidence and the existing Enterprise Ed25519 attestation contract under a dedicated domain separator. Offline verification rejects unknown schema/fields and revoked, untrusted or expired signatures. Attestation proves origin/integrity only, never epistemic truth; XCH-01 exposes no Canonical Ledger write, restore, persistence or implicit merge/import authority. The exact candidate SHA passed all 11 required PR workflows and the merge SHA completed nine post-merge workflow runs with no failed, cancelled, queued or in-progress runs when closure was evaluated.
 
-No next Post-Hardcore stage is active until it is separately defined, measured and validated. These engineering closures do not assert independent external certification.
+PRC-01 — Product Runtime Convergence v1 — is `CLOSED / ENGINEERING PASS` for PR #162. The final validated PR head is `e13dabd2459c5097d7d6a720cbbfafeeb32f8b04`; the implementation merge is `main @ a12cd60d2a45ce0d1807588089dbf9706cac4b22`. PRC-01 composes the existing Canonical Case Ledger, Epistemic v2, Evidence Trust Graph, deterministic Reasoning Engine and Case Replay v2 into a content-addressed `ProductRuntimeProofV1`, while preserving the CCL as the sole writable case-history authority. Reasoning evidence must resolve to exact EVENT/ASSERTION trust nodes. The existing cognitive release guard remains the single release authorization boundary and now requires exactly one valid `product_runtime` proof binding. The final candidate passed all 11 required PR workflows; the exact implementation merge completed nine post-merge workflows, all `SUCCESS`, with no failed, cancelled, queued or in-progress run at closure evaluation. Historical `v1.0.1` tag object and target commit remained unchanged and no new release was published. No independent external certification is claimed.
+
+The next approved stage is `PVE-01 — Product Verification Evidence v1`. PVE-01 must measure the converged PRC-01 runtime using versioned, reproducible, privacy-safe evidence and must not promote synthetic or private-case observations into certification claims without the required authority.
 
 ## 6. Trust boundaries
 
@@ -155,5 +158,6 @@ The package development version is distinct from the immutable historical releas
 - `docs/SEMANTIC_CHANGE_PROPAGATION_V2.md` — PHX-06 bounded change-propagation contract.
 - `docs/CRITICAL_INVARIANT_VERIFICATION_V1.md` — IV-01 bounded critical-invariant verification contract.
 - `docs/SIGNED_CASE_EXCHANGE_V1.md` — XCH-01 signed offline-verifiable case exchange contract.
+- `docs/PRODUCT_RUNTIME_CONVERGENCE_V1.md` — PRC-01 converged Product runtime and release-proof contract.
 
 Historical design records do not override this Master Plan, Accepted ADRs, executable trust gates or the canonical working principles.

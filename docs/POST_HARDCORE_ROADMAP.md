@@ -6,7 +6,9 @@ Current closed trust core: `PHX-06 @ main 9c2a7812cedfe98b65af484186459300897357
 Latest closed durability continuation: `DR-01 implementation merge @ main 615c01946e7ca61bb0bb5488b2a3b799eb5f06ce`
 Latest closed invariant verification: `IV-01 @ main cae560f4893b8726695e06334982927376e7a146`
 Latest closed signed exchange continuation: `XCH-01 @ main 83157c6e649ab1212ee200a453aa5240e08be24c`
-Active stage: `NONE — IV-01 and XCH-01 closed`
+Latest closed Product runtime convergence: `PRC-01 @ main a12cd60d2a45ce0d1807588089dbf9706cac4b22`
+Active stage: `PVE-01 — Product Verification Evidence v1`
+Approved execution sequence: `PRC-01 -> PVE-01 -> GOV-01 -> KQM-03 -> CRY-01 -> DR-02 -> SSC-02 -> FIV-02 -> OPR-01 -> POL-01 -> XCH-02 -> continuous LRD-01`
 Horizon: 10+ years
 
 This roadmap extends the existing Product, P2/P3, Enterprise and historical Hardcore
@@ -274,6 +276,66 @@ Closed controls:
 - engineering closure does not claim independent external certification.
 
 Architecture contract: `docs/SIGNED_CASE_EXCHANGE_V1.md`.
+
+## PRC-01 — Product Runtime Convergence v1
+
+Status: `CLOSED / ENGINEERING PASS`
+Implementation merge baseline: `main @ a12cd60d2a45ce0d1807588089dbf9706cac4b22`
+Validated PR head: `e13dabd2459c5097d7d6a720cbbfafeeb32f8b04`
+PR: `#162`
+
+Closed controls:
+
+- one projection/verification-only Product runtime over the existing CCL, Epistemic v2,
+  Evidence Trust Graph, deterministic Reasoning Engine and Case Replay v2 contracts;
+- content-addressed `ProductRuntimeProofV1` binds exact case, CCL head/bundle, Epistemic and
+  trust identities, replay identities, RuntimeIdentity, reasoning target/result/outcome and
+  exact reasoning evidence nodes;
+- reasoning evidence refs must resolve to exact EVENT or ASSERTION trust nodes; free-form
+  legacy evidence labels and DECISION nodes do not satisfy the converged proof boundary;
+- deterministic `ABSTAIN` remains a valid Product result and is not promoted to PASS;
+- the existing cognitive release guard remains the single release authorization boundary;
+- cognitive release requires exactly one valid `product_runtime` proof binding in addition
+  to the pre-existing Decision/Strategy/ActionPlan/human-approval checks;
+- no new Product persistence authority, CCL write path, graph store or competing truth store;
+- two repair loops were resolved without weakening gates: Ruff `E501`, then a PII-scanner
+  false positive in the SHA-256 validation implementation;
+- final exact candidate SHA passed all 11 required PR workflows;
+- guarded merge used the unchanged final head;
+- exact implementation merge SHA completed nine post-merge workflow runs, all `SUCCESS`,
+  with no failed, cancelled, queued or in-progress runs when closure was evaluated;
+- historical `v1.0.1` tag object and target commit remained unchanged and no new release was
+  published;
+- engineering closure does not claim independent external certification.
+
+Architecture contract: `docs/PRODUCT_RUNTIME_CONVERGENCE_V1.md`.
+
+## PVE-01 — Product Verification Evidence v1
+
+Status: `ACTIVE / DEFINITION + MEASUREMENT`
+Depends on: `PRC-01 CLOSED / ENGINEERING PASS`
+
+PVE-01 is the next approved stage. It must produce reproducible evidence that the converged
+Product runtime behaves correctly on bounded vertical slices without creating a new truth or
+certification authority.
+
+Initial contract:
+
+- synthetic/non-sensitive fixtures may run in public CI;
+- real private cases remain local-only and cannot be uploaded to GitHub or Actions;
+- every verification result must bind exact runtime/code/config/schema/input/evidence
+  identity sufficient to distinguish reproducible evidence from an observation;
+- verification must cover at least a successful supported chain, epistemic `ABSTAIN`,
+  contradiction/open-question behavior, stale/tampered proof rejection and cross-case
+  substitution rejection;
+- Product evidence is measurement, not automatic Gold/certification promotion;
+- missing required identity or evidence fails closed;
+- public CI closure may establish engineering evidence only; any private local real-case
+  evidence not present in the repository must be reported separately and cannot be
+  fabricated by automation.
+
+PVE-01 implementation/closure requires its own exact candidate SHA, focused/adversarial/full
+validation, complete required CI, guarded merge and exact-main post-merge verification.
 
 ## Years 6-10+ — Durability, portability and cryptographic renewal
 

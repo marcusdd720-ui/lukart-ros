@@ -1,6 +1,10 @@
 # PRC-01 — Product Runtime Convergence v1
 
-Status: `IMPLEMENTATION / VALIDATION PENDING`
+Status: `CLOSED / ENGINEERING PASS`
+
+Validated PR head: `e13dabd2459c5097d7d6a720cbbfafeeb32f8b04`
+Implementation PR: `#162`
+Implementation merge: `main @ a12cd60d2a45ce0d1807588089dbf9706cac4b22`
 
 ## Problem
 
@@ -132,19 +136,53 @@ PRC-01 does not:
 PVE-01 is intentionally subsequent: it measures this converged runtime on synthetic and
 private local real-case vertical slices after PRC-01 engineering closure.
 
+## Closure evidence
+
+PRC-01 implementation was validated on exact PR head
+`e13dabd2459c5097d7d6a720cbbfafeeb32f8b04` in PR `#162`.
+
+The exact candidate completed all 11 required pull-request workflows with `SUCCESS`:
+
+- Architectural Audit 1.0;
+- GitHub App Smoke Test;
+- Stage Orchestrator;
+- Production Validation Program;
+- Stage Gate;
+- CI Foundation;
+- P2 Semantic Intelligence;
+- Post-v1 v1.1;
+- P3 Hardcore Hardening;
+- Enterprise Hardcore Gate;
+- Enterprise CodeQL.
+
+Two repair loops were completed before the final exact candidate: a Ruff `E501` formatting
+failure and a PII-gate false positive caused by a digit-only lowercase-hex validation
+literal. The PII policy was not weakened; the implementation was changed to preserve strict
+ASCII lowercase SHA-256 validation without triggering the numeric identifier heuristic.
+All evidence from earlier candidate SHAs was treated as stale.
+
+PR `#162` was guarded-merged with the unchanged expected head. The resulting implementation
+merge is `main @ a12cd60d2a45ce0d1807588089dbf9706cac4b22`. That exact merge completed nine
+post-merge workflow runs; all nine concluded `SUCCESS`, with no failed, cancelled, queued or
+in-progress run at closure evaluation. The merge commit is GitHub-verified.
+
+Historical release identity remained unchanged: annotated tag object
+`9f7c0b28f766c8921e63b1d517fefcc96aa991d4` still targets release commit
+`802013c4d0e53dc12306a97e1877ebba86af64a7`, and no new release was published.
+
 ## Closure criteria
 
-PRC-01 is `CLOSED / ENGINEERING PASS` only after:
+PRC-01 is `CLOSED / ENGINEERING PASS` because:
 
 - implementation exists;
-- focused and adversarial tests pass;
+- focused and adversarial tests passed;
 - legacy release paths cannot bypass the Product runtime binding;
-- full regression, Ruff and MyPy pass;
-- security/policy/repository gates pass;
-- all required workflows pass on one exact PR-head SHA;
-- unchanged exact head is guarded-merged;
-- resulting `main` completes terminal post-merge validation;
-- immutable `v1.0.1` release/tag identity remains unchanged;
+- full regression, Ruff and MyPy passed;
+- security/policy/repository gates passed;
+- all required workflows passed on one exact PR-head SHA;
+- unchanged exact head was guarded-merged;
+- resulting `main` completed terminal post-merge validation;
+- immutable `v1.0.1` release/tag identity remained unchanged;
 - exact closure evidence is recorded in canonical governance.
 
 Engineering closure does not assert independent external certification.
