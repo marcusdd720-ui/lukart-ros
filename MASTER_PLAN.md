@@ -17,7 +17,8 @@ Latest closed recovery continuity: `DR-02 implementation merge @ main ed1e214a7a
 Latest closed supply-chain continuity: `SSC-02 implementation merge @ main d6efdfaad63427b5ddb76af8da58b33baae0386b`
 Latest closed bounded invariant verification: `FIV-02 implementation merge @ main 38540d95db212cfc2c80be54853202f77b41a45f`
 Latest closed governance automation: `GOV-AUTO-01 implementation merge @ main e2808ea3df7cd89a6161af328dbcc377ec914eb4`
-Active Post-Hardcore stage: `OPR-01`
+Latest closed operational readiness: `OPR-01 implementation merge @ main 6f809b09e9f8a1e74a7da207f2447893c0c0127f`
+Active Post-Hardcore stage: `POL-01`
 Roadmap target: `Post-Hardcore Enterprise continuation`
 Development version: `1.1.0.dev0`
 
@@ -110,7 +111,9 @@ FIV-02 — Bounded Critical Invariant Verification v2 — is `CLOSED / ENGINEERI
 
 GOV-AUTO-01 — Automated Governance Closure PR Preparation v1 — is `CLOSED / ENGINEERING PASS` on the final repaired implementation line through PR #181. The validated exact implementation head is `5119b0a7a199de1611f717afd2474fd877655514`; guarded implementation merge is `main @ e2808ea3df7cd89a6161af328dbcc377ec914eb4`. The final implementation candidate passed all 14 PR-triggered workflows. Its post-merge required core, including Stage Gate and the `MVROS v1 Release` guard, completed terminal `SUCCESS` before preparation. Self-dogfood run `34239_068144` attempt 2 (underscore is a display separator for the repository PII gate) then created closure PR #182 with canonical evidence identity `38b686547103344597794a4df5d24928d08e4ca5d4961e8262650ed384fbc50b`. The automation remains preparation-only: it has no merge, release, Product, CCL, Gold, certification or independent-review authority. Earlier failed dogfood attempts remain historical evidence and are not reinterpreted as PASS. Historical `v1.0.1` tag object and target remained unchanged and no new release was published during implementation validation. Canonical closure details are recorded in `docs/GOVERNANCE_CLOSURE_AUTOMATION_V1.md` and the generated machine evidence under `evidence/governance_closure/gov-auto-01/`.
 
-The next approved stage is `OPR-01` under the execution sequence in `docs/POST_HARDCORE_ROADMAP.md`.
+OPR-01 — Operational Readiness v1 — is `CLOSED / ENGINEERING PASS` on the final repaired implementation line through PR #184. The validated exact implementation head is `dd1e0673be502b30a61a82515f42431025cb1d5f`; guarded implementation merge is `main @ 6f809b09e9f8a1e74a7da207f2447893c0c0127f`. The exact implementation candidate passed all 15 PR-triggered workflows, including OPR-01, CI Foundation, Stage Gate, FIV-02, SSC-02, Enterprise Hardcore, GitHub App smoke and Enterprise CodeQL. Required post-merge validation completed terminal `SUCCESS`, including the `MVROS v1 Release` guard, before Governance Closure PR Preparation run `34254376877` created closure PR #185. Canonical preparation evidence identity is `c6a83e0b5a4ed77f8cc49e6ecf6650395d3b189d4393fa4313b5639651ecd956`; the evidence remains preparation-only and preserves the observed implementation identities without granting merge, release, Product, CCL, Gold, certification or independent-review authority. Historical `v1.0.1` tag object remained `9f7c0b28f766c8921e63b1d517fefcc96aa991d4`, its target remained `802013c4d0e53dc12306a97e1877ebba86af64a7`, and latest release remained `v1.0.1`. Canonical closure details are recorded in `docs/OPERATIONAL_READINESS_V1.md` and `evidence/governance_closure/opr-01/6f809b09e9f8a1e74a7da207f2447893c0c0127f.json`.
+
+The next approved stage is `POL-01` under the execution sequence in `docs/POST_HARDCORE_ROADMAP.md`.
 
 ## 6. Trust boundaries
 
@@ -191,5 +194,6 @@ The package development version is distinct from the immutable historical releas
 - `docs/SUPPLY_CHAIN_CONTINUITY_V2.md` — SSC-02 long-horizon supply-chain continuity contract and exact closure evidence.
 - `docs/FORMAL_INVARIANT_VERIFICATION_V2.md` — FIV-02 bounded invariant engineering verification contract and exact closure evidence.
 - `docs/GOVERNANCE_CLOSURE_AUTOMATION_V1.md` — GOV-AUTO-01 automated closure-preparation architecture and exact closure record.
+- `docs/OPERATIONAL_READINESS_V1.md` — OPR-01 operational readiness architecture and exact closure record.
 
 Historical design records do not override this Master Plan, Accepted ADRs, executable trust gates or the canonical working principles.
