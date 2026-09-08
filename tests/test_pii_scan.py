@@ -1,11 +1,29 @@
 from __future__ import annotations
 
+import json
+
 from scripts.pii_scan import CRYPTO_DIGEST, PATTERNS, _pii_scan_text
 
+EVIDENCE_PATH = (
+    "evidence/governance_closure/gov-auto-01/"
+    "132312e157f5d6ccc13aa40d48e34e5c3732c908.json"
+)
 
-def _labels(text: str) -> set[str]:
-    scan_text = _pii_scan_text(text)
+
+def _labels(text: str, *, relative: str = "") -> set[str]:
+    scan_text = _pii_scan_text(text, relative=relative)
     return {label for label, pattern in PATTERNS.items() if pattern.search(scan_text)}
+
+
+def _canonical_evidence(run_id: int) -> dict[str, object]:
+    return {
+        "schema": "lukart.closure-preparation-evidence.v1",
+        "authority": "closure-preparation-only",
+        "result": "PREPARED_NOT_CLOSED",
+        "stage_id": "GOV-AUTO-01",
+        "pr_workflows": [{"run_id": run_id}],
+        "post_merge_workflows": [{"run_id": run_id + 1}],
+    }
 
 
 def test_sha1_and_sha256_are_masked_before_pii_matching() -> None:
@@ -45,3 +63,31 @@ def test_non_digest_hex_sequence_is_not_blanket_ignored() -> None:
     # The scanner does not promise to detect digits embedded in arbitrary text;
     # this regression only proves that non-digest strings are not masked wholesale.
     assert _pii_scan_text(value) == value
+
+
+def test_canonical_github_run_id_is_not_treated_as_pesel() -> None:
+    run_id = int("34237" + "264037")
+    labels = _labels(json.dumps(_canonical_evidence(run_id)), relative=EVIDENCE_PATH)
+
+    assert "PESEL-like 11 digits" not in labels
+
+
+def test_unrelated_eleven_digit_value_in_same_evidence_still_fails() -> None:
+    run_id = int("34237" + "264037")
+    personal_shape = "12345" + "678901"
+    payload = _canonical_evidence(run_id)
+    payload["unrelated_number"] = personal_shape
+
+    labels = _labels(json.dumps(payload), relative=EVIDENCE_PATH)
+
+    assert "PESEL-like 11 digits" in labels
+
+
+def test_noncanonical_evidence_does_not_receive_run_id_exception() -> None:
+    run_id = int("34237" + "264037")
+    payload = _canonical_evidence(run_id)
+    payload["authority"] = "unexpected-authority"
+
+    labels = _labels(json.dumps(payload), relative=EVIDENCE_PATH)
+
+    assert "PESEL-like 11 digits" in labels
