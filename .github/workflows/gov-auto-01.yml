@@ -56,7 +56,7 @@ jobs:
           assert target["schema"] == "lukart.closure-preparation-target.v1"
           assert target["stage_id"] == "GOV-AUTO-01"
           assert target["next_stage_id"] == "OPR-01"
-          assert target["implementation_pr"] == 179
+          assert target["implementation_pr"] == 181
           assert isinstance(target["enabled"], bool)
 
           if target["enabled"] is False:
