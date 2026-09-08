@@ -14,6 +14,7 @@ Latest closed crypto agility: `CRY-01 implementation merge @ main 2c705dde2c077f
 Latest closed recovery continuity: `DR-02 implementation merge @ main ed1e214a7a16897d7e1e8cb3dc719ebf9cf72e04`
 Latest closed supply-chain continuity: `SSC-02 implementation merge @ main d6efdfaad63427b5ddb76af8da58b33baae0386b`
 Latest closed bounded invariant verification: `FIV-02 implementation merge @ main 38540d95db212cfc2c80be54853202f77b41a45f`
+Latest closed governance automation: `GOV-AUTO-01 implementation merge @ main e2808ea3df7cd89a6161af328dbcc377ec914eb4`
 Active stage: `OPR-01`
 Approved execution sequence: `PRC-01 -> PVE-01 -> GOV-01 -> KQM-03 -> CRY-01 -> DR-02 -> SSC-02 -> FIV-02 -> OPR-01 -> POL-01 -> XCH-02 -> continuous LRD-01`
 Horizon: 10+ years
@@ -609,6 +610,50 @@ Closed controls:
   proof or formal-methods certification.
 
 Architecture and exact closure evidence: `docs/FORMAL_INVARIANT_VERIFICATION_V2.md`.
+
+## GOV-AUTO-01 — Automated Governance Closure PR Preparation v1
+
+Status: `CLOSED / ENGINEERING PASS`
+Implementation merge baseline: `main @ e2808ea3df7cd89a6161af328dbcc377ec914eb4`
+Validated implementation head: `5119b0a7a199de1611f717afd2474fd877655514`
+Final implementation PR: `#181`
+Generated closure PR: `#182`
+Next approved stage: `OPR-01`
+
+Closed controls:
+
+- live closure preparation is reconstructed from GitHub rather than copied from chat/memory;
+- implementation PR, validated head, merge ancestry, exact-head workflows, resulting-main
+  workflows, immutable baseline tag/target and latest release are explicitly bound;
+- GOV-01 consistency verification is reused instead of creating a competing governance
+  verifier;
+- `ClosurePreparationEvidenceV1` is deterministic and content-addressed;
+- final evidence identity is
+  `38b686547103344597794a4df5d24928d08e4ca5d4961e8262650ed384fbc50b`;
+- evidence result remains deliberately `PREPARED_NOT_CLOSED` with authority
+  `closure-preparation-only`; preparation never self-promotes closure;
+- the GitHub App writes only the generated branch/evidence/disabled target while the
+  ephemeral workflow `GITHUB_TOKEN` is limited to the final pull-request mutation;
+- no merge, release, administration, Product, CCL, Gold, certification or independent-review
+  authority is granted to the worker;
+- failed dogfood attempts remain immutable historical evidence and are not combined with the
+  successful final line;
+- the final repaired implementation candidate passed all 14 PR workflows;
+- guarded implementation merge used the unchanged final head;
+- all required implementation post-merge workflows, including Stage Gate and the release
+  guard, reached terminal `SUCCESS` before preparation;
+- self-dogfood run `34239_068144` attempt `2` (underscore is a display separator for the
+  repository PII gate) successfully created
+  PR #182 after repository policy explicitly allowed GitHub Actions to create pull requests;
+- repository-policy authorization was changed explicitly rather than bypassed in code;
+- historical `v1.0.1` tag object remained
+  `9f7c0b28f766c8921e63b1d517fefcc96aa991d4` and its target commit remained
+  `802013c4d0e53dc12306a97e1877ebba86af64a7`;
+- no unintended release was published during implementation/dogfood validation;
+- engineering closure does not claim independent external review or certification.
+
+Architecture and exact closure evidence: `docs/GOVERNANCE_CLOSURE_AUTOMATION_V1.md` and
+`evidence/governance_closure/gov-auto-01/e2808ea3df7cd89a6161af328dbcc377ec914eb4.json`.
 
 ## Years 6-10+ — Durability, portability and cryptographic renewal
 

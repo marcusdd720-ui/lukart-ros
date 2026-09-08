@@ -1,6 +1,6 @@
 # GOV-AUTO-01 — Automated Governance Closure PR Preparation v1
 
-Status: `ACTIVE / IMPLEMENTATION`
+Status: `CLOSED / ENGINEERING PASS`
 Authority: preparation/orchestration only
 Canonical execution standard: `docs/WORKING_PRINCIPLES.md`
 Canonical live state authority: GitHub
@@ -226,3 +226,43 @@ validation may support closure; the failed dogfood remains historical evidence a
 reinterpreted as PASS.
 
 No automated run can replace independent review where a later stage explicitly requires it.
+
+## 11. Canonical closure evidence
+
+GOV-AUTO-01 closed on the final repaired implementation line, not on either superseded
+failed dogfood attempt.
+
+- final implementation PR: `#181`;
+- validated implementation head: `5119b0a7a199de1611f717afd2474fd877655514`;
+- guarded implementation merge: `e2808ea3df7cd89a6161af328dbcc377ec914eb4`;
+- final implementation exact-head CI: `14/14 SUCCESS`;
+- implementation post-merge core: all required workflows terminal `SUCCESS` before closure
+  preparation, including Stage Gate and `MVROS v1 Release`;
+- successful self-dogfood workflow: run `34239_068144`, attempt `2` (underscore is a
+  presentation separator for the repository PII gate; canonical numeric identity remains
+  in machine-readable evidence);
+- generated closure PR: `#182`, created by `github-actions[bot]`;
+- generated evidence:
+  `evidence/governance_closure/gov-auto-01/e2808ea3df7cd89a6161af328dbcc377ec914eb4.json`;
+- evidence identity:
+  `38b686547103344597794a4df5d24928d08e4ca5d4961e8262650ed384fbc50b`;
+- evidence result: `PREPARED_NOT_CLOSED` and authority `closure-preparation-only`;
+- immutable baseline tag object:
+  `9f7c0b28f766c8921e63b1d517fefcc96aa991d4`;
+- immutable baseline target commit:
+  `802013c4d0e53dc12306a97e1877ebba86af64a7`;
+- latest release observed during evidence collection: `v1.0.1`;
+- next approved stage: `OPR-01`.
+
+The first post-merge dogfood failed because the installed GitHub App lacked PR creation
+permission. A least-privilege repair split branch/evidence writes from the final PR mutation.
+A later dogfood then reached `POST /pulls` but GitHub repository policy refused Actions-created
+PRs. After the repository setting **Allow GitHub Actions to create and approve pull requests**
+was explicitly enabled, the exact same fail-closed path succeeded without broadening Product,
+merge, release, CCL, Gold or certification authority.
+
+The generated evidence intentionally remains `PREPARED_NOT_CLOSED`: it proves preparation,
+not trust promotion. Stage closure still depends on this PR's own exact-head validation,
+guarded merge and resulting-main post-merge validation. The `CLOSED / ENGINEERING PASS`
+status in this canonical contract becomes effective only when those final closure gates are
+successfully completed.
