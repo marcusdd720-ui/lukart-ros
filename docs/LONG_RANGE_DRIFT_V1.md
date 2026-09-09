@@ -1,10 +1,17 @@
 # LRD-01D — Frozen Path / Current Path / Drift Evidence v1
 
-Status: `IMPLEMENTATION CANDIDATE`
+Status: `CLOSED / ENGINEERING PASS` closure candidate; authoritative after guarded closure merge
 Parent program: `continuous LRD-01`
 Depends on: `LRD-01C CLOSED / ENGINEERING PASS`
 Measured base: `main @ f601e9eae598c8c40eb365f343a100717c10bfb4`
-Historical release baseline: `v1.0.1 @ 802013c4d0e53dc12306a97e1877ebba86af64a7`
+Implementation PR: `#197`
+Validated implementation head: `6052fcb55af4dfb6cf2cd2fed76d22e8d9b0a3f6`
+Implementation merge: `main @ 57356225a41479274d6be00044e6c861f268a0b1`
+Implementation PR CI: `17/17 SUCCESS`
+Implementation post-merge: `16/16 SUCCESS`, `queued=0`, `in_progress=0`, `failure=0`
+Historical baseline tag object: `v1.0.1 @ 9f7c0b28f766c8921e63b1d517fefcc96aa991d4`
+Historical baseline target: `802013c4d0e53dc12306a97e1877ebba86af64a7`
+Latest release at implementation closure: `v1.0.1`
 Writable case-history SSOT: Canonical Case Ledger only
 
 ## 1. Problem
@@ -212,7 +219,41 @@ LRD-01D does not claim:
 
 Crypto renewal and freshness-aware operational health remain LRD-01E.
 
-## 10. Definition of Done
+## 10. LRD-01D closure evidence
+
+The implementation line had one fail-closed repair before the final candidate. The initial
+candidate exposed nine Ruff findings in Stage Gate: one unused import plus line wrapping/import
+formatting issues. The repair changed only formatting and removal of the unused import; no runtime
+semantics, test expectation, threshold, security policy, trust boundary or validation gate was
+weakened.
+
+The fresh implementation candidate `6052fcb55af4dfb6cf2cd2fed76d22e8d9b0a3f6` then passed all
+17 PR-triggered workflows on one unchanged exact head. The set included `LRD-01D Frozen Current
+Drift`, CI Foundation, Stage Gate, Enterprise CodeQL, Enterprise Hardcore Gate, LRD-01C Artifact
+Escrow Offline Runner, SSC-02, FIV-02, OPR-01, Production Validation Program and GitHub App Smoke
+Test. The dedicated LRD-01D workflow completed `SUCCESS` after exact checkout, Ruff, strict MyPy,
+focused/adversarial drift tests, replay/trust-chain regression and the fail-closed drift selection.
+`Enterprise CodeQL` also completed `SUCCESS` on that exact head.
+
+Guarded merge used `expected_head_sha=6052fcb55af4dfb6cf2cd2fed76d22e8d9b0a3f6` and produced
+`57356225a41479274d6be00044e6c861f268a0b1`. The resulting implementation main accumulated 16
+workflow runs bound to that exact SHA; all 16 were terminal `SUCCESS`, with zero queued,
+in-progress or failed runs at implementation closure evaluation. The post-merge dedicated
+`LRD-01D Frozen Current Drift`, `Enterprise CodeQL`, `Governance Closure PR Preparation` and
+`MVROS v1 Release` guard workflows all completed `SUCCESS` on that exact main SHA.
+
+Historical release identity remained unchanged: tag object
+`9f7c0b28f766c8921e63b1d517fefcc96aa991d4` still targets
+`802013c4d0e53dc12306a97e1877ebba86af64a7`, and the latest published release remains `v1.0.1`.
+Repository policy continues to declare `release_enabled = false`. No release/tag publication is
+authorized or performed by this closure.
+
+This record becomes authoritative only after this exact closure candidate itself passes fresh
+exact-head CI, guarded merge, resulting-main validation and baseline/release re-verification. It
+records engineering evidence only and does not create Product, CCL, Gold, policy, trust-promotion,
+release or independent-certification authority.
+
+## 11. Definition of Done
 
 LRD-01D closes only after one exact candidate SHA proves:
 
@@ -231,7 +272,7 @@ LRD-01D closes only after one exact candidate SHA proves:
 13. immutable `v1.0.1` tag/target/release baseline unchanged;
 14. canonical closure evidence merged into GitHub.
 
-## 11. Next slice
+## 12. Next slice
 
 After exact LRD-01D closure, the approved continuation is:
 
