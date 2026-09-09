@@ -32,7 +32,11 @@ from core.p3.contracts import RuntimeIdentity, canonical_json
 from core.p3.versioning import CaseMigrationRegistry
 from core.product_runtime_v1 import ProductRuntimeRunV1, converge_product_runtime_v1
 from knowledge.epistemic import KnowledgeStatus
-from knowledge.epistemic_assertions import EpistemicLedgerService, EpistemicPolicyV2, EvidenceEventRef
+from knowledge.epistemic_assertions import (
+    EpistemicLedgerService,
+    EpistemicPolicyV2,
+    EvidenceEventRef,
+)
 from knowledge.evidence_trust_graph import TrustPolicyV1, event_node_id
 from reasoning.models import ReasoningArtifact
 
@@ -271,13 +275,19 @@ def test_frozen_path_rebuilds_case_replay_offline_and_verifies_external_outputs(
     assert frozen.native_ffi_enforcement == "python-audit-hook-deny"
     assert frozen.kernel_sandbox is False
     assert frozen.case_replay_bundle_identity == historical.replay_bundle.bundle_identity
-    assert frozen.case_replay_manifest_identity == historical.replay_bundle.manifest.manifest_identity
+    assert (
+        frozen.case_replay_manifest_identity
+        == historical.replay_bundle.manifest.manifest_identity
+    )
     assert (
         frozen.epistemic_projection_identity
         == historical.replay_bundle.manifest.epistemic_projection_identity
     )
     assert frozen.trust_graph_identity == historical.replay_bundle.manifest.trust_graph_identity
-    assert frozen.runtime_identity_digest == historical.replay_bundle.manifest.runtime_identity_digest
+    assert (
+        frozen.runtime_identity_digest
+        == historical.replay_bundle.manifest.runtime_identity_digest
+    )
     assert frozen.assurance_level is ReplayAssuranceLevel.VERIFIED_EXTERNAL
     assert frozen.external_execution_present is True
     assert frozen.external_outputs_verified is True

@@ -17,7 +17,6 @@ from pathlib import Path
 from typing import cast
 
 from core.artifact_escrow_v1 import (
-    ArtifactEscrowError,
     ArtifactEscrowManifestV1,
     EscrowLimitsV1,
     FileSystemEscrowBackendV1,
@@ -469,7 +468,9 @@ class FrozenPathResultV1:
         )
         if self.execution_status is FrozenExecutionStatus.VERIFIED:
             if any(item is None for item in exact_fields):
-                raise LongRangeDriftError("verified Frozen Path requires complete rebuilt identities")
+                raise LongRangeDriftError(
+                    "verified Frozen Path requires complete rebuilt identities"
+                )
             if self.network_mode != "OFF":
                 raise LongRangeDriftError("verified Frozen Path must declare network OFF")
             if self.network_enforcement != "python-runtime-guard":
@@ -781,7 +782,10 @@ class DriftReportV1:
         else:
             if frozen.semantic_result_identity is None:
                 raise LongRangeDriftError("verifiable Frozen Path lacks semantic identity")
-            semantic_equal = frozen.semantic_result_identity == current.semantic_result.semantic_identity
+            semantic_equal = (
+                frozen.semantic_result_identity
+                == current.semantic_result.semantic_identity
+            )
             presentation_equal = frozen.presentation_identity == current.presentation_identity
             if not semantic_equal:
                 classification = DriftClassification.SEMANTIC_DRIFT
@@ -842,7 +846,9 @@ class DriftReportV1:
                 raise LongRangeDriftError("unknown drift cannot contain fabricated equality")
         else:
             if self.semantic_equal is None or self.presentation_equal is None:
-                raise LongRangeDriftError("verified drift classification requires equality evidence")
+                raise LongRangeDriftError(
+                    "verified drift classification requires equality evidence"
+                )
         if ContentAddress.for_value(self.body_dict()) != self.report_identity:
             raise LongRangeDriftError("drift report identity mismatch")
 
@@ -990,7 +996,9 @@ def frozen_path_worker(payload: Mapping[str, object]) -> dict[str, object]:
     if bundle_identity != case_binding.logical_identity:
         raise LongRangeDriftError("Frozen Case Replay bundle identity does not match LRD binding")
     if replay.manifest_identity != long_range.case_replay_manifest_identity:
-        raise LongRangeDriftError("Frozen Case Replay manifest identity does not match LRD manifest")
+        raise LongRangeDriftError(
+            "Frozen Case Replay manifest identity does not match LRD manifest"
+        )
     if semantic.case_id != expected_case_id:
         raise LongRangeDriftError("Frozen semantic result belongs to another case")
     if semantic.semantic_identity != long_range.semantic_result_identity:
