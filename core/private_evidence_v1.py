@@ -157,6 +157,14 @@ def _required_str_field(mapping: dict[str, object], key: str) -> str:
     return value
 
 
+def _non_symlink_absolute(path: Path, *, label: str) -> Path:
+    absolute = Path(os.path.abspath(path.expanduser()))
+    for candidate in (absolute, *absolute.parents):
+        if candidate.exists() and candidate.is_symlink():
+            raise PrivateEvidenceError(f"{label} must use a non-symlink path")
+    return absolute
+
+
 def _exclusive_json(path: Path, value: object) -> None:
     payload = canonical_json(value) + b"\n"
     path.parent.mkdir(parents=True, exist_ok=True)
@@ -204,7 +212,8 @@ class PrivateEvidenceStore:
         key_id: str,
         key_version: int = 1,
     ) -> None:
-        self.root = root.expanduser().resolve()
+        requested_root = _non_symlink_absolute(root, label="private evidence root")
+        self.root = requested_root.resolve()
         self.key_provider = key_provider
         self.authorization = authorization
         self.tenant_id = tenant_id.strip()
@@ -214,15 +223,17 @@ class PrivateEvidenceStore:
         if not self.tenant_id or not self.case_id or not self.key_id or key_version < 1:
             raise PrivateEvidenceError("tenant, case, key id and key version are required")
         self._require(Permission.EVIDENCE_READ)
-        self._prepare_root()
+        self._prepare_root(requested_root)
         self.case_scope_digest = digest_object(
             {"tenant_id": self.tenant_id, "case_id": self.case_id}
         )
 
-    def _prepare_root(self) -> None:
-        if self.root.exists() and self.root.is_symlink():
-            raise PrivateEvidenceError("private evidence root cannot be a symlink")
-        self.root.mkdir(parents=True, exist_ok=True)
+    def _prepare_root(self, requested_root: Path) -> None:
+        requested_root.mkdir(parents=True, exist_ok=True)
+        _non_symlink_absolute(requested_root, label="private evidence root")
+        resolved = requested_root.resolve()
+        if resolved != self.root:
+            raise PrivateEvidenceError("private evidence root changed during initialization")
         current = self.root
         while True:
             if current.is_symlink():
@@ -273,8 +284,8 @@ class PrivateEvidenceStore:
         kind: EvidenceKind = EvidenceKind.PRIMARY,
         media_type: str | None = None,
     ) -> ImportedEvidence:
-        path = source.expanduser().resolve()
-        if not path.is_file() or path.is_symlink():
+        path = _non_symlink_absolute(source, label="source")
+        if not path.is_file():
             raise PrivateEvidenceError("source must be a regular non-symlink file")
         before = path.stat()
         payload = path.read_bytes()
@@ -490,7 +501,7 @@ class PrivateEvidenceStore:
     def backup_to(self, destination: Path) -> Path:
         """Copy ciphertext/provenance only; plaintext is never materialized."""
         self._require(Permission.EVIDENCE_READ)
-        target = destination.expanduser().resolve()
+        target = _non_symlink_absolute(destination, label="backup destination")
         if target.exists():
             raise PrivateEvidenceError("backup destination must not already exist")
         if self.root == target or self.root in target.parents:
@@ -511,9 +522,9 @@ class PrivateEvidenceStore:
         key_id: str,
         key_version: int = 1,
     ) -> PrivateEvidenceStore:
-        source_root = source.expanduser().resolve()
-        target = destination.expanduser().resolve()
-        if not source_root.is_dir() or source_root.is_symlink():
+        source_root = _non_symlink_absolute(source, label="backup source")
+        target = _non_symlink_absolute(destination, label="restore destination")
+        if not source_root.is_dir():
             raise PrivateEvidenceError("backup source must be a regular directory")
         if target.exists():
             raise PrivateEvidenceError("restore destination must not already exist")
