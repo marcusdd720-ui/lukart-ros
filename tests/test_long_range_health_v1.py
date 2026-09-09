@@ -75,7 +75,7 @@ def _renewal(*, case_id: str = CASE_ID, renewed_at: int = 200) -> CryptoRenewalA
         subject_digest="c" * 64,
         payload=old_payload,
         issued_at=120,
-        expires_at=500,
+        expires_at=10_000,
         nonce="historical",
     )
     current = CryptoTrustSetV1(
@@ -93,7 +93,7 @@ def _renewal(*, case_id: str = CASE_ID, renewed_at: int = 200) -> CryptoRenewalA
         current_trust_set=current,
         current_signer=new,
         renewed_at=renewed_at,
-        expires_at=600,
+        expires_at=10_000,
         nonce="renewal",
     )
 
@@ -368,7 +368,7 @@ def test_fresh_health_requires_fresh_crypto_portability_and_recovery(tmp_path: P
 
 
 def test_historical_pass_cannot_hide_stale_current_evidence(tmp_path: Path) -> None:
-    renewal = _renewal(renewed_at=100)
+    renewal = _renewal(renewed_at=200)
     source, lrd, escrow = _escrow(tmp_path / "escrow-source")
     portability = run_storage_portability_drill_v1(
         long_range_manifest=lrd,
@@ -423,9 +423,9 @@ def test_future_timestamp_and_cross_case_substitution_fail_closed() -> None:
         evaluate_long_range_health_v1(
             case_id=CASE_ID,
             drift_report_digest="e" * 64,
-            evaluated_at=100,
+            evaluated_at=200,
             policy=FreshnessPolicyV1(100, 100, 100),
-            crypto_renewal=_renewal(renewed_at=101),
+            crypto_renewal=_renewal(renewed_at=201),
             portability_drill=None,
             recovery_manifest=None,
             recovery_report=None,
