@@ -341,7 +341,13 @@ def verify_derivation(store: PrivateEvidenceStore, result: DerivedEvidence) -> N
         if not isinstance(tool_identity_digest, str):
             raise PrivateEvidenceError("invalid tool identity digest")
         digest_hex(tool_identity_digest)
-    replay_class = ReplayClass(str(receipt.get("replay_class", "")))
+    replay_value = receipt.get("replay_class")
+    if not isinstance(replay_value, str):
+        raise PrivateEvidenceError("invalid derivation replay class")
+    try:
+        replay_class = ReplayClass(replay_value)
+    except ValueError as exc:
+        raise PrivateEvidenceError("unsupported derivation replay class") from exc
     if replay_class is ReplayClass.ENVIRONMENT_BOUND and tool_identity_digest is None:
         raise PrivateEvidenceError("environment-bound receipt is missing tool identity")
     if replay_class is ReplayClass.DETERMINISTIC and tool_identity_digest is not None:
