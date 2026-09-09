@@ -38,6 +38,20 @@ def _snapshot_authorization() -> AuthorizationContext:
     )
 
 
+def _save_snapshot(source: Path, data_root: Path, repo_root: Path) -> Path:
+    return save_source_snapshot(
+        "CASE-0001",
+        source,
+        authorization=_snapshot_authorization(),
+        key_provider=AuditKeyProvider(),
+        tenant_id="synthetic-audit-tenant",
+        key_id="audit-key",
+        source_ref="synthetic-audit-source",
+        data_root=data_root,
+        repo_root=repo_root,
+    )
+
+
 def test_case_manifest_is_canonical_and_stable(tmp_path: Path) -> None:
     manifest = CaseManifest(case_key="CASE-0001", case_id="CASE-0001", document_ids=("doc-b", "doc-a", "doc-a"))
     path = manifest.save(tmp_path)
@@ -90,18 +104,9 @@ def test_source_snapshot_is_content_addressed_and_immutable(tmp_path: Path) -> N
     repo_root = tmp_path / "repo"
     source = tmp_path / "source.txt"
     source.write_text("source", encoding="utf-8")
-    kwargs = {
-        "authorization": _snapshot_authorization(),
-        "key_provider": AuditKeyProvider(),
-        "tenant_id": "synthetic-audit-tenant",
-        "key_id": "audit-key",
-        "source_ref": "synthetic-audit-source",
-        "data_root": data_root,
-        "repo_root": repo_root,
-    }
 
-    snapshot = save_source_snapshot("CASE-0001", source, **kwargs)
-    repeated = save_source_snapshot("CASE-0001", source, **kwargs)
+    snapshot = _save_snapshot(source, data_root, repo_root)
+    repeated = _save_snapshot(source, data_root, repo_root)
 
     envelope = json.loads(snapshot.read_text(encoding="utf-8"))
     assert repeated == snapshot
