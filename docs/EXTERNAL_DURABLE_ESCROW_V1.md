@@ -1,9 +1,17 @@
 # LRD-01G — External Durable Escrow & Multi-Location Restore Conformance v1
 
-Status: `ACTIVE / IMPLEMENTATION CANDIDATE`
+Status: `CLOSED / ENGINEERING PASS` closure candidate; authoritative after guarded closure merge
 Parent program: `continuous LRD-01`
 Depends on: `LRD-01F CLOSED / ENGINEERING PASS`
 Measured base: `main @ b48bfc87f2519ad085e3dacb3784a014e3098ff2`
+Implementation PR: `#203`
+Validated implementation head: `4448df1300abd04387f17dfa9b10d4bc5b5b32ab`
+Implementation merge: `main @ 218aabda7495b79a0f98b29e0ba3fcff12842b21`
+Implementation PR CI: `20/20 SUCCESS`
+Implementation post-merge: `19/19 SUCCESS`, `queued=0`, `in_progress=0`, `failure=0`
+Historical baseline tag object: `v1.0.1 @ 9f7c0b28f766c8921e63b1d517fefcc96aa991d4`
+Historical baseline target: `802013c4d0e53dc12306a97e1877ebba86af64a7`
+Latest release at implementation closure: `v1.0.1` / `MVROS 1.0.1`
 Writable case-history SSOT: Canonical Case Ledger only
 
 ## 1. Problem
@@ -54,7 +62,7 @@ whole-location restore verification.
 
 This closes the engineering semantics required before provider-specific durable adapters are added.
 
-### D. Implement S3/Azure/object-lock provider adapters now
+### D. Implement provider/object-lock adapters immediately
 
 Deferred. A real external adapter requires provider credentials, provider API semantics, retention
 configuration and independently observable evidence. Repository CI must not emulate those controls
@@ -152,7 +160,7 @@ therefore repository-only LRD-01G evidence remains `INCOMPLETE` for external dur
 
 ## 9. Adversarial acceptance
 
-The exact implementation candidate must prove at least:
+The validated implementation proves:
 
 - fixed complete capability inventory;
 - engineering capabilities cannot be silently downgraded;
@@ -168,12 +176,12 @@ The exact implementation candidate must prove at least:
 - source/target location substitution rejection;
 - unknown fields and content-digest tampering rejection;
 - aggregate FAIL when either location fails restore;
-- aggregate engineering PASS can coexist only with explicit external evidence `INCOMPLETE`;
+- aggregate engineering PASS coexists only with explicit external evidence `INCOMPLETE`;
 - ten-year durability claim fabrication is rejected;
 - no CCL/Product write authority exists in the module.
 
 LRD-01C path traversal, symlink, decompression-bomb and offline-runner tests remain regression
-dependencies and are not weakened or duplicated.
+dependencies and were not weakened or duplicated.
 
 ## 10. Security and long-horizon boundaries
 
@@ -191,9 +199,47 @@ LRD-01G grants no:
 Location/failure/credential-domain declarations are content-addressed provenance inputs. A future
 external adapter must verify the semantics it claims rather than inheriting generic v1 PASS.
 
-## 11. Definition of Done
+## 11. Implementation closure evidence
 
-LRD-01G closes only after one exact implementation SHA proves:
+The implementation was developed from exact measured base
+`b48bfc87f2519ad085e3dacb3784a014e3098ff2` in PR #203. The final implementation head
+`4448df1300abd04387f17dfa9b10d4bc5b5b32ab` passed all 20 PR-triggered workflows on one unchanged
+exact SHA. The set included the dedicated `LRD-01G External Durable Escrow Conformance`, CI
+Foundation, Stage Gate, Enterprise CodeQL, Enterprise Hardcore Gate, LRD-01C, LRD-01D, LRD-01E,
+LRD-01F, SSC-02, FIV-02, OPR-01 and Production Validation Program.
+
+The dedicated LRD-01G workflow verified exact checkout, Ruff, strict MyPy, focused/adversarial tests,
+LRD escrow/recovery/health/drift/PQC regression and a fail-closed adversarial selection. No test,
+threshold, trust boundary or security gate was weakened to obtain PASS.
+
+Before merge, live GitHub still reported PR #203 head
+`4448df1300abd04387f17dfa9b10d4bc5b5b32ab`, base `main`, and base SHA
+`b48bfc87f2519ad085e3dacb3784a014e3098ff2`. Guarded merge used the exact expected head and
+produced implementation main `218aabda7495b79a0f98b29e0ba3fcff12842b21`. Its direct parents are the
+measured base and the validated implementation head.
+
+The exact implementation main completed 19 recorded post-merge workflow runs, all terminal
+`SUCCESS`, with zero failed, queued or in-progress runs at implementation closure evaluation. The
+set included the dedicated LRD-01G workflow, Stage Gate, Enterprise CodeQL, Enterprise Hardcore,
+Production Validation, governance closure preparation and the `MVROS v1 Release` guard.
+
+Governance closure preparation completed successfully but did not produce an LRD-01G closure PR;
+therefore canonical closure is recorded through this controller-side closure candidate rather than
+manufacturing automation support for an unconfigured stage selector.
+
+Historical release identity remained unchanged after implementation merge. The `v1.0.1` annotated
+tag object remained `9f7c0b28f766c8921e63b1d517fefcc96aa991d4`, that tag still targets
+`802013c4d0e53dc12306a97e1877ebba86af64a7`, and the latest published release remains `v1.0.1` /
+`MVROS 1.0.1`. No release/tag publication or movement is authorized by LRD-01G.
+
+This record becomes authoritative only after this exact closure candidate itself passes fresh
+exact-head CI, guarded closure merge, resulting-main validation and final baseline/release
+re-verification. Implementation PASS does not become external durability evidence: provider-side
+WORM/delete-protection/geography/retention/custody evidence remains `INCOMPLETE` by design.
+
+## 12. Definition of Done
+
+LRD-01G closes only after one exact closure line proves:
 
 1. strict capability/location/plan/receipt/restore/conformance contracts;
 2. exact two-location profile/failure-domain/credential-domain separation;
@@ -205,13 +251,15 @@ LRD-01G closes only after one exact implementation SHA proves:
 8. focused and adversarial tests;
 9. LRD-01C, DR-02, LRD-01D, LRD-01E and LRD-01F regression;
 10. Ruff, strict MyPy, full repository regression and security/policy gates;
-11. all exact PR-head CI terminal `SUCCESS` on one unchanged fresh SHA;
-12. guarded unchanged-head merge;
-13. resulting-main post-merge validation terminal `SUCCESS`;
-14. historical `v1.0.1` tag/target/release baseline unchanged;
-15. canonical closure evidence merged into GitHub.
+11. implementation exact-head `20/20 SUCCESS`;
+12. guarded implementation merge and implementation-main `19/19 SUCCESS`;
+13. historical `v1.0.1` tag/target/release baseline unchanged after implementation;
+14. fresh exact-head CI for this closure candidate;
+15. guarded closure merge;
+16. resulting final-main post-merge validation terminal `SUCCESS`;
+17. final historical `v1.0.1` tag/target/release re-verification.
 
-## 12. Next boundary
+## 13. Next boundary
 
 No later LRD slice is authorized by this document. Provider-specific external durable-storage
 verification, hermetic runtime preservation/stronger isolation, generic external execution capture
