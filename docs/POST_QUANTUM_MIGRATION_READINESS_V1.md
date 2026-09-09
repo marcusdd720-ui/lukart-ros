@@ -1,9 +1,17 @@
 # LRD-01F — Post-Quantum Migration Readiness / Archival Trust Renewal v1
 
-Status: `ACTIVE / IMPLEMENTATION CANDIDATE`
+Status: `CLOSED / ENGINEERING PASS` closure candidate; authoritative after guarded closure merge
 Parent program: `continuous LRD-01`
 Depends on: `LRD-01E CLOSED / ENGINEERING PASS`
 Measured base: `main @ 39ee52bdefdcff657abb900c7b4e53bffdefbf96`
+Implementation PR: `#201`
+Validated implementation head: `f9c550c31dc77d2402ad1931fbacfc821763ac80`
+Implementation merge: `main @ 46080d4d9ddc3f1df3a358cccad658d36bc41bff`
+Implementation PR CI: `19/19 SUCCESS`
+Implementation post-merge: `18/18 SUCCESS`, `queued=0`, `in_progress=0`, `failure=0`
+Historical baseline tag object: `v1.0.1 @ 9f7c0b28f766c8921e63b1d517fefcc96aa991d4`
+Historical baseline target: `802013c4d0e53dc12306a97e1877ebba86af64a7`
+Latest release at implementation closure: `v1.0.1` / `MVROS 1.0.1`
 Writable case-history SSOT: Canonical Case Ledger only
 
 ## 1. Problem
@@ -14,16 +22,17 @@ public-key signatures remain, preserve historical verification, and prepare a mi
 without pretending that naming a standardized post-quantum algorithm creates a supported
 cryptographic implementation.
 
-LRD-01F therefore closes **migration readiness**, not post-quantum deployment.
+LRD-01F closes **migration readiness**, not post-quantum deployment.
 
-## 2. External standards evidence
+## 2. Standards identity
 
-The migration target registry references two finalized NIST post-quantum signature families:
+The fixed migration target registry references two finalized NIST post-quantum signature
+families:
 
 - `ML-DSA` — `NIST-FIPS-204`;
 - `SLH-DSA` — `NIST-FIPS-205`.
 
-The registry is standards-identification evidence only. LRD-01F deliberately selects no
+These identifiers are standards-target evidence only. LRD-01F deliberately selects no
 operational parameter set, implementation library, private-key format, HSM integration or
 production cutover. Those require separately implemented and validated adapter evidence.
 
@@ -37,120 +46,141 @@ production cutover. Those require separately implemented and validated adapter e
 - Historical attestations and renewal evidence remain immutable. PQ migration is additive;
   historical bytes are never rewritten or silently re-signed.
 
-## 4. Contract
+## 4. Implemented contract
 
-`core.post_quantum_readiness_v1` adds four immutable/content-addressed derived artifacts:
+`core.post_quantum_readiness_v1` adds immutable/content-addressed derived evidence:
 
 1. `PqcTargetFamilyProfileV1`
-   - fixed candidate families `ML-DSA` and `SLH-DSA`;
+   - fixed `ML-DSA` and `SLH-DSA` candidate families;
    - exact NIST standard identifier;
    - `adapter_required=true`;
    - `operational_parameter_set=null`.
 2. `PqcMigrationPolicyV1`
-   - fixed two-family registry cannot be caller-reduced;
+   - the two-family registry cannot be caller-reduced, expanded or reinterpreted;
    - original evidence must be preserved;
-   - renewal must be additive;
-   - dual verification is required before any future cutover.
+   - renewal is additive only;
+   - dual verification is mandatory before any future cutover.
 3. `PqcReadinessReportV1`
-   - derives the complete CRY-01 signature-key inventory from the exact trust set;
-   - binds current LRD-01E health evidence and exact trust-set identity;
-   - result is `ADAPTER_REQUIRED` only when current long-range health is `HEALTHY`;
-   - otherwise result is `BLOCKED_CURRENT_HEALTH`;
-   - `post_quantum_support` is structurally forced to `false` in v1.
+   - inventories the complete current CRY-01 signature-key surface from the exact trust set;
+   - binds current LRD-01E health and exact trust-set identity;
+   - returns `ADAPTER_REQUIRED` only when current long-range health is `HEALTHY`;
+   - otherwise returns `BLOCKED_CURRENT_HEALTH`;
+   - structurally forces `post_quantum_support=false`.
 4. `ArchivalRenewalPlanV1`
-   - binds the readiness report, current classical crypto evidence and both target-family
-     identities;
-   - preserves original evidence and requires additive renewal plus dual verification;
-   - can become `READY_FOR_ADAPTER_IMPLEMENTATION`, but never authorizes PQ execution.
+   - binds readiness, current classical crypto evidence and both target-family identities;
+   - preserves original evidence and dual-verification requirements;
+   - may become `READY_FOR_ADAPTER_IMPLEMENTATION` but never authorizes PQ execution.
 
 ## 5. Evidence -> alternatives -> trade-offs -> decision
 
-### Alternative A — extend CRY-01 enum with ML-DSA immediately
+### Alternative A — extend CRY-01 with PQ algorithm names immediately
 
-Rejected. An enum entry without a verified signing/verifying adapter, parameter-set identity,
+Rejected. An enum value without an exact signing/verifying adapter, parameter-set identity,
 test-vector evidence, dependency provenance and key lifecycle implementation would manufacture
 support that does not exist.
 
-### Alternative B — choose one concrete PQ parameter set now
+### Alternative B — choose one operational PQ parameter set now
 
-Rejected for 01F. It would introduce premature algorithm/library lock-in without measured
+Rejected for 01F. It would create premature algorithm/library lock-in without measured
 interoperability, performance, key-management and provider evidence.
 
-### Alternative C — fixed standards-aware readiness registry + explicit adapter blocker
+### Alternative C — standards-aware readiness registry + explicit adapter blocker
 
-Selected. It makes current quantum exposure measurable now, preserves historical evidence,
-keeps migration additive and creates a deterministic hand-off contract for a future adapter
-stage without granting that future stage implicit trust.
+Selected. It makes current quantum exposure measurable, preserves historical evidence and
+creates a deterministic hand-off contract for a later adapter stage without granting that
+future stage implicit trust.
 
-## 6. Fail-closed rules
+## 6. Fail-closed and adversarial evidence
 
 LRD-01F rejects:
 
 - unknown schema or fields;
-- a reduced/expanded/reinterpreted target registry;
-- a target family bound to the wrong NIST standard;
-- any claimed validated adapter or operational parameter set;
-- any `post_quantum_support=true` claim;
+- reduced/expanded/reinterpreted target registry;
+- wrong standard/family binding;
+- claimed validated adapter or operational parameter set;
+- `post_quantum_support=true`;
 - cross-case health/readiness substitution;
-- readiness assessments older than their health evidence;
+- readiness assessment predating current health evidence;
 - readiness/health/policy digest substitution;
 - altered plan/report digests;
-- any archival plan that disables original-evidence preservation, additive renewal or
-  pre-cutover dual verification;
-- any attempt to authorize PQ execution from this contract.
+- disabling original-evidence preservation, additive renewal or dual verification;
+- any attempt to authorize PQ execution from 01F.
 
-## 7. Security / epistemic boundary
+Focused/adversarial tests also prove deterministic target/policy/report/plan identities,
+complete CRY-01 Ed25519 surface inventory, healthy versus stale/unverifiable behavior and the
+absence of signing or Canonical Case Ledger write paths. Regression covers CRY-01, LRD-01E,
+LRD-01D, escrow and replay.
 
-This slice does not:
+## 7. Repair history
 
-- implement ML-DSA or SLH-DSA;
-- store private keys;
-- select a production parameter set;
-- promote a trust root;
-- mutate the Canonical Case Ledger;
-- change Product/Gold/policy/release authority;
-- claim post-quantum security, FIPS validation, independent cryptographic review or external
-  certification.
+The initial implementation candidate `058d6be2b6a174f29e8cc5f94e109cbaf5809c02`
+failed before semantic tests because Ruff reported seven `UP037` findings for quoted return
+annotations while `from __future__ import annotations` was active. No architecture, runtime,
+security, test-threshold or trust-boundary defect was found.
 
-A future adapter stage must bind exact implementation/library/version/build provenance,
-parameter set, standard revision/errata identity, test vectors, key lifecycle, failure modes,
-performance, interoperability and independent evidence before support can be claimed.
+The smallest justified repair removed only those redundant annotation quotes. It produced fresh
+candidate `f9c550c31dc77d2402ad1931fbacfc821763ac80`; all evidence from the prior candidate became
+stale. The fresh candidate then passed all 19 PR workflows, including the dedicated LRD-01F
+workflow, Stage Gate, CI Foundation, Enterprise Hardcore, Enterprise CodeQL and the existing
+long-range/recovery/supply-chain gates.
 
-## 8. Validation scope
+## 8. Merge and implementation post-merge evidence
 
-Focused/adversarial validation covers:
+PR #201 was mergeable with unchanged head
+`f9c550c31dc77d2402ad1931fbacfc821763ac80` and unchanged base
+`39ee52bdefdcff657abb900c7b4e53bffdefbf96`. Guarded merge used the expected exact head and
+produced implementation main `46080d4d9ddc3f1df3a358cccad658d36bc41bff`.
 
-- exact two-family target registry;
-- deterministic policy/report/plan identity;
-- complete CRY-01 Ed25519 surface inventory;
-- healthy versus stale/unverifiable health behavior;
-- cross-case and stale-time rejection;
-- unknown-field and digest tamper rejection;
-- fake PQ support/adapter/parameter-set rejection;
-- additive archival-renewal invariants;
-- absence of signing and CCL write paths;
-- CRY-01/LRD-01E/LRD-01D/escrow/replay regression.
+The exact implementation main completed 18 recorded post-merge workflow runs, all terminal
+`SUCCESS`, with zero failed, queued or in-progress runs at closure evaluation. This included the
+dedicated LRD-01F validation, Stage Gate, Enterprise CodeQL, Enterprise Hardcore, long-range
+regression, governance closure preparation and the release guard.
 
-## 9. Definition of Done
+Governance closure preparation itself created no LRD-01F closure PR because this new slice was
+not configured as an automation target. No gate was bypassed: canonical closure is therefore
+recorded through the controller-side closure path used for unsupported selectors.
 
-LRD-01F closes only after one exact candidate proves:
+## 9. Historical baseline and non-claims
 
-1. standards-aware fixed PQ candidate-family registry;
+At implementation closure:
+
+- `v1.0.1` still resolves to annotated tag object
+  `9f7c0b28f766c8921e63b1d517fefcc96aa991d4`;
+- that tag object still targets
+  `802013c4d0e53dc12306a97e1877ebba86af64a7`;
+- latest published release remains `v1.0.1` / `MVROS 1.0.1` targeting that same commit;
+- no release or tag was created or moved.
+
+LRD-01F does **not** implement ML-DSA or SLH-DSA, store private keys, select a production
+parameter set, promote trust roots, mutate CCL, change Product/Gold/policy/release authority or
+claim post-quantum security, FIPS validation, independent cryptographic review or external
+certification.
+
+A future PQ adapter must separately bind exact implementation/library/version/build provenance,
+parameter set, applicable standard revision/errata identity, test vectors, key lifecycle,
+failure modes, performance, interoperability and required independent evidence.
+
+## 10. Definition of Done
+
+LRD-01F closes only after this exact closure candidate itself proves:
+
+1. fixed standards-aware PQ migration target registry;
 2. exact current CRY-01 signature-surface inventory;
 3. explicit `ADAPTER_REQUIRED` / `BLOCKED_CURRENT_HEALTH` semantics;
-4. no PQ implementation/support claim;
+4. no fabricated PQ implementation/support claim;
 5. additive archival-renewal plan preserving original evidence;
-6. focused and adversarial tests;
-7. CRY-01/LRD-01E/replay/escrow/drift regression;
-8. Ruff, strict MyPy, security/policy and full repository gates;
-9. all exact PR-head CI terminal `SUCCESS`;
-10. unchanged-head guarded merge;
-11. resulting-main post-merge validation terminal `SUCCESS`;
-12. immutable `v1.0.1` tag/target/release unchanged;
-13. canonical closure evidence merged into GitHub.
+6. focused/adversarial/regression validation;
+7. Ruff, strict MyPy, security/policy and full repository gates;
+8. implementation exact-head `19/19 SUCCESS`;
+9. guarded implementation merge and implementation-main `18/18 SUCCESS`;
+10. immutable `v1.0.1` tag/target/release baseline unchanged;
+11. fresh exact-head CI for this closure candidate;
+12. guarded closure merge;
+13. resulting-main post-merge validation terminal `SUCCESS`;
+14. final baseline/release re-verification.
 
-## 10. Next boundary
+## 11. Next boundary
 
-LRD-01F does not authorize implementation of a PQ signing adapter. A later stage may be opened
-only by explicit scope and must not inherit 01F engineering PASS as evidence that PQ cryptography
-is implemented, interoperable or certified.
+LRD-01F does not authorize implementation of a PQ signing adapter. A later stage requires
+explicit scope and must not inherit 01F ENGINEERING PASS as evidence that PQ cryptography is
+implemented, interoperable, production-ready or certified.
