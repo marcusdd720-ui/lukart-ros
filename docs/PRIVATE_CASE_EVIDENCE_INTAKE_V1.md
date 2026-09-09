@@ -72,3 +72,11 @@ source-reference non-persistence, CCL reference minimization, and alternate-root
 
 GitHub Actions remains synthetic-only. No workflow requires or may receive a private evidence
 store credential, private case path, or real case artifact.
+
+## Authorized non-cloud continuation
+
+`CASE-OPS-02 — Local Evidence Derivation & Replay Binding v1` is the approved additive
+continuation under the active `continuous LRD-01` program. It MUST reuse this encrypted evidence
+boundary, MUST NOT introduce cloud/provider storage or a second case-history authority, and MUST
+represent external-tool OCR as environment-bound unless stronger exact replay evidence exists.
+Architecture contract: `docs/LOCAL_EVIDENCE_DERIVATION_V1.md`.
