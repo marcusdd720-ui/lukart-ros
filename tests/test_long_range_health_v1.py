@@ -19,6 +19,7 @@ from core.enterprise.contracts import AttestationPurpose, AttestationSigner
 from core.enterprise.recovery_continuity_v1 import (
     RecoveryConformanceReportV1,
     RecoveryConformanceState,
+    RecoveryDrillManifestV1,
     StorageProfileV1,
     run_sqlite_case_recovery_drill,
 )
@@ -167,7 +168,9 @@ def _bundle() -> CaseLedgerBundle:
     return CaseLedgerBundle.build(case_id=case_id, events=(event,))
 
 
-def _recovery(tmp_path: Path) -> tuple[object, RecoveryConformanceReportV1]:
+def _recovery(
+    tmp_path: Path,
+) -> tuple[RecoveryDrillManifestV1, RecoveryConformanceReportV1]:
     source = tmp_path / "source.db"
     target = tmp_path / "target.db"
     bundle = _bundle()
