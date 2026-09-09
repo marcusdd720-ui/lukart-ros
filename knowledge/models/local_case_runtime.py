@@ -46,32 +46,40 @@ def _attach_ingested_documents(
 ) -> None:
     for item in inventory:
         document_id = str(item.get("document_id", "")).strip()
-        source_name = str(item.get("source_name", "")).strip()
-        original_path = str(item.get("original_path", "")).strip()
-        if not document_id or not source_name:
+        evidence_id = str(item.get("evidence_id", "")).strip()
+        manifest_digest = str(item.get("manifest_digest", "")).strip()
+        receipt_digest = str(item.get("receipt_digest", "")).strip()
+        if not document_id or not evidence_id or not manifest_digest or not receipt_digest:
             continue
+        if not evidence_id.startswith("sha256:"):
+            raise ValueError("private evidence inventory requires content-addressed evidence_id")
 
+        private_ref = f"private-evidence:{evidence_id}"
         evidence = EvidenceItem(
             id=document_id,
-            label=source_name,
-            title=source_name,
-            description="Original source document ingested into the private case store.",
-            source_ref=original_path,
+            label=document_id,
+            title=document_id,
+            description="Encrypted source document referenced by immutable evidence identity.",
+            source_ref=private_ref,
             ref=document_id,
-            source=original_path,
+            source=private_ref,
             weight=EvidenceWeight.PRIMARY,
             kind="source_document",
             category="real_case",
-            path=original_path,
-            filename=source_name,
+            path=private_ref,
+            filename=None,
             metadata={
                 "document_id": document_id,
+                "evidence_id": evidence_id,
+                "manifest_digest": manifest_digest,
+                "receipt_digest": receipt_digest,
                 "sha256": str(item.get("sha256", "")),
                 "document_type": str(item.get("document_type", "real_case")),
                 "extraction_method": str(item.get("extraction_method", "")),
-                "extracted_path": str(item.get("extracted_path", "")),
-                "markdown_path": str(item.get("markdown_path", "")),
+                "extracted_evidence_id": str(item.get("extracted_evidence_id", "")),
+                "extracted_receipt_digest": str(item.get("extracted_receipt_digest", "")),
                 "local_only": True,
+                "encrypted_at_rest": True,
             },
         )
         evidence.validate()
@@ -81,13 +89,16 @@ def _attach_ingested_documents(
             KnowledgeNode(
                 id=f"document:{document_id}",
                 type=NodeType.DOCUMENT,
-                name=source_name,
-                source=original_path,
+                name=document_id,
+                source=private_ref,
                 metadata={
                     "document_id": document_id,
                     "case_id": graph_case_id,
-                    "sha256": str(item.get("sha256", "")),
+                    "evidence_id": evidence_id,
+                    "manifest_digest": manifest_digest,
+                    "receipt_digest": receipt_digest,
                     "local_only": True,
+                    "encrypted_at_rest": True,
                 },
             )
         )
@@ -98,7 +109,7 @@ def build_local_case_workspace(
     *,
     data_root: Path | None = None,
 ) -> CaseWorkspace:
-    """Open a private local case and attach its ingested source documents."""
+    """Open a private local case and attach encrypted evidence references."""
     key = validate_case_key(case_key)
     root = ensure_data_root(data_root)
     case_path = case_dir(key, root)
