@@ -249,7 +249,7 @@ class EscrowLimitsV1:
         }
 
     @classmethod
-    def from_dict(cls, value: Mapping[str, object]) -> "EscrowLimitsV1":
+    def from_dict(cls, value: Mapping[str, object]) -> EscrowLimitsV1:
         expected = frozenset(cls().canonical_dict())
         raw = _canonical_copy(value, field_name="escrow limits")
         _strict_keys(raw, expected=expected, field_name="escrow limits")
@@ -311,11 +311,11 @@ class EscrowBlobIdentityV1:
             raise ArtifactEscrowError("blob size must be a non-negative integer")
 
     @classmethod
-    def for_bytes(cls, data: bytes) -> "EscrowBlobIdentityV1":
+    def for_bytes(cls, data: bytes) -> EscrowBlobIdentityV1:
         return cls(digest=_sha256_bytes(data), size=len(data))
 
     @classmethod
-    def from_dict(cls, value: Mapping[str, object]) -> "EscrowBlobIdentityV1":
+    def from_dict(cls, value: Mapping[str, object]) -> EscrowBlobIdentityV1:
         raw = _canonical_copy(value, field_name="escrow blob")
         _strict_keys(raw, expected=_BLOB_KEYS, field_name="escrow blob")
         if not isinstance(raw.get("digest"), str):
@@ -358,7 +358,7 @@ class EscrowArtifactBindingV1:
         logical_identity: ContentAddress,
         blob: EscrowBlobIdentityV1,
         kind: EscrowArtifactKind = EscrowArtifactKind.BLOB,
-    ) -> "EscrowArtifactBindingV1":
+    ) -> EscrowArtifactBindingV1:
         body = {
             "schema": ESCROW_BINDING_SCHEMA_V1,
             "role": role.value,
@@ -382,7 +382,7 @@ class EscrowArtifactBindingV1:
             raise ArtifactEscrowError("escrow binding identity mismatch")
 
     @classmethod
-    def from_dict(cls, value: Mapping[str, object]) -> "EscrowArtifactBindingV1":
+    def from_dict(cls, value: Mapping[str, object]) -> EscrowArtifactBindingV1:
         raw = _canonical_copy(value, field_name="escrow binding")
         _strict_keys(raw, expected=_BINDING_KEYS, field_name="escrow binding")
         try:
@@ -437,7 +437,7 @@ class ArtifactEscrowManifestV1:
         *,
         long_range_manifest: LongRangeReplayManifestV1,
         bindings: Sequence[EscrowArtifactBindingV1],
-    ) -> "ArtifactEscrowManifestV1":
+    ) -> ArtifactEscrowManifestV1:
         long_range_manifest.verify()
         ordered = tuple(sorted(bindings, key=lambda item: item.role.value))
         candidate = cls(
@@ -470,7 +470,7 @@ class ArtifactEscrowManifestV1:
             raise ArtifactEscrowError("escrow manifest identity mismatch")
 
     @classmethod
-    def from_dict(cls, value: Mapping[str, object]) -> "ArtifactEscrowManifestV1":
+    def from_dict(cls, value: Mapping[str, object]) -> ArtifactEscrowManifestV1:
         raw = _canonical_copy(value, field_name="escrow manifest")
         _strict_keys(raw, expected=_MANIFEST_KEYS, field_name="escrow manifest")
         raw_bindings = raw.get("bindings")
@@ -907,7 +907,7 @@ class OfflineReplayReceiptV1:
         native_ffi_enforcement: str,
         filesystem_enforcement: str,
         kernel_sandbox: bool,
-    ) -> "OfflineReplayReceiptV1":
+    ) -> OfflineReplayReceiptV1:
         body = {
             "schema": OFFLINE_REPLAY_RECEIPT_SCHEMA_V1,
             "case_id": case_id,
@@ -962,7 +962,7 @@ class OfflineReplayReceiptV1:
             raise ArtifactEscrowError("offline replay receipt identity mismatch")
 
     @classmethod
-    def from_dict(cls, value: Mapping[str, object]) -> "OfflineReplayReceiptV1":
+    def from_dict(cls, value: Mapping[str, object]) -> OfflineReplayReceiptV1:
         raw = _canonical_copy(value, field_name="offline replay receipt")
         _strict_keys(raw, expected=_RECEIPT_KEYS, field_name="offline replay receipt")
         count = raw.get("verified_blob_count")
