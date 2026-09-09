@@ -136,6 +136,27 @@ def _safe_media_type(value: str) -> str:
     return media_type
 
 
+def _required_int_field(
+    mapping: dict[str, object],
+    key: str,
+    *,
+    minimum: int | None = None,
+) -> int:
+    value = mapping.get(key)
+    if isinstance(value, bool) or not isinstance(value, int):
+        raise PrivateEvidenceError(f"invalid integer field: {key}")
+    if minimum is not None and value < minimum:
+        raise PrivateEvidenceError(f"integer field below minimum: {key}")
+    return value
+
+
+def _required_str_field(mapping: dict[str, object], key: str) -> str:
+    value = mapping.get(key)
+    if not isinstance(value, str) or not value.strip():
+        raise PrivateEvidenceError(f"invalid string field: {key}")
+    return value
+
+
 def _exclusive_json(path: Path, value: object) -> None:
     payload = canonical_json(value) + b"\n"
     path.parent.mkdir(parents=True, exist_ok=True)
@@ -418,25 +439,30 @@ class PrivateEvidenceStore:
         if envelope.get("schema") != SCHEMA_ENVELOPE or envelope.get("algorithm") != ALGORITHM:
             raise PrivateEvidenceError("unsupported encrypted evidence envelope")
         aad = envelope.get("aad")
+        manifest_size = _required_int_field(manifest, "size_bytes", minimum=0)
+        manifest_key_id = _required_str_field(manifest, "key_id")
+        manifest_key_version = _required_int_field(manifest, "key_version", minimum=1)
         expected_aad = {
             "schema": SCHEMA_ENVELOPE,
             "case_scope_digest": self.case_scope_digest,
             "evidence_id": imported.evidence_id,
-            "size_bytes": int(manifest.get("size_bytes", -1)),
-            "key_id": str(manifest.get("key_id", "")),
-            "key_version": int(manifest.get("key_version", 0)),
+            "size_bytes": manifest_size,
+            "key_id": manifest_key_id,
+            "key_version": manifest_key_version,
         }
         if aad != expected_aad:
             raise PrivateEvidenceError("encrypted envelope metadata substitution detected")
         if not isinstance(aad, dict):
             raise PrivateEvidenceError("encrypted envelope AAD missing")
+        nonce_b64 = _required_str_field(envelope, "nonce_b64")
+        ciphertext_b64 = _required_str_field(envelope, "ciphertext_b64")
         try:
-            nonce = base64.b64decode(str(envelope["nonce_b64"]), validate=True)
-            ciphertext = base64.b64decode(str(envelope["ciphertext_b64"]), validate=True)
+            nonce = base64.b64decode(nonce_b64, validate=True)
+            ciphertext = base64.b64decode(ciphertext_b64, validate=True)
             if len(nonce) != NONCE_BYTES:
                 raise PrivateEvidenceError("invalid AES-GCM nonce length")
             plaintext = AESGCM(
-                self._key(str(manifest["key_id"]), int(manifest["key_version"]))
+                self._key(manifest_key_id, manifest_key_version)
             ).decrypt(nonce, ciphertext, canonical_json(aad))
         except PrivateEvidenceError:
             raise
@@ -444,7 +470,7 @@ class PrivateEvidenceStore:
             raise PrivateEvidenceError("encrypted evidence authentication failed") from exc
         if content_id(plaintext) != imported.evidence_id:
             raise PrivateEvidenceError("plaintext evidence identity mismatch")
-        if len(plaintext) != int(manifest["size_bytes"]):
+        if len(plaintext) != manifest_size:
             raise PrivateEvidenceError("plaintext evidence size mismatch")
         return plaintext
 
