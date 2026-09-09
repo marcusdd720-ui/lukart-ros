@@ -178,10 +178,10 @@ def test_ccl_registration_requires_case_write_projection_binding_and_scope(tmp_p
         )
         assert len(ledger.events(CaseId("CASE-A"))) == 1
 
-    serialized = json.dumps(dict(event.payload), sort_keys=True)
-    assert projection.projection_id in serialized
-    assert "Synthetic evidence" not in serialized
-    assert "synthetic-1.txt" not in serialized
+    assert event.payload["projection_id"] == projection.projection_id
+    payload_repr = repr(event.payload)
+    assert "Synthetic evidence" not in payload_repr
+    assert "synthetic-1.txt" not in payload_repr
 
 
 def test_local_key_provider_rejects_wrong_identity_length_and_posix_permissions(
