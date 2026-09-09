@@ -2,13 +2,20 @@
 
 from __future__ import annotations
 
-import hashlib
 import os
 from pathlib import Path
 
+from core.enterprise.contracts import AuthorizationContext
+from core.private_evidence_v1 import (
+    EvidenceKeyProvider,
+    EvidenceKind,
+    PrivateEvidenceError,
+    PrivateEvidenceStore,
+)
+
 
 class PrivacyViolation(RuntimeError):
-    """Raised when real case data would be stored inside the repository."""
+    """Raised when real case data would cross a private storage boundary."""
 
 
 def find_repo_root(start: Path | None = None) -> Path | None:
@@ -88,29 +95,47 @@ def source_snapshot_dir(
     repo_root: Path | None = None,
 ) -> Path:
     root = ensure_data_root(data_root, repo_root=repo_root)
-    return case_dir(case_key, root, repo_root=repo_root) / "source-snapshots"
+    return case_dir(case_key, root, repo_root=repo_root) / ".private-evidence"
 
 
 def save_source_snapshot(
     case_key: str,
     source_path: Path,
     *,
+    authorization: AuthorizationContext | None = None,
+    key_provider: EvidenceKeyProvider | None = None,
+    tenant_id: str | None = None,
+    key_id: str | None = None,
+    key_version: int = 1,
+    source_ref: str | None = None,
     data_root: Path | None = None,
     repo_root: Path | None = None,
 ) -> Path:
-    """Store an immutable content-addressed source snapshot."""
-    source = source_path.expanduser().resolve()
-    if not source.is_file():
-        raise FileNotFoundError(source)
-    payload = source.read_bytes()
-    digest = hashlib.sha256(payload).hexdigest()
-    destination_dir = source_snapshot_dir(case_key, data_root, repo_root=repo_root)
-    destination_dir.mkdir(parents=True, exist_ok=True)
-    destination = destination_dir / digest
-    if destination.exists():
-        if destination.read_bytes() != payload:
-            raise PrivacyViolation("Snapshot hash collision detected")
-        return destination
-    destination.write_bytes(payload)
-    destination.chmod(0o444)
-    return destination
+    """Store an encrypted snapshot whose evidence identity is plaintext sha256."""
+    if authorization is None or key_provider is None or not tenant_id or not key_id:
+        raise PrivacyViolation(
+            "source snapshot requires authorization, key provider, tenant id and key id"
+        )
+    untrusted_source = source_path.expanduser().absolute()
+    if untrusted_source.is_symlink() or not untrusted_source.is_file():
+        raise FileNotFoundError(untrusted_source)
+    source = untrusted_source.resolve()
+    key = validate_case_key(case_key)
+    try:
+        store = PrivateEvidenceStore(
+            source_snapshot_dir(key, data_root, repo_root=repo_root),
+            key_provider=key_provider,
+            authorization=authorization,
+            tenant_id=tenant_id,
+            case_id=key,
+            key_id=key_id,
+            key_version=key_version,
+        )
+        imported = store.import_file(
+            source,
+            source_ref=source_ref or f"snapshot:{source.name}",
+            kind=EvidenceKind.PRIMARY,
+        )
+    except PrivateEvidenceError as exc:
+        raise PrivacyViolation(str(exc)) from exc
+    return imported.envelope_path

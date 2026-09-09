@@ -43,10 +43,8 @@ def main() -> int:
     print("Data root:", data_root)
     print("Documents:", len(documents))
     for document in documents:
-        print(f"  {document.document_id} | {document.source_name} | {document.sha256}")
-    print("Originals:", target / "original")
-    print("Extracted:", target / "extracted")
-    print("Markdown:", target / "markdown")
+        print(f"  {document.document_id} | {document.evidence_id} | {document.sha256}")
+    print("Encrypted evidence store:", target / ".private-evidence")
     print("Inventory:", target / "document_inventory.json")
     return 0
 

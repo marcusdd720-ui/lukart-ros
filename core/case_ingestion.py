@@ -1,13 +1,20 @@
-"""Private local ingestion of real case source documents."""
+"""Private fail-closed ingestion of real case source documents."""
 
 from __future__ import annotations
 
-import hashlib
 import json
 import subprocess
 from dataclasses import dataclass
 from pathlib import Path
 
+from core.enterprise.contracts import AuthorizationContext
+from core.private_evidence_v1 import (
+    EvidenceKeyProvider,
+    EvidenceKind,
+    PrivateEvidenceError,
+    PrivateEvidenceStore,
+    opaque_digest,
+)
 from knowledge.models.case_manifest import CaseManifest
 
 SUPPORTED_IMAGE_SUFFIXES = {".jpg", ".jpeg", ".png", ".tif", ".tiff", ".webp"}
@@ -17,11 +24,12 @@ SUPPORTED_TEXT_SUFFIXES = {".txt", ".md"}
 @dataclass(frozen=True, slots=True)
 class IngestedDocument:
     document_id: str
-    source_name: str
-    source_path: Path
-    original_path: Path
-    extracted_path: Path
-    markdown_path: Path
+    evidence_id: str
+    manifest_digest: str
+    receipt_digest: str
+    encrypted_path: Path
+    extracted_evidence_id: str
+    extracted_receipt_digest: str
     sha256: str
     document_type: str
     extraction_method: str
@@ -31,10 +39,8 @@ class IngestionError(RuntimeError):
     """Raised when a source document cannot be safely ingested."""
 
 
-def _safe_document_id(index: int, path: Path) -> str:
-    stem = "".join(ch if ch.isalnum() else "_" for ch in path.stem).strip("_")
-    stem = stem or "document"
-    return f"DOC-{index:03d}-{stem}"[:120]
+def _safe_document_id(index: int) -> str:
+    return f"DOC-{index:03d}"
 
 
 def _run_tesseract(source: Path) -> str:
@@ -53,7 +59,7 @@ def _run_tesseract(source: Path) -> str:
         ) from exc
     if result.returncode != 0:
         raise IngestionError(
-            f"Tesseract failed for {source.name}: {result.stderr.strip() or result.returncode}"
+            f"Tesseract failed with return code {result.returncode}"
         )
     return result.stdout.replace("\x0c", "").strip() + "\n"
 
@@ -66,61 +72,52 @@ def _extract_text(source: Path) -> tuple[str, str, str]:
         try:
             return source.read_text(encoding="utf-8"), "text", "direct-text"
         except UnicodeDecodeError as exc:
-            raise IngestionError(f"Unsupported text encoding: {source}") from exc
-    raise IngestionError(
-        f"Unsupported source type '{source.suffix}' for {source.name}. "
-        "Supported: images (JPG/JPEG/PNG/TIFF/WEBP) and TXT/MD."
-    )
-
-
-def _write_markdown(
-    path: Path,
-    *,
-    document_id: str,
-    title: str,
-    sha256: str,
-    document_type: str,
-    extraction_method: str,
-    source_name: str,
-    text: str,
-) -> None:
-    path.write_text(
-        "---\n"
-        f"id: {document_id}\n"
-        f"title: {title}\n"
-        f"type: {document_type}\n"
-        "version: 1\n"
-        "status: ingested\n"
-        "---\n\n"
-        f"# {title}\n\n"
-        f"Source filename: {source_name}\n"
-        f"Source SHA256: {sha256}\n"
-        f"Extraction method: {extraction_method}\n\n"
-        "## Extracted text\n\n"
-        f"{text.strip()}\n",
-        encoding="utf-8",
-    )
+            raise IngestionError("Unsupported text encoding") from exc
+    raise IngestionError(f"Unsupported source type: {source.suffix}")
 
 
 def ingest_directory(
     case_dir: Path,
     source_directory: Path,
     *,
+    authorization: AuthorizationContext | None = None,
+    key_provider: EvidenceKeyProvider | None = None,
+    tenant_id: str | None = None,
+    key_id: str | None = None,
+    key_version: int = 1,
     document_type: str = "real_case",
 ) -> list[IngestedDocument]:
-    """Copy source documents into a private case and create deterministic text views."""
+    """Encrypt source and derived text; persist no plaintext document artifacts."""
+    if authorization is None or key_provider is None or not tenant_id or not key_id:
+        raise IngestionError(
+            "private ingestion requires authorization, key provider, tenant id and key id"
+        )
     case_path = case_dir.expanduser().resolve()
     source_path = source_directory.expanduser().resolve()
     if not source_path.is_dir():
         raise FileNotFoundError(source_path)
     if case_path == source_path or case_path in source_path.parents:
         raise IngestionError("Source directory cannot be inside the target case directory.")
+    case_path.mkdir(parents=True, exist_ok=True)
 
-    original_dir = case_path / "original"
-    extracted_dir = case_path / "extracted"
-    markdown_dir = case_path / "markdown"
-    for directory in (original_dir, extracted_dir, markdown_dir):
-        directory.mkdir(parents=True, exist_ok=True)
+    manifest_path = case_path / "case_manifest.json"
+    existing = (
+        CaseManifest.load(case_path)
+        if manifest_path.is_file()
+        else CaseManifest(case_key=case_path.name, case_id=case_path.name)
+    )
+    try:
+        store = PrivateEvidenceStore(
+            case_path / ".private-evidence",
+            key_provider=key_provider,
+            authorization=authorization,
+            tenant_id=tenant_id,
+            case_id=existing.case_id,
+            key_id=key_id,
+            key_version=key_version,
+        )
+    except PrivateEvidenceError as exc:
+        raise IngestionError(str(exc)) from exc
 
     candidates = [
         path
@@ -135,70 +132,61 @@ def ingest_directory(
         if path.suffix.lower() not in SUPPORTED_IMAGE_SUFFIXES | SUPPORTED_TEXT_SUFFIXES
     ]
     if unsupported:
-        names = ", ".join(path.name for path in unsupported)
-        raise IngestionError(f"Unsupported source file types: {names}")
+        raise IngestionError("Unsupported source file types are present")
 
     results: list[IngestedDocument] = []
+    inventory: list[dict[str, object]] = []
     for index, source in enumerate(candidates, start=1):
-        document_id = _safe_document_id(index, source)
-        payload = source.read_bytes()
-        digest = hashlib.sha256(payload).hexdigest()
-        original_path = original_dir / source.name
-        if original_path.exists() and original_path.read_bytes() != payload:
-            original_path = original_dir / f"{document_id}{source.suffix.lower()}"
-        original_path.write_bytes(payload)
-
+        document_id = _safe_document_id(index)
         text, source_kind, extraction_method = _extract_text(source)
-        extracted_path = extracted_dir / f"{document_id}.txt"
-        extracted_path.write_text(text, encoding="utf-8")
-        markdown_path = markdown_dir / f"{document_id}.md"
-        _write_markdown(
-            markdown_path,
-            document_id=document_id,
-            title=source.name,
-            sha256=digest,
-            document_type=document_type,
-            extraction_method=extraction_method,
-            source_name=source.name,
-            text=text,
-        )
-        results.append(
-            IngestedDocument(
-                document_id=document_id,
-                source_name=source.name,
-                source_path=source,
-                original_path=original_path.resolve(),
-                extracted_path=extracted_path.resolve(),
-                markdown_path=markdown_path.resolve(),
-                sha256=digest,
-                document_type=document_type,
-                extraction_method=f"{source_kind}:{extraction_method}",
+        try:
+            original = store.import_file(
+                source,
+                source_ref=f"document-slot:{index}",
+                kind=EvidenceKind.PRIMARY,
             )
+            extracted = store.import_bytes(
+                text.encode("utf-8"),
+                source_ref=f"derived-text:{original.evidence_id}",
+                kind=EvidenceKind.DERIVED,
+                media_type="text/plain",
+            )
+        except PrivateEvidenceError as exc:
+            raise IngestionError(str(exc)) from exc
+        sha256 = original.evidence_id.removeprefix("sha256:")
+        method = f"{source_kind}:{extraction_method}"
+        item = IngestedDocument(
+            document_id=document_id,
+            evidence_id=original.evidence_id,
+            manifest_digest=original.manifest_digest,
+            receipt_digest=original.receipt_digest,
+            encrypted_path=original.envelope_path.resolve(),
+            extracted_evidence_id=extracted.evidence_id,
+            extracted_receipt_digest=extracted.receipt_digest,
+            sha256=sha256,
+            document_type=document_type,
+            extraction_method=method,
+        )
+        results.append(item)
+        inventory.append(
+            {
+                "document_id": document_id,
+                "evidence_id": original.evidence_id,
+                "manifest_digest": original.manifest_digest,
+                "receipt_digest": original.receipt_digest,
+                "extracted_evidence_id": extracted.evidence_id,
+                "extracted_receipt_digest": extracted.receipt_digest,
+                "source_name_digest": opaque_digest(source.name),
+                "sha256": sha256,
+                "document_type": document_type,
+                "extraction_method": method,
+                "local_only": True,
+            }
         )
 
-    inventory = [
-        {
-            "document_id": item.document_id,
-            "source_name": item.source_name,
-            "original_path": str(item.original_path),
-            "extracted_path": str(item.extracted_path),
-            "markdown_path": str(item.markdown_path),
-            "sha256": item.sha256,
-            "document_type": item.document_type,
-            "extraction_method": item.extraction_method,
-        }
-        for item in results
-    ]
     (case_path / "document_inventory.json").write_text(
-        json.dumps(inventory, ensure_ascii=False, indent=2) + "\n",
+        json.dumps(inventory, ensure_ascii=False, sort_keys=True, indent=2) + "\n",
         encoding="utf-8",
-    )
-
-    manifest_path = case_path / "case_manifest.json"
-    existing = (
-        CaseManifest.load(case_path)
-        if manifest_path.is_file()
-        else CaseManifest(case_key=case_path.name, case_id=case_path.name)
     )
     CaseManifest(
         case_key=existing.case_key,
