@@ -8,6 +8,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from core.enterprise.contracts import AuthorizationContext
+from core.local_case_store import validate_untrusted_path
 from core.private_evidence_v1 import (
     EvidenceKeyProvider,
     EvidenceKind,
@@ -92,8 +93,13 @@ def ingest_directory(
         raise IngestionError(
             "private ingestion requires authorization, key provider, tenant id and key id"
         )
-    case_path = case_dir.expanduser().resolve()
-    source_path = source_directory.expanduser().resolve()
+    try:
+        case_path = validate_untrusted_path(case_dir, label="case directory").resolve()
+        source_path = validate_untrusted_path(
+            source_directory, label="source directory"
+        ).resolve()
+    except RuntimeError as exc:
+        raise IngestionError(str(exc)) from exc
     if not source_path.is_dir():
         raise FileNotFoundError(source_path)
     if case_path == source_path or case_path in source_path.parents:
