@@ -9,6 +9,8 @@ import pytest
 import core.case_ingestion as case_ingestion
 from core.case_ingestion import IngestedDocument, IngestionError, ingest_directory
 from core.enterprise.contracts import AuthorizationContext, Permission
+from core.private_case_runtime_bridge_v1 import load_verified_projection
+from core.private_evidence_v1 import PrivateEvidenceStore
 from knowledge.fact_extractor import extract_facts
 from knowledge.models.case_manifest import CaseManifest
 from knowledge.models.local_case_runtime import build_local_case_workspace
@@ -28,6 +30,17 @@ def _authorization(case_id: str = "CASE-0001") -> AuthorizationContext:
         roles=("case-worker",),
         permissions=(Permission.EVIDENCE_READ, Permission.EVIDENCE_WRITE),
         case_ids=(case_id,),
+    )
+
+
+def _store(case_dir: Path) -> PrivateEvidenceStore:
+    return PrivateEvidenceStore(
+        case_dir / ".private-evidence",
+        key_provider=TestKeyProvider(),
+        authorization=_authorization(case_dir.name),
+        tenant_id="synthetic-tenant",
+        case_id=case_dir.name,
+        key_id="test-key",
     )
 
 
@@ -83,6 +96,11 @@ def test_ingest_text_document_creates_encrypted_inventory_and_manifest(
     manifest = CaseManifest.load(case_dir)
     assert manifest.document_ids == (document.document_id,)
 
+    projection = load_verified_projection(_store(case_dir))
+    assert len(projection.documents) == 1
+    assert projection.documents[0].evidence_id == document.evidence_id
+    assert projection.documents[0].derivation_identity == document.derivation_identity
+
     encoded = payload.encode("utf-8")
     normalized = payload.replace("\r\n", "\n").encode("utf-8")
     for path in case_dir.rglob("*"):
@@ -100,7 +118,6 @@ def test_tesseract_receives_exact_bytes_over_stdin_without_source_path(
     executable.write_bytes(b"synthetic-tesseract-binary")
     payload = b"synthetic-image-bytes"
     observed_ocr_args: list[str] = []
-
     monkeypatch.setattr(case_ingestion.shutil, "which", lambda _: str(executable))
 
     def fake_run(
@@ -124,7 +141,6 @@ def test_tesseract_receives_exact_bytes_over_stdin_without_source_path(
         )
 
     monkeypatch.setattr(case_ingestion.subprocess, "run", fake_run)
-
     text, tool_identity = case_ingestion._run_tesseract(payload)
 
     assert text == "synthetic OCR output\n"
@@ -156,7 +172,6 @@ def test_ingest_fails_closed_without_authorization_and_key_provider(tmp_path: Pa
     source.mkdir()
     (source / "document.txt").write_text("synthetic", encoding="utf-8")
     case_dir = tmp_path / "CASE-0001"
-
     with pytest.raises(IngestionError, match="requires authorization"):
         ingest_directory(case_dir, source)
 
@@ -166,7 +181,7 @@ def test_real_case_document_type_is_accepted_without_synthetic_fact_generation()
     assert facts == []
 
 
-def test_local_runtime_attaches_encrypted_primary_evidence(tmp_path: Path) -> None:
+def test_local_runtime_requires_verified_store_for_private_evidence(tmp_path: Path) -> None:
     case_dir = tmp_path / "cases" / "CASE-0001"
     case_dir.mkdir(parents=True)
     CaseManifest(case_key="CASE-0001", case_id="CASE-0001").save(case_dir)
@@ -175,7 +190,26 @@ def test_local_runtime_attaches_encrypted_primary_evidence(tmp_path: Path) -> No
     (source / "synthetic.txt").write_text("Synthetic source.\n", encoding="utf-8")
     _ingest(case_dir, source)
 
-    workspace = build_local_case_workspace("CASE-0001", data_root=tmp_path)
+    with pytest.raises(ValueError, match="verified CASE-OPS-02 evidence_store"):
+        build_local_case_workspace("CASE-0001", data_root=tmp_path)
+
+
+def test_local_runtime_attaches_only_derivation_verified_primary_evidence(
+    tmp_path: Path,
+) -> None:
+    case_dir = tmp_path / "cases" / "CASE-0001"
+    case_dir.mkdir(parents=True)
+    CaseManifest(case_key="CASE-0001", case_id="CASE-0001").save(case_dir)
+    source = tmp_path / "source"
+    source.mkdir()
+    (source / "synthetic.txt").write_text("Synthetic source.\n", encoding="utf-8")
+    _ingest(case_dir, source)
+
+    workspace = build_local_case_workspace(
+        "CASE-0001",
+        data_root=tmp_path,
+        evidence_store=_store(case_dir),
+    )
 
     assert len(workspace.case.evidence_items) == 1
     evidence = workspace.case.evidence_items[0]
@@ -183,4 +217,7 @@ def test_local_runtime_attaches_encrypted_primary_evidence(tmp_path: Path) -> No
     assert evidence.source.startswith("private-evidence:sha256:")
     assert evidence.metadata["local_only"] is True
     assert evidence.metadata["encrypted_at_rest"] is True
+    assert evidence.metadata["verified_private_evidence"] is True
+    assert evidence.metadata["derivation_identity"].startswith("sha256:")
+    assert workspace.meta["runtime_projection_id"].startswith("sha256:")
     assert workspace.graph.node_count() == 2
