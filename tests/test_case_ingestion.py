@@ -45,9 +45,9 @@ def test_ingest_text_document_creates_encrypted_inventory_and_manifest(
 ) -> None:
     source = tmp_path / "source"
     source.mkdir()
-    payload = "Synthetic private evidence payload.\n"
+    payload = "Synthetic private evidence payload.\r\nSecond line.\n"
     source_file = source / "synthetic-input.txt"
-    source_file.write_text(payload, encoding="utf-8")
+    source_file.write_bytes(payload.encode("utf-8"))
 
     case_dir = tmp_path / "cases" / "CASE-0001"
     case_dir.mkdir(parents=True)
@@ -58,6 +58,11 @@ def test_ingest_text_document_creates_encrypted_inventory_and_manifest(
     assert len(documents) == 1
     document = documents[0]
     assert document.evidence_id.startswith("sha256:")
+    assert document.extracted_evidence_id.startswith("sha256:")
+    assert document.extracted_manifest_digest.startswith("sha256:")
+    assert document.derivation_identity.startswith("sha256:")
+    assert document.derivation_receipt_digest.startswith("sha256:")
+    assert document.derivation_replay_class == "DETERMINISTIC"
     assert document.encrypted_path.is_file()
     assert not (case_dir / "original").exists()
     assert not (case_dir / "extracted").exists()
@@ -67,6 +72,9 @@ def test_ingest_text_document_creates_encrypted_inventory_and_manifest(
     inventory = json.loads(inventory_path.read_text(encoding="utf-8"))
     assert inventory[0]["document_id"] == document.document_id
     assert inventory[0]["evidence_id"] == document.evidence_id
+    assert inventory[0]["derivation_identity"] == document.derivation_identity
+    assert inventory[0]["derivation_receipt_digest"] == document.derivation_receipt_digest
+    assert inventory[0]["derivation_replay_class"] == "DETERMINISTIC"
     assert "source_name" not in inventory[0]
     assert "original_path" not in inventory[0]
     assert "synthetic-input.txt" not in inventory_path.read_text(encoding="utf-8")
@@ -74,9 +82,12 @@ def test_ingest_text_document_creates_encrypted_inventory_and_manifest(
     assert manifest.document_ids == (document.document_id,)
 
     encoded = payload.encode("utf-8")
+    normalized = payload.replace("\r\n", "\n").encode("utf-8")
     for path in case_dir.rglob("*"):
         if path.is_file():
-            assert encoded not in path.read_bytes()
+            persisted = path.read_bytes()
+            assert encoded not in persisted
+            assert normalized not in persisted
 
 
 def test_ingest_rejects_symlink_inputs(tmp_path: Path) -> None:
