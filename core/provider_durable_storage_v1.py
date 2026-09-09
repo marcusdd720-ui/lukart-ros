@@ -360,7 +360,10 @@ class AwsS3ObjectVersionIdentityV1:
             blob_digest=_digest(value.get("blob_digest"), field_name="blob_digest"),
             blob_size=_nonnegative_int(value.get("blob_size"), field_name="blob_size"),
         )
-        if _digest(value.get("version_digest"), field_name="version_digest") != result.version_digest:
+        if (
+            _digest(value.get("version_digest"), field_name="version_digest")
+            != result.version_digest
+        ):
             raise ProviderDurableStorageV1Error("S3 object-version digest mismatch")
         return result
 
@@ -505,9 +508,25 @@ class AwsCredentialScopeEvidenceV1:
             "policy_source_arn",
             _text(self.policy_source_arn, field_name="policy_source_arn"),
         )
-        required = tuple(sorted({_text(item, field_name="required action") for item in self.required_allowed}))
-        forbidden = tuple(sorted({_text(item, field_name="forbidden action") for item in self.forbidden_denied}))
-        violations = tuple(sorted({_text(item, field_name="violation") for item in self.violations}))
+        required = tuple(
+            sorted(
+                {
+                    _text(item, field_name="required action")
+                    for item in self.required_allowed
+                }
+            )
+        )
+        forbidden = tuple(
+            sorted(
+                {
+                    _text(item, field_name="forbidden action")
+                    for item in self.forbidden_denied
+                }
+            )
+        )
+        violations = tuple(
+            sorted({_text(item, field_name="violation") for item in self.violations})
+        )
         object.__setattr__(self, "required_allowed", required)
         object.__setattr__(self, "forbidden_denied", forbidden)
         object.__setattr__(self, "violations", violations)
@@ -515,13 +534,21 @@ class AwsCredentialScopeEvidenceV1:
             raise ProviderDurableStorageV1Error("unknown credential-scope evidence state")
         if self.state is ProviderEvidenceStateV1.VERIFIED:
             if set(required) != _FIXED_REQUIRED_ACTIONS:
-                raise ProviderDurableStorageV1Error("VERIFIED credential scope lacks required actions")
+                raise ProviderDurableStorageV1Error(
+                    "VERIFIED credential scope lacks required actions"
+                )
             if set(forbidden) != _FIXED_FORBIDDEN_ACTIONS:
-                raise ProviderDurableStorageV1Error("VERIFIED credential scope lacks deny evidence")
+                raise ProviderDurableStorageV1Error(
+                    "VERIFIED credential scope lacks deny evidence"
+                )
             if violations:
-                raise ProviderDurableStorageV1Error("VERIFIED credential scope cannot have violations")
+                raise ProviderDurableStorageV1Error(
+                    "VERIFIED credential scope cannot have violations"
+                )
         elif not violations:
-            raise ProviderDurableStorageV1Error("non-VERIFIED credential scope requires violations")
+            raise ProviderDurableStorageV1Error(
+                "non-VERIFIED credential scope requires violations"
+            )
 
     def canonical_body(self) -> dict[str, object]:
         return {
@@ -665,21 +692,34 @@ class AwsObjectLockEvidenceV1:
             raise ProviderDurableStorageV1Error("unknown legal hold state")
         if not isinstance(self.state, ProviderEvidenceStateV1):
             raise ProviderDurableStorageV1Error("unknown provider evidence state")
-        violations = tuple(sorted({_text(item, field_name="violation") for item in self.violations}))
-        request_ids = tuple(sorted({_text(item, field_name="provider_request_id") for item in self.provider_request_ids}))
+        violations = tuple(
+            sorted({_text(item, field_name="violation") for item in self.violations})
+        )
+        request_ids = tuple(
+            sorted(
+                {
+                    _text(item, field_name="provider_request_id")
+                    for item in self.provider_request_ids
+                }
+            )
+        )
         object.__setattr__(self, "violations", violations)
         object.__setattr__(self, "provider_request_ids", request_ids)
         if self.state is ProviderEvidenceStateV1.VERIFIED:
             if violations:
                 raise ProviderDurableStorageV1Error("VERIFIED Object Lock evidence has violations")
             if not self.object_lock_enabled:
-                raise ProviderDurableStorageV1Error("VERIFIED Object Lock evidence requires enabled lock")
+                raise ProviderDurableStorageV1Error(
+                    "VERIFIED Object Lock evidence requires enabled lock"
+                )
             if self.retention_mode is not AwsRetentionModeV1.COMPLIANCE:
                 raise ProviderDurableStorageV1Error("only COMPLIANCE may be provider VERIFIED")
             if self.retain_until_utc is None:
                 raise ProviderDurableStorageV1Error("VERIFIED retention requires retain-until date")
         elif not violations:
-            raise ProviderDurableStorageV1Error("non-VERIFIED Object Lock evidence requires violations")
+            raise ProviderDurableStorageV1Error(
+                "non-VERIFIED Object Lock evidence requires violations"
+            )
 
     def canonical_body(self) -> dict[str, object]:
         return {
@@ -784,7 +824,9 @@ def verify_object_lock_version_v1(
         violations.append("object_lock_disabled")
     if mode is not AwsRetentionModeV1.COMPLIANCE:
         violations.append(
-            "governance_retention_not_worm" if mode is AwsRetentionModeV1.GOVERNANCE else "missing_retention"
+            "governance_retention_not_worm"
+            if mode is AwsRetentionModeV1.GOVERNANCE
+            else "missing_retention"
         )
     if retain_until is None:
         violations.append("missing_retain_until")
@@ -800,7 +842,11 @@ def verify_object_lock_version_v1(
         retention_mode=mode,
         retain_until_utc=_utc_text(retain_until) if retain_until is not None else None,
         legal_hold=legal_hold,
-        state=(ProviderEvidenceStateV1.VERIFIED if not violations else ProviderEvidenceStateV1.FAIL),
+        state=(
+            ProviderEvidenceStateV1.VERIFIED
+            if not violations
+            else ProviderEvidenceStateV1.FAIL
+        ),
         violations=tuple(violations),
         provider_request_ids=tuple(
             _response_request_id(item)
@@ -845,7 +891,9 @@ class AwsLocationProviderEvidenceV1:
         if len({item.version_digest for item in evidence}) != len(evidence):
             raise ProviderDurableStorageV1Error("duplicate provider object evidence")
         object.__setattr__(self, "object_evidence", evidence)
-        violations = tuple(sorted({_text(item, field_name="violation") for item in self.violations}))
+        violations = tuple(
+            sorted({_text(item, field_name="violation") for item in self.violations})
+        )
         object.__setattr__(self, "violations", violations)
         if not isinstance(self.state, ProviderEvidenceStateV1):
             raise ProviderDurableStorageV1Error("unknown location provider evidence state")
@@ -855,7 +903,9 @@ class AwsLocationProviderEvidenceV1:
             if any(item.state is not ProviderEvidenceStateV1.VERIFIED for item in evidence):
                 raise ProviderDurableStorageV1Error("VERIFIED location contains unverified object")
         elif not violations:
-            raise ProviderDurableStorageV1Error("non-VERIFIED location evidence requires violations")
+            raise ProviderDurableStorageV1Error(
+                "non-VERIFIED location evidence requires violations"
+            )
 
     def canonical_body(self) -> dict[str, object]:
         return {
@@ -952,7 +1002,11 @@ def verify_s3_location_v1(
             observed_region=next(iter(regions), profile.region),
             object_evidence=tuple(object_evidence),
             credential_scope_digest=credential_scope.evidence_digest,
-            state=(ProviderEvidenceStateV1.VERIFIED if not violations else ProviderEvidenceStateV1.FAIL),
+            state=(
+                ProviderEvidenceStateV1.VERIFIED
+                if not violations
+                else ProviderEvidenceStateV1.FAIL
+            ),
             violations=tuple(violations),
         ),
         credential_scope,
@@ -994,7 +1048,9 @@ class ProviderDurablePairReportV1:
             raise ProviderDurableStorageV1Error("LRD-01H cannot manufacture a ten-year SLA")
         if not isinstance(self.state, ProviderEvidenceStateV1):
             raise ProviderDurableStorageV1Error("unknown provider pair state")
-        violations = tuple(sorted({_text(item, field_name="violation") for item in self.violations}))
+        violations = tuple(
+            sorted({_text(item, field_name="violation") for item in self.violations})
+        )
         object.__setattr__(self, "violations", violations)
         if self.state is ProviderEvidenceStateV1.VERIFIED:
             if violations:
@@ -1072,6 +1128,10 @@ def build_provider_pair_report_v1(
         distinct_regions=distinct_regions,
         distinct_principals=distinct_principals,
         distinct_credential_domains=distinct_credentials,
-        state=(ProviderEvidenceStateV1.VERIFIED if not violations else ProviderEvidenceStateV1.FAIL),
+        state=(
+            ProviderEvidenceStateV1.VERIFIED
+            if not violations
+            else ProviderEvidenceStateV1.FAIL
+        ),
         violations=tuple(violations),
     )
