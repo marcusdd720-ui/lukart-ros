@@ -1,10 +1,17 @@
 # LRD-01E — Crypto Renewal / Operational Health v1
 
-Status: `IMPLEMENTATION CANDIDATE`
+Status: `CLOSED / ENGINEERING PASS` closure candidate; authoritative after guarded closure merge
 Parent program: `continuous LRD-01`
 Depends on: `LRD-01D CLOSED / ENGINEERING PASS`
 Measured base: `main @ a5686e36a6f198fb003125f35efb9ed508099177`
-Historical release baseline: `v1.0.1 @ 802013c4d0e53dc12306a97e1877ebba86af64a7`
+Implementation PR: `#199`
+Validated implementation head: `8df92a6a1fcf6ac0af7ed07e3473e6420567be88`
+Implementation merge: `main @ 56fa8daf98982b2cfa18c87691a3fe9f876dc0c9`
+Implementation PR CI: `18/18 SUCCESS`
+Implementation post-merge: `17/17 SUCCESS`, `queued=0`, `in_progress=0`, `failure=0`
+Historical baseline tag object: `v1.0.1 @ 9f7c0b28f766c8921e63b1d517fefcc96aa991d4`
+Historical baseline target: `802013c4d0e53dc12306a97e1877ebba86af64a7`
+Latest release at implementation closure: `v1.0.1`
 Writable case-history SSOT: Canonical Case Ledger only
 
 ## 1. Problem
@@ -124,7 +131,69 @@ LRD-01E does not claim post-quantum cryptography, HSM/WORM custody, automatic ke
 external geo-redundancy, deterministic external-provider rerun, continuous monitoring, independent
 certification or a new release.
 
-## 9. Next slice
+## 9. LRD-01E closure evidence
+
+The implementation line required three fail-closed repairs before the final candidate. The first
+candidate exposed six Ruff E501 findings in the new health module. The repair only wrapped lines;
+no runtime semantics, test expectation, security policy, trust boundary or validation gate changed.
+The next candidate exposed three MyPy errors because the recovery test helper returned an overly
+broad `object` type. The repair imported and declared the existing `RecoveryDrillManifestV1` type;
+runtime code remained unchanged. The following candidate reached the focused suite and exposed
+three fixture timing errors: the test data unintentionally exercised CRY-01 expiry/not-before
+rejection before reaching the intended health-state assertions. The repair changed only fixture
+validity windows and scenario timestamps so the tests exercise freshness semantics while keeping
+CRY-01 fail-closed time validation intact. No threshold, gate or crypto check was weakened.
+
+The fresh implementation candidate `8df92a6a1fcf6ac0af7ed07e3473e6420567be88` then passed all
+18 PR-triggered workflows on one unchanged exact head. The set included `LRD-01E Crypto Renewal
+Operational Health`, CI Foundation, Stage Gate, Enterprise CodeQL, Enterprise Hardcore Gate,
+LRD-01C Artifact Escrow Offline Runner, LRD-01D Frozen Current Drift, SSC-02, FIV-02, OPR-01,
+Production Validation Program and GitHub App Smoke Test. The dedicated LRD-01E workflow completed
+`SUCCESS` after exact checkout, Ruff, strict MyPy, focused/adversarial tests, CRY-01/DR-02/escrow/
+drift regression and freshness/fail-closed adversarial selection. `Enterprise CodeQL` also
+completed `SUCCESS` on that exact head.
+
+Guarded merge used the exact validated head and produced
+`56fa8daf98982b2cfa18c87691a3fe9f876dc0c9`. The resulting implementation main accumulated 17
+workflow runs bound to that exact SHA; all 17 were terminal `SUCCESS`, with zero queued,
+in-progress or failed runs at implementation closure evaluation. The post-merge validation set
+included governance closure preparation and release-guard workflows. Governance closure
+preparation itself correctly performed no mutation for this slice because its configured stage
+selector did not enable LRD-01E; this canonical closure is therefore recorded through the normal
+controller-side closure path rather than by extending governance automation during closure.
+
+Historical release identity remained unchanged: tag object
+`9f7c0b28f766c8921e63b1d517fefcc96aa991d4` still targets
+`802013c4d0e53dc12306a97e1877ebba86af64a7`, and the latest published release remains `v1.0.1`
+(`MVROS 1.0.1`) targeting that same historical commit. No release/tag publication is authorized or
+performed by this closure.
+
+This record becomes authoritative only after this exact closure candidate itself passes fresh
+exact-head CI, guarded merge, resulting-main validation and baseline/release re-verification. It
+records engineering evidence only and does not create Product, CCL, Gold, policy, trust-promotion,
+release, post-quantum, HSM/WORM, external-archival or independent-certification authority.
+
+## 10. Definition of Done
+
+LRD-01E closes only after one exact candidate proves:
+
+1. historical proof verification and additive trust-set-chained renewal;
+2. revoked/retired/unchained misuse remains fail closed under CRY-01;
+3. all preserved escrow bytes migrate through verified source-read and target-reread;
+4. storage profiles and migrated byte identities are content addressed;
+5. fresh, stale, missing and failed health states are explicit and deterministic;
+6. future timestamps and cross-case substitution fail closed;
+7. historical drift PASS cannot substitute for current health evidence;
+8. focused and adversarial tests;
+9. CRY-01, DR-02, escrow and LRD-01D regression;
+10. Ruff, strict MyPy, full repository regression and security/policy gates;
+11. all exact PR-head CI terminal `SUCCESS`;
+12. unchanged-head guarded merge;
+13. resulting-main post-merge validation terminal `SUCCESS`;
+14. immutable `v1.0.1` tag/target/release baseline unchanged;
+15. canonical closure evidence merged into GitHub.
+
+## 11. Next slice
 
 No later LRD slice is authorized by this document. Further long-range work requires evidence from
 01A-01E and the live canonical roadmap; absence of an explicit approved next slice is not filled by
