@@ -10,8 +10,15 @@ from core.case_ingestion import ingest_directory
 from core.enterprise.contracts import AuthorizationContext, Permission
 from core.local_case_store import case_dir, ensure_data_root, validate_case_key
 from core.private_evidence_keyfile_v1 import LocalFileEvidenceKeyProvider
+from knowledge.models.case_manifest import CaseManifest
 
 ROOT = Path(__file__).resolve().parents[1]
+
+
+def _reject_repo_key_file(key_file: Path) -> None:
+    resolved = key_file.resolve()
+    if resolved == ROOT or ROOT in resolved.parents:
+        raise ValueError("evidence key file must be outside the public repository tree")
 
 
 def main() -> int:
@@ -47,17 +54,19 @@ def main() -> int:
             raise FileNotFoundError(
                 f"Local case does not exist: {target}. Create it with scripts/new_case.py first."
             )
+        case_scope_id = CaseManifest.load(target).case_id
         provider = LocalFileEvidenceKeyProvider(
             Path(args.key_file),
             key_id=args.key_id,
             key_version=args.key_version,
         )
+        _reject_repo_key_file(provider.key_file)
         authorization = AuthorizationContext(
             subject_id=args.subject_id,
             tenant_id=args.tenant_id,
             roles=("local-case-operator",),
             permissions=(Permission.EVIDENCE_READ, Permission.EVIDENCE_WRITE),
-            case_ids=(key,),
+            case_ids=(case_scope_id,),
         )
         os.environ["MVROS_DATA_ROOT"] = str(data_root)
         documents = ingest_directory(
