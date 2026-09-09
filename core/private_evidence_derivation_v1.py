@@ -113,6 +113,23 @@ def _receipt_path(store: PrivateEvidenceStore, digest: str) -> Path:
     return target
 
 
+def _required_digest_field(mapping: dict[str, object], key: str) -> str:
+    value = mapping.get(key)
+    if not isinstance(value, str):
+        raise PrivateEvidenceError(f"invalid derivation receipt field: {key}")
+    digest_hex(value)
+    return value
+
+
+def _replay_class(value: object) -> ReplayClass:
+    if not isinstance(value, str):
+        raise PrivateEvidenceError("invalid derivation replay class")
+    try:
+        return ReplayClass(value)
+    except ValueError as exc:
+        raise PrivateEvidenceError("unsupported derivation replay class") from exc
+
+
 def _manifest(store: PrivateEvidenceStore, source: ImportedEvidence) -> dict[str, object]:
     store.verify(source)
     manifest = _load_mapping(source.manifest_path, label="source manifest")
@@ -301,6 +318,51 @@ def record_environment_bound_text_derivation(
     )
 
 
+def load_derivation(
+    store: PrivateEvidenceStore,
+    derivation_receipt_digest: str,
+) -> DerivedEvidence:
+    """Rehydrate and verify one derivation from its content-addressed receipt only."""
+    receipt_path = _receipt_path(store, derivation_receipt_digest)
+    receipt = _load_mapping(receipt_path, label="derivation receipt")
+    if set(receipt) != _RECEIPT_FIELDS:
+        raise PrivateEvidenceError("unknown or missing derivation receipt fields")
+    if digest_object(receipt) != derivation_receipt_digest:
+        raise PrivateEvidenceError("derivation receipt digest mismatch")
+    if receipt.get("schema") != SCHEMA_DERIVATION_RECEIPT:
+        raise PrivateEvidenceError("unsupported derivation receipt schema")
+
+    source_evidence_id = _required_digest_field(receipt, "source_evidence_id")
+    source_manifest_digest = _required_digest_field(receipt, "source_manifest_digest")
+    source_receipt_digest = _required_digest_field(receipt, "source_receipt_digest")
+    derived_evidence_id = _required_digest_field(receipt, "derived_evidence_id")
+    derived_manifest_digest = _required_digest_field(receipt, "derived_manifest_digest")
+    derived_receipt_digest = _required_digest_field(receipt, "derived_receipt_digest")
+    semantic_derivation_id = _required_digest_field(receipt, "semantic_derivation_id")
+    replay_class = _replay_class(receipt.get("replay_class"))
+
+    source = store._load_imported(
+        evidence_id=source_evidence_id,
+        manifest_digest=source_manifest_digest,
+        receipt_digest=source_receipt_digest,
+    )
+    derived = store._load_imported(
+        evidence_id=derived_evidence_id,
+        manifest_digest=derived_manifest_digest,
+        receipt_digest=derived_receipt_digest,
+    )
+    result = DerivedEvidence(
+        source=source,
+        derived=derived,
+        semantic_derivation_id=semantic_derivation_id,
+        derivation_receipt_digest=derivation_receipt_digest,
+        derivation_receipt_path=receipt_path,
+        replay_class=replay_class,
+    )
+    verify_derivation(store, result)
+    return result
+
+
 def verify_derivation(store: PrivateEvidenceStore, result: DerivedEvidence) -> None:
     """Verify receipt, source/derived evidence and semantic derivation identity offline."""
     store.verify(result.source)
@@ -341,13 +403,7 @@ def verify_derivation(store: PrivateEvidenceStore, result: DerivedEvidence) -> N
         if not isinstance(tool_identity_digest, str):
             raise PrivateEvidenceError("invalid tool identity digest")
         digest_hex(tool_identity_digest)
-    replay_value = receipt.get("replay_class")
-    if not isinstance(replay_value, str):
-        raise PrivateEvidenceError("invalid derivation replay class")
-    try:
-        replay_class = ReplayClass(replay_value)
-    except ValueError as exc:
-        raise PrivateEvidenceError("unsupported derivation replay class") from exc
+    replay_class = _replay_class(receipt.get("replay_class"))
     if replay_class is ReplayClass.ENVIRONMENT_BOUND and tool_identity_digest is None:
         raise PrivateEvidenceError("environment-bound receipt is missing tool identity")
     if replay_class is ReplayClass.DETERMINISTIC and tool_identity_digest is not None:
