@@ -18,7 +18,12 @@ from core.private_case_runtime_bridge_v1 import (
     register_projection_in_ccl,
 )
 from core.private_evidence_keyfile_v1 import LocalFileEvidenceKeyProvider
-from core.private_evidence_v1 import PrivateEvidenceError, PrivateEvidenceStore, digest_hex, opaque_digest
+from core.private_evidence_v1 import (
+    PrivateEvidenceError,
+    PrivateEvidenceStore,
+    digest_hex,
+    opaque_digest,
+)
 from knowledge.models.case_manifest import CaseManifest
 from knowledge.models.local_case_runtime import build_local_case_workspace
 
@@ -48,18 +53,27 @@ def authorization(
     )
 
 
-def evidence_store(case_dir: Path, *, auth: AuthorizationContext | None = None) -> PrivateEvidenceStore:
+def evidence_store(
+    case_dir: Path,
+    *,
+    auth: AuthorizationContext | None = None,
+) -> PrivateEvidenceStore:
+    context = auth or authorization(case_dir.name)
     return PrivateEvidenceStore(
         case_dir / ".private-evidence",
         key_provider=KeyProvider(),
-        authorization=auth or authorization(case_dir.name),
-        tenant_id=(auth.tenant_id if auth else "tenant-a"),
+        authorization=context,
+        tenant_id=context.tenant_id,
         case_id=case_dir.name,
         key_id="key-main",
     )
 
 
-def create_case(tmp_path: Path, *, documents: int = 2) -> tuple[Path, PrivateEvidenceStore]:
+def create_case(
+    tmp_path: Path,
+    *,
+    documents: int = 2,
+) -> tuple[Path, PrivateEvidenceStore]:
     case_dir = tmp_path / "cases" / "CASE-A"
     case_dir.mkdir(parents=True)
     CaseManifest(case_key="CASE-A", case_id="CASE-A").save(case_dir)
@@ -67,7 +81,8 @@ def create_case(tmp_path: Path, *, documents: int = 2) -> tuple[Path, PrivateEvi
     source.mkdir()
     for index in range(1, documents + 1):
         (source / f"synthetic-{index}.txt").write_text(
-            f"Synthetic evidence {index}.\n", encoding="utf-8"
+            f"Synthetic evidence {index}.\n",
+            encoding="utf-8",
         )
     ingest_directory(
         case_dir,
@@ -91,7 +106,15 @@ def runtime_identity(projection_id: str) -> RuntimeIdentity:
     )
 
 
-def test_projection_is_deterministic_and_ignores_plaintext_inventory_mutation(tmp_path: Path) -> None:
+def _runtime_index_path(store: PrivateEvidenceStore) -> Path:
+    source_digest = opaque_digest(RUNTIME_INVENTORY_SOURCE_REF)
+    value = digest_hex(source_digest)
+    return store.root / "source-index" / value[:2] / f"{value}.json"
+
+
+def test_projection_is_deterministic_and_ignores_plaintext_inventory_mutation(
+    tmp_path: Path,
+) -> None:
     case_dir, store = create_case(tmp_path)
     first = load_verified_projection(store)
 
@@ -99,7 +122,9 @@ def test_projection_is_deterministic_and_ignores_plaintext_inventory_mutation(tm
     compatibility.write_text("[]\n", encoding="utf-8")
     second = load_verified_projection(store)
     workspace = build_local_case_workspace(
-        "CASE-A", data_root=tmp_path, evidence_store=store
+        "CASE-A",
+        data_root=tmp_path,
+        evidence_store=store,
     )
 
     assert second == first
@@ -110,9 +135,7 @@ def test_projection_is_deterministic_and_ignores_plaintext_inventory_mutation(tm
 
 def test_runtime_inventory_source_index_tamper_fails_closed(tmp_path: Path) -> None:
     _case_dir, store = create_case(tmp_path, documents=1)
-    source_digest = opaque_digest(RUNTIME_INVENTORY_SOURCE_REF)
-    value = digest_hex(source_digest)
-    index_path = store.root / "source-index" / value[:2] / f"{value}.json"
+    index_path = _runtime_index_path(store)
     index = json.loads(index_path.read_text(encoding="utf-8"))
     index["evidence_id"] = "sha256:" + "0" * 64
     index_path.write_text(json.dumps(index), encoding="utf-8")
@@ -121,14 +144,16 @@ def test_runtime_inventory_source_index_tamper_fails_closed(tmp_path: Path) -> N
         load_verified_projection(store)
 
 
-def test_missing_encrypted_runtime_inventory_never_falls_back_to_plaintext(tmp_path: Path) -> None:
+def test_missing_encrypted_runtime_inventory_never_falls_back_to_plaintext(
+    tmp_path: Path,
+) -> None:
     case_dir, store = create_case(tmp_path, documents=1)
-    source_digest = opaque_digest(RUNTIME_INVENTORY_SOURCE_REF)
-    value = digest_hex(source_digest)
-    index_path = store.root / "source-index" / value[:2] / f"{value}.json"
-    index_path.unlink()
+    _runtime_index_path(store).unlink()
 
-    with pytest.raises(PrivateCaseRuntimeBridgeError, match="required private evidence object"):
+    with pytest.raises(
+        PrivateCaseRuntimeBridgeError,
+        match="required private evidence object",
+    ):
         load_verified_projection(store)
     with pytest.raises(ValueError, match="runtime verification failed"):
         build_local_case_workspace("CASE-A", data_root=tmp_path, evidence_store=store)
@@ -137,10 +162,7 @@ def test_missing_encrypted_runtime_inventory_never_falls_back_to_plaintext(tmp_p
 
 def test_legacy_inventory_migration_is_verified_and_idempotent(tmp_path: Path) -> None:
     case_dir, store = create_case(tmp_path, documents=1)
-    source_digest = opaque_digest(RUNTIME_INVENTORY_SOURCE_REF)
-    value = digest_hex(source_digest)
-    index_path = store.root / "source-index" / value[:2] / f"{value}.json"
-    index_path.unlink()
+    _runtime_index_path(store).unlink()
 
     first = migrate_legacy_inventory(store, case_dir / "document_inventory.json")
     second = migrate_legacy_inventory(store, case_dir / "document_inventory.json")
@@ -148,26 +170,27 @@ def test_legacy_inventory_migration_is_verified_and_idempotent(tmp_path: Path) -
     assert first == second == load_verified_projection(store)
 
 
-def test_legacy_inventory_slot_substitution_is_rejected_before_migration(tmp_path: Path) -> None:
+def test_legacy_inventory_complete_slot_substitution_is_rejected(tmp_path: Path) -> None:
     case_dir, store = create_case(tmp_path, documents=2)
-    source_digest = opaque_digest(RUNTIME_INVENTORY_SOURCE_REF)
-    value = digest_hex(source_digest)
-    index_path = store.root / "source-index" / value[:2] / f"{value}.json"
-    index_path.unlink()
+    _runtime_index_path(store).unlink()
 
     inventory_path = case_dir / "document_inventory.json"
     inventory = json.loads(inventory_path.read_text(encoding="utf-8"))
-    inventory[0]["evidence_id"], inventory[1]["evidence_id"] = (
-        inventory[1]["evidence_id"],
-        inventory[0]["evidence_id"],
-    )
+    primary_fields = ("evidence_id", "manifest_digest", "receipt_digest", "sha256")
+    first = {field: inventory[0][field] for field in primary_fields}
+    second = {field: inventory[1][field] for field in primary_fields}
+    for field in primary_fields:
+        inventory[0][field] = second[field]
+        inventory[1][field] = first[field]
     inventory_path.write_text(json.dumps(inventory), encoding="utf-8")
 
-    with pytest.raises(PrivateCaseRuntimeBridgeError):
+    with pytest.raises(PrivateCaseRuntimeBridgeError, match="document slot"):
         migrate_legacy_inventory(store, inventory_path)
 
 
-def test_ccl_registration_requires_case_write_and_runtime_projection_binding(tmp_path: Path) -> None:
+def test_ccl_registration_requires_case_write_and_runtime_projection_binding(
+    tmp_path: Path,
+) -> None:
     _case_dir, store = create_case(tmp_path, documents=1)
     projection = load_verified_projection(store)
 
@@ -213,12 +236,39 @@ def test_ccl_registration_requires_case_write_and_runtime_projection_binding(tmp
     assert "synthetic-1.txt" not in serialized
 
 
-def test_local_key_file_provider_is_exact_identity_and_rejects_broad_posix_mode(tmp_path: Path) -> None:
+def test_ccl_registration_rejects_cross_tenant_scope_digest(tmp_path: Path) -> None:
+    _case_dir, store = create_case(tmp_path, documents=1)
+    projection = load_verified_projection(store)
+    cross_tenant = authorization(case_write=True, tenant_id="tenant-b")
+
+    with CanonicalCaseLedger(tmp_path / "ledger.db") as ledger:
+        with pytest.raises(PrivateCaseRuntimeBridgeError, match="scope digest mismatch"):
+            register_projection_in_ccl(
+                ledger=ledger,
+                projection=projection,
+                runtime_identity=runtime_identity(projection.projection_id),
+                authorization=cross_tenant,
+                expected_head=None,
+            )
+        assert ledger.events(projection_case_id := __import__(
+            "core.case_ledger.contracts",
+            fromlist=["CaseId"],
+        ).CaseId(projection.case_id)) == ()
+    assert projection_case_id.value == projection.case_id
+
+
+def test_local_key_file_provider_is_exact_identity_and_rejects_broad_posix_mode(
+    tmp_path: Path,
+) -> None:
     key_file = tmp_path / "evidence.key"
     key_file.write_bytes(b"Z" * 32)
     if os.name != "nt":
         key_file.chmod(0o600)
-    provider = LocalFileEvidenceKeyProvider(key_file, key_id="local-key", key_version=3)
+    provider = LocalFileEvidenceKeyProvider(
+        key_file,
+        key_id="local-key",
+        key_version=3,
+    )
 
     assert provider.get_key("local-key", 3) == b"Z" * 32
     with pytest.raises(PrivateEvidenceError, match="identity is unavailable"):
