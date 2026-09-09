@@ -1,0 +1,91 @@
+name: LRD-01H Provider Durable Storage
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  lrd01h-provider-durable-storage:
+    runs-on: ubuntu-latest
+    env:
+      CANDIDATE_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+      PIP_DISABLE_PIP_VERSION_CHECK: "1"
+    steps:
+      - name: Checkout exact candidate SHA
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: Install validation environment
+        run: python -m pip install -e ".[dev]"
+
+      - name: Verify exact checkout identity
+        run: |
+          test "$(git rev-parse HEAD)" = "${CANDIDATE_SHA}"
+          echo "LRD01H_EXACT_SHA=${CANDIDATE_SHA}"
+
+      - name: LRD-01H lint and strict type-check
+        shell: bash
+        run: |
+          set +e
+          ruff_output="$(ruff check core/provider_durable_storage_v1.py tests/test_provider_durable_storage_v1.py 2>&1)"
+          ruff_status=$?
+          mypy_output="$(mypy core/provider_durable_storage_v1.py tests/test_provider_durable_storage_v1.py 2>&1)"
+          mypy_status=$?
+          echo "RUFF_STATUS=${ruff_status}"
+          printf '%s\n' "${ruff_output}"
+          echo "MYPY_STATUS=${mypy_status}"
+          printf '%s\n' "${mypy_output}"
+          {
+            echo "### LRD-01H static validation"
+            echo '```text'
+            echo "RUFF_STATUS=${ruff_status}"
+            printf '%s\n' "${ruff_output}"
+            echo
+            echo "MYPY_STATUS=${mypy_status}"
+            printf '%s\n' "${mypy_output}"
+            echo '```'
+          } >> "${GITHUB_STEP_SUMMARY}"
+          if [[ ${ruff_status} -ne 0 || ${mypy_status} -ne 0 ]]; then
+            exit 1
+          fi
+
+      - name: LRD-01H focused and adversarial suite
+        run: pytest -q tests/test_provider_durable_storage_v1.py
+
+      - name: Escrow durability recovery regression
+        run: |
+          pytest -q \
+            tests/test_provider_durable_storage_v1.py \
+            tests/test_durable_escrow_v1.py \
+            tests/test_artifact_escrow_v1.py \
+            tests/test_recovery_continuity_v1.py \
+            tests/test_long_range_health_v1.py \
+            tests/test_long_range_drift_v1.py
+
+      - name: Provider fail-closed adversarial selection
+        run: |
+          pytest -q tests/test_provider_durable_storage_v1.py \
+            -k "version or governance or retention or owner or credential or source_loss or missing or claim or tampering"
+
+  provider-evidence-boundary:
+    runs-on: ubuntu-latest
+    steps:
+      - name: External evidence is never manufactured by repository CI
+        run: |
+          echo "LRD-01H repository CI validates adapter/verifier semantics only."
+          echo "Real AWS Object Lock evidence requires separately configured provider resources and credentials."
+          echo "MOCK_EVIDENCE_IS_EXTERNAL_PASS=false"
