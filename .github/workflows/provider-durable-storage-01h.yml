@@ -38,9 +38,26 @@ jobs:
           echo "LRD01H_EXACT_SHA=${CANDIDATE_SHA}"
 
       - name: LRD-01H lint and strict type-check
+        shell: bash
         run: |
-          ruff check core/provider_durable_storage_v1.py tests/test_provider_durable_storage_v1.py
-          mypy core/provider_durable_storage_v1.py tests/test_provider_durable_storage_v1.py
+          set +e
+          ruff_output="$(ruff check core/provider_durable_storage_v1.py tests/test_provider_durable_storage_v1.py 2>&1)"
+          ruff_status=$?
+          mypy_output="$(mypy core/provider_durable_storage_v1.py tests/test_provider_durable_storage_v1.py 2>&1)"
+          mypy_status=$?
+          {
+            echo "### LRD-01H static validation"
+            echo '```text'
+            echo "RUFF_STATUS=${ruff_status}"
+            printf '%s\n' "${ruff_output}"
+            echo
+            echo "MYPY_STATUS=${mypy_status}"
+            printf '%s\n' "${mypy_output}"
+            echo '```'
+          } >> "${GITHUB_STEP_SUMMARY}"
+          if [[ ${ruff_status} -ne 0 || ${mypy_status} -ne 0 ]]; then
+            exit 1
+          fi
 
       - name: LRD-01H focused and adversarial suite
         run: pytest -q tests/test_provider_durable_storage_v1.py
