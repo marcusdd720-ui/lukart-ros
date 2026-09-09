@@ -34,19 +34,11 @@ Proste zadania: krótko. Repo audit, architecture, trust/security, provenance/re
 
 ## 3. HARDCORE ENTERPRISE / LONG-HORIZON
 
-Przed większą zmianą oceń trust boundary, data loss, nondeterminism, regression, security, scale, recovery, provenance, audit, migration i evolvability. Preferuj contract/adversarial-first, deterministic, bounded, measurable, reversible, provenance-aware, fail-closed.
+Dla większej zmiany: `live SSOT → Problem → Evidence → Measurement → existing capability/gap → Alternatives → Trade-offs → Decision → Validation`. Najpierw ustal realny gap; preferuj brak zmiany lub najmniejszą uzasadnioną modyfikację.
 
-Istotne decyzje: 5–10+ year horizon; future-resistant, not future-predictive; versioned/open contracts, replaceable components, provider/model independence, explicit migrations, backward compatibility, canonical data, replay/recovery, bounded lock-in.
+Oceń correctness, epistemic safety, trust boundary, data loss, nondeterminism, security, scale, recovery, provenance/replay, audit, migration i evolvability w 5–10+ year horizon, także przy failure i zmianach schema/providerów/kluczy. Preferuj deterministic, bounded, fail-closed, versioned/open, replaceable contracts i bounded lock-in.
 
-Gdy alternatywy mogą zmienić decyzję, porównaj 2–4 względem correctness, epistemic safety, determinism, security, provenance/replay, recovery, audit, interoperability, migration, lock-in, complexity i long-term cost. `Problem → Evidence → Alternatives → Trade-offs → Decision → Validation`. **Best-Justified Solution != Most Complex Solution.** Bez sztucznych wariantów. Aktualne technology/security/dependencies weryfikuj w wiarygodnych źródłach.
-
-### 3A. DESIGN & IMPROVEMENT GATE
-
-Dla większego pomysłu/capability: `live SSOT → Problem → Evidence → Measurement → existing capability → real gap → Alternatives → Trade-offs → Decision → Implementation → Validation`. Najpierw oceń, czy nowa zmiana jest w ogóle potrzebna; preferuj brak zmiany lub najmniejszą uzasadnioną modyfikację, jeśli istniejący kontrakt wystarcza.
-
-Sprawdź działanie przy failure, scale, data/schema/provider/key changes, partial availability, migrations i 10+ year lifecycle. Wymagaj tam, gdzie dotyczy: fail-closed, least privilege, deny-by-default, exact/content-addressed identity, canonical serialization, offline-verifiable evidence, SSOT, tamper evidence, immutable publication, explicit provenance/migrations, deterministic replay, recovery/restore, tenant/case isolation, bounded execution oraz adversarial/negative tests.
-
-Krytyczna identity: code SHA + config/corpus digests + schema + provider/plugin versions + input/evidence digests. Nie deklaruj identical replay przy niepełnej identity. Wskaż największy material failure mode/słabość, residual risk i konkretną naprawę; jeśli mieści się w zatwierdzonym scope, wdroż ją przed closure. Nie twórz nowej authority, jeśli istniejący kanon można rozszerzyć.
+Porównuj 2–4 materialne warianty tylko gdy mogą zmienić decyzję. **Best-Justified Solution != Most Complex Solution.** Krytyczna identity: code SHA + config/corpus digests + schema + provider/plugin versions + input/evidence digests; incomplete != identical replay. Wskaż największy failure mode/residual risk i naprawę; jeśli jest w scope, wdroż ją przed closure. Nie twórz nowej authority, gdy kanon wystarcza
 
 ## 4. EPISTEMIKA / SSOT / FAIL-CLOSED
 
