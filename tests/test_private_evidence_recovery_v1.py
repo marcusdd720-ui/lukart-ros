@@ -8,14 +8,13 @@ import pytest
 from core.enterprise.contracts import AuthorizationContext, Permission
 from core.private_evidence_derivation_v1 import derive_utf8_text
 from core.private_evidence_recovery_v1 import (
-    create_recovery_capsule,
     PrivateEvidenceRecoveryError,
+    create_recovery_capsule,
     restore_recovery_capsule,
     verify_recovery_capsule,
 )
 from core.private_evidence_rotation_v1 import reencrypt_evidence
 from core.private_evidence_v1 import PrivateEvidenceError, PrivateEvidenceStore
-
 
 PASSPHRASE = "correct-horse-battery-staple"
 
