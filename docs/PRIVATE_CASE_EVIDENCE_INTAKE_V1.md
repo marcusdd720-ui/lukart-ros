@@ -80,3 +80,10 @@ continuation under the active `continuous LRD-01` program. It MUST reuse this en
 boundary, MUST NOT introduce cloud/provider storage or a second case-history authority, and MUST
 represent external-tool OCR as environment-bound unless stronger exact replay evidence exists.
 Architecture contract: `docs/LOCAL_EVIDENCE_DERIVATION_V1.md`.
+
+Following CASE-OPS-02 engineering closure, `CASE-OPS-03 — Offline Local Recovery Capsule & Key
+Recovery v1` is the approved next non-cloud continuation under `continuous LRD-01`. It MUST preserve
+CCL as the sole writable case-history SSOT, MUST back up only encrypted evidence/provenance, MUST
+protect every required historical/active evidence key through an authenticated non-plaintext
+recovery envelope, and MUST NOT introduce cloud/provider storage. Architecture contract:
+`docs/OFFLINE_LOCAL_RECOVERY_CAPSULE_V1.md`.
