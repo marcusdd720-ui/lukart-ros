@@ -10,6 +10,7 @@ from core.private_evidence_derivation_v1 import (
     MAX_TEXT_INPUT_BYTES,
     ReplayClass,
     derive_utf8_text,
+    load_derivation,
     record_environment_bound_text_derivation,
     verify_derivation,
 )
@@ -67,6 +68,37 @@ def test_utf8_derivation_is_deterministic_provenance_bound_and_encrypted(
     for path in store.root.rglob("*"):
         if path.is_file():
             assert plaintext not in path.read_bytes()
+
+
+def test_derivation_rehydrates_by_digest_after_encrypted_backup_restore(
+    tmp_path: Path,
+) -> None:
+    store = _store(tmp_path / "evidence")
+    source = store.import_bytes(
+        b"offline\r\nreplay\n",
+        source_ref="source-slot",
+        media_type="text/plain",
+    )
+    original = derive_utf8_text(store, source)
+    backup = store.backup_to(tmp_path / "backup")
+
+    restored = PrivateEvidenceStore.restore_from(
+        backup,
+        tmp_path / "restored",
+        key_provider=KeyProvider(),
+        authorization=_authorization(),
+        tenant_id="synthetic-tenant",
+        case_id="CASE-DERIVE",
+        key_id="case-key",
+    )
+    reloaded = load_derivation(restored, original.derivation_receipt_digest)
+
+    assert reloaded.semantic_derivation_id == original.semantic_derivation_id
+    assert reloaded.derivation_receipt_digest == original.derivation_receipt_digest
+    assert reloaded.source.evidence_id == source.evidence_id
+    assert reloaded.derived.evidence_id == original.derived.evidence_id
+    assert restored.read(reloaded.derived) == b"offline\nreplay\n"
+    verify_derivation(restored, reloaded)
 
 
 def test_semantic_identity_survives_source_reencryption_identity_boundary(
