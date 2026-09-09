@@ -66,6 +66,8 @@ class _Body:
 
 
 class _FakeS3:
+    retain_until: datetime | None
+
     def __init__(
         self,
         *,
