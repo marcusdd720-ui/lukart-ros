@@ -178,7 +178,7 @@ def test_ccl_registration_requires_case_write_projection_binding_and_scope(tmp_p
         )
         assert len(ledger.events(CaseId("CASE-A"))) == 1
 
-    serialized = json.dumps(event.canonical_dict(), sort_keys=True)
+    serialized = json.dumps(dict(event.payload), sort_keys=True)
     assert projection.projection_id in serialized
     assert "Synthetic evidence" not in serialized
     assert "synthetic-1.txt" not in serialized
