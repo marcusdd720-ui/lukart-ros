@@ -92,6 +92,7 @@ module = [
   "core.lrd_replay_closure_v1",
   "core.p3.contracts",
   "core.p3.versioning",
+  "core.post_quantum_readiness_v1",
   "core.product_runtime_v1",
   "core.product_verification_evidence_v1",
   "core.semantic_change_v2",
