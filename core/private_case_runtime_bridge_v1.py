@@ -158,7 +158,9 @@ def load_verified_projection(
         source_ref_digest = _source_ref_digest(result)
         slot = expected_slot_digests.get(source_ref_digest)
         if slot is None:
-            raise PrivateCaseRuntimeBridgeError("derivation is not bound to a canonical document slot")
+            raise PrivateCaseRuntimeBridgeError(
+                "derivation is not bound to a canonical document slot"
+            )
         if slot in by_slot:
             raise PrivateCaseRuntimeBridgeError("ambiguous derivations for one document slot")
         by_slot[slot] = result
