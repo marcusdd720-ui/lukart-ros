@@ -42,10 +42,11 @@ A CASE-OPS-02 derivation binds:
 - exact derived `evidence_id`, manifest digest and import receipt digest;
 - a semantic derivation identity independent from encryption nonce and filesystem location.
 
-The receipt is canonical JSON, immutable and content-addressed. It contains no evidence bytes,
-source filename, case name, person name, national identifier, filesystem path, key bytes or cloud
-credential. CCL remains the only writable case-history SSOT; the derivation receipt is immutable
-provenance evidence only.
+The receipt is canonical JSON, immutable and content-addressed. Its digest is sufficient to
+rehydrate the exact source/derived identities from an encrypted backup/restore and then run full
+offline verification. It contains no evidence bytes, source filename, case name, person name,
+national identifier, filesystem path, key bytes or cloud credential. CCL remains the only
+writable case-history SSOT; the derivation receipt is immutable provenance evidence only.
 
 ## Replay classes
 
@@ -96,8 +97,10 @@ old evidence identity, ciphertext or CCL history.
 
 Focused/adversarial tests must prove deterministic text normalization, idempotent replay,
 encrypted-at-rest derived bytes, stable semantic identity across equivalent source encryption
-manifests, tool-identity separation for environment-bound OCR, output-divergence rejection,
-UTF-8/media/budget rejection, receipt tamper/unknown-field rejection and cross-case denial.
+manifests, digest-only derivation reload after encrypted backup/restore, tool-identity separation
+for environment-bound OCR, exact-byte stdin transport without source-path exposure,
+output-divergence rejection, UTF-8/media/budget rejection, receipt tamper/unknown-field rejection
+and cross-case denial.
 
 Full repository regression, lint/type checks, security/policy gates and exact-SHA CI remain
 mandatory before guarded merge. Real case bytes, private keys and provider credentials are never
