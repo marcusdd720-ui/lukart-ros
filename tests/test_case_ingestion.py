@@ -1,10 +1,12 @@
 from __future__ import annotations
 
 import json
+import subprocess
 from pathlib import Path
 
 import pytest
 
+import core.case_ingestion as case_ingestion
 from core.case_ingestion import IngestedDocument, IngestionError, ingest_directory
 from core.enterprise.contracts import AuthorizationContext, Permission
 from knowledge.fact_extractor import extract_facts
@@ -88,6 +90,49 @@ def test_ingest_text_document_creates_encrypted_inventory_and_manifest(
             persisted = path.read_bytes()
             assert encoded not in persisted
             assert normalized not in persisted
+
+
+def test_tesseract_receives_exact_bytes_over_stdin_without_source_path(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    executable = tmp_path / "tesseract-synthetic"
+    executable.write_bytes(b"synthetic-tesseract-binary")
+    payload = b"synthetic-image-bytes"
+    observed_ocr_args: list[str] = []
+
+    monkeypatch.setattr(case_ingestion.shutil, "which", lambda _: str(executable))
+
+    def fake_run(
+        args: list[str],
+        **kwargs: object,
+    ) -> subprocess.CompletedProcess[bytes]:
+        if "--version" in args:
+            return subprocess.CompletedProcess(
+                args=args,
+                returncode=0,
+                stdout=b"tesseract synthetic 1.0",
+                stderr=b"",
+            )
+        observed_ocr_args.extend(args)
+        assert kwargs.get("input") == payload
+        return subprocess.CompletedProcess(
+            args=args,
+            returncode=0,
+            stdout=b"synthetic OCR output\x0c",
+            stderr=b"",
+        )
+
+    monkeypatch.setattr(case_ingestion.subprocess, "run", fake_run)
+
+    text, tool_identity = case_ingestion._run_tesseract(payload)
+
+    assert text == "synthetic OCR output\n"
+    assert observed_ocr_args[1:3] == ["stdin", "stdout"]
+    assert str(tmp_path / "private-source.png") not in observed_ocr_args
+    assert tool_identity.startswith("tesseract-binary:")
+    assert "version-output:" in tool_identity
+    assert str(executable) not in tool_identity
 
 
 def test_ingest_rejects_symlink_inputs(tmp_path: Path) -> None:
