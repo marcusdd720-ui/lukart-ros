@@ -239,6 +239,12 @@ class DurableEscrowLocationV1:
                 raise DurableEscrowV1Error(
                     f"engineering capability must be VERIFIED: {capability.value}"
                 )
+        for capability in _REQUIRED_EXTERNAL_CAPABILITIES:
+            if by_capability[capability].state is CapabilityEvidenceStateV1.VERIFIED:
+                raise DurableEscrowV1Error(
+                    "generic v1 location cannot self-verify external durability capability: "
+                    f"{capability.value}"
+                )
         object.__setattr__(self, "capabilities", ordered)
 
     @classmethod
@@ -331,11 +337,9 @@ class DurableEscrowLocationV1:
         return result
 
     def external_evidence_complete(self) -> bool:
-        by_capability = {item.capability: item for item in self.capabilities}
-        return all(
-            by_capability[capability].state is CapabilityEvidenceStateV1.VERIFIED
-            for capability in _REQUIRED_EXTERNAL_CAPABILITIES
-        )
+        """Generic v1 profiles cannot independently certify external provider controls."""
+
+        return False
 
 
 @dataclass(frozen=True, slots=True)
