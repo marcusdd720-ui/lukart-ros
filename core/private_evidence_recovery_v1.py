@@ -30,7 +30,6 @@ from core.private_evidence_v1 import (
     SCHEMA_MANIFEST,
     SCHEMA_RECEIPT,
     SCHEMA_SOURCE_INDEX,
-    EvidenceKeyProvider,
     ImportedEvidence,
     PrivateEvidenceError,
     PrivateEvidenceManifestV1,
@@ -375,10 +374,16 @@ def _verify_inventory_against_snapshot(
 ) -> None:
     actual = _inventory(evidence_root)
     if actual != files:
-        raise PrivateEvidenceRecoveryError("recovery snapshot does not match encrypted evidence tree")
+        raise PrivateEvidenceRecoveryError(
+            "recovery snapshot does not match encrypted evidence tree"
+        )
 
 
-def _manifest_from_path(path: Path, expected_digest: str, case_scope_digest: str) -> dict[str, object]:
+def _manifest_from_path(
+    path: Path,
+    expected_digest: str,
+    case_scope_digest: str,
+) -> dict[str, object]:
     manifest = _read_mapping(path, label="evidence manifest")
     if set(manifest) != _MANIFEST_FIELDS:
         raise PrivateEvidenceRecoveryError("unknown or missing evidence manifest fields")
@@ -461,10 +466,8 @@ def _verify_source_indexes(
             raise PrivateEvidenceRecoveryError("source-index path does not bind source identity")
 
 
-def _verify_store(
-    store: PrivateEvidenceStore,
-) -> tuple[tuple[tuple[str, int], ...], tuple[ImportedEvidence, ...]]:
-    """Verify the whole immutable private-evidence graph and return required keys/evidence."""
+def _verify_store(store: PrivateEvidenceStore) -> tuple[tuple[str, int], ...]:
+    """Verify the whole immutable private-evidence graph and return required key identities."""
     inventory = _inventory(store.root)
     manifests: dict[str, tuple[Path, dict[str, object]]] = {}
     receipts: dict[str, tuple[Path, str, str]] = {}
@@ -500,7 +503,6 @@ def _verify_store(
 
     referenced_objects: set[str] = set()
     used_receipts: set[str] = set()
-    imported_values: list[ImportedEvidence] = []
     required_keys: set[tuple[str, int]] = set()
 
     for manifest_digest in sorted(manifests):
@@ -510,7 +512,11 @@ def _verify_store(
         referenced_objects.add(envelope_digest)
         matching = [
             receipt_digest
-            for receipt_digest, (_, receipt_evidence_id, receipt_manifest_digest) in receipts.items()
+            for receipt_digest, (
+                _,
+                receipt_evidence_id,
+                receipt_manifest_digest,
+            ) in receipts.items()
             if receipt_evidence_id == evidence_id and receipt_manifest_digest == manifest_digest
         ]
         if not matching:
@@ -529,7 +535,6 @@ def _verify_store(
             except PrivateEvidenceError as exc:
                 raise PrivateEvidenceRecoveryError("private evidence verification failed") from exc
             used_receipts.add(receipt_digest)
-            imported_values.append(imported)
         key_id = str(manifest["key_id"]).strip()
         key_version = int(manifest["key_version"])
         required_keys.add((key_id, key_version))
@@ -546,12 +551,14 @@ def _verify_store(
         for derivation_digest in sorted(derivation_ids):
             load_derivation(store, derivation_digest)
     except PrivateEvidenceError as exc:
-        raise PrivateEvidenceRecoveryError("private evidence provenance verification failed") from exc
+        raise PrivateEvidenceRecoveryError(
+            "private evidence provenance verification failed"
+        ) from exc
 
     active_identity = (store.key_id, store.key_version)
     if active_identity not in required_keys:
         raise PrivateEvidenceRecoveryError("active evidence key identity is not used by the store")
-    return tuple(sorted(required_keys)), tuple(imported_values)
+    return tuple(sorted(required_keys))
 
 
 def _resolve_keys(
@@ -567,7 +574,9 @@ def _resolve_keys(
                 f"required evidence key is unavailable: {key_id}@{key_version}"
             ) from exc
         if not isinstance(key, bytes) or len(key) != RECOVERY_KEY_BYTES:
-            raise PrivateEvidenceRecoveryError("required evidence key must contain exactly 32 bytes")
+            raise PrivateEvidenceRecoveryError(
+                "required evidence key must contain exactly 32 bytes"
+            )
         keys[(key_id, key_version)] = bytes(key)
     return keys
 
@@ -841,7 +850,7 @@ def create_recovery_capsule(
     target.parent.mkdir(parents=True, exist_ok=True)
     _outside_repo(target.parent, repo_root, label="recovery capsule parent")
 
-    required_identities, _ = _verify_store(store)
+    required_identities = _verify_store(store)
     keys = _resolve_keys(store.key_provider, required_identities)
     snapshot, snapshot_digest = _snapshot(
         store.root, case_scope_digest=store.case_scope_digest
@@ -854,12 +863,18 @@ def create_recovery_capsule(
         active_key_version=store.key_version,
         keys=keys,
     )
+    file_count = _validate_positive_int(
+        snapshot.get("file_count"), label="recovery snapshot file_count"
+    )
+    total_bytes = _validate_positive_int(
+        snapshot.get("total_bytes"), label="recovery snapshot total_bytes"
+    )
     capsule = _capsule_metadata(
         case_scope_digest=store.case_scope_digest,
         snapshot_digest=snapshot_digest,
         key_envelope_digest=key_envelope_digest,
-        file_count=int(snapshot["file_count"]),
-        total_bytes=int(snapshot["total_bytes"]),
+        file_count=file_count,
+        total_bytes=total_bytes,
     )
     stage = _staging_path(target)
     try:
@@ -889,8 +904,8 @@ def create_recovery_capsule(
         capsule_id=digest_object(capsule),
         snapshot_digest=snapshot_digest,
         key_envelope_digest=key_envelope_digest,
-        file_count=int(snapshot["file_count"]),
-        total_bytes=int(snapshot["total_bytes"]),
+        file_count=file_count,
+        total_bytes=total_bytes,
     )
 
 
@@ -971,7 +986,7 @@ def _verify_capsule_root(
         key_id=active_key_id,
         key_version=active_key_version,
     )
-    required_identities, _ = _verify_store(store)
+    required_identities = _verify_store(store)
     if provider.identities != required_identities:
         raise PrivateEvidenceRecoveryError(
             "recovery keyset does not exactly match keys required by evidence store"
@@ -1067,7 +1082,7 @@ def restore_recovery_capsule(
             key_id=verified.active_key_id,
             key_version=verified.active_key_version,
         )
-        required_identities, _ = _verify_store(staged_store)
+        required_identities = _verify_store(staged_store)
         if required_identities != verified.key_provider.identities:
             raise PrivateEvidenceRecoveryError("restored evidence key identities changed")
         os.replace(stage, target)
