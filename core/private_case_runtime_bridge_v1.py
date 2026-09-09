@@ -1,8 +1,9 @@
 """Verified non-cloud bridge from encrypted private evidence into local runtime/CCL.
 
-CASE-OPS-02 deliberately treats the plaintext compatibility inventory as untrusted.
-The authoritative runtime snapshot is an encrypted DERIVED evidence object stored by
-CASE-OPS-01. Every primary and derived reference is authenticated before projection.
+CASE-OPS-02 treats the plaintext compatibility inventory as untrusted. The runtime
+projection is reconstructed only from an encrypted DERIVED inventory and verified
+CASE-OPS-01 evidence objects. CCL registration remains an explicit digest-only write
+through the existing CanonicalCaseLedger.
 """
 
 from __future__ import annotations
@@ -47,6 +48,33 @@ _EXPECTED_INVENTORY_KEYS = frozenset(
         "document_type",
         "extraction_method",
         "local_only",
+    }
+)
+_MANIFEST_KEYS = frozenset(
+    {
+        "schema",
+        "evidence_id",
+        "plaintext_sha256",
+        "size_bytes",
+        "media_type",
+        "evidence_kind",
+        "case_scope_digest",
+        "source_ref_digest",
+        "envelope_digest",
+        "algorithm",
+        "key_id",
+        "key_version",
+    }
+)
+_RECEIPT_KEYS = frozenset(
+    {
+        "schema",
+        "evidence_id",
+        "manifest_digest",
+        "case_scope_digest",
+        "source_ref_digest",
+        "imported_at",
+        "operation",
     }
 )
 _IMPORT_RECEIPT_SCHEMA = "lukart.evidence-import-receipt.v1"
@@ -94,7 +122,7 @@ class VerifiedLocalEvidenceProjectionV1:
         return digest_object(self.canonical_dict())
 
     def ccl_payload(self) -> dict[str, object]:
-        """Minimal digest-bound payload; never includes plaintext or source names."""
+        """Return only digest-bound evidence references; never plaintext or source names."""
         return {
             "schema": self.schema,
             "projection_id": self.projection_id,
@@ -115,12 +143,12 @@ class VerifiedLocalEvidenceProjectionV1:
 
 
 def runtime_inventory_payload(documents: Sequence[Mapping[str, object]]) -> bytes:
-    """Canonical encrypted inventory bytes written by new CASE-OPS ingestion."""
-    payload = {
-        "schema": SCHEMA_RUNTIME_INVENTORY,
-        "documents": [dict(item) for item in documents],
-    }
-    return canonical_json(payload)
+    return canonical_json(
+        {
+            "schema": SCHEMA_RUNTIME_INVENTORY,
+            "documents": [dict(item) for item in documents],
+        }
+    )
 
 
 def _object_path(root: Path, category: str, digest: str) -> Path:
@@ -141,10 +169,12 @@ def _load_mapping(path: Path) -> dict[str, object]:
         raise PrivateCaseRuntimeBridgeError("invalid private evidence JSON object") from exc
     if not isinstance(value, dict):
         raise PrivateCaseRuntimeBridgeError("private evidence JSON object must be a mapping")
+    if any(not isinstance(key, str) for key in value):
+        raise PrivateCaseRuntimeBridgeError("private evidence JSON keys must be strings")
     return value
 
 
-def _require_content_id(value: object, *, field: str) -> str:
+def _content_id(value: object, *, field: str) -> str:
     if not isinstance(value, str):
         raise PrivateCaseRuntimeBridgeError(f"{field} must be a sha256 content identifier")
     try:
@@ -156,24 +186,12 @@ def _require_content_id(value: object, *, field: str) -> str:
 
 def _strict_manifest(imported: ImportedEvidence) -> dict[str, object]:
     manifest = _load_mapping(imported.manifest_path)
-    expected = {
-        "schema",
-        "evidence_id",
-        "plaintext_sha256",
-        "size_bytes",
-        "media_type",
-        "evidence_kind",
-        "case_scope_digest",
-        "source_ref_digest",
-        "envelope_digest",
-        "algorithm",
-        "key_id",
-        "key_version",
-    }
-    if set(manifest) != expected or manifest.get("schema") != SCHEMA_MANIFEST:
+    if set(manifest) != _MANIFEST_KEYS or manifest.get("schema") != SCHEMA_MANIFEST:
         raise PrivateCaseRuntimeBridgeError("unsupported private evidence manifest schema")
     if digest_object(manifest) != imported.manifest_digest:
         raise PrivateCaseRuntimeBridgeError("private evidence manifest digest mismatch")
+    if manifest.get("evidence_id") != imported.evidence_id:
+        raise PrivateCaseRuntimeBridgeError("private evidence manifest identity mismatch")
     return manifest
 
 
@@ -184,32 +202,25 @@ def _resolve_imported(
     manifest_digest: str,
     receipt_digest: str,
 ) -> ImportedEvidence:
-    evidence_id = _require_content_id(evidence_id, field="evidence_id")
-    manifest_digest = _require_content_id(manifest_digest, field="manifest_digest")
-    receipt_digest = _require_content_id(receipt_digest, field="receipt_digest")
+    evidence_id = _content_id(evidence_id, field="evidence_id")
+    manifest_digest = _content_id(manifest_digest, field="manifest_digest")
+    receipt_digest = _content_id(receipt_digest, field="receipt_digest")
     receipt_path = _object_path(store.root, "receipts", receipt_digest)
     receipt = _load_mapping(receipt_path)
-    expected_receipt = {
-        "schema",
-        "evidence_id",
-        "manifest_digest",
-        "case_scope_digest",
-        "source_ref_digest",
-        "imported_at",
-        "operation",
-    }
-    if set(receipt) != expected_receipt or receipt.get("schema") != _IMPORT_RECEIPT_SCHEMA:
+    if set(receipt) != _RECEIPT_KEYS or receipt.get("schema") != _IMPORT_RECEIPT_SCHEMA:
         raise PrivateCaseRuntimeBridgeError("unsupported evidence receipt schema")
     if digest_object(receipt) != receipt_digest:
         raise PrivateCaseRuntimeBridgeError("evidence receipt digest mismatch")
-    if receipt.get("evidence_id") != evidence_id or receipt.get("manifest_digest") != manifest_digest:
-        raise PrivateCaseRuntimeBridgeError("evidence receipt reference mismatch")
+    if receipt.get("evidence_id") != evidence_id:
+        raise PrivateCaseRuntimeBridgeError("evidence receipt identity mismatch")
+    if receipt.get("manifest_digest") != manifest_digest:
+        raise PrivateCaseRuntimeBridgeError("evidence receipt manifest mismatch")
     if receipt.get("case_scope_digest") != store.case_scope_digest:
         raise PrivateCaseRuntimeBridgeError("evidence receipt belongs to a different case scope")
 
     manifest_path = _object_path(store.root, "manifests", manifest_digest)
-    manifest = _load_mapping(manifest_path)
-    envelope_digest = _require_content_id(manifest.get("envelope_digest"), field="envelope_digest")
+    raw_manifest = _load_mapping(manifest_path)
+    envelope_digest = _content_id(raw_manifest.get("envelope_digest"), field="envelope_digest")
     imported = ImportedEvidence(
         evidence_id=evidence_id,
         manifest_digest=manifest_digest,
@@ -222,7 +233,9 @@ def _resolve_imported(
         store.verify(imported)
     except PrivateEvidenceError as exc:
         raise PrivateCaseRuntimeBridgeError("private evidence verification failed") from exc
-    _strict_manifest(imported)
+    manifest = _strict_manifest(imported)
+    if manifest.get("case_scope_digest") != store.case_scope_digest:
+        raise PrivateCaseRuntimeBridgeError("private evidence manifest has wrong case scope")
     return imported
 
 
@@ -232,9 +245,9 @@ def _resolve_from_receipt(
     evidence_id: str,
     receipt_digest: str,
 ) -> ImportedEvidence:
-    receipt_digest = _require_content_id(receipt_digest, field="derived_receipt_digest")
+    receipt_digest = _content_id(receipt_digest, field="derived_receipt_digest")
     receipt = _load_mapping(_object_path(store.root, "receipts", receipt_digest))
-    manifest_digest = _require_content_id(
+    manifest_digest = _content_id(
         receipt.get("manifest_digest"), field="derived_manifest_digest"
     )
     return _resolve_imported(
@@ -261,9 +274,9 @@ def _verify_inventory_entry(
         raise PrivateCaseRuntimeBridgeError("document_id is not a canonical document slot")
     slot = int(match.group(1))
 
-    evidence_id = _require_content_id(item.get("evidence_id"), field="evidence_id")
-    manifest_digest = _require_content_id(item.get("manifest_digest"), field="manifest_digest")
-    receipt_digest = _require_content_id(item.get("receipt_digest"), field="receipt_digest")
+    evidence_id = _content_id(item.get("evidence_id"), field="evidence_id")
+    manifest_digest = _content_id(item.get("manifest_digest"), field="manifest_digest")
+    receipt_digest = _content_id(item.get("receipt_digest"), field="receipt_digest")
     primary = _resolve_imported(
         store,
         evidence_id=evidence_id,
@@ -273,27 +286,21 @@ def _verify_inventory_entry(
     primary_manifest = _strict_manifest(primary)
     if primary_manifest.get("evidence_kind") != EvidenceKind.PRIMARY.value:
         raise PrivateCaseRuntimeBridgeError("runtime primary reference is not PRIMARY evidence")
-    if primary_manifest.get("case_scope_digest") != store.case_scope_digest:
-        raise PrivateCaseRuntimeBridgeError("runtime primary evidence has wrong case scope")
     if primary_manifest.get("source_ref_digest") != opaque_digest(f"document-slot:{slot}"):
         raise PrivateCaseRuntimeBridgeError("document slot is not bound to primary evidence")
     if item.get("sha256") != digest_hex(evidence_id):
         raise PrivateCaseRuntimeBridgeError("runtime inventory plaintext digest mismatch")
-
-    source_name_digest = _require_content_id(
-        item.get("source_name_digest"), field="source_name_digest"
-    )
-    del source_name_digest
+    _content_id(item.get("source_name_digest"), field="source_name_digest")
     if item.get("document_type") != "real_case":
         raise PrivateCaseRuntimeBridgeError("runtime inventory requires real_case document type")
     extraction_method = item.get("extraction_method")
     if not isinstance(extraction_method, str) or not extraction_method.strip():
         raise PrivateCaseRuntimeBridgeError("runtime inventory extraction method is invalid")
 
-    derived_evidence_id = _require_content_id(
+    derived_evidence_id = _content_id(
         item.get("extracted_evidence_id"), field="derived_evidence_id"
     )
-    derived_receipt_digest = _require_content_id(
+    derived_receipt_digest = _content_id(
         item.get("extracted_receipt_digest"), field="derived_receipt_digest"
     )
     derived = _resolve_from_receipt(
@@ -304,8 +311,6 @@ def _verify_inventory_entry(
     derived_manifest = _strict_manifest(derived)
     if derived_manifest.get("evidence_kind") != EvidenceKind.DERIVED.value:
         raise PrivateCaseRuntimeBridgeError("runtime derived reference is not DERIVED evidence")
-    if derived_manifest.get("case_scope_digest") != store.case_scope_digest:
-        raise PrivateCaseRuntimeBridgeError("runtime derived evidence has wrong case scope")
     if derived_manifest.get("source_ref_digest") != opaque_digest(f"derived-text:{evidence_id}"):
         raise PrivateCaseRuntimeBridgeError("derived text is not bound to primary evidence")
     if derived_manifest.get("media_type") != "text/plain":
@@ -331,8 +336,7 @@ def _projection_from_documents(
 ) -> VerifiedLocalEvidenceProjectionV1:
     verified = tuple(_verify_inventory_entry(store, item) for item in documents)
     expected_ids = tuple(f"DOC-{index:03d}" for index in range(1, len(verified) + 1))
-    actual_ids = tuple(item.document_id for item in verified)
-    if actual_ids != expected_ids:
+    if tuple(item.document_id for item in verified) != expected_ids:
         raise PrivateCaseRuntimeBridgeError("runtime document slots must be contiguous and ordered")
     if len({item.evidence_id for item in verified}) != len(verified):
         raise PrivateCaseRuntimeBridgeError("duplicate primary evidence in runtime inventory")
@@ -345,21 +349,20 @@ def _projection_from_documents(
 
 
 def load_verified_projection(store: PrivateEvidenceStore) -> VerifiedLocalEvidenceProjectionV1:
-    """Load the canonical encrypted runtime inventory and verify every referenced object."""
+    """Load the encrypted runtime inventory and verify every referenced evidence object."""
     source_ref_digest = opaque_digest(RUNTIME_INVENTORY_SOURCE_REF)
-    index_path = _object_path(store.root, "source-index", source_ref_digest)
-    index = _load_mapping(index_path)
+    index = _load_mapping(_object_path(store.root, "source-index", source_ref_digest))
     if set(index) != {"schema", "evidence_id", "manifest_digest", "receipt_digest"}:
         raise PrivateCaseRuntimeBridgeError("runtime inventory source index fields are invalid")
     if index.get("schema") != _SOURCE_INDEX_SCHEMA:
         raise PrivateCaseRuntimeBridgeError("unsupported runtime inventory source index schema")
     inventory = _resolve_imported(
         store,
-        evidence_id=_require_content_id(index.get("evidence_id"), field="inventory_evidence_id"),
-        manifest_digest=_require_content_id(
+        evidence_id=_content_id(index.get("evidence_id"), field="inventory_evidence_id"),
+        manifest_digest=_content_id(
             index.get("manifest_digest"), field="inventory_manifest_digest"
         ),
-        receipt_digest=_require_content_id(
+        receipt_digest=_content_id(
             index.get("receipt_digest"), field="inventory_receipt_digest"
         ),
     )
@@ -371,8 +374,7 @@ def load_verified_projection(store: PrivateEvidenceStore) -> VerifiedLocalEviden
     if manifest.get("source_ref_digest") != source_ref_digest:
         raise PrivateCaseRuntimeBridgeError("runtime inventory source identity mismatch")
     try:
-        raw = store.read(inventory)
-        decoded = json.loads(raw.decode("utf-8"))
+        decoded = json.loads(store.read(inventory).decode("utf-8"))
     except (PrivateEvidenceError, UnicodeError, json.JSONDecodeError) as exc:
         raise PrivateCaseRuntimeBridgeError("encrypted runtime inventory cannot be decoded") from exc
     if not isinstance(decoded, dict) or set(decoded) != {"schema", "documents"}:
@@ -389,12 +391,7 @@ def migrate_legacy_inventory(
     store: PrivateEvidenceStore,
     inventory_path: Path,
 ) -> VerifiedLocalEvidenceProjectionV1:
-    """One-way deterministic migration from CASE-OPS-01 plaintext compatibility inventory.
-
-    The legacy inventory is accepted only after every referenced encrypted object verifies.
-    The verified exact bytes are then imported as the fixed encrypted runtime inventory.
-    Re-running with identical input is idempotent; divergent input fails via source mutation.
-    """
+    """Verify and encrypt one CASE-OPS-01 compatibility inventory; reruns are idempotent."""
     if inventory_path.is_symlink() or not inventory_path.is_file():
         raise PrivateCaseRuntimeBridgeError("legacy inventory must be a regular non-symlink file")
     try:
@@ -404,10 +401,9 @@ def migrate_legacy_inventory(
     if not isinstance(decoded, list) or any(not isinstance(item, dict) for item in decoded):
         raise PrivateCaseRuntimeBridgeError("legacy inventory must be a list of mappings")
     projection = _projection_from_documents(store, decoded)
-    payload = runtime_inventory_payload(decoded)
     try:
         store.import_bytes(
-            payload,
+            runtime_inventory_payload(decoded),
             source_ref=RUNTIME_INVENTORY_SOURCE_REF,
             kind=EvidenceKind.DERIVED,
             media_type="application/json",
@@ -438,6 +434,15 @@ def register_projection_in_ccl(
         )
     except EnterpriseContractError as exc:
         raise PrivateCaseRuntimeBridgeError("CCL registration authorization denied") from exc
+
+    expected_scope = digest_object(
+        {"tenant_id": authorization.tenant_id, "case_id": projection.case_id}
+    )
+    if projection.case_scope_digest != expected_scope:
+        raise PrivateCaseRuntimeBridgeError("CCL registration case scope digest mismatch")
+    if any(item.case_scope_digest != expected_scope for item in projection.documents):
+        raise PrivateCaseRuntimeBridgeError("CCL registration document scope mismatch")
+
     projection_digest = digest_hex(projection.projection_id)
     if not runtime_identity.evidence_inventory_declared:
         raise PrivateCaseRuntimeBridgeError("runtime identity must declare evidence inventory")
