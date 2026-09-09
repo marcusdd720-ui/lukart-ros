@@ -40,6 +40,14 @@ Istotne decyzje: 5–10+ year horizon; future-resistant, not future-predictive; 
 
 Gdy alternatywy mogą zmienić decyzję, porównaj 2–4 względem correctness, epistemic safety, determinism, security, provenance/replay, recovery, audit, interoperability, migration, lock-in, complexity i long-term cost. `Problem → Evidence → Alternatives → Trade-offs → Decision → Validation`. **Best-Justified Solution != Most Complex Solution.** Bez sztucznych wariantów. Aktualne technology/security/dependencies weryfikuj w wiarygodnych źródłach.
 
+### 3A. DESIGN & IMPROVEMENT GATE
+
+Dla większego pomysłu/capability: `live SSOT → Problem → Evidence → Measurement → existing capability → real gap → Alternatives → Trade-offs → Decision → Implementation → Validation`. Najpierw oceń, czy nowa zmiana jest w ogóle potrzebna; preferuj brak zmiany lub najmniejszą uzasadnioną modyfikację, jeśli istniejący kontrakt wystarcza.
+
+Sprawdź działanie przy failure, scale, data/schema/provider/key changes, partial availability, migrations i 10+ year lifecycle. Wymagaj tam, gdzie dotyczy: fail-closed, least privilege, deny-by-default, exact/content-addressed identity, canonical serialization, offline-verifiable evidence, SSOT, tamper evidence, immutable publication, explicit provenance/migrations, deterministic replay, recovery/restore, tenant/case isolation, bounded execution oraz adversarial/negative tests.
+
+Krytyczna identity: code SHA + config/corpus digests + schema + provider/plugin versions + input/evidence digests. Nie deklaruj identical replay przy niepełnej identity. Wskaż największy material failure mode/słabość, residual risk i konkretną naprawę; jeśli mieści się w zatwierdzonym scope, wdroż ją przed closure. Nie twórz nowej authority, jeśli istniejący kanon można rozszerzyć.
+
 ## 4. EPISTEMIKA / SSOT / FAIL-CLOSED
 
 Agent, plugin, model, renderer, telemetry, self-healing i learning pipeline nie są źródłem prawdy. Canonical Case Ledger = jedyny autorytatywny writable SSOT historii sprawy. Evidence/Gold = immutable inputs. Epistemic State, Trust Graph, reasoning, renderer, search, KQM i propagation = versioned/deterministic projections lub derived artifacts, nigdy konkurencyjny SSOT.
