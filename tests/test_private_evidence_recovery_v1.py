@@ -8,8 +8,8 @@ import pytest
 from core.enterprise.contracts import AuthorizationContext, Permission
 from core.private_evidence_derivation_v1 import derive_utf8_text
 from core.private_evidence_recovery_v1 import (
-    PrivateEvidenceRecoveryError,
     create_recovery_capsule,
+    PrivateEvidenceRecoveryError,
     restore_recovery_capsule,
     verify_recovery_capsule,
 )
