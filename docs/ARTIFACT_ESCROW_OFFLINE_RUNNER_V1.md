@@ -1,9 +1,17 @@
 # LRD-01C — Artifact Escrow & Offline Replay Runner v1
 
-Status: `IMPLEMENTATION CANDIDATE`
+Status: `CLOSED / ENGINEERING PASS` closure candidate; authoritative after guarded closure merge
 Parent program: `continuous LRD-01`
+Depends on: `LRD-01B CLOSED / ENGINEERING PASS`
 Measured base: `main @ 68eed07c8f6bd70cd805758c88c0ffaf56122d39`
-Historical release baseline: `v1.0.1 @ 802013c4d0e53dc12306a97e1877ebba86af64a7`
+Implementation PR: `#195`
+Validated implementation head: `4518a977cd05225281a096986b9a2065f1185239`
+Implementation merge: `main @ 3456270e819eeb0fd800a25ebeeda0869349b4f6`
+Implementation PR CI: `16/16 SUCCESS`
+Implementation post-merge: `15/15 SUCCESS`, `queued=0`, `in_progress=0`, `failure=0`
+Historical baseline tag object: `v1.0.1 @ 9f7c0b28f766c8921e63b1d517fefcc96aa991d4`
+Historical baseline target: `802013c4d0e53dc12306a97e1877ebba86af64a7`
+Latest release at implementation closure: `v1.0.1`
 Writable case-history SSOT: Canonical Case Ledger only
 
 ## 1. Problem
@@ -238,7 +246,44 @@ LRD-01C engineering evidence does **not** claim:
 These boundaries are deliberate. Missing external durability evidence remains UNKNOWN rather than
 being inferred from successful repository CI.
 
-## 10. Definition of Done
+## 10. LRD-01C closure evidence
+
+The implementation line required two fail-closed repairs before the final candidate. The first
+removed a nonexistent `tests/test_enterprise_isolation.py` workflow path instead of inventing a
+green substitute and placed `core.artifact_escrow_v1` under the repository's strict MyPy override.
+The next exact candidate exposed nine Ruff `UP037` findings; the repair changed only the nine
+forward annotations made redundant by `from __future__ import annotations`, with no semantic,
+test, threshold or trust-boundary weakening.
+
+The final implementation candidate `4518a977cd05225281a096986b9a2065f1185239` passed all 16
+PR-triggered workflows on one unchanged exact head. The set included the dedicated
+`LRD-01C Artifact Escrow Offline Runner`, CI Foundation, Stage Gate, Enterprise CodeQL,
+Enterprise Hardcore Gate, SSC-02, FIV-02, OPR-01, Production Validation and GitHub App Smoke
+Test. The dedicated `LRD-01C Artifact Escrow Offline Runner` completed `SUCCESS` on that exact
+head after exact checkout, Ruff, strict MyPy, focused and adversarial escrow tests, LRD/SSC
+security-boundary regression and the offline/tamper/restore selection. `Enterprise CodeQL` also
+completed `SUCCESS` on that exact head.
+
+Guarded merge used `expected_head_sha=4518a977cd05225281a096986b9a2065f1185239` and produced
+`3456270e819eeb0fd800a25ebeeda0869349b4f6`, whose direct parents are the preceding
+`main @ 68eed07c8f6bd70cd805758c88c0ffaf56122d39` and the validated implementation head. The
+resulting implementation main accumulated 15 workflow runs bound to that exact SHA; all 15 were
+terminal `SUCCESS`, with zero queued, in-progress or failed runs at closure evaluation. The
+post-merge `LRD-01C Artifact Escrow Offline Runner`, `Governance Closure PR Preparation` and
+`MVROS v1 Release` guard workflows each completed `SUCCESS` on that exact main SHA.
+
+Historical release identity remained unchanged: tag object
+`9f7c0b28f766c8921e63b1d517fefcc96aa991d4` still targets
+`802013c4d0e53dc12306a97e1877ebba86af64a7`, the latest published release remains `v1.0.1`,
+and repository policy continues to declare `release_enabled = false`. No release/tag publication
+is authorized or performed by this closure.
+
+This record becomes authoritative only after this exact closure candidate itself passes fresh
+exact-head CI, guarded merge, resulting-main validation and baseline/release re-verification. It
+records engineering evidence only and does not create Product, CCL, Gold, policy, trust-promotion,
+release or independent-certification authority.
+
+## 11. Definition of Done
 
 LRD-01C closes only after one exact implementation SHA proves:
 
@@ -257,7 +302,7 @@ LRD-01C closes only after one exact implementation SHA proves:
 
 Only then may LRD-01D begin as the next implementation slice.
 
-## 11. Next slice
+## 12. Next slice
 
 `LRD-01D — Frozen Path / Current Path / drift evidence` will consume the exact verified bytes from
 01C and the identity/assurance semantics from 01B to reconstruct deterministic historical stages,
