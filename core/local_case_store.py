@@ -111,14 +111,15 @@ def save_source_snapshot(
     data_root: Path | None = None,
     repo_root: Path | None = None,
 ) -> Path:
-    """Store an encrypted content-addressed snapshot; plaintext writes are forbidden."""
+    """Store an encrypted snapshot whose evidence identity is plaintext sha256."""
     if authorization is None or key_provider is None or not tenant_id or not key_id:
         raise PrivacyViolation(
             "source snapshot requires authorization, key provider, tenant id and key id"
         )
-    source = source_path.expanduser().resolve()
-    if not source.is_file() or source.is_symlink():
-        raise FileNotFoundError(source)
+    untrusted_source = source_path.expanduser().absolute()
+    if untrusted_source.is_symlink() or not untrusted_source.is_file():
+        raise FileNotFoundError(untrusted_source)
+    source = untrusted_source.resolve()
     key = validate_case_key(case_key)
     try:
         store = PrivateEvidenceStore(
