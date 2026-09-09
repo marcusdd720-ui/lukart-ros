@@ -45,6 +45,10 @@ jobs:
           ruff_status=$?
           mypy_output="$(mypy core/provider_durable_storage_v1.py tests/test_provider_durable_storage_v1.py 2>&1)"
           mypy_status=$?
+          echo "RUFF_STATUS=${ruff_status}"
+          printf '%s\n' "${ruff_output}"
+          echo "MYPY_STATUS=${mypy_status}"
+          printf '%s\n' "${mypy_output}"
           {
             echo "### LRD-01H static validation"
             echo '```text'
