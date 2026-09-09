@@ -137,7 +137,7 @@ class PqcTargetFamilyProfileV1:
             )
 
     @classmethod
-    def candidate(cls, family: PqcTargetFamilyV1) -> "PqcTargetFamilyProfileV1":
+    def candidate(cls, family: PqcTargetFamilyV1) -> PqcTargetFamilyProfileV1:
         return cls(
             family=family,
             standard_id=_STANDARD_BY_FAMILY[family],
@@ -159,7 +159,7 @@ class PqcTargetFamilyProfileV1:
         return content_digest(self.canonical_dict())
 
     @classmethod
-    def from_dict(cls, value: Mapping[str, object]) -> "PqcTargetFamilyProfileV1":
+    def from_dict(cls, value: Mapping[str, object]) -> PqcTargetFamilyProfileV1:
         _strict_keys(
             value,
             expected=frozenset(
@@ -238,7 +238,7 @@ class PqcMigrationPolicyV1:
         object.__setattr__(self, "targets", ordered)
 
     @classmethod
-    def default(cls) -> "PqcMigrationPolicyV1":
+    def default(cls) -> PqcMigrationPolicyV1:
         return cls(targets=default_pqc_targets_v1())
 
     def canonical_dict(self) -> dict[str, object]:
@@ -255,7 +255,7 @@ class PqcMigrationPolicyV1:
         return content_digest(self.canonical_dict())
 
     @classmethod
-    def from_dict(cls, value: Mapping[str, object]) -> "PqcMigrationPolicyV1":
+    def from_dict(cls, value: Mapping[str, object]) -> PqcMigrationPolicyV1:
         _strict_keys(
             value,
             expected=frozenset(
@@ -355,7 +355,7 @@ class SignatureSurfaceV1:
         return content_digest(self.canonical_dict())
 
     @classmethod
-    def from_dict(cls, value: Mapping[str, object]) -> "SignatureSurfaceV1":
+    def from_dict(cls, value: Mapping[str, object]) -> SignatureSurfaceV1:
         _strict_keys(
             value,
             expected=frozenset(
@@ -494,7 +494,7 @@ class PqcReadinessReportV1:
         return {**self.body_dict(), "report_digest": self.report_digest}
 
     @classmethod
-    def from_dict(cls, value: Mapping[str, object]) -> "PqcReadinessReportV1":
+    def from_dict(cls, value: Mapping[str, object]) -> PqcReadinessReportV1:
         _strict_keys(
             value,
             expected=frozenset(
@@ -707,7 +707,7 @@ class ArchivalRenewalPlanV1:
         return {**self.body_dict(), "plan_digest": self.plan_digest}
 
     @classmethod
-    def from_dict(cls, value: Mapping[str, object]) -> "ArchivalRenewalPlanV1":
+    def from_dict(cls, value: Mapping[str, object]) -> ArchivalRenewalPlanV1:
         _strict_keys(
             value,
             expected=frozenset(
