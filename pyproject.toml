@@ -87,6 +87,7 @@ module = [
   "core.evaluation.contracts",
   "core.governance_closure_v1",
   "core.long_range_drift_v1",
+  "core.long_range_health_v1",
   "core.long_range_replay_v1",
   "core.lrd_replay_closure_v1",
   "core.p3.contracts",
