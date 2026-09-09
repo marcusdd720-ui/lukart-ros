@@ -35,8 +35,18 @@ def default_data_root() -> Path:
     return (Path.home() / "MVROS-DATA").resolve()
 
 
+def validate_untrusted_path(path: Path, *, label: str) -> Path:
+    """Reject symlinked path components before canonical resolution."""
+    absolute = Path(os.path.abspath(path.expanduser()))
+    for candidate in (absolute, *absolute.parents):
+        if candidate.exists() and candidate.is_symlink():
+            raise PrivacyViolation(f"{label} must use a non-symlink path")
+    return absolute
+
+
 def validate_data_root(data_root: Path, *, repo_root: Path | None = None) -> Path:
-    root = data_root.expanduser().resolve()
+    unresolved_root = validate_untrusted_path(data_root, label="data root")
+    root = unresolved_root.resolve()
     repo = repo_root.expanduser().resolve() if repo_root else find_repo_root()
 
     if repo is not None and (root == repo or repo in root.parents):
@@ -116,10 +126,9 @@ def save_source_snapshot(
         raise PrivacyViolation(
             "source snapshot requires authorization, key provider, tenant id and key id"
         )
-    untrusted_source = source_path.expanduser().absolute()
-    if untrusted_source.is_symlink() or not untrusted_source.is_file():
-        raise FileNotFoundError(untrusted_source)
-    source = untrusted_source.resolve()
+    source = validate_untrusted_path(source_path, label="source").resolve()
+    if not source.is_file():
+        raise FileNotFoundError(source)
     key = validate_case_key(case_key)
     try:
         store = PrivateEvidenceStore(
