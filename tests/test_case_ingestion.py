@@ -5,7 +5,7 @@ from pathlib import Path
 
 import pytest
 
-from core.case_ingestion import IngestionError, ingest_directory
+from core.case_ingestion import IngestedDocument, IngestionError, ingest_directory
 from core.enterprise.contracts import AuthorizationContext, Permission
 from knowledge.fact_extractor import extract_facts
 from knowledge.models.case_manifest import CaseManifest
@@ -29,7 +29,7 @@ def _authorization(case_id: str = "CASE-0001") -> AuthorizationContext:
     )
 
 
-def _ingest(case_dir: Path, source: Path) -> list[object]:
+def _ingest(case_dir: Path, source: Path) -> list[IngestedDocument]:
     return ingest_directory(
         case_dir,
         source,
