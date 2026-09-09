@@ -3,12 +3,15 @@
 
 from __future__ import annotations
 
+import json
 from datetime import date
 from pathlib import Path
 
 import pytest
 
+from core.enterprise.contracts import AuthorizationContext, Permission
 from core.local_case_store import PrivacyViolation, save_source_snapshot, validate_case_key
+from core.private_evidence_v1 import digest_object
 from knowledge.contradiction_detector import FactClaim, detect_contradictions
 from knowledge.evidence_readiness import EvidenceRequirement, check_evidence_readiness
 from knowledge.models.case_manifest import CaseManifest
@@ -16,6 +19,23 @@ from knowledge.provenance import EntityType, EpistemicStatus, ExtractedFact
 from knowledge.timeline_validator import TimelineCheckEvent, validate_timeline
 from scripts.dependency_boundary_check import runtime_factory_imports
 from scripts.secret_scan import scan_text
+
+
+class AuditKeyProvider:
+    def get_key(self, key_id: str, key_version: int) -> bytes:
+        assert key_id == "audit-key"
+        assert key_version == 1
+        return b"A" * 32
+
+
+def _snapshot_authorization() -> AuthorizationContext:
+    return AuthorizationContext(
+        subject_id="synthetic-audit-worker",
+        tenant_id="synthetic-audit-tenant",
+        roles=("case-worker",),
+        permissions=(Permission.EVIDENCE_READ, Permission.EVIDENCE_WRITE),
+        case_ids=("CASE-0001",),
+    )
 
 
 def test_case_manifest_is_canonical_and_stable(tmp_path: Path) -> None:
@@ -70,9 +90,23 @@ def test_source_snapshot_is_content_addressed_and_immutable(tmp_path: Path) -> N
     repo_root = tmp_path / "repo"
     source = tmp_path / "source.txt"
     source.write_text("source", encoding="utf-8")
-    snapshot = save_source_snapshot("CASE-0001", source, data_root=data_root, repo_root=repo_root)
-    assert snapshot.name == __import__("hashlib").sha256(b"source").hexdigest()
-    assert snapshot.read_text(encoding="utf-8") == "source"
+    kwargs = {
+        "authorization": _snapshot_authorization(),
+        "key_provider": AuditKeyProvider(),
+        "tenant_id": "synthetic-audit-tenant",
+        "key_id": "audit-key",
+        "source_ref": "synthetic-audit-source",
+        "data_root": data_root,
+        "repo_root": repo_root,
+    }
+
+    snapshot = save_source_snapshot("CASE-0001", source, **kwargs)
+    repeated = save_source_snapshot("CASE-0001", source, **kwargs)
+
+    envelope = json.loads(snapshot.read_text(encoding="utf-8"))
+    assert repeated == snapshot
+    assert snapshot.stem == digest_object(envelope).removeprefix("sha256:")
+    assert b"source" not in snapshot.read_bytes()
 
 
 def test_extracted_fact_exposes_epistemic_metadata() -> None:
