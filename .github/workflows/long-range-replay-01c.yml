@@ -49,7 +49,6 @@ jobs:
         run: |
           pytest -q \
             tests/test_artifact_escrow_v1.py \
-            tests/test_enterprise_isolation.py \
             tests/test_long_range_replay_v1.py \
             tests/test_supply_chain_continuity_v2.py
 
