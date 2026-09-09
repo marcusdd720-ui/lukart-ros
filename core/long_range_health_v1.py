@@ -64,7 +64,10 @@ def _text(value: object, *, field_name: str) -> str:
 
 def _digest(value: object, *, field_name: str) -> str:
     try:
-        return require_hex_digest(_text(value, field_name=field_name), field_name=field_name)
+        return require_hex_digest(
+            _text(value, field_name=field_name),
+            field_name=field_name,
+        )
     except ValueError as exc:
         raise LongRangeHealthError(str(exc)) from exc
 
@@ -75,7 +78,12 @@ def _int(value: object, *, field_name: str) -> int:
     return value
 
 
-def _strict_keys(value: Mapping[str, object], expected: frozenset[str], *, field_name: str) -> None:
+def _strict_keys(
+    value: Mapping[str, object],
+    expected: frozenset[str],
+    *,
+    field_name: str,
+) -> None:
     actual = set(value)
     if actual == expected:
         return
@@ -105,7 +113,9 @@ def _signed_attestation_from_dict(value: Mapping[str, object]) -> SignedAttestat
     )
     _strict_keys(value, expected, field_name="signed attestation")
     expires_raw = value.get("expires_at")
-    expires_at = None if expires_raw is None else _int(expires_raw, field_name="expires_at")
+    expires_at = None
+    if expires_raw is not None:
+        expires_at = _int(expires_raw, field_name="expires_at")
     try:
         purpose = AttestationPurpose(_text(value.get("purpose"), field_name="purpose"))
     except ValueError as exc:
@@ -131,14 +141,15 @@ class FreshnessPolicyV1:
 
     def __post_init__(self) -> None:
         if self.schema != FRESHNESS_POLICY_SCHEMA_V1:
-            raise LongRangeHealthError(f"unsupported freshness policy schema: {self.schema}")
+            raise LongRangeHealthError(
+                f"unsupported freshness policy schema: {self.schema}"
+            )
         for name in (
             "crypto_renewal_max_age_seconds",
             "portability_max_age_seconds",
             "recovery_max_age_seconds",
         ):
-            value = _int(getattr(self, name), field_name=name)
-            if value == 0:
+            if _int(getattr(self, name), field_name=name) == 0:
                 raise LongRangeHealthError(f"{name} must be positive")
 
     def canonical_dict(self) -> dict[str, object]:
@@ -170,7 +181,9 @@ class CryptoRenewalAttestationV1:
 
     def __post_init__(self) -> None:
         if self.schema != CRYPTO_RENEWAL_SCHEMA_V1:
-            raise LongRangeHealthError(f"unsupported crypto renewal schema: {self.schema}")
+            raise LongRangeHealthError(
+                f"unsupported crypto renewal schema: {self.schema}"
+            )
         object.__setattr__(self, "case_id", _text(self.case_id, field_name="case_id"))
         for name in (
             "subject_digest",
@@ -180,8 +193,16 @@ class CryptoRenewalAttestationV1:
             "current_trust_set_digest",
             "current_verification_digest",
         ):
-            object.__setattr__(self, name, _digest(getattr(self, name), field_name=name))
-        object.__setattr__(self, "renewed_at", _int(self.renewed_at, field_name="renewed_at"))
+            object.__setattr__(
+                self,
+                name,
+                _digest(getattr(self, name), field_name=name),
+            )
+        object.__setattr__(
+            self,
+            "renewed_at",
+            _int(self.renewed_at, field_name="renewed_at"),
+        )
         if not isinstance(self.purpose, AttestationPurpose):
             raise LongRangeHealthError("unknown renewal purpose")
         if self.renewed_attestation.subject_digest != self.subject_digest:
@@ -236,35 +257,49 @@ class CryptoRenewalAttestationV1:
         if not isinstance(raw_attestation, Mapping):
             raise LongRangeHealthError("renewed_attestation must be an object")
         try:
-            purpose = AttestationPurpose(_text(value.get("purpose"), field_name="purpose"))
+            purpose = AttestationPurpose(
+                _text(value.get("purpose"), field_name="purpose")
+            )
         except ValueError as exc:
             raise LongRangeHealthError("unknown renewal purpose") from exc
         result = cls(
             schema=_text(value.get("schema"), field_name="schema"),
             case_id=_text(value.get("case_id"), field_name="case_id"),
-            subject_digest=_digest(value.get("subject_digest"), field_name="subject_digest"),
+            subject_digest=_digest(
+                value.get("subject_digest"),
+                field_name="subject_digest",
+            ),
             purpose=purpose,
             historical_attestation_digest=_digest(
-                value.get("historical_attestation_digest"), field_name="historical_attestation_digest"
+                value.get("historical_attestation_digest"),
+                field_name="historical_attestation_digest",
             ),
             historical_trust_set_digest=_digest(
-                value.get("historical_trust_set_digest"), field_name="historical_trust_set_digest"
+                value.get("historical_trust_set_digest"),
+                field_name="historical_trust_set_digest",
             ),
             historical_verification_digest=_digest(
-                value.get("historical_verification_digest"), field_name="historical_verification_digest"
+                value.get("historical_verification_digest"),
+                field_name="historical_verification_digest",
             ),
             renewed_attestation=_signed_attestation_from_dict(
                 cast(Mapping[str, object], raw_attestation)
             ),
             current_trust_set_digest=_digest(
-                value.get("current_trust_set_digest"), field_name="current_trust_set_digest"
+                value.get("current_trust_set_digest"),
+                field_name="current_trust_set_digest",
             ),
             current_verification_digest=_digest(
-                value.get("current_verification_digest"), field_name="current_verification_digest"
+                value.get("current_verification_digest"),
+                field_name="current_verification_digest",
             ),
             renewed_at=_int(value.get("renewed_at"), field_name="renewed_at"),
         )
-        if _digest(value.get("renewal_digest"), field_name="renewal_digest") != result.renewal_digest:
+        recorded = _digest(
+            value.get("renewal_digest"),
+            field_name="renewal_digest",
+        )
+        if recorded != result.renewal_digest:
             raise LongRangeHealthError("crypto renewal digest mismatch")
         return result
 
@@ -281,7 +316,7 @@ def renew_crypto_attestation_v1(
     expires_at: int | None,
     nonce: str,
 ) -> CryptoRenewalAttestationV1:
-    """Verify historical proof, then add a new chained proof over the same immutable subject."""
+    """Verify historical proof, then add a chained proof over the same subject."""
 
     renewed_at = _int(renewed_at, field_name="renewed_at")
     historical_verification = CryptoTrustVerifierV1(
@@ -295,10 +330,13 @@ def renew_crypto_attestation_v1(
         now=renewed_at,
     )
     if current_trust_set.previous_trust_set_digest != historical_trust_set.trust_set_digest:
-        raise LongRangeHealthError("current trust set is not chained to historical trust set")
+        raise LongRangeHealthError(
+            "current trust set is not chained to historical trust set"
+        )
+    normalized_case = _text(case_id, field_name="case_id")
     renewal_payload: dict[str, object] = {
         "schema": CRYPTO_RENEWAL_SCHEMA_V1,
-        "case_id": _text(case_id, field_name="case_id"),
+        "case_id": normalized_case,
         "historical_attestation_digest": historical_attestation.digest(),
         "historical_trust_set_digest": historical_trust_set.trust_set_digest,
     }
@@ -324,7 +362,7 @@ def renew_crypto_attestation_v1(
         now=renewed_at,
     )
     return CryptoRenewalAttestationV1(
-        case_id=cast(str, renewal_payload["case_id"]),
+        case_id=normalized_case,
         subject_digest=historical_attestation.subject_digest,
         purpose=historical_attestation.purpose,
         historical_attestation_digest=historical_attestation.digest(),
@@ -351,7 +389,9 @@ class StoragePortabilityDrillV1:
 
     def __post_init__(self) -> None:
         if self.schema != PORTABILITY_DRILL_SCHEMA_V1:
-            raise LongRangeHealthError(f"unsupported portability schema: {self.schema}")
+            raise LongRangeHealthError(
+                f"unsupported portability schema: {self.schema}"
+            )
         object.__setattr__(self, "case_id", _text(self.case_id, field_name="case_id"))
         for name in (
             "escrow_manifest_digest",
@@ -359,12 +399,30 @@ class StoragePortabilityDrillV1:
             "target_profile_digest",
             "migrated_blob_set_digest",
         ):
-            object.__setattr__(self, name, _digest(getattr(self, name), field_name=name))
-        object.__setattr__(self, "artifact_count", _int(self.artifact_count, field_name="artifact_count"))
-        object.__setattr__(self, "total_bytes", _int(self.total_bytes, field_name="total_bytes"))
-        object.__setattr__(self, "observed_at", _int(self.observed_at, field_name="observed_at"))
+            object.__setattr__(
+                self,
+                name,
+                _digest(getattr(self, name), field_name=name),
+            )
+        object.__setattr__(
+            self,
+            "artifact_count",
+            _int(self.artifact_count, field_name="artifact_count"),
+        )
+        object.__setattr__(
+            self,
+            "total_bytes",
+            _int(self.total_bytes, field_name="total_bytes"),
+        )
+        object.__setattr__(
+            self,
+            "observed_at",
+            _int(self.observed_at, field_name="observed_at"),
+        )
         if self.source_profile_digest == self.target_profile_digest:
-            raise LongRangeHealthError("portability drill requires distinct storage profiles")
+            raise LongRangeHealthError(
+                "portability drill requires distinct storage profiles"
+            )
 
     def body_dict(self) -> dict[str, object]:
         return {
@@ -407,22 +465,30 @@ class StoragePortabilityDrillV1:
             schema=_text(value.get("schema"), field_name="schema"),
             case_id=_text(value.get("case_id"), field_name="case_id"),
             escrow_manifest_digest=_digest(
-                value.get("escrow_manifest_digest"), field_name="escrow_manifest_digest"
+                value.get("escrow_manifest_digest"),
+                field_name="escrow_manifest_digest",
             ),
             source_profile_digest=_digest(
-                value.get("source_profile_digest"), field_name="source_profile_digest"
+                value.get("source_profile_digest"),
+                field_name="source_profile_digest",
             ),
             target_profile_digest=_digest(
-                value.get("target_profile_digest"), field_name="target_profile_digest"
+                value.get("target_profile_digest"),
+                field_name="target_profile_digest",
             ),
-            artifact_count=_int(value.get("artifact_count"), field_name="artifact_count"),
+            artifact_count=_int(
+                value.get("artifact_count"),
+                field_name="artifact_count",
+            ),
             total_bytes=_int(value.get("total_bytes"), field_name="total_bytes"),
             migrated_blob_set_digest=_digest(
-                value.get("migrated_blob_set_digest"), field_name="migrated_blob_set_digest"
+                value.get("migrated_blob_set_digest"),
+                field_name="migrated_blob_set_digest",
             ),
             observed_at=_int(value.get("observed_at"), field_name="observed_at"),
         )
-        if _digest(value.get("drill_digest"), field_name="drill_digest") != result.drill_digest:
+        recorded = _digest(value.get("drill_digest"), field_name="drill_digest")
+        if recorded != result.drill_digest:
             raise LongRangeHealthError("portability drill digest mismatch")
         return result
 
@@ -438,16 +504,25 @@ def run_storage_portability_drill_v1(
     limits: EscrowLimitsV1,
     observed_at: int,
 ) -> StoragePortabilityDrillV1:
-    """Migrate every preserved escrow blob and verify exact identity on the target backend."""
+    """Migrate every preserved escrow blob and verify exact target identity."""
 
     escrow_manifest.verify_against(long_range_manifest)
     if source_profile.profile_digest == target_profile.profile_digest:
-        raise LongRangeHealthError("portability drill requires distinct storage profiles")
+        raise LongRangeHealthError(
+            "portability drill requires distinct storage profiles"
+        )
     migrated: list[dict[str, object]] = []
     total_bytes = 0
     for binding in escrow_manifest.bindings:
-        restored = migrate_verified_blob(binding.blob, source=source, target=target, limits=limits)
-        migrated.append({"role": binding.role.value, "blob": restored.canonical_dict()})
+        restored = migrate_verified_blob(
+            binding.blob,
+            source=source,
+            target=target,
+            limits=limits,
+        )
+        migrated.append(
+            {"role": binding.role.value, "blob": restored.canonical_dict()}
+        )
         total_bytes += restored.size
     return StoragePortabilityDrillV1(
         case_id=escrow_manifest.case_id,
@@ -479,16 +554,27 @@ class LongRangeHealthReportV1:
 
     def __post_init__(self) -> None:
         if self.schema != LONG_RANGE_HEALTH_SCHEMA_V1:
-            raise LongRangeHealthError(f"unsupported health report schema: {self.schema}")
+            raise LongRangeHealthError(
+                f"unsupported health report schema: {self.schema}"
+            )
         object.__setattr__(self, "case_id", _text(self.case_id, field_name="case_id"))
-        object.__setattr__(self, "evaluated_at", _int(self.evaluated_at, field_name="evaluated_at"))
+        object.__setattr__(
+            self,
+            "evaluated_at",
+            _int(self.evaluated_at, field_name="evaluated_at"),
+        )
         object.__setattr__(
             self,
             "freshness_policy_digest",
-            _digest(self.freshness_policy_digest, field_name="freshness_policy_digest"),
+            _digest(
+                self.freshness_policy_digest,
+                field_name="freshness_policy_digest",
+            ),
         )
         object.__setattr__(
-            self, "drift_report_digest", _digest(self.drift_report_digest, field_name="drift_report_digest")
+            self,
+            "drift_report_digest",
+            _digest(self.drift_report_digest, field_name="drift_report_digest"),
         )
         for name in ("crypto_state", "portability_state", "recovery_state"):
             if not isinstance(getattr(self, name), HealthDimensionState):
@@ -502,8 +588,14 @@ class LongRangeHealthReportV1:
         ):
             value = getattr(self, name)
             if value is not None:
-                object.__setattr__(self, name, _digest(value, field_name=name))
-        normalized = tuple(sorted({_text(item, field_name="violation") for item in self.violations}))
+                object.__setattr__(
+                    self,
+                    name,
+                    _digest(value, field_name=name),
+                )
+        normalized = tuple(
+            sorted({_text(item, field_name="violation") for item in self.violations})
+        )
         object.__setattr__(self, "violations", normalized)
         if self.state is LongRangeHealthState.HEALTHY and normalized:
             raise LongRangeHealthError("HEALTHY report cannot contain violations")
@@ -535,14 +627,17 @@ class LongRangeHealthReportV1:
         return {**self.body_dict(), "report_digest": self.report_digest}
 
 
-def _freshness_state(*, observed_at: int, evaluated_at: int, max_age: int) -> HealthDimensionState:
+def _freshness_state(
+    *,
+    observed_at: int,
+    evaluated_at: int,
+    max_age: int,
+) -> HealthDimensionState:
     if observed_at > evaluated_at:
         raise LongRangeHealthError("health evidence timestamp is in the future")
-    return (
-        HealthDimensionState.FRESH
-        if evaluated_at - observed_at <= max_age
-        else HealthDimensionState.STALE
-    )
+    if evaluated_at - observed_at <= max_age:
+        return HealthDimensionState.FRESH
+    return HealthDimensionState.STALE
 
 
 def evaluate_long_range_health_v1(
@@ -557,7 +652,7 @@ def evaluate_long_range_health_v1(
     recovery_report: RecoveryConformanceReportV1 | None,
     recovery_observed_at: int | None,
 ) -> LongRangeHealthReportV1:
-    """Evaluate current freshness explicitly; historical PASS evidence never implies health."""
+    """Evaluate current freshness; historical PASS never implies current health."""
 
     case_id = _text(case_id, field_name="case_id")
     evaluated_at = _int(evaluated_at, field_name="evaluated_at")
@@ -595,23 +690,36 @@ def evaluate_long_range_health_v1(
         if portability_state is HealthDimensionState.STALE:
             violations.append("portability_drill_stale")
 
-    if recovery_manifest is None or recovery_report is None or recovery_observed_at is None:
+    missing_recovery = (
+        recovery_manifest is None
+        or recovery_report is None
+        or recovery_observed_at is None
+    )
+    if missing_recovery:
         recovery_state = HealthDimensionState.MISSING
         recovery_digest = None
         violations.append("recovery_drill_missing")
     else:
-        recovery_observed_at = _int(recovery_observed_at, field_name="recovery_observed_at")
+        assert recovery_manifest is not None
+        assert recovery_report is not None
+        assert recovery_observed_at is not None
+        observed = _int(
+            recovery_observed_at,
+            field_name="recovery_observed_at",
+        )
         if recovery_manifest.case_id != case_id:
             raise LongRangeHealthError("recovery drill case scope mismatch")
         if recovery_report.manifest_digest != recovery_manifest.manifest_digest:
-            raise LongRangeHealthError("recovery report is bound to a different manifest")
+            raise LongRangeHealthError(
+                "recovery report is bound to a different manifest"
+            )
         recovery_digest = recovery_report.report_digest
         if recovery_report.state is RecoveryConformanceState.FAIL:
             recovery_state = HealthDimensionState.FAIL
             violations.append("recovery_conformance_fail")
         else:
             recovery_state = _freshness_state(
-                observed_at=recovery_observed_at,
+                observed_at=observed,
                 evaluated_at=evaluated_at,
                 max_age=policy.recovery_max_age_seconds,
             )
@@ -632,7 +740,10 @@ def evaluate_long_range_health_v1(
         case_id=case_id,
         evaluated_at=evaluated_at,
         freshness_policy_digest=policy.policy_digest,
-        drift_report_digest=_digest(drift_report_digest, field_name="drift_report_digest"),
+        drift_report_digest=_digest(
+            drift_report_digest,
+            field_name="drift_report_digest",
+        ),
         crypto_state=crypto_state,
         portability_state=portability_state,
         recovery_state=recovery_state,
