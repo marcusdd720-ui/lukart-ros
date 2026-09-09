@@ -1,10 +1,12 @@
 from __future__ import annotations
 
 import json
+import subprocess
 from pathlib import Path
 
 import pytest
 
+import core.case_ingestion as case_ingestion
 from core.case_ingestion import IngestedDocument, IngestionError, ingest_directory
 from core.enterprise.contracts import AuthorizationContext, Permission
 from knowledge.fact_extractor import extract_facts
@@ -45,9 +47,9 @@ def test_ingest_text_document_creates_encrypted_inventory_and_manifest(
 ) -> None:
     source = tmp_path / "source"
     source.mkdir()
-    payload = "Synthetic private evidence payload.\n"
+    payload = "Synthetic private evidence payload.\r\nSecond line.\n"
     source_file = source / "synthetic-input.txt"
-    source_file.write_text(payload, encoding="utf-8")
+    source_file.write_bytes(payload.encode("utf-8"))
 
     case_dir = tmp_path / "cases" / "CASE-0001"
     case_dir.mkdir(parents=True)
@@ -58,6 +60,11 @@ def test_ingest_text_document_creates_encrypted_inventory_and_manifest(
     assert len(documents) == 1
     document = documents[0]
     assert document.evidence_id.startswith("sha256:")
+    assert document.extracted_evidence_id.startswith("sha256:")
+    assert document.extracted_manifest_digest.startswith("sha256:")
+    assert document.derivation_identity.startswith("sha256:")
+    assert document.derivation_receipt_digest.startswith("sha256:")
+    assert document.derivation_replay_class == "DETERMINISTIC"
     assert document.encrypted_path.is_file()
     assert not (case_dir / "original").exists()
     assert not (case_dir / "extracted").exists()
@@ -67,6 +74,9 @@ def test_ingest_text_document_creates_encrypted_inventory_and_manifest(
     inventory = json.loads(inventory_path.read_text(encoding="utf-8"))
     assert inventory[0]["document_id"] == document.document_id
     assert inventory[0]["evidence_id"] == document.evidence_id
+    assert inventory[0]["derivation_identity"] == document.derivation_identity
+    assert inventory[0]["derivation_receipt_digest"] == document.derivation_receipt_digest
+    assert inventory[0]["derivation_replay_class"] == "DETERMINISTIC"
     assert "source_name" not in inventory[0]
     assert "original_path" not in inventory[0]
     assert "synthetic-input.txt" not in inventory_path.read_text(encoding="utf-8")
@@ -74,9 +84,55 @@ def test_ingest_text_document_creates_encrypted_inventory_and_manifest(
     assert manifest.document_ids == (document.document_id,)
 
     encoded = payload.encode("utf-8")
+    normalized = payload.replace("\r\n", "\n").encode("utf-8")
     for path in case_dir.rglob("*"):
         if path.is_file():
-            assert encoded not in path.read_bytes()
+            persisted = path.read_bytes()
+            assert encoded not in persisted
+            assert normalized not in persisted
+
+
+def test_tesseract_receives_exact_bytes_over_stdin_without_source_path(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    executable = tmp_path / "tesseract-synthetic"
+    executable.write_bytes(b"synthetic-tesseract-binary")
+    payload = b"synthetic-image-bytes"
+    observed_ocr_args: list[str] = []
+
+    monkeypatch.setattr(case_ingestion.shutil, "which", lambda _: str(executable))
+
+    def fake_run(
+        args: list[str],
+        **kwargs: object,
+    ) -> subprocess.CompletedProcess[bytes]:
+        if "--version" in args:
+            return subprocess.CompletedProcess(
+                args=args,
+                returncode=0,
+                stdout=b"tesseract synthetic 1.0",
+                stderr=b"",
+            )
+        observed_ocr_args.extend(args)
+        assert kwargs.get("input") == payload
+        return subprocess.CompletedProcess(
+            args=args,
+            returncode=0,
+            stdout=b"synthetic OCR output\x0c",
+            stderr=b"",
+        )
+
+    monkeypatch.setattr(case_ingestion.subprocess, "run", fake_run)
+
+    text, tool_identity = case_ingestion._run_tesseract(payload)
+
+    assert text == "synthetic OCR output\n"
+    assert observed_ocr_args[1:3] == ["stdin", "stdout"]
+    assert str(tmp_path / "private-source.png") not in observed_ocr_args
+    assert tool_identity.startswith("tesseract-binary:")
+    assert "version-output:" in tool_identity
+    assert str(executable) not in tool_identity
 
 
 def test_ingest_rejects_symlink_inputs(tmp_path: Path) -> None:
