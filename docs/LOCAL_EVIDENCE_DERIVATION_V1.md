@@ -1,6 +1,6 @@
 # CASE-OPS-02 — Local Evidence Derivation & Replay Binding v1
 
-Status: `IMPLEMENTATION CANDIDATE`
+Status: `CASE-OPS-02 engineering contract`
 Parent program: `continuous LRD-01`
 Predecessor: `CASE-OPS-01 — Private Case Evidence Intake v1`
 Deployment boundary: `LOCAL / NON-CLOUD`
