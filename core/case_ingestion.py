@@ -9,6 +9,10 @@ from pathlib import Path
 
 from core.enterprise.contracts import AuthorizationContext
 from core.local_case_store import validate_untrusted_path
+from core.private_case_runtime_bridge_v1 import (
+    RUNTIME_INVENTORY_SOURCE_REF,
+    runtime_inventory_payload,
+)
 from core.private_evidence_v1 import (
     EvidenceKeyProvider,
     EvidenceKind,
@@ -59,9 +63,7 @@ def _run_tesseract(source: Path) -> str:
             "Image ingestion requires the 'tesseract' executable on PATH."
         ) from exc
     if result.returncode != 0:
-        raise IngestionError(
-            f"Tesseract failed with return code {result.returncode}"
-        )
+        raise IngestionError(f"Tesseract failed with return code {result.returncode}")
     return result.stdout.replace("\x0c", "").strip() + "\n"
 
 
@@ -88,7 +90,7 @@ def ingest_directory(
     key_version: int = 1,
     document_type: str = "real_case",
 ) -> list[IngestedDocument]:
-    """Encrypt source and derived text; persist no plaintext document artifacts."""
+    """Encrypt source, derived text and canonical runtime inventory; persist no plaintext bytes."""
     if authorization is None or key_provider is None or not tenant_id or not key_id:
         raise IngestionError(
             "private ingestion requires authorization, key provider, tenant id and key id"
@@ -190,6 +192,17 @@ def ingest_directory(
             }
         )
 
+    try:
+        store.import_bytes(
+            runtime_inventory_payload(inventory),
+            source_ref=RUNTIME_INVENTORY_SOURCE_REF,
+            kind=EvidenceKind.DERIVED,
+            media_type="application/json",
+        )
+    except PrivateEvidenceError as exc:
+        raise IngestionError("canonical encrypted runtime inventory rejected") from exc
+
+    # Compatibility/debug view only. CASE-OPS-02 runtime never trusts this file directly.
     (case_path / "document_inventory.json").write_text(
         json.dumps(inventory, ensure_ascii=False, sort_keys=True, indent=2) + "\n",
         encoding="utf-8",
