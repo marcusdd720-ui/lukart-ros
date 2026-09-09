@@ -259,17 +259,18 @@ The final implementation candidate `4518a977cd05225281a096986b9a2065f1185239` pa
 PR-triggered workflows on one unchanged exact head. The set included the dedicated
 `LRD-01C Artifact Escrow Offline Runner`, CI Foundation, Stage Gate, Enterprise CodeQL,
 Enterprise Hardcore Gate, SSC-02, FIV-02, OPR-01, Production Validation and GitHub App Smoke
-Test. Dedicated LRD-01C run `34297351759` passed exact checkout, Ruff, strict MyPy, focused and
-adversarial escrow tests, LRD/SSC security-boundary regression and the offline/tamper/restore
-selection. Enterprise CodeQL run `34297351786` also completed `SUCCESS` on that exact head.
+Test. The dedicated `LRD-01C Artifact Escrow Offline Runner` completed `SUCCESS` on that exact
+head after exact checkout, Ruff, strict MyPy, focused and adversarial escrow tests, LRD/SSC
+security-boundary regression and the offline/tamper/restore selection. `Enterprise CodeQL` also
+completed `SUCCESS` on that exact head.
 
 Guarded merge used `expected_head_sha=4518a977cd05225281a096986b9a2065f1185239` and produced
 `3456270e819eeb0fd800a25ebeeda0869349b4f6`, whose direct parents are the preceding
 `main @ 68eed07c8f6bd70cd805758c88c0ffaf56122d39` and the validated implementation head. The
 resulting implementation main accumulated 15 workflow runs bound to that exact SHA; all 15 were
 terminal `SUCCESS`, with zero queued, in-progress or failed runs at closure evaluation. The
-post-merge dedicated LRD-01C push run `34297577344`, Governance Closure PR Preparation run
-`34297657032` and `MVROS v1 Release` guard run `34297641857` all completed `SUCCESS`.
+post-merge `LRD-01C Artifact Escrow Offline Runner`, `Governance Closure PR Preparation` and
+`MVROS v1 Release` guard workflows each completed `SUCCESS` on that exact main SHA.
 
 Historical release identity remained unchanged: tag object
 `9f7c0b28f766c8921e63b1d517fefcc96aa991d4` still targets
