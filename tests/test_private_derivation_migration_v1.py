@@ -5,6 +5,7 @@ from pathlib import Path
 
 import pytest
 
+from core.enterprise.contracts import AuthorizationContext, Permission
 from core.private_derivation_migration_v1 import (
     CompatibilityStatus,
     ConfigResolution,
@@ -19,7 +20,6 @@ from core.private_evidence_derivation_v1 import (
 )
 from core.private_evidence_v1 import PrivateEvidenceError, PrivateEvidenceStore
 from core.private_ocr_replay_v1 import OCR_CONFIG_V1, OCR_TRANSFORM_ID_V1
-from core.enterprise.contracts import AuthorizationContext, Permission
 
 
 class KeyProvider:
@@ -56,7 +56,9 @@ def _default_utf8_config() -> dict[str, object]:
     }
 
 
-def test_inventory_resolves_current_utf8_and_ocr_profiles_without_mutation(tmp_path: Path) -> None:
+def test_inventory_resolves_current_utf8_and_ocr_profiles_without_mutation(
+    tmp_path: Path,
+) -> None:
     store = _store(tmp_path / "evidence")
     text_source = store.import_bytes(
         b"alpha\r\n",
@@ -79,8 +81,12 @@ def test_inventory_resolves_current_utf8_and_ocr_profiles_without_mutation(tmp_p
         tool_identity="synthetic-tool-identity",
     )
     receipt_bytes_before = {
-        text_derivation.derivation_receipt_digest: text_derivation.derivation_receipt_path.read_bytes(),
-        ocr_derivation.derivation_receipt_digest: ocr_derivation.derivation_receipt_path.read_bytes(),
+        text_derivation.derivation_receipt_digest: (
+            text_derivation.derivation_receipt_path.read_bytes()
+        ),
+        ocr_derivation.derivation_receipt_digest: (
+            ocr_derivation.derivation_receipt_path.read_bytes()
+        ),
     }
 
     report = build_derivation_migration_readiness(store)
@@ -95,7 +101,10 @@ def test_inventory_resolves_current_utf8_and_ocr_profiles_without_mutation(tmp_p
     assert text_entry.migration_action == MigrationAction.NONE.value
     assert text_entry.resolved_config == _default_utf8_config()
     ocr_entry = by_receipt[ocr_derivation.derivation_receipt_digest]
-    assert ocr_entry.compatibility_status == CompatibilityStatus.REPLAY_READY_ENVIRONMENT_BOUND.value
+    assert (
+        ocr_entry.compatibility_status
+        == CompatibilityStatus.REPLAY_READY_ENVIRONMENT_BOUND.value
+    )
     assert ocr_entry.config_resolution == ConfigResolution.KNOWN.value
     assert ocr_entry.migration_action == MigrationAction.NONE.value
     assert ocr_entry.resolved_config == OCR_CONFIG_V1
@@ -114,7 +123,7 @@ def test_nondefault_utf8_config_requires_recovery_candidate(tmp_path: Path) -> N
         source_ref="document-slot:1",
         media_type="text/plain",
     )
-    derivation = derive_utf8_text(store, source, max_input_bytes=1024)
+    derive_utf8_text(store, source, max_input_bytes=1024)
 
     report = build_derivation_migration_readiness(store)
 
@@ -213,7 +222,9 @@ def test_unknown_profile_is_explicit_migration_required(tmp_path: Path) -> None:
     assert entry.resolved_config is None
 
 
-def test_report_is_digest_bound_private_immutable_and_contains_no_evidence_text(tmp_path: Path) -> None:
+def test_report_is_digest_bound_private_immutable_and_contains_no_evidence_text(
+    tmp_path: Path,
+) -> None:
     store = _store(tmp_path / "evidence")
     source = store.import_bytes(
         b"private synthetic evidence text\n",
