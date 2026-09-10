@@ -41,9 +41,9 @@ jobs:
         shell: bash
         run: |
           set +e
-          ruff_output="$(ruff check core/provider_durable_storage_v1.py core/provider_durable_evidence_bundle_v1.py scripts/provider_durable_storage_drill.py tests/test_provider_durable_storage_v1.py tests/test_provider_durable_evidence_bundle_v1.py 2>&1)"
+          ruff_output="$(ruff check core/provider_durable_storage_v1.py core/provider_durable_evidence_bundle_v1.py scripts/provider_durable_storage_drill.py tests/test_provider_durable_storage_v1.py tests/test_provider_durable_evidence_bundle_v1.py tests/test_provider_durable_evidence_assumed_role_v1.py 2>&1)"
           ruff_status=$?
-          mypy_output="$(mypy core/provider_durable_storage_v1.py core/provider_durable_evidence_bundle_v1.py tests/test_provider_durable_storage_v1.py tests/test_provider_durable_evidence_bundle_v1.py 2>&1)"
+          mypy_output="$(mypy core/provider_durable_storage_v1.py core/provider_durable_evidence_bundle_v1.py tests/test_provider_durable_storage_v1.py tests/test_provider_durable_evidence_bundle_v1.py tests/test_provider_durable_evidence_assumed_role_v1.py 2>&1)"
           mypy_status=$?
           echo "RUFF_STATUS=${ruff_status}"
           printf '%s\n' "${ruff_output}"
@@ -67,13 +67,15 @@ jobs:
         run: |
           pytest -q \
             tests/test_provider_durable_storage_v1.py \
-            tests/test_provider_durable_evidence_bundle_v1.py
+            tests/test_provider_durable_evidence_bundle_v1.py \
+            tests/test_provider_durable_evidence_assumed_role_v1.py
 
       - name: Escrow durability recovery regression
         run: |
           pytest -q \
             tests/test_provider_durable_storage_v1.py \
             tests/test_provider_durable_evidence_bundle_v1.py \
+            tests/test_provider_durable_evidence_assumed_role_v1.py \
             tests/test_durable_escrow_v1.py \
             tests/test_artifact_escrow_v1.py \
             tests/test_recovery_continuity_v1.py \
@@ -82,8 +84,8 @@ jobs:
 
       - name: Provider fail-closed adversarial selection
         run: |
-          pytest -q tests/test_provider_durable_storage_v1.py tests/test_provider_durable_evidence_bundle_v1.py \
-            -k "version or governance or retention or owner or credential or source_loss or missing or claim or tampering or principal or request or secret or status"
+          pytest -q tests/test_provider_durable_storage_v1.py tests/test_provider_durable_evidence_bundle_v1.py tests/test_provider_durable_evidence_assumed_role_v1.py \
+            -k "version or governance or retention or owner or credential or source_loss or missing or claim or tampering or principal or request or secret or status or assumed_role"
 
   provider-evidence-boundary:
     runs-on: ubuntu-latest
