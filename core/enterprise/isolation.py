@@ -369,22 +369,50 @@ class ProcessIsolationExecutor:
         )
         started = time.monotonic()
         process.start()
-        process.join(self.policy.timeout_seconds)
-        if process.is_alive():
-            process.terminate()
-            process.join(1.0)
-            if process.is_alive() and hasattr(process, "kill"):
-                process.kill()
-                process.join(1.0)
-            raise IsolatedExecutionError("worker hard timeout; process terminated")
+        deadline = time.monotonic() + self.policy.timeout_seconds
+        message: dict[str, object] | None = None
 
-        elapsed = time.monotonic() - started
         try:
-            message = result_queue.get(timeout=1.0)
-        except queue.Empty as exc:
-            raise IsolatedExecutionError(
-                f"worker exited without result; exitcode={process.exitcode}"
-            ) from exc
+            while message is None:
+                remaining = deadline - time.monotonic()
+                if remaining <= 0:
+                    break
+                try:
+                    message = result_queue.get(timeout=min(0.1, remaining))
+                except queue.Empty:
+                    if process.is_alive():
+                        continue
+                    process.join(0)
+                    remaining = deadline - time.monotonic()
+                    if remaining <= 0:
+                        break
+                    try:
+                        message = result_queue.get(timeout=min(0.1, remaining))
+                    except queue.Empty as exc:
+                        raise IsolatedExecutionError(
+                            f"worker exited without result; exitcode={process.exitcode}"
+                        ) from exc
+
+            if message is None:
+                if process.is_alive():
+                    process.terminate()
+                    process.join(1.0)
+                    if process.is_alive() and hasattr(process, "kill"):
+                        process.kill()
+                        process.join(1.0)
+                raise IsolatedExecutionError("worker hard timeout; process terminated")
+
+            remaining = max(0.0, deadline - time.monotonic())
+            process.join(remaining)
+            if process.is_alive():
+                process.terminate()
+                process.join(1.0)
+                if process.is_alive() and hasattr(process, "kill"):
+                    process.kill()
+                    process.join(1.0)
+                raise IsolatedExecutionError("worker hard timeout; process terminated")
+
+            elapsed = time.monotonic() - started
         finally:
             result_queue.close()
 
