@@ -16,6 +16,7 @@ import argparse
 import hashlib
 import importlib
 import json
+import re
 import subprocess
 from collections.abc import Mapping
 from dataclasses import dataclass
@@ -76,6 +77,7 @@ _LOCATION_CONFIG_KEYS = frozenset(
     }
 )
 _MAX_EXTERNAL_EVIDENCE_BYTES = 1024 * 1024
+_SHA_RE = re.compile(r"^[0-9a-f]{40}$")
 
 
 class ProviderDrillOperatorError(ValueError):
@@ -231,10 +233,7 @@ def load_operator_config(path: Path) -> _OperatorConfig:
 
 
 def _git_identity(expected_sha: str) -> tuple[str, str]:
-    valid_sha = len(expected_sha) == 40 and all(
-        character in "0123456789abcdef" for character in expected_sha
-    )
-    if not valid_sha:
+    if _SHA_RE.fullmatch(expected_sha) is None:
         raise ProviderDrillOperatorError(
             "code SHA must be exact lowercase 40-character Git SHA"
         )
@@ -259,7 +258,7 @@ def _git_identity(expected_sha: str) -> tuple[str, str]:
         raise ProviderDrillOperatorError(
             "local checkout does not match requested exact code SHA"
         )
-    if len(tree) != 40 or any(character not in "0123456789abcdef" for character in tree):
+    if _SHA_RE.fullmatch(tree) is None:
         raise ProviderDrillOperatorError("local Git tree identity is malformed")
     return actual, tree
 
