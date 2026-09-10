@@ -21,6 +21,11 @@ SURVIVABILITY_MANIFEST_NAME = "survivability.json"
 _SHA256_RE = re.compile(r"^[0-9a-f]{64}$")
 _GIT_SHA_RE = re.compile(r"^[0-9a-f]{40}$")
 _ALLOWED_ROLES = frozenset({"identity", "escrow_blob", "supply_chain", "verifier"})
+_MAX_BUNDLE_FILES = 20_000
+_MAX_BUNDLE_BYTES = 2 * 1024 * 1024 * 1024
+_MAX_FILE_BYTES = 512 * 1024 * 1024
+_MAX_JSON_BYTES = 8 * 1024 * 1024
+_IO_CHUNK = 1024 * 1024
 _LRD_ROLES = (
     "authorization_policy",
     "canonicalization_profiles",
@@ -53,6 +58,13 @@ _BOOTSTRAP_CONTRACT = {
     "provider_access": "NONE",
     "compatible_python_required": True,
     "physical_interpreter_preserved": False,
+}
+_SSC_RECOVERY_CONTRACT = {
+    "network": "DENY",
+    "index": "NONE",
+    "artifact_source": "wheelhouse",
+    "source_archive": "source/repository.tar",
+    "verifier": "verifier.py",
 }
 _MANIFEST_KEYS = frozenset(
     {
@@ -117,7 +129,9 @@ def _sha256(value: object, context: str) -> str:
 def _git_sha(value: object, context: str) -> str:
     text = _text(value, context)
     if _GIT_SHA_RE.fullmatch(text) is None:
-        raise OfflineSurvivabilityVerificationError(f"{context} must be a full lowercase Git SHA")
+        raise OfflineSurvivabilityVerificationError(
+            f"{context} must be a full lowercase Git SHA"
+        )
     return text
 
 
@@ -125,7 +139,9 @@ def _address(value: object, context: str) -> Mapping[str, object]:
     address = _mapping(value, context)
     _strict_keys(address, frozenset({"algorithm", "digest"}), context)
     if address.get("algorithm") != "sha256":
-        raise OfflineSurvivabilityVerificationError(f"{context} uses unsupported digest algorithm")
+        raise OfflineSurvivabilityVerificationError(
+            f"{context} uses unsupported digest algorithm"
+        )
     _sha256(address.get("digest"), f"{context} digest")
     return address
 
@@ -153,17 +169,42 @@ def _regular_file(root: Path, relative: str) -> Path:
     return current
 
 
+def _bounded_size(path: Path, *, limit: int, context: str) -> int:
+    try:
+        size = path.stat().st_size
+    except OSError as exc:
+        raise OfflineSurvivabilityVerificationError(f"cannot stat {context}") from exc
+    if size > limit:
+        raise OfflineSurvivabilityVerificationError(f"{context} exceeds verifier byte limit")
+    return size
+
+
 def _file_sha256(path: Path) -> str:
+    _bounded_size(path, limit=_MAX_FILE_BYTES, context="bundle file")
     digest = hashlib.sha256()
-    with path.open("rb") as handle:
-        for chunk in iter(lambda: handle.read(1024 * 1024), b""):
-            digest.update(chunk)
+    counted = 0
+    try:
+        with path.open("rb") as handle:
+            for chunk in iter(lambda: handle.read(_IO_CHUNK), b""):
+                counted += len(chunk)
+                if counted > _MAX_FILE_BYTES:
+                    raise OfflineSurvivabilityVerificationError(
+                        "bundle file grew beyond verifier byte limit"
+                    )
+                digest.update(chunk)
+    except OSError as exc:
+        raise OfflineSurvivabilityVerificationError("cannot hash bundle file") from exc
     return digest.hexdigest()
 
 
 def _load_json(path: Path, context: str) -> dict[str, object]:
+    _bounded_size(path, limit=_MAX_JSON_BYTES, context=context)
     try:
-        decoded: object = json.loads(path.read_text(encoding="utf-8"))
+        with path.open("rb") as handle:
+            raw = handle.read(_MAX_JSON_BYTES + 1)
+        if len(raw) > _MAX_JSON_BYTES:
+            raise OfflineSurvivabilityVerificationError(f"{context} exceeds JSON byte limit")
+        decoded: object = json.loads(raw.decode("utf-8"))
     except (OSError, UnicodeError, json.JSONDecodeError) as exc:
         raise OfflineSurvivabilityVerificationError(f"cannot read {context}") from exc
     if not isinstance(decoded, dict) or any(not isinstance(key, str) for key in decoded):
@@ -220,7 +261,11 @@ def _verify_lrd(root: Path, manifest: Mapping[str, object]) -> dict[str, object]
     by_role: dict[str, Mapping[str, object]] = {}
     for item in raw_artifacts:
         artifact = _mapping(item, "LRD artifact")
-        _strict_keys(artifact, frozenset({"role", "identity", "preservation"}), "LRD artifact")
+        _strict_keys(
+            artifact,
+            frozenset({"role", "identity", "preservation"}),
+            "LRD artifact",
+        )
         role = _text(artifact.get("role"), "LRD artifact role")
         _address(artifact.get("identity"), f"LRD {role} identity")
         if artifact.get("preservation") != "PRESERVED":
@@ -247,7 +292,9 @@ def _verify_capsule(root: Path, manifest: Mapping[str, object], lrd: Mapping[str
     if capsule.get("schema") != "lukart.replay-capsule.v1":
         raise OfflineSurvivabilityVerificationError("unsupported replay capsule schema")
     if capsule.get("manifest") != lrd:
-        raise OfflineSurvivabilityVerificationError("replay capsule embeds a different LRD manifest")
+        raise OfflineSurvivabilityVerificationError(
+            "replay capsule embeds a different LRD manifest"
+        )
     _content_address_body(capsule, "capsule_identity", "replay capsule")
     if _address(capsule.get("capsule_identity"), "replay capsule identity") != _address(
         manifest.get("replay_capsule_identity"), "outer replay capsule identity"
@@ -261,7 +308,10 @@ def _verify_escrow(
     lrd: Mapping[str, object],
     inventory_paths: set[str],
 ) -> None:
-    escrow = _load_json(root / "identity" / "artifact-escrow-manifest.json", "escrow manifest")
+    escrow = _load_json(
+        root / "identity" / "artifact-escrow-manifest.json",
+        "escrow manifest",
+    )
     _strict_keys(
         escrow,
         frozenset(
@@ -312,10 +362,16 @@ def _verify_escrow(
         if role not in lrd_by_role or binding.get("logical_identity") != lrd_by_role[role].get(
             "identity"
         ):
-            raise OfflineSurvivabilityVerificationError(f"escrow logical identity mismatch: {role}")
+            raise OfflineSurvivabilityVerificationError(
+                f"escrow logical identity mismatch: {role}"
+            )
         _content_address_body(binding, "binding_identity", f"escrow binding {role}")
         blob = _mapping(binding.get("blob"), f"escrow blob {role}")
-        _strict_keys(blob, frozenset({"schema", "algorithm", "digest", "size"}), "escrow blob")
+        _strict_keys(
+            blob,
+            frozenset({"schema", "algorithm", "digest", "size"}),
+            "escrow blob",
+        )
         if blob.get("schema") != "lukart.artifact-blob.v1" or blob.get("algorithm") != "sha256":
             raise OfflineSurvivabilityVerificationError("unsupported escrow blob identity")
         digest = _sha256(blob.get("digest"), f"escrow blob {role} digest")
@@ -355,12 +411,19 @@ def _verify_supply_chain(root: Path, manifest: Mapping[str, object]) -> None:
         raise OfflineSurvivabilityVerificationError("unsupported SSC-02 schema")
     source_sha = _git_sha(supply.get("source_sha"), "SSC-02 source SHA")
     if source_sha != manifest.get("code_commit_sha"):
-        raise OfflineSurvivabilityVerificationError("SSC-02 source SHA does not match LRD code SHA")
+        raise OfflineSurvivabilityVerificationError(
+            "SSC-02 source SHA does not match LRD code SHA"
+        )
     unsigned = dict(supply)
     digest = _sha256(unsigned.pop("manifest_digest", None), "SSC-02 manifest digest")
     expected = hashlib.sha256(_canonical_json(unsigned).encode("utf-8")).hexdigest()
     if digest != expected or digest != manifest.get("supply_chain_manifest_digest"):
         raise OfflineSurvivabilityVerificationError("SSC-02 manifest digest mismatch")
+
+    recovery = _mapping(supply.get("recovery_contract"), "SSC-02 recovery contract")
+    if dict(recovery) != _SSC_RECOVERY_CONTRACT:
+        raise OfflineSurvivabilityVerificationError("unsupported SSC-02 recovery contract")
+
     runtime = _mapping(manifest.get("supply_chain_runtime"), "supply-chain runtime")
     _strict_keys(runtime, frozenset({"python", "platform"}), "supply-chain runtime")
     if runtime.get("python") != supply.get("python") or runtime.get("platform") != supply.get(
@@ -371,13 +434,24 @@ def _verify_supply_chain(root: Path, manifest: Mapping[str, object]) -> None:
     raw_inventory = supply.get("inventory")
     if not isinstance(raw_inventory, list) or not raw_inventory:
         raise OfflineSurvivabilityVerificationError("SSC-02 inventory must be non-empty")
+    if len(raw_inventory) > _MAX_BUNDLE_FILES:
+        raise OfflineSurvivabilityVerificationError("SSC-02 inventory exceeds file-count limit")
     for item in raw_inventory:
         record = _mapping(item, "SSC-02 inventory record")
+        role = _text(record.get("role"), "SSC-02 inventory role")
+        expected_keys = {"path", "role", "size", "sha256"}
+        if role == "wheel":
+            expected_keys |= {"package_name", "package_version"}
+        _strict_keys(record, frozenset(expected_keys), "SSC-02 inventory record")
         relative = _safe_relative(record.get("path"), "SSC-02 inventory path")
         candidate = _regular_file(root, f"supply-chain/{relative}")
         size = record.get("size")
         if not isinstance(size, int) or isinstance(size, bool) or size < 0:
             raise OfflineSurvivabilityVerificationError("invalid SSC-02 inventory size")
+        if size > _MAX_FILE_BYTES:
+            raise OfflineSurvivabilityVerificationError(
+                "SSC-02 inventory file exceeds verifier byte limit"
+            )
         expected_digest = _sha256(record.get("sha256"), "SSC-02 inventory digest")
         if candidate.stat().st_size != size or _file_sha256(candidate) != expected_digest:
             raise OfflineSurvivabilityVerificationError(
@@ -424,10 +498,18 @@ def verify_survivability_bundle(
     raw_inventory = manifest.get("inventory")
     if not isinstance(raw_inventory, list) or not raw_inventory:
         raise OfflineSurvivabilityVerificationError("survivability inventory must be non-empty")
+    if len(raw_inventory) > _MAX_BUNDLE_FILES:
+        raise OfflineSurvivabilityVerificationError("survivability inventory exceeds file limit")
+
     expected_paths: set[str] = set()
+    declared_total = 0
     for item in raw_inventory:
         record = _mapping(item, "survivability inventory record")
-        _strict_keys(record, frozenset({"path", "role", "size", "sha256"}), "inventory record")
+        _strict_keys(
+            record,
+            frozenset({"path", "role", "size", "sha256"}),
+            "inventory record",
+        )
         relative = _safe_relative(record.get("path"), "inventory path")
         if relative == SURVIVABILITY_MANIFEST_NAME or relative in expected_paths:
             raise OfflineSurvivabilityVerificationError("duplicate/reserved inventory path")
@@ -437,6 +519,11 @@ def verify_survivability_bundle(
         size = record.get("size")
         if not isinstance(size, int) or isinstance(size, bool) or size < 0:
             raise OfflineSurvivabilityVerificationError("invalid inventory size")
+        if size > _MAX_FILE_BYTES:
+            raise OfflineSurvivabilityVerificationError("inventory file exceeds verifier byte limit")
+        declared_total += size
+        if declared_total > _MAX_BUNDLE_BYTES:
+            raise OfflineSurvivabilityVerificationError("survivability bundle exceeds byte limit")
         digest = _sha256(record.get("sha256"), "inventory digest")
         candidate = _regular_file(root, relative)
         if candidate.stat().st_size != size or _file_sha256(candidate) != digest:
@@ -444,6 +531,7 @@ def verify_survivability_bundle(
         expected_paths.add(relative)
 
     actual_paths: set[str] = set()
+    actual_total = 0
     for path in root.rglob("*"):
         if path.is_symlink():
             raise OfflineSurvivabilityVerificationError(
@@ -452,8 +540,14 @@ def verify_survivability_bundle(
         if path.is_dir():
             continue
         relative = path.relative_to(root).as_posix()
-        if relative != SURVIVABILITY_MANIFEST_NAME:
-            actual_paths.add(relative)
+        if relative == SURVIVABILITY_MANIFEST_NAME:
+            continue
+        actual_paths.add(relative)
+        if len(actual_paths) > _MAX_BUNDLE_FILES:
+            raise OfflineSurvivabilityVerificationError("bundle exceeds verifier file-count limit")
+        actual_total += _bounded_size(path, limit=_MAX_FILE_BYTES, context="bundle file")
+        if actual_total > _MAX_BUNDLE_BYTES:
+            raise OfflineSurvivabilityVerificationError("bundle exceeds verifier byte limit")
     if actual_paths != expected_paths:
         missing = sorted(expected_paths - actual_paths)
         unexpected = sorted(actual_paths - expected_paths)
