@@ -251,13 +251,17 @@ def build_derivation_migration_readiness(
             and config_digest == digest_object(OCR_CONFIG_V1)
         ):
             if document.derivation_receipt_digest in candidates:
-                raise PrivateEvidenceError("operator config candidate is not accepted for known OCR v1")
+                raise PrivateEvidenceError(
+                    "operator config candidate is not accepted for known OCR v1"
+                )
             resolution = ConfigResolution.KNOWN
             resolved_config = dict(OCR_CONFIG_V1)
             compatibility = CompatibilityStatus.REPLAY_READY_ENVIRONMENT_BOUND
             action = MigrationAction.NONE
         elif document.derivation_receipt_digest in candidates:
-            raise PrivateEvidenceError("operator config candidate cannot authorize an unknown profile")
+            raise PrivateEvidenceError(
+                "operator config candidate cannot authorize an unknown profile"
+            )
 
         entries.append(
             DerivationMigrationEntryV1(
