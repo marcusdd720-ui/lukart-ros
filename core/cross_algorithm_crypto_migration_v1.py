@@ -540,7 +540,10 @@ class CrossAlgorithmMigrationEnvelopeV1:
             source_trust_set_digest=_digest(
                 value.get("source_trust_set_digest"), field_name="source_trust_set_digest"
             ),
-            source_key_digest=_digest(value.get("source_key_digest"), field_name="source_key_digest"),
+            source_key_digest=_digest(
+                value.get("source_key_digest"),
+                field_name="source_key_digest",
+            ),
             purpose=purpose,
             subject_digest=_digest(value.get("subject_digest"), field_name="subject_digest"),
             payload_digest=_digest(value.get("payload_digest"), field_name="payload_digest"),
