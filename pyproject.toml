@@ -91,6 +91,8 @@ module = [
   "core.long_range_health_v1",
   "core.long_range_replay_v1",
   "core.lrd_replay_closure_v1",
+  "core.offline_long_range_survivability_v1",
+  "core.offline_survivability_verifier_v1",
   "core.p3.contracts",
   "core.p3.versioning",
   "core.post_quantum_readiness_v1",
