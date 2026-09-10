@@ -35,6 +35,7 @@ MVROS-DATA/
 *.mvros-recovery-set.json
 *.mvros-recovery-drill.json
 *.mvros-recovery-rotation.json
+*.mvros-private-pilot.json
 
 # --- Runtime noise ---
 output/**/snapshots/
