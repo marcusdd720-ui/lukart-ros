@@ -96,6 +96,7 @@ module = [
   "core.post_quantum_readiness_v1",
   "core.product_runtime_v1",
   "core.product_verification_evidence_v1",
+  "core.provider_durable_evidence_bundle_v1",
   "core.provider_durable_storage_v1",
   "core.semantic_change_v2",
   "knowledge.epistemic",
