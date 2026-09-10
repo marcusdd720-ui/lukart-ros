@@ -18,7 +18,6 @@ from pathlib import Path
 from core.enterprise.contracts import AuthorizationContext
 from core.private_evidence_recovery_v1 import (
     RECOVERY_SUFFIX,
-    PrivateEvidenceRecoveryError,
     RestoredPrivateEvidenceV1,
     create_recovery_capsule,
     restore_recovery_capsule,
@@ -242,8 +241,13 @@ def _preflight_devices(store: PrivateEvidenceStore, destinations: tuple[Path, Pa
 
 
 def _stage_path(target: Path, slot: str) -> Path:
-    stem = target.name[: -len(RECOVERY_SUFFIX)] if target.name.endswith(RECOVERY_SUFFIX) else target.name
-    return target.parent / f".{stem}.slot-{slot.lower()}.{secrets.token_hex(8)}{RECOVERY_SUFFIX}"
+    if target.name.endswith(RECOVERY_SUFFIX):
+        stem = target.name[: -len(RECOVERY_SUFFIX)]
+    else:
+        stem = target.name
+    return target.parent / (
+        f".{stem}.slot-{slot.lower()}.{secrets.token_hex(8)}{RECOVERY_SUFFIX}"
+    )
 
 
 def _case_scope_digest(tenant_id: str, case_id: str) -> str:
