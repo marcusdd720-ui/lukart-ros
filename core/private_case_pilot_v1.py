@@ -1,7 +1,7 @@
 """Private local end-to-end pilot evidence for CASE-OPS-06.
 
 The pilot composes verified CASE-OPS private evidence, an exact exported Canonical
-Case Ledger bundle, Product Runtime v1, and Case Replay v2.  It never creates CCL
+Case Ledger bundle, Product Runtime v1, and Case Replay v2. It never creates CCL
 events and never persists private evidence or reasoning text in its receipt.
 """
 
@@ -141,7 +141,13 @@ def load_runtime_identity_mapping(value: Mapping[str, object]) -> RuntimeIdentit
     if set(value) != expected:
         raise PrivateCasePilotError("runtime identity has unknown or missing fields")
     inventories = _strict_mapping(value["inventories_declared"], label="runtime inventories")
-    if set(inventories) != {"providers", "plugins", "inputs", "evidence", "execution_environment"}:
+    if set(inventories) != {
+        "providers",
+        "plugins",
+        "inputs",
+        "evidence",
+        "execution_environment",
+    }:
         raise PrivateCasePilotError("runtime inventory declaration shape is invalid")
     environment = _strict_mapping(value["execution_environment"], label="execution environment")
     environment_fields = {
@@ -207,6 +213,8 @@ def load_ledger_bundle_file(path: Path) -> CaseLedgerBundle:
     except CaseLedgerContractError as exc:
         raise PrivateCasePilotError("CCL bundle verification failed") from exc
     bundle.verify()
+    if canonical_json(mapping) != canonical_json(bundle.canonical_dict()):
+        raise PrivateCasePilotError("CCL bundle contains unbound or non-canonical fields")
     return bundle
 
 
@@ -246,10 +254,13 @@ def run_private_local_pilot(
     runtime_identity: RuntimeIdentity,
     input_class: str,
 ) -> PrivateCasePilotRunV1:
-    """Verify the real local trust chain without creating authoritative case history."""
+    """Verify the local trust chain without creating authoritative case history."""
     if input_class not in PILOT_INPUT_CLASSES:
         raise PrivateCasePilotError("unsupported pilot input class")
-    if runtime_identity.identity_schema != RUNTIME_IDENTITY_V3 or not runtime_identity.complete_for_replay:
+    if (
+        runtime_identity.identity_schema != RUNTIME_IDENTITY_V3
+        or not runtime_identity.complete_for_replay
+    ):
         raise PrivateCasePilotError("pilot runtime identity is incomplete for replay")
 
     projection = load_verified_projection(evidence_store)
@@ -270,13 +281,17 @@ def run_private_local_pilot(
     artifacts = (
         ReasoningArtifact(
             artifact_id="CASE-OPS-06-F1",
-            statement="Verified private evidence projection is registered in Canonical Case Ledger.",
+            statement=(
+                "Verified private evidence projection is registered in Canonical Case Ledger."
+            ),
             status=KnowledgeStatus.FACT,
             evidence_refs=(registration_ref,),
         ),
         ReasoningArtifact(
             artifact_id="CASE-OPS-06-C1",
-            statement="Private local case trust chain is ready for bounded Product runtime evaluation.",
+            statement=(
+                "Private local case trust chain is ready for bounded Product runtime evaluation."
+            ),
             status=KnowledgeStatus.CONCLUSION,
             support_ids=("CASE-OPS-06-F1",),
         ),
@@ -300,7 +315,9 @@ def run_private_local_pilot(
         private_projection_id=projection.projection_id,
         private_document_count=len(projection.documents),
         ccl_bundle_digest=ledger_bundle.bundle_digest.digest,
-        ccl_head_digest=(ledger_bundle.head_event_id.digest if ledger_bundle.head_event_id else None),
+        ccl_head_digest=(
+            ledger_bundle.head_event_id.digest if ledger_bundle.head_event_id else None
+        ),
         projection_registration_event_digest=registration.event_id.digest,
         runtime_identity_digest=runtime_identity.digest(),
         product_runtime_proof_digest=proof.proof_identity.digest,
