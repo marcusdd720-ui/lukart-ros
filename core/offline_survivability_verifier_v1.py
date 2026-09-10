@@ -18,6 +18,7 @@ from typing import cast
 
 SURVIVABILITY_SCHEMA_V1 = "lukart.offline-long-range-survivability.v1"
 SURVIVABILITY_MANIFEST_NAME = "survivability.json"
+_SSC_MANIFEST_NAME = "continuity-manifest.json"
 _SHA256_RE = re.compile(r"^[0-9a-f]{64}$")
 _GIT_SHA_RE = re.compile(r"^[0-9a-f]{40}$")
 _ALLOWED_ROLES = frozenset({"identity", "escrow_blob", "supply_chain", "verifier"})
@@ -391,7 +392,7 @@ def _verify_escrow(
 
 
 def _verify_supply_chain(root: Path, manifest: Mapping[str, object]) -> None:
-    supply = _load_json(root / "supply-chain" / "manifest.json", "SSC-02 manifest")
+    supply = _load_json(root / "supply-chain" / _SSC_MANIFEST_NAME, "SSC-02 manifest")
     _strict_keys(
         supply,
         frozenset(
@@ -561,7 +562,7 @@ def verify_survivability_bundle(
         "identity/long-range-manifest.json",
         "identity/replay-capsule.json",
         "identity/artifact-escrow-manifest.json",
-        "supply-chain/manifest.json",
+        f"supply-chain/{_SSC_MANIFEST_NAME}",
         "supply-chain/verifier.py",
         "verifier.py",
     }
