@@ -1,6 +1,5 @@
 from pathlib import Path
 
-
 CANON = Path("docs/WORKING_PRINCIPLES.md")
 PROFILE = Path("docs/ENGINEERING_EXECUTION_PROFILE.md")
 
