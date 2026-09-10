@@ -1,6 +1,6 @@
 # IRH-01 — Independent Review Handoff & Reviewer Provenance v1
 
-Status: **ENGINEERING IN PROGRESS — EXTERNAL REVIEW NOT PERFORMED**  
+Status: **CLOSED / ENGINEERING PASS — EXTERNAL REVIEW NOT PERFORMED**  
 Handoff state after successful IRR package verification: `AWAITING_EXTERNAL_REVIEW`  
 Repository independent-review state: `NOT_INDEPENDENTLY_REVIEWED`
 
@@ -152,5 +152,37 @@ focused/adversarial tests, full regression/security, fresh exact-candidate-SHA C
 merge, resulting-main validation and release guard all pass. Engineering closure does not
 require or imply that a real external review has occurred. Unless genuine externally produced
 evidence is separately available, the post-closure external state remains exactly:
+
+`AWAITING_EXTERNAL_REVIEW / NOT_INDEPENDENTLY_REVIEWED`
+
+## Canonical engineering closure
+
+IRH-01 is closed as an engineering stage on the evidence below.
+
+- Implementation PR: `#222`.
+- Final validated implementation candidate SHA:
+  `5eb334c456628d3c19c01eb37e1e6cef8dff3a46`.
+- Resulting implementation `main` SHA after guarded merge:
+  `ae8225d0085bd02266d934c0da1593eed6d5f7fe`.
+- Final implementation candidate validation: `31/31` terminal workflows `SUCCESS`, with no
+  failure, queued, in-progress, cancelled, timed-out or action-required result.
+- Dedicated IRH-01 gate: Ruff `PASS`, MyPy `PASS`, and `15/15` focused/adversarial tests
+  `PASS` on the exact final implementation candidate SHA.
+- Exact-SHA IRR-01 package used by the handoff contained `862` tracked files and had SHA-256
+  `8abd6ac6052908841a549c732631647e556ce7b598095cf69e5f4f5debf7e3b4`.
+- Verified pending handoff identity:
+  `1312d4d544a219a47ef5b72e00d2c173fc0dd02aeb140291fcf26e59135d076c`.
+- Resulting implementation-main validation: `29/29` terminal workflows `SUCCESS`.
+- Release guard remained on the development/non-publication path: development version
+  `1.1.0.dev0`, release disabled, immutable release baseline `v1.0.1` unchanged.
+- Immutable `v1.0.1` annotated-tag object remained
+  `9f7c0b28f766c8921e63b1d517fefcc96aa991d4`, targeting release commit
+  `802013c4d0e53dc12306a97e1877ebba86af64a7`; the latest release remained `v1.0.1`.
+
+This is **engineering closure only**. No real external reviewer was selected or created, no
+real independent review was performed, no external reviewer finding or outcome was produced,
+and no external certification exists. Repository automation did not and cannot promote this
+closure into an independent-review claim. The canonical external state therefore remains
+exactly:
 
 `AWAITING_EXTERNAL_REVIEW / NOT_INDEPENDENTLY_REVIEWED`
