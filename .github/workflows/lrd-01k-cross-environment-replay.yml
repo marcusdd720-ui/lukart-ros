@@ -171,7 +171,7 @@ jobs:
           bundle="$(python -c 'import json; print(json.load(open("_aggregate/report.json"))["plan"]["lrd01i_bundle_digest"])')"
           dependency="$(python -c 'import json; print(json.load(open("_aggregate/report.json"))["plan"]["ssc02_manifest_digest"])')"
           verifier="$(python -c 'import json; d=json.load(open("_aggregate/report.json")); ref=d["plan"]["reference_profile_digest"]; print(next(p["replay_verifier_digest"] for p in d["profiles"] if p["profile_digest"] == ref))')"
-          python scripts/lrd01k_oci_inspect.py _lrd01k/oci \
+          python -m scripts.lrd01k_oci_inspect _lrd01k/oci \
             --source-bundle-digest "$bundle" \
             --dependency-identity-digest "$dependency" \
             --verifier-digest "$verifier" \
