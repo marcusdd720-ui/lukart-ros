@@ -268,12 +268,13 @@ def _filesystem_semantics(root: Path) -> dict[str, object]:
 def _installed_artifact_inventory() -> tuple[dict[str, object], ...]:
     records: list[dict[str, object]] = []
     for distribution in importlib.metadata.distributions():
-        name = distribution.metadata.get("Name") or "UNKNOWN"
+        metadata = cast(Mapping[str, str], distribution.metadata)
+        name = metadata.get("Name") or "UNKNOWN"
         version = distribution.version or "UNKNOWN"
         files = distribution.files or []
         physical_files: list[dict[str, str]] = []
         for relative in sorted(files, key=lambda item: str(item).replace("\\", "/")):
-            absolute = distribution.locate_file(relative)
+            absolute = Path(str(distribution.locate_file(relative)))
             try:
                 if absolute.is_symlink() or not absolute.is_file():
                     continue
