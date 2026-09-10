@@ -1,0 +1,72 @@
+name: LRD-01I Offline Long-Range Survivability
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  lrd01i-offline-survivability:
+    runs-on: ubuntu-latest
+    env:
+      CANDIDATE_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+      PIP_DISABLE_PIP_VERSION_CHECK: "1"
+    steps:
+      - name: Checkout exact candidate SHA
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: Install validation environment
+        run: python -m pip install -e ".[dev]"
+
+      - name: Verify exact checkout identity
+        run: |
+          test "$(git rev-parse HEAD)" = "${CANDIDATE_SHA}"
+          echo "LRD01I_EXACT_SHA=${CANDIDATE_SHA}"
+
+      - name: LRD-01I lint and strict type-check
+        shell: bash
+        run: |
+          ruff check \
+            core/offline_long_range_survivability_v1.py \
+            core/offline_survivability_verifier_v1.py \
+            scripts/offline_long_range_survivability.py \
+            tests/test_offline_long_range_survivability_v1.py
+          mypy \
+            core/offline_long_range_survivability_v1.py \
+            core/offline_survivability_verifier_v1.py
+
+      - name: LRD-01I focused and adversarial suite
+        run: pytest -q tests/test_offline_long_range_survivability_v1.py
+
+      - name: Long-range escrow and supply-chain regression
+        run: |
+          pytest -q \
+            tests/test_long_range_replay_v1.py \
+            tests/test_artifact_escrow_v1.py \
+            tests/test_supply_chain_continuity_v2.py \
+            tests/test_long_range_drift_v1.py \
+            tests/test_long_range_health_v1.py
+
+  survivability-authority-boundary:
+    runs-on: ubuntu-latest
+    steps:
+      - name: External durability and interpreter preservation are not manufactured
+        run: |
+          echo "LRD-01I composes preserved replay and supply-chain material only."
+          echo "PHYSICAL_INTERPRETER_PRESERVED=false"
+          echo "EXTERNAL_TEN_YEAR_DURABILITY_CLAIM=false"
+          echo "PROVIDER_DURABILITY_CLAIM=false"
