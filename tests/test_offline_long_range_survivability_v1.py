@@ -166,7 +166,7 @@ def _lrd_material(
     bindings: list[EscrowArtifactBindingV1] = []
     for role in ReplayArtifactRole:
         data = f"LRD-01I::{role.value}\n".encode()
-        blob = backend.publish(data, limits=continuity_cast_limits())
+        backend.publish(data, limits=continuity_cast_limits())
         bindings.append(
             EscrowArtifactBindingV1.build(
                 role=role,
