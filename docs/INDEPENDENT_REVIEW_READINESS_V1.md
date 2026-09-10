@@ -1,6 +1,6 @@
 # IRR-01 — Independent Review Readiness Package v1
 
-Status: **ENGINEERING READINESS SCOPE — NOT AN INDEPENDENT REVIEW**  
+Status: **CLOSED / ENGINEERING PASS — READY FOR REAL INDEPENDENT REVIEW**  
 Machine status after successful build/verification: `READY_FOR_INDEPENDENT_REVIEW`  
 External review status emitted by repository automation: `NOT_INDEPENDENTLY_REVIEWED`
 
@@ -90,5 +90,43 @@ it must never be synthesized by this builder or CI workflow.
 IRR-01 is engineering-complete only when focused/adversarial tests, full regression/security,
 exact-candidate-SHA GitHub CI, guarded merge, resulting-main validation and release guard all
 pass. Even then the strongest automation claim remains exactly:
+
+`READY_FOR_INDEPENDENT_REVIEW / NOT_INDEPENDENTLY_REVIEWED`.
+
+## Canonical engineering closure
+
+IRR-01 is `CLOSED / ENGINEERING PASS` for implementation PR #220.
+
+Validated implementation head:
+`de5ee8116cebf7d1328612bb7c74818573b3887d`
+
+Guarded implementation merge / resulting main:
+`c2fc5eb8bf7973ca957517dbbe77dc0ec818cbc2`
+
+The final implementation candidate passed all 29 exact-SHA PR workflows. The dedicated
+IRR-01 workflow passed Ruff, MyPy, 12 focused/adversarial tests, exact-commit package build,
+package verification and the external-review authority boundary. Its content-addressed
+review package contained 857 selected public Git-tracked files and had SHA-256:
+
+`80cb5f392e2256bd11b6232a38f685e5be6996ccd8dd6e898eb60d3eef319948`
+
+The guarded merge used the unchanged validated implementation head. Resulting-main
+validation completed with all 25 push-triggered workflows in terminal `SUCCESS`, with zero
+failed, cancelled, timed-out, queued or in-progress runs at closure evaluation. The
+`MVROS v1 Release` guard completed successfully in development/no-release-mutation mode;
+release build and publication remained disabled.
+
+Historical release identity remained unchanged after implementation merge:
+
+- `v1.0.1` annotated tag object: `9f7c0b28f766c8921e63b1d517fefcc96aa991d4`;
+- `v1.0.1` target commit: `802013c4d0e53dc12306a97e1877ebba86af64a7`;
+- latest published release: `v1.0.1`.
+
+This closure certifies only that the engineering readiness mechanism and public-only handoff
+package were implemented and validated under repository controls. It does not establish that
+an independent reviewer has reviewed the system. No reviewer identity, external PASS/FAIL,
+independent security review, certification or external attestation is claimed.
+
+Canonical external-review state after engineering closure remains exactly:
 
 `READY_FOR_INDEPENDENT_REVIEW / NOT_INDEPENDENTLY_REVIEWED`.
