@@ -132,6 +132,49 @@ def _bool(value: object, *, field_name: str) -> bool:
     return value
 
 
+def _policy_source_matches_sts_principal_v1(
+    *,
+    policy_source_arn: str,
+    sts_principal_arn: str,
+) -> bool:
+    """Bind IAM simulation to the same caller, including an AssumeRole session.
+
+    AWS STS reports an assumed role as
+    ``arn:<partition>:sts::<account>:assumed-role/<role-name>/<session>`` while
+    IAM policy simulation addresses the backing role as
+    ``arn:<partition>:iam::<account>:role/<optional-path>/<role-name>``.
+    Exact equality remains valid for direct principals. The assumed-role mapping
+    accepts only the same partition, account and terminal role name.
+    """
+
+    if policy_source_arn == sts_principal_arn:
+        return True
+    policy = policy_source_arn.split(":", 5)
+    caller = sts_principal_arn.split(":", 5)
+    if len(policy) != 6 or len(caller) != 6:
+        return False
+    if policy[0] != "arn" or caller[0] != "arn":
+        return False
+    if policy[1] != caller[1] or policy[4] != caller[4]:
+        return False
+    if policy[2] != "iam" or caller[2] != "sts":
+        return False
+    if policy[3] or caller[3]:
+        return False
+    if not policy[5].startswith("role/"):
+        return False
+    if not caller[5].startswith("assumed-role/"):
+        return False
+    policy_segments = policy[5].split("/")
+    caller_segments = caller[5].split("/")
+    if len(policy_segments) < 2 or len(caller_segments) != 3:
+        return False
+    role_name = policy_segments[-1]
+    assumed_role_name = caller_segments[1]
+    session_name = caller_segments[2]
+    return bool(role_name and session_name and role_name == assumed_role_name)
+
+
 def parse_aws_s3_profile_v1(value: Mapping[str, object]) -> AwsS3ObjectLockProfileV1:
     """Strictly deserialize one secret-free AWS S3 Object Lock profile."""
 
@@ -500,7 +543,10 @@ def validate_closure_grade_location_evidence_v1(
         raise ProviderDurableEvidenceBundleV1Error(
             "closure-grade location provider evidence must be VERIFIED"
         )
-    if credential_scope.policy_source_arn != evidence.principal_arn:
+    if not _policy_source_matches_sts_principal_v1(
+        policy_source_arn=credential_scope.policy_source_arn,
+        sts_principal_arn=evidence.principal_arn,
+    ):
         raise ProviderDurableEvidenceBundleV1Error(
             "IAM policy evidence principal does not match STS storage principal"
         )
