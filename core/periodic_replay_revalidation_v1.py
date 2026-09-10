@@ -80,15 +80,6 @@ def _git_sha(value: object, *, field: str) -> str:
     return text
 
 
-def _verify_identity(value: Mapping[str, object], identity_field: str) -> str:
-    actual = _digest(value.get(identity_field), field=identity_field)
-    body = dict(value)
-    body.pop(identity_field, None)
-    if content_digest(body) != actual:
-        raise PeriodicReplayError(f"{identity_field} mismatch")
-    return actual
-
-
 def _cross_environment_revalidation(
     report: Mapping[str, object],
 ) -> tuple[str, str, bool, tuple[str, ...]]:
@@ -109,8 +100,7 @@ def _cross_environment_revalidation(
             raise PeriodicReplayError("LRD-01K receipt must be an object")
         if receipt.get("execution_status") != "VERIFIED":
             violations.append("cross_environment_execution_not_verified")
-        classification = receipt.get("classification")
-        if classification not in _ACCEPTABLE_REPLAY_CLASSIFICATIONS:
+        if receipt.get("classification") not in _ACCEPTABLE_REPLAY_CLASSIFICATIONS:
             violations.append("cross_environment_semantic_revalidation_failed")
     normalized = tuple(sorted(set(violations)))
     return report_digest, bundle_digest, not normalized, normalized
@@ -191,7 +181,11 @@ class PeriodicReplayObservationV1:
             "repository_sha",
             _git_sha(self.repository_sha, field="repository_sha"),
         )
-        object.__setattr__(self, "observed_at", _timestamp(self.observed_at, field="observed_at"))
+        object.__setattr__(
+            self,
+            "observed_at",
+            _timestamp(self.observed_at, field="observed_at"),
+        )
         for field in (
             "lrd01i_bundle_digest",
             "cross_environment_report_digest",
@@ -241,19 +235,23 @@ class PeriodicReplayObservationV1:
     @classmethod
     def from_dict(cls, value: Mapping[str, object]) -> PeriodicReplayObservationV1:
         _strict(value, _OBSERVATION_KEYS, field="periodic replay observation")
-        violations = value.get("upstream_violations")
-        if (
-            not isinstance(violations, list)
-            or not all(isinstance(item, str) for item in violations)
-        ):
+        raw_violations = value.get("upstream_violations")
+        if not isinstance(raw_violations, list):
             raise PeriodicReplayError("upstream_violations must be a list of strings")
+        violations = tuple(
+            _text(item, field="upstream_violation") for item in raw_violations
+        )
+        raw_pass = value.get("upstream_revalidation_pass")
+        if not isinstance(raw_pass, bool):
+            raise PeriodicReplayError("upstream_revalidation_pass must be boolean")
         result = cls(
             schema=_text(value.get("schema"), field="schema"),
             case_id=_text(value.get("case_id"), field="case_id"),
             repository_sha=_git_sha(value.get("repository_sha"), field="repository_sha"),
             observed_at=_timestamp(value.get("observed_at"), field="observed_at"),
             lrd01i_bundle_digest=_digest(
-                value.get("lrd01i_bundle_digest"), field="lrd01i_bundle_digest"
+                value.get("lrd01i_bundle_digest"),
+                field="lrd01i_bundle_digest",
             ),
             cross_environment_report_digest=_digest(
                 value.get("cross_environment_report_digest"),
@@ -263,18 +261,15 @@ class PeriodicReplayObservationV1:
                 value.get("long_range_health_report_digest"),
                 field="long_range_health_report_digest",
             ),
-            upstream_revalidation_pass=value.get("upstream_revalidation_pass") is True,
-            upstream_violations=tuple(violations),
+            upstream_revalidation_pass=raw_pass,
+            upstream_violations=violations,
             previous_observation_digest=_optional_digest(
                 value.get("previous_observation_digest"),
                 field="previous_observation_digest",
             ),
         )
-        if value.get("upstream_revalidation_pass") is not result.upstream_revalidation_pass:
-            raise PeriodicReplayError("upstream_revalidation_pass must be boolean")
-        if result.observation_digest != _digest(
-            value.get("observation_digest"), field="observation_digest"
-        ):
+        expected = _digest(value.get("observation_digest"), field="observation_digest")
+        if result.observation_digest != expected:
             raise PeriodicReplayError("observation_digest mismatch")
         return result
 
@@ -288,11 +283,11 @@ def build_periodic_replay_observation_v1(
     long_range_health_report: LongRangeHealthReportV1,
     previous: PeriodicReplayObservationV1 | None = None,
 ) -> PeriodicReplayObservationV1:
-    """Bind one actual upstream revalidation result without inventing upstream semantics."""
+    """Bind one actual upstream revalidation result without inventing semantics."""
     case_id = _text(case_id, field="case_id")
     observed_at = _timestamp(observed_at, field="observed_at")
-    cross_digest, bundle_digest, cross_pass, cross_violations = _cross_environment_revalidation(
-        cross_environment_report
+    cross_digest, bundle_digest, cross_pass, cross_violations = (
+        _cross_environment_revalidation(cross_environment_report)
     )
     if long_range_health_report.case_id != case_id:
         raise PeriodicReplayError("LRD-01E health report case scope mismatch")
@@ -331,8 +326,8 @@ def verify_observation_evidence_v1(
     long_range_health_report: LongRangeHealthReportV1,
 ) -> str:
     """Rebind an immutable observation to the exact upstream evidence objects."""
-    cross_digest, bundle_digest, cross_pass, cross_violations = _cross_environment_revalidation(
-        cross_environment_report
+    cross_digest, bundle_digest, cross_pass, cross_violations = (
+        _cross_environment_revalidation(cross_environment_report)
     )
     if observation.cross_environment_report_digest != cross_digest:
         raise PeriodicReplayError("cross-environment report substitution detected")
@@ -342,6 +337,8 @@ def verify_observation_evidence_v1(
         raise PeriodicReplayError("long-range health report substitution detected")
     if observation.case_id != long_range_health_report.case_id:
         raise PeriodicReplayError("observation/health case scope mismatch")
+    if long_range_health_report.evaluated_at > observation.observed_at:
+        raise PeriodicReplayError("LRD-01E health report timestamp is after observation")
     violations = list(cross_violations)
     if long_range_health_report.state is not LongRangeHealthState.HEALTHY:
         violations.append("long_range_health_not_healthy")
@@ -354,26 +351,10 @@ def verify_observation_evidence_v1(
     return observation.observation_digest
 
 
-_EVALUATION_KEYS = frozenset(
-    {
-        "schema",
-        "evaluated_at",
-        "cadence_policy_digest",
-        "observation_chain_digest",
-        "latest_observation_digest",
-        "latest_observation_age_seconds",
-        "state",
-        "violations",
-        "scheduler_authority",
-        "evaluation_digest",
-    }
-)
-
-
 def verify_observation_chain_v1(
     observations: Sequence[PeriodicReplayObservationV1],
 ) -> str:
-    """Verify one exact immutable observation chain and return its content identity."""
+    """Verify one exact immutable observation chain and return its identity."""
     if not observations:
         return content_digest([])
     seen: set[str] = set()
@@ -403,6 +384,22 @@ def verify_observation_chain_v1(
         identities.append(identity)
         previous = observation
     return content_digest(identities)
+
+
+_EVALUATION_KEYS = frozenset(
+    {
+        "schema",
+        "evaluated_at",
+        "cadence_policy_digest",
+        "observation_chain_digest",
+        "latest_observation_digest",
+        "latest_observation_age_seconds",
+        "state",
+        "violations",
+        "scheduler_authority",
+        "evaluation_digest",
+    }
+)
 
 
 @dataclass(frozen=True, slots=True)
@@ -488,15 +485,12 @@ class PeriodicReplayEvaluationV1:
         _strict(value, _EVALUATION_KEYS, field="periodic replay evaluation")
         if value.get("scheduler_authority") is not False:
             raise PeriodicReplayError("periodic replay evidence cannot grant scheduler authority")
-        violations = value.get("violations")
-        if (
-            not isinstance(violations, list)
-            or not all(isinstance(item, str) for item in violations)
-        ):
+        raw_violations = value.get("violations")
+        if not isinstance(raw_violations, list):
             raise PeriodicReplayError("violations must be a list of strings")
-        age = value.get("latest_observation_age_seconds")
-        if age is not None:
-            age = _timestamp(age, field="latest_observation_age_seconds")
+        violations = tuple(_text(item, field="violation") for item in raw_violations)
+        raw_age = value.get("latest_observation_age_seconds")
+        age = None if raw_age is None else _timestamp(raw_age, field="latest_observation_age_seconds")
         try:
             state = PeriodicReplayState(_text(value.get("state"), field="state"))
         except ValueError as exc:
@@ -505,21 +499,23 @@ class PeriodicReplayEvaluationV1:
             schema=_text(value.get("schema"), field="schema"),
             evaluated_at=_timestamp(value.get("evaluated_at"), field="evaluated_at"),
             cadence_policy_digest=_digest(
-                value.get("cadence_policy_digest"), field="cadence_policy_digest"
+                value.get("cadence_policy_digest"),
+                field="cadence_policy_digest",
             ),
             observation_chain_digest=_digest(
-                value.get("observation_chain_digest"), field="observation_chain_digest"
+                value.get("observation_chain_digest"),
+                field="observation_chain_digest",
             ),
             latest_observation_digest=_optional_digest(
-                value.get("latest_observation_digest"), field="latest_observation_digest"
+                value.get("latest_observation_digest"),
+                field="latest_observation_digest",
             ),
             latest_observation_age_seconds=age,
             state=state,
-            violations=tuple(violations),
+            violations=violations,
         )
-        if result.evaluation_digest != _digest(
-            value.get("evaluation_digest"), field="evaluation_digest"
-        ):
+        expected = _digest(value.get("evaluation_digest"), field="evaluation_digest")
+        if result.evaluation_digest != expected:
             raise PeriodicReplayError("evaluation_digest mismatch")
         return result
 
@@ -575,12 +571,12 @@ def evaluate_periodic_replay_v1(
             state=PeriodicReplayState.UNVERIFIABLE,
             violations=("periodic_replay_observation_missing",),
         )
-    historical_violations = _historical_gap_violations(policy=policy, observations=observations)
+    historical = _historical_gap_violations(policy=policy, observations=observations)
     latest = observations[-1]
     if latest.observed_at > evaluated_at:
         raise PeriodicReplayError("periodic replay observation timestamp is in the future")
     age = evaluated_at - latest.observed_at
-    if historical_violations:
+    if historical:
         return PeriodicReplayEvaluationV1(
             evaluated_at=evaluated_at,
             cadence_policy_digest=policy.policy_digest,
@@ -588,7 +584,7 @@ def evaluate_periodic_replay_v1(
             latest_observation_digest=latest.observation_digest,
             latest_observation_age_seconds=age,
             state=PeriodicReplayState.OVERDUE,
-            violations=historical_violations,
+            violations=historical,
         )
     if not latest.upstream_revalidation_pass:
         return PeriodicReplayEvaluationV1(
@@ -600,15 +596,17 @@ def evaluate_periodic_replay_v1(
             state=PeriodicReplayState.UNVERIFIABLE,
             violations=("upstream_revalidation_failed", *latest.upstream_violations),
         )
+    state: PeriodicReplayState
+    out_violations: tuple[str, ...]
     if age > policy.max_replay_age_seconds:
         state = PeriodicReplayState.OVERDUE
-        violations = ("periodic_replay_overdue",)
+        out_violations = ("periodic_replay_overdue",)
     elif age >= policy.max_replay_age_seconds - policy.due_window_seconds:
         state = PeriodicReplayState.DUE
-        violations = ()
+        out_violations = ()
     else:
         state = PeriodicReplayState.CURRENT
-        violations = ()
+        out_violations = ()
     return PeriodicReplayEvaluationV1(
         evaluated_at=evaluated_at,
         cadence_policy_digest=policy.policy_digest,
@@ -616,5 +614,5 @@ def evaluate_periodic_replay_v1(
         latest_observation_digest=latest.observation_digest,
         latest_observation_age_seconds=age,
         state=state,
-        violations=violations,
+        violations=out_violations,
     )
