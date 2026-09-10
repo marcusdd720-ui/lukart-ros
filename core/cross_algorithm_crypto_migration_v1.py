@@ -15,6 +15,7 @@ import time
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from enum import StrEnum
+from typing import cast
 
 import cryptography
 from cryptography.exceptions import InvalidSignature, UnsupportedAlgorithm
@@ -167,8 +168,8 @@ class Mldsa65AdapterProfileV1:
             "cross_implementation_interoperability_proven": False,
             "fips_validation_claim": False,
         }
-        for name, value in fixed.items():
-            if getattr(self, name) != value:
+        for name, expected in fixed.items():
+            if getattr(self, name) != expected:
                 raise CrossAlgorithmMigrationError(
                     f"ML-DSA-65 adapter profile field {name} is fixed in v1"
                 )
@@ -365,6 +366,59 @@ class Mldsa65MigrationKeyV1:
             retire_at=retire_at,
         )
 
+    @classmethod
+    def from_dict(cls, value: Mapping[str, object]) -> Mldsa65MigrationKeyV1:
+        _strict_keys(
+            value,
+            expected=frozenset(
+                {
+                    "schema",
+                    "key_id",
+                    "public_key_b64",
+                    "status",
+                    "not_before",
+                    "retire_at",
+                    "allowed_purposes",
+                    "predecessor_ed25519_key_id",
+                    "adapter_profile_digest",
+                }
+            ),
+            field_name="migration key",
+        )
+        try:
+            status = CryptoKeyStatus(_text(value.get("status"), field_name="status"))
+        except ValueError as exc:
+            raise CrossAlgorithmMigrationError("unknown migration key lifecycle status") from exc
+        raw_purposes = value.get("allowed_purposes")
+        if not isinstance(raw_purposes, list) or not raw_purposes:
+            raise CrossAlgorithmMigrationError("allowed_purposes must be a nonempty list")
+        try:
+            purposes = tuple(
+                AttestationPurpose(_text(item, field_name="allowed_purpose"))
+                for item in raw_purposes
+            )
+        except ValueError as exc:
+            raise CrossAlgorithmMigrationError("unknown attestation purpose") from exc
+        retire_raw = value.get("retire_at")
+        retire_at = None if retire_raw is None else _int(retire_raw, field_name="retire_at")
+        return cls(
+            schema=_text(value.get("schema"), field_name="schema"),
+            key_id=_text(value.get("key_id"), field_name="key_id"),
+            public_key_b64=_text(value.get("public_key_b64"), field_name="public_key_b64"),
+            status=status,
+            not_before=_int(value.get("not_before"), field_name="not_before"),
+            retire_at=retire_at,
+            allowed_purposes=purposes,
+            predecessor_ed25519_key_id=_text(
+                value.get("predecessor_ed25519_key_id"),
+                field_name="predecessor_ed25519_key_id",
+            ),
+            adapter_profile_digest=_digest(
+                value.get("adapter_profile_digest"),
+                field_name="adapter_profile_digest",
+            ),
+        )
+
     def public_key_bytes(self) -> bytes:
         return _decode_b64(
             self.public_key_b64,
@@ -444,6 +498,67 @@ class CrossAlgorithmMigrationEnvelopeV1:
             expected_size=ML_DSA_SIGNATURE_BYTES,
         )
 
+    @classmethod
+    def from_dict(cls, value: Mapping[str, object]) -> CrossAlgorithmMigrationEnvelopeV1:
+        _strict_keys(
+            value,
+            expected=frozenset(
+                {
+                    "schema",
+                    "source_attestation_digest",
+                    "source_verification_digest",
+                    "source_trust_set_digest",
+                    "source_key_digest",
+                    "purpose",
+                    "subject_digest",
+                    "payload_digest",
+                    "migration_key_material_digest",
+                    "adapter_profile_digest",
+                    "signer_runtime",
+                    "issued_at",
+                    "nonce",
+                    "signature_b64",
+                }
+            ),
+            field_name="migration envelope",
+        )
+        runtime_raw = value.get("signer_runtime")
+        if not isinstance(runtime_raw, Mapping):
+            raise CrossAlgorithmMigrationError("signer_runtime must be an object")
+        try:
+            purpose = AttestationPurpose(_text(value.get("purpose"), field_name="purpose"))
+        except ValueError as exc:
+            raise CrossAlgorithmMigrationError("unknown migration purpose") from exc
+        return cls(
+            schema=_text(value.get("schema"), field_name="schema"),
+            source_attestation_digest=_digest(
+                value.get("source_attestation_digest"), field_name="source_attestation_digest"
+            ),
+            source_verification_digest=_digest(
+                value.get("source_verification_digest"), field_name="source_verification_digest"
+            ),
+            source_trust_set_digest=_digest(
+                value.get("source_trust_set_digest"), field_name="source_trust_set_digest"
+            ),
+            source_key_digest=_digest(value.get("source_key_digest"), field_name="source_key_digest"),
+            purpose=purpose,
+            subject_digest=_digest(value.get("subject_digest"), field_name="subject_digest"),
+            payload_digest=_digest(value.get("payload_digest"), field_name="payload_digest"),
+            migration_key_material_digest=_digest(
+                value.get("migration_key_material_digest"),
+                field_name="migration_key_material_digest",
+            ),
+            adapter_profile_digest=_digest(
+                value.get("adapter_profile_digest"), field_name="adapter_profile_digest"
+            ),
+            signer_runtime=Mldsa65RuntimeProvenanceV1.from_dict(
+                cast(Mapping[str, object], runtime_raw)
+            ),
+            issued_at=_int(value.get("issued_at"), field_name="issued_at"),
+            nonce=_text(value.get("nonce"), field_name="nonce"),
+            signature_b64=_text(value.get("signature_b64"), field_name="signature_b64"),
+        )
+
     def canonical_body(self) -> dict[str, object]:
         return {
             "schema": self.schema,
@@ -460,6 +575,10 @@ class CrossAlgorithmMigrationEnvelopeV1:
             "issued_at": self.issued_at,
             "nonce": self.nonce,
         }
+
+    @property
+    def body_digest(self) -> str:
+        return content_digest(self.canonical_body())
 
     def canonical_dict(self) -> dict[str, object]:
         return {**self.canonical_body(), "signature_b64": self.signature_b64}
@@ -551,7 +670,7 @@ def _verify_source(
     expected_source_trust_set_digest: str,
     expected_purpose: AttestationPurpose,
     expected_subject_digest: str,
-    now: int,
+    verification_time: int,
 ) -> CryptoVerificationV1:
     return CryptoTrustVerifierV1(
         source_trust_set,
@@ -561,7 +680,7 @@ def _verify_source(
         expected_purpose=expected_purpose,
         expected_subject_digest=expected_subject_digest,
         payload=source_payload,
-        now=now,
+        now=verification_time,
     )
 
 
@@ -626,7 +745,7 @@ def sign_cross_algorithm_migration_v1(
         expected_source_trust_set_digest=expected_source,
         expected_purpose=source_attestation.purpose,
         expected_subject_digest=source_attestation.subject_digest,
-        now=issued_at,
+        verification_time=issued_at,
     )
     payload_digest = content_digest(dict(source_payload))
     body: dict[str, object] = {
@@ -678,7 +797,7 @@ def verify_cross_algorithm_migration_v1(
     expected_adapter_profile_digest: str,
     now: int,
 ) -> CrossAlgorithmVerificationV1:
-    """Require both the historical Ed25519 proof and the additive ML-DSA-65 proof."""
+    """Require historical validity at migration time plus the ML-DSA-65 proof now."""
 
     now = _int(now, field_name="now")
     expected_source = _digest(
@@ -722,7 +841,7 @@ def verify_cross_algorithm_migration_v1(
         expected_source_trust_set_digest=expected_source,
         expected_purpose=envelope.purpose,
         expected_subject_digest=envelope.subject_digest,
-        now=now,
+        verification_time=envelope.issued_at,
     )
     expected_bindings: dict[str, object] = {
         "source_attestation_digest": source_attestation.digest(),
