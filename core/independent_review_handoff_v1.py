@@ -300,7 +300,7 @@ class IndependentReviewHandoffV1:
         irr_source_commit_sha: str,
         irr_package_name: str,
         irr_package_sha256: str,
-    ) -> "IndependentReviewHandoffV1":
+    ) -> IndependentReviewHandoffV1:
         body = cls._body(
             irr_source_commit_sha=_git_sha(
                 irr_source_commit_sha, field_name="irr_source_commit_sha"
@@ -340,7 +340,7 @@ class IndependentReviewHandoffV1:
         }
 
     @classmethod
-    def from_dict(cls, value: Mapping[str, object]) -> "IndependentReviewHandoffV1":
+    def from_dict(cls, value: Mapping[str, object]) -> IndependentReviewHandoffV1:
         _strict_keys(value, _HANDOFF_KEYS, field_name="handoff")
         candidate = cls(
             irr_source_commit_sha=_git_sha(
@@ -428,7 +428,7 @@ class ReviewerProvenanceV1:
         reviewer_id: str,
         organization: str,
         role: str,
-    ) -> "ReviewerProvenanceV1":
+    ) -> ReviewerProvenanceV1:
         body = cls._body(
             reviewer_id=_text(reviewer_id, field_name="reviewer_id"),
             organization=_text(organization, field_name="organization"),
@@ -453,7 +453,7 @@ class ReviewerProvenanceV1:
         }
 
     @classmethod
-    def from_dict(cls, value: Mapping[str, object]) -> "ReviewerProvenanceV1":
+    def from_dict(cls, value: Mapping[str, object]) -> ReviewerProvenanceV1:
         _strict_keys(value, _REVIEWER_KEYS, field_name="reviewer provenance")
         candidate = cls(
             reviewer_id=_text(value.get("reviewer_id"), field_name="reviewer_id"),
@@ -526,7 +526,7 @@ class ReviewArtifactIdentityV1:
         name: str,
         media_type: str,
         data: bytes,
-    ) -> "ReviewArtifactIdentityV1":
+    ) -> ReviewArtifactIdentityV1:
         if len(data) > MAX_REVIEW_ARTIFACT_BYTES_V1:
             raise IndependentReviewHandoffError("review artifact exceeds size limit")
         safe_name = _safe_filename(name, field_name="artifact name")
@@ -562,7 +562,7 @@ class ReviewArtifactIdentityV1:
         }
 
     @classmethod
-    def from_dict(cls, value: Mapping[str, object]) -> "ReviewArtifactIdentityV1":
+    def from_dict(cls, value: Mapping[str, object]) -> ReviewArtifactIdentityV1:
         _strict_keys(value, _ARTIFACT_KEYS, field_name="review artifact")
         candidate = cls(
             name=_safe_filename(value.get("name"), field_name="artifact name"),
@@ -642,7 +642,7 @@ class ReviewStatementV1:
         artifact: ReviewArtifactIdentityV1,
         outcome: ReviewerOutcomeV1,
         review_completed_at: int,
-    ) -> "ReviewStatementV1":
+    ) -> ReviewStatementV1:
         completed = _nonnegative_int(
             review_completed_at, field_name="review_completed_at"
         )
@@ -681,7 +681,7 @@ class ReviewStatementV1:
         }
 
     @classmethod
-    def from_dict(cls, value: Mapping[str, object]) -> "ReviewStatementV1":
+    def from_dict(cls, value: Mapping[str, object]) -> ReviewStatementV1:
         _strict_keys(value, _STATEMENT_KEYS, field_name="review statement")
         handoff_raw = value.get("handoff")
         reviewer_raw = value.get("reviewer")
@@ -764,7 +764,7 @@ class ExternalReviewEvidenceV1:
         *,
         statement: ReviewStatementV1,
         attestation: SignedAttestation,
-    ) -> "ExternalReviewEvidenceV1":
+    ) -> ExternalReviewEvidenceV1:
         body = cls._body(statement=statement, attestation=attestation)
         return cls(
             statement=statement,
@@ -785,7 +785,7 @@ class ExternalReviewEvidenceV1:
         }
 
     @classmethod
-    def from_dict(cls, value: Mapping[str, object]) -> "ExternalReviewEvidenceV1":
+    def from_dict(cls, value: Mapping[str, object]) -> ExternalReviewEvidenceV1:
         _strict_keys(value, _EVIDENCE_KEYS, field_name="review evidence")
         statement_raw = value.get("statement")
         attestation_raw = value.get("attestation")
