@@ -70,8 +70,9 @@ jobs:
           python - <<'PY'
           from pathlib import Path
           workflow = Path(".github/workflows/lrd-01l-periodic-revalidation.yml").read_text()
-          if "schedule:" in workflow:
-              raise SystemExit("LRD-01L must not introduce an unapproved schedule trigger")
+          for line in workflow.splitlines():
+              if line.strip() == "schedule:":
+                  raise SystemExit("LRD-01L must not introduce an unapproved schedule trigger")
           module = Path("core/periodic_replay_revalidation_v1.py").read_text()
           if '"scheduler_authority": False' not in module:
               raise SystemExit("scheduler authority non-claim is missing")
