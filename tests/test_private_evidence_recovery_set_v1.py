@@ -7,12 +7,14 @@ import pytest
 from core.enterprise.contracts import AuthorizationContext, Permission
 from core.private_evidence_recovery_set_v1 import (
     PrivateEvidenceRecoverySetError,
+    RecoverySetResultV1,
     RecoverySetV1,
     create_redundant_recovery_set,
     restore_recovery_set_member,
     run_recovery_set_drill,
     verify_redundant_recovery_set,
 )
+from core.private_evidence_recovery_v1 import PrivateEvidenceRecoveryError
 from core.private_evidence_rotation_v1 import reencrypt_evidence
 from core.private_evidence_v1 import (
     ImportedEvidence,
@@ -120,7 +122,13 @@ def install_distinct_device_probe(monkeypatch: pytest.MonkeyPatch) -> None:
 def create_set(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
-) -> tuple[PrivateEvidenceStore, ImportedEvidence, ImportedEvidence, bytes, object]:
+) -> tuple[
+    PrivateEvidenceStore,
+    ImportedEvidence,
+    ImportedEvidence,
+    bytes,
+    RecoverySetResultV1,
+]:
     store, original, rotated, payload = make_rotated_store(tmp_path)
     device_a, device_b = device_layout(tmp_path)
     install_distinct_device_probe(monkeypatch)
@@ -139,8 +147,7 @@ def test_recovery_set_has_independent_wrapping_and_one_snapshot(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    _store, _original, _rotated, _payload, raw_result = create_set(tmp_path, monkeypatch)
-    result = raw_result
+    _store, _original, _rotated, _payload, result = create_set(tmp_path, monkeypatch)
     recovery_set = result.recovery_set
 
     assert recovery_set.recovery_threshold == 1
@@ -160,8 +167,7 @@ def test_one_member_restores_without_other_passphrase_or_capsule(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    _store, original, rotated, payload, raw_result = create_set(tmp_path, monkeypatch)
-    result = raw_result
+    _store, original, rotated, payload, result = create_set(tmp_path, monkeypatch)
 
     second = result.member_paths[1]
     for path in sorted(second.rglob("*"), reverse=True):
@@ -222,8 +228,7 @@ def test_tampered_member_blocks_full_set_verification(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    _store, _original, _rotated, _payload, raw_result = create_set(tmp_path, monkeypatch)
-    result = raw_result
+    _store, _original, _rotated, _payload, result = create_set(tmp_path, monkeypatch)
     capsule_json = result.member_paths[1] / "capsule.json"
     capsule_json.write_bytes(capsule_json.read_bytes() + b" ")
 
@@ -242,8 +247,7 @@ def test_wrong_member_passphrase_fails_closed(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    _store, _original, _rotated, _payload, raw_result = create_set(tmp_path, monkeypatch)
-    result = raw_result
+    _store, _original, _rotated, _payload, result = create_set(tmp_path, monkeypatch)
 
     with pytest.raises(PrivateEvidenceRecoveryError, match="passphrase|authentication"):
         restore_recovery_set_member(
@@ -262,8 +266,7 @@ def test_cross_case_recovery_set_is_rejected(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    _store, _original, _rotated, _payload, raw_result = create_set(tmp_path, monkeypatch)
-    result = raw_result
+    _store, _original, _rotated, _payload, result = create_set(tmp_path, monkeypatch)
 
     with pytest.raises(PrivateEvidenceRecoverySetError, match="case scope mismatch"):
         restore_recovery_set_member(
@@ -282,8 +285,8 @@ def test_recovery_set_parser_rejects_unknown_fields(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    _store, _original, _rotated, _payload, raw_result = create_set(tmp_path, monkeypatch)
-    value = raw_result.recovery_set.canonical_dict()
+    _store, _original, _rotated, _payload, result = create_set(tmp_path, monkeypatch)
+    value = result.recovery_set.canonical_dict()
     value["unexpected"] = True
 
     with pytest.raises(PrivateEvidenceRecoverySetError, match="unknown or missing"):
@@ -294,8 +297,7 @@ def test_full_drill_restores_both_independent_members(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    _store, _original, _rotated, _payload, raw_result = create_set(tmp_path, monkeypatch)
-    result = raw_result
+    _store, _original, _rotated, _payload, result = create_set(tmp_path, monkeypatch)
     receipt = run_recovery_set_drill(
         result.recovery_set,
         result.member_paths,
@@ -318,8 +320,7 @@ def test_receipts_do_not_persist_passphrases_keys_or_paths(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    _store, _original, _rotated, _payload, raw_result = create_set(tmp_path, monkeypatch)
-    result = raw_result
+    _store, _original, _rotated, _payload, result = create_set(tmp_path, monkeypatch)
     receipt = run_recovery_set_drill(
         result.recovery_set,
         result.member_paths,
