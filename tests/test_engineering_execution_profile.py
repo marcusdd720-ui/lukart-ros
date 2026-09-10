@@ -25,9 +25,10 @@ def test_execution_profile_is_thin_and_non_authoritative() -> None:
     assert "Przy konflikcie wygrywa aktualny GitHub canon" in text
 
 
-def test_execution_profile_preserves_claim_boundaries() -> None:
+def test_execution_profile_preserves_claim_and_scope_boundaries() -> None:
     text = PROFILE.read_text(encoding="utf-8")
 
     assert "Nie fabrykuj human/independent/security/external review" in text
     assert "CI/symulacja nie dowodzi fizycznej separacji" in text
-    assert "new trust boundaries" not in text
+    assert "nowe trust boundaries" in text
+    assert "trafiają do ordered follow-up" in text
