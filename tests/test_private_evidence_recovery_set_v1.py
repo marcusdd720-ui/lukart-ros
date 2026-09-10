@@ -230,7 +230,14 @@ def test_tampered_member_blocks_full_set_verification(
 ) -> None:
     _store, _original, _rotated, _payload, result = create_set(tmp_path, monkeypatch)
     capsule_json = result.member_paths[1] / "capsule.json"
-    capsule_json.write_bytes(capsule_json.read_bytes() + b" ")
+    original = capsule_json.read_bytes()
+    tampered = original.replace(
+        b"lukart.private-evidence-recovery-capsule.v1",
+        b"lukart.private-evidence-recovery-capsule.v0",
+        1,
+    )
+    assert tampered != original
+    capsule_json.write_bytes(tampered)
 
     with pytest.raises((PrivateEvidenceRecoveryError, PrivateEvidenceRecoverySetError)):
         verify_redundant_recovery_set(
