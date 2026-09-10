@@ -295,7 +295,7 @@ def test_historical_gap_is_detected_even_after_a_later_success() -> None:
 def test_swapped_or_duplicate_observation_chain_fails_closed() -> None:
     first = _observation(observed_at=1000)
     second = _observation(observed_at=1100, previous=first)
-    with pytest.raises(PeriodicReplayError, match="predecessor mismatch"):
+    with pytest.raises(PeriodicReplayError, match="must not have a predecessor"):
         verify_observation_chain_v1((second, first))
     with pytest.raises(PeriodicReplayError, match="duplicate observation"):
         verify_observation_chain_v1((first, first))
