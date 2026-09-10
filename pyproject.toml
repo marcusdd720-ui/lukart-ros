@@ -95,6 +95,7 @@ module = [
   "core.offline_survivability_verifier_v1",
   "core.p3.contracts",
   "core.p3.versioning",
+  "core.periodic_replay_revalidation_v1",
   "core.post_quantum_readiness_v1",
   "core.product_runtime_v1",
   "core.product_verification_evidence_v1",
