@@ -1,8 +1,9 @@
 from __future__ import annotations
 
 import json
+from collections.abc import Callable, Mapping
 from pathlib import Path
-from typing import Callable, Mapping, cast
+from typing import cast
 
 import pytest
 
@@ -38,9 +39,6 @@ from core.provider_durable_evidence_bundle_v1 import (
     parse_provider_pair_report_v1,
 )
 from core.provider_durable_storage_v1 import (
-    AwsLocationProviderEvidenceV1,
-    AwsObjectLockEvidenceV1,
-    ProviderEvidenceStateV1,
     build_provider_pair_report_v1,
     verify_s3_location_v1,
 )
@@ -238,10 +236,6 @@ def _drill(capture: ProviderDurableEvidenceCaptureV1) -> ProviderSourceLossDrill
     )
     from core.provider_durable_storage_v1 import AwsS3ObjectLockEscrowBackendV1
 
-    target = AwsS3ObjectLockEscrowBackendV1(
-        s3_client=target_s3,
-        profile=target_profile,
-    )
     data_by_digest = {
         binding.blob.digest: f"LRD-01H bundle test::{binding.role.value}\n".encode()
         for binding in capture.escrow_manifest.bindings
@@ -415,14 +409,20 @@ def test_capture_is_structurally_synthetic_only() -> None:
 def test_forged_closure_status_is_rejected() -> None:
     raw = _drill(_capture()).canonical_dict()
     raw["status"] = "CLOSED / ENGINEERING PASS"
-    with pytest.raises(ProviderDurableEvidenceBundleV1Error, match="unknown provider drill"):
+    with pytest.raises(
+        ProviderDurableEvidenceBundleV1Error,
+        match="unknown provider drill",
+    ):
         ProviderSourceLossDrillEvidenceV1.from_dict(raw)
 
 
 def test_source_unavailability_digest_tampering_is_rejected() -> None:
     raw = _drill(_capture()).canonical_dict()
     raw["source_unavailability_evidence_digest"] = "0" * 64
-    with pytest.raises(ProviderDurableEvidenceBundleV1Error, match="drill evidence digest mismatch"):
+    with pytest.raises(
+        ProviderDurableEvidenceBundleV1Error,
+        match="drill evidence digest mismatch",
+    ):
         ProviderSourceLossDrillEvidenceV1.from_dict(raw)
 
 
