@@ -122,7 +122,7 @@ jobs:
         run: |
           mapfile -t inputs < <(find _matrix -maxdepth 1 -type f -name '*.json' -print | sort)
           test "${#inputs[@]}" -eq 3
-          python scripts/lrd01k_aggregate_canary.py "${inputs[@]}" --output _lrd01k/report.json
+          python -m scripts.lrd01k_aggregate_canary "${inputs[@]}" --output _lrd01k/report.json
           python core/cross_environment_replay_verifier_v1.py _lrd01k/report.json
 
       - name: Upload aggregate report
