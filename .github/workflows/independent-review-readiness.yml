@@ -59,7 +59,7 @@ jobs:
             --commit "${CANDIDATE_SHA}" \
             --output-dir dist/independent-review
 
-      - name: Independently verify produced package bytes
+      - name: Verify produced package bytes in a separate step
         shell: bash
         run: |
           package="$(find dist/independent-review -maxdepth 1 -type f -name 'IRR-01-v1-*.zip' -print -quit)"
