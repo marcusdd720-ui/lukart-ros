@@ -490,7 +490,11 @@ class PeriodicReplayEvaluationV1:
             raise PeriodicReplayError("violations must be a list of strings")
         violations = tuple(_text(item, field="violation") for item in raw_violations)
         raw_age = value.get("latest_observation_age_seconds")
-        age = None if raw_age is None else _timestamp(raw_age, field="latest_observation_age_seconds")
+        age = (
+            None
+            if raw_age is None
+            else _timestamp(raw_age, field="latest_observation_age_seconds")
+        )
         try:
             state = PeriodicReplayState(_text(value.get("state"), field="state"))
         except ValueError as exc:
