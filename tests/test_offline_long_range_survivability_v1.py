@@ -13,6 +13,7 @@ from pathlib import Path
 import pytest
 
 import core.enterprise.supply_chain_continuity_v2 as continuity
+import core.offline_survivability_verifier_v1 as standalone
 from core.artifact_escrow_v1 import (
     ArtifactEscrowManifestV1,
     EscrowArtifactBindingV1,
@@ -343,3 +344,47 @@ def test_lrd01i_rejects_symlink_substitution(tmp_path: Path) -> None:
 
     with pytest.raises(OfflineSurvivabilityVerificationError, match="symlink"):
         verify_survivability_bundle(root, expected_digest=digest)
+
+
+def test_lrd01i_standalone_verifier_enforces_total_byte_bound(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    root, manifest = _built(tmp_path)
+    digest = str(manifest["bundle_digest"])
+    monkeypatch.setattr(standalone, "_MAX_BUNDLE_BYTES", 1)
+
+    with pytest.raises(OfflineSurvivabilityVerificationError, match="byte limit"):
+        verify_survivability_bundle(root, expected_digest=digest)
+
+
+def test_lrd01i_standalone_verifier_enforces_per_file_bound(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    root, manifest = _built(tmp_path)
+    digest = str(manifest["bundle_digest"])
+    monkeypatch.setattr(standalone, "_MAX_FILE_BYTES", 1)
+
+    with pytest.raises(OfflineSurvivabilityVerificationError, match="byte limit"):
+        verify_survivability_bundle(root, expected_digest=digest)
+
+
+def test_lrd01i_builder_rejects_symlinked_supply_chain_root(tmp_path: Path) -> None:
+    lrd, capsule, escrow, backend = _lrd_material(tmp_path)
+    continuity_root = _continuity_bundle(tmp_path)
+    linked_root = tmp_path / "continuity-link"
+    try:
+        linked_root.symlink_to(continuity_root, target_is_directory=True)
+    except (OSError, NotImplementedError):
+        pytest.skip("symlink creation unavailable")
+
+    with pytest.raises(OfflineLongRangeSurvivabilityError, match="regular directory"):
+        build_offline_survivability_bundle(
+            output_root=tmp_path / "survivability",
+            lrd_manifest=lrd,
+            replay_capsule=capsule,
+            escrow_manifest=escrow,
+            escrow_backend=backend,
+            continuity_bundle_root=linked_root,
+        )
