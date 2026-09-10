@@ -536,7 +536,9 @@ def _verify_store(store: PrivateEvidenceStore) -> tuple[tuple[str, int], ...]:
                 raise PrivateEvidenceRecoveryError("private evidence verification failed") from exc
             used_receipts.add(receipt_digest)
         key_id = str(manifest["key_id"]).strip()
-        key_version = int(manifest["key_version"])
+        key_version = _validate_positive_int(
+            manifest.get("key_version"), label="manifest key_version"
+        )
         required_keys.add((key_id, key_version))
 
     if object_ids != referenced_objects:
