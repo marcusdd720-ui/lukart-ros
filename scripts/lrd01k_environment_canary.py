@@ -4,6 +4,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import subprocess
 from pathlib import Path
 
 from core.cross_environment_replay_v1 import (
@@ -11,12 +12,29 @@ from core.cross_environment_replay_v1 import (
     build_observed_environment_receipt,
     capture_environment_snapshot,
     digest_value,
-    sha256_file,
 )
+
+_REPOSITORY_ROOT = Path(__file__).resolve().parents[1]
 
 
 def _h(label: str) -> str:
     return hashlib.sha256(label.encode("utf-8")).hexdigest()
+
+
+def _repository_blob_sha256(path: str | Path) -> str:
+    candidate = Path(path)
+    absolute = candidate if candidate.is_absolute() else _REPOSITORY_ROOT / candidate
+    try:
+        relative = absolute.resolve(strict=False).relative_to(_REPOSITORY_ROOT).as_posix()
+    except ValueError as exc:
+        raise SystemExit("LRD-01K source identity path must be inside the repository") from exc
+    try:
+        content = subprocess.check_output(
+            ["git", "-C", str(_REPOSITORY_ROOT), "show", f"HEAD:{relative}"]
+        )
+    except (OSError, subprocess.CalledProcessError) as exc:
+        raise SystemExit(f"cannot read exact repository blob identity for {relative}") from exc
+    return hashlib.sha256(content).hexdigest()
 
 
 def main() -> int:
@@ -26,11 +44,11 @@ def main() -> int:
     parser.add_argument("--lock", default="pylock.toml")
     args = parser.parse_args()
     verifier = (
-        Path(__file__).resolve().parents[1]
+        _REPOSITORY_ROOT
         / "core"
         / "cross_environment_replay_verifier_v1.py"
     )
-    verifier_digest = sha256_file(verifier)
+    verifier_digest = _repository_blob_sha256(verifier)
     policy_digest = digest_value(
         {
             "schema": "lukart.lrd01k-environment-policy.v1",
@@ -44,7 +62,7 @@ def main() -> int:
     profile = build_environment_profile(
         name=args.name,
         observed=snapshot,
-        dependency_lock_digest=sha256_file(args.lock),
+        dependency_lock_digest=_repository_blob_sha256(args.lock),
         physical_dependency_artifact_identities=[installed_digest],
         canonicalization_profile_digest=_h("core.p3.contracts:canonical_json"),
         migration_registry_digest=_h("lrd01j-migration-registry-binding"),
