@@ -1,0 +1,92 @@
+name: IRH-01 Independent Review Handoff
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  irh01-handoff-boundary:
+    runs-on: ubuntu-latest
+    env:
+      CANDIDATE_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+      PIP_DISABLE_PIP_VERSION_CHECK: "1"
+    steps:
+      - name: Checkout exact candidate SHA
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: Install validation environment
+        run: python -m pip install -e ".[dev]"
+
+      - name: Verify exact checkout identity
+        run: |
+          test "$(git rev-parse HEAD)" = "${CANDIDATE_SHA}"
+          echo "IRH01_EXACT_SHA=${CANDIDATE_SHA}"
+
+      - name: IRH-01 lint and type-check
+        run: |
+          ruff check \
+            core/independent_review_handoff_v1.py \
+            scripts/independent_review_handoff.py \
+            tests/test_independent_review_handoff_v1.py
+          mypy \
+            core/independent_review_handoff_v1.py \
+            scripts/independent_review_handoff.py \
+            tests/test_independent_review_handoff_v1.py
+
+      - name: IRH-01 focused and adversarial suite
+        run: pytest -q tests/test_independent_review_handoff_v1.py
+
+      - name: Build exact-SHA IRR-01 source package
+        run: |
+          rm -rf dist/independent-review
+          python scripts/independent_review_readiness.py build \
+            --repo-root . \
+            --commit "${CANDIDATE_SHA}" \
+            --output-dir dist/independent-review
+
+      - name: Create verified pending handoff
+        shell: bash
+        run: |
+          package="$(find dist/independent-review -maxdepth 1 -type f -name 'IRR-01-v1-*.zip' -print -quit)"
+          test -n "${package}"
+          python scripts/independent_review_handoff.py create-handoff \
+            --package "${package}" \
+            --output dist/independent-review/IRH-01-handoff.json
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          handoff = json.loads(
+              Path("dist/independent-review/IRH-01-handoff.json").read_text(
+                  encoding="utf-8"
+              )
+          )
+          assert handoff["external_review_status"] == "AWAITING_EXTERNAL_REVIEW"
+          assert handoff["independent_review_status"] == "NOT_INDEPENDENTLY_REVIEWED"
+          assert handoff["authority"] == (
+              "external-review-evidence-verification-only-no-certification"
+          )
+          PY
+
+      - name: External review authority boundary
+        run: |
+          echo "IRH01_EXTERNAL_REVIEW_STATUS=AWAITING_EXTERNAL_REVIEW"
+          echo "IRH01_INDEPENDENT_REVIEW_STATUS=NOT_INDEPENDENTLY_REVIEWED"
+          echo "IRH01_AUTOMATION_CAN_CREATE_REVIEW=false"
+          echo "IRH01_AUTOMATION_CAN_CREATE_REVIEWER_PROVENANCE=false"
+          echo "IRH01_AUTOMATION_CAN_CERTIFY=false"
