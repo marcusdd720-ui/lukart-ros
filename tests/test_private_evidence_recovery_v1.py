@@ -14,7 +14,11 @@ from core.private_evidence_recovery_v1 import (
     verify_recovery_capsule,
 )
 from core.private_evidence_rotation_v1 import reencrypt_evidence
-from core.private_evidence_v1 import PrivateEvidenceError, PrivateEvidenceStore
+from core.private_evidence_v1 import (
+    ImportedEvidence,
+    PrivateEvidenceError,
+    PrivateEvidenceStore,
+)
 
 PASSPHRASE = "correct-horse-battery-staple"
 
@@ -54,7 +58,7 @@ def auth(
 
 def make_rotated_store(
     tmp_path: Path,
-) -> tuple[PrivateEvidenceStore, object, object, bytes]:
+) -> tuple[PrivateEvidenceStore, ImportedEvidence, ImportedEvidence, bytes]:
     store = PrivateEvidenceStore(
         tmp_path / "private-evidence",
         key_provider=KeyProvider(),
