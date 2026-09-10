@@ -25,9 +25,19 @@ def main() -> int:
     parser.add_argument("--output", required=True)
     parser.add_argument("--lock", default="pylock.toml")
     args = parser.parse_args()
-    verifier = Path(__file__).resolve().parents[1] / "core" / "cross_environment_replay_verifier_v1.py"
+    verifier = (
+        Path(__file__).resolve().parents[1]
+        / "core"
+        / "cross_environment_replay_verifier_v1.py"
+    )
     verifier_digest = sha256_file(verifier)
-    policy_digest = digest_value({"schema": "lukart.lrd01k-environment-policy.v1", "network": "DENY", "write_authority": "NONE"})
+    policy_digest = digest_value(
+        {
+            "schema": "lukart.lrd01k-environment-policy.v1",
+            "network": "DENY",
+            "write_authority": "NONE",
+        }
+    )
     snapshot = capture_environment_snapshot()
     installed_digest = str(snapshot["installed_artifact_inventory_digest"])
     bundle_digest = _h("lrd01k-synthetic-lrd01i-bundle-v1")
@@ -64,7 +74,10 @@ def main() -> int:
     }}
     output = Path(args.output)
     output.parent.mkdir(parents=True, exist_ok=True)
-    output.write_text(json.dumps(payload, sort_keys=True, separators=(",", ":")) + "\n", encoding="utf-8")
+    output.write_text(
+        json.dumps(payload, sort_keys=True, separators=(",", ":")) + "\n",
+        encoding="utf-8",
+    )
     print(profile["profile_digest"])
     return 0
 
