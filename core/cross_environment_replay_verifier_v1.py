@@ -129,7 +129,10 @@ def _compatible(profile: Mapping[str, object], observed: Mapping[str, object]) -
     if any(profile.get(key) != observed.get(key) for key in required):
         return False
     physical = profile.get("physical_dependency_artifact_identities")
-    if not isinstance(physical, list) or observed.get("installed_artifact_inventory_digest") not in physical:
+    if (
+        not isinstance(physical, list)
+        or observed.get("installed_artifact_inventory_digest") not in physical
+    ):
         return False
     version = observed.get("python_version")
     if not isinstance(version, str):
@@ -154,7 +157,9 @@ def _classification(
         return "SEMANTIC_DRIFT"
     if lrd01d == "PRESENTATION_ONLY":
         return "PRESENTATION_ONLY_DRIFT"
-    return "EXACT_ENVIRONMENT_REPLAY" if profile == reference else "CROSS_ENV_SEMANTICALLY_EQUIVALENT"
+    if profile == reference:
+        return "EXACT_ENVIRONMENT_REPLAY"
+    return "CROSS_ENV_SEMANTICALLY_EQUIVALENT"
 
 
 def verify_report(value: Mapping[str, object], *, expected_digest: str | None = None) -> str:
@@ -189,7 +194,10 @@ def verify_report(value: Mapping[str, object], *, expected_digest: str | None = 
         or not isinstance(expected, list) or expected != declared
     ):
         raise VerificationError("invalid plan matrix")
-    if plan.get("reference_profile_digest") not in declared or not isinstance(plan.get("hard_bounds"), dict):
+    if (
+        plan.get("reference_profile_digest") not in declared
+        or not isinstance(plan.get("hard_bounds"), dict)
+    ):
         raise VerificationError("invalid reference profile or hard bounds")
 
     profiles_raw = value.get("profiles")
@@ -206,7 +214,9 @@ def verify_report(value: Mapping[str, object], *, expected_digest: str | None = 
         if profile.get("schema") != PROFILE or profile.get("field_classes") != _FIELD_CLASSES:
             raise VerificationError("profile schema or field-class mapping mismatch")
         for key in (
-            "dependency_lock_digest", "canonicalization_profile_digest", "migration_registry_digest",
+            "dependency_lock_digest",
+            "canonicalization_profile_digest",
+            "migration_registry_digest",
             "crypto_profile_digest", "lrd01i_bundle_digest", "replay_verifier_digest",
             "environment_policy_digest",
         ):
@@ -227,10 +237,18 @@ def verify_report(value: Mapping[str, object], *, expected_digest: str | None = 
         if item.get("schema") != OBSERVED:
             raise VerificationError("unknown observed schema")
         inventory = item.get("installed_artifacts")
-        if not isinstance(inventory, list) or _hash(inventory) != item.get("installed_artifact_inventory_digest"):
+        if (
+            not isinstance(inventory, list)
+            or _hash(inventory) != item.get("installed_artifact_inventory_digest")
+        ):
             raise VerificationError("installed artifact inventory substitution")
         for record in inventory:
-            if not isinstance(record, dict) or set(record) != {"name", "version", "physical_files_digest", "file_count"}:
+            if not isinstance(record, dict) or set(record) != {
+                "name",
+                "version",
+                "physical_files_digest",
+                "file_count",
+            }:
                 raise VerificationError("invalid installed artifact record")
             _text(record.get("name"), "installed artifact name")
             _text(record.get("version"), "installed artifact version")
@@ -254,8 +272,14 @@ def verify_report(value: Mapping[str, object], *, expected_digest: str | None = 
         if receipt_id in seen_receipts:
             raise VerificationError("duplicate receipt")
         seen_receipts.add(receipt_id)
-        profile_id = _digest(receipt.get("environment_profile_digest"), "environment_profile_digest")
-        observed_id = _digest(receipt.get("observed_environment_digest"), "observed_environment_digest")
+        profile_id = _digest(
+            receipt.get("environment_profile_digest"),
+            "environment_profile_digest",
+        )
+        observed_id = _digest(
+            receipt.get("observed_environment_digest"),
+            "observed_environment_digest",
+        )
         if profile_id not in profiles or observed_id not in observed or profile_id in seen_profiles:
             raise VerificationError("receipt provenance or matrix substitution")
         seen_profiles.add(profile_id)
@@ -265,7 +289,10 @@ def verify_report(value: Mapping[str, object], *, expected_digest: str | None = 
             raise VerificationError("observed/profile substitution")
         if observation.get("environment_policy_digest") != profile.get("environment_policy_digest"):
             raise VerificationError("environment-policy substitution")
-        if receipt.get("verifier_digest") != profile.get("replay_verifier_digest") or receipt.get("verifier_digest") != observation.get("verifier_digest"):
+        if (
+            receipt.get("verifier_digest") != profile.get("replay_verifier_digest")
+            or receipt.get("verifier_digest") != observation.get("verifier_digest")
+        ):
             raise VerificationError("verifier substitution")
         if receipt.get("plan_digest") != plan_digest:
             raise VerificationError("plan binding mismatch")
@@ -275,7 +302,11 @@ def verify_report(value: Mapping[str, object], *, expected_digest: str | None = 
         ):
             if receipt.get(key) != plan.get(key):
                 raise VerificationError(f"{key} binding mismatch")
-        if observation.get("installed_artifact_inventory_digest") not in cast(list[object], profile.get("physical_dependency_artifact_identities")):
+        physical_identities = cast(
+            list[object],
+            profile.get("physical_dependency_artifact_identities"),
+        )
+        if observation.get("installed_artifact_inventory_digest") not in physical_identities:
             raise VerificationError("physical dependency identity mismatch")
         status = receipt.get("execution_status")
         lrd01d = receipt.get("lrd01d_classification")
@@ -305,10 +336,15 @@ def verify_report(value: Mapping[str, object], *, expected_digest: str | None = 
         failure = receipt.get("failure_status")
         if status == "VERIFIED" and failure is not None:
             raise VerificationError("verified receipt cannot contain failure status")
-        if receipt.get("network_mode") != "DENY" or receipt.get("ccl_write_authority") is not False or receipt.get("product_write_authority") is not False:
+        if (
+            receipt.get("network_mode") != "DENY"
+            or receipt.get("ccl_write_authority") is not False
+            or receipt.get("product_write_authority") is not False
+        ):
             raise VerificationError("least-privilege/offline boundary violated")
 
-    if set(cast(list[str], expected)) != seen_profiles or set(cast(list[str], expected)) != set(profiles):
+    expected_profiles = set(cast(list[str], expected))
+    if expected_profiles != seen_profiles or expected_profiles != set(profiles):
         raise VerificationError("partial or substituted matrix")
     if len(seen_receipts) != len(cast(list[object], expected)):
         raise VerificationError("matrix cardinality mismatch")
