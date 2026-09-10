@@ -65,7 +65,12 @@ jobs:
           package="$(find dist/independent-review -maxdepth 1 -type f -name 'IRR-01-v1-*.zip' -print -quit)"
           test -n "${package}"
           python scripts/independent_review_readiness.py verify --package "${package}"
-          sha256sum --check "${package}.sha256"
+          package_dir="$(dirname "${package}")"
+          package_name="$(basename "${package}")"
+          (
+            cd "${package_dir}"
+            sha256sum --check "${package_name}.sha256"
+          )
 
       - name: External-review authority boundary
         run: |
