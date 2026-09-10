@@ -28,6 +28,7 @@ from core.crypto_agility_v1 import (
     CryptoKeyStatus,
     CryptoTrustSetV1,
     CryptoTrustVerifierV1,
+    CryptoVerificationV1,
 )
 from core.enterprise.contracts import AttestationPurpose, SignedAttestation
 from core.p3.contracts import canonical_json, content_digest, require_hex_digest
@@ -143,7 +144,6 @@ class Mldsa65AdapterProfileV1:
     schema: str = ADAPTER_PROFILE_SCHEMA_V1
 
     def __post_init__(self) -> None:
-        expected = Mldsa65AdapterProfileV1.__new__(Mldsa65AdapterProfileV1)
         fixed: dict[str, object] = {
             "schema": ADAPTER_PROFILE_SCHEMA_V1,
             "family": ML_DSA_FAMILY,
@@ -167,7 +167,6 @@ class Mldsa65AdapterProfileV1:
             "cross_implementation_interoperability_proven": False,
             "fips_validation_claim": False,
         }
-        del expected
         for name, value in fixed.items():
             if getattr(self, name) != value:
                 raise CrossAlgorithmMigrationError(
@@ -373,21 +372,32 @@ class Mldsa65MigrationKeyV1:
             expected_size=ML_DSA_PUBLIC_KEY_BYTES,
         )
 
-    def canonical_dict(self) -> dict[str, object]:
+    def material_dict(self) -> dict[str, object]:
+        """Stable identity that survives ACTIVE -> RETIRED lifecycle transitions."""
+
         return {
             "schema": self.schema,
             "key_id": self.key_id,
             "public_key_b64": self.public_key_b64,
-            "status": self.status.value,
-            "not_before": self.not_before,
-            "retire_at": self.retire_at,
             "allowed_purposes": [item.value for item in self.allowed_purposes],
             "predecessor_ed25519_key_id": self.predecessor_ed25519_key_id,
             "adapter_profile_digest": self.adapter_profile_digest,
         }
 
     @property
-    def key_digest(self) -> str:
+    def key_material_digest(self) -> str:
+        return content_digest(self.material_dict())
+
+    def canonical_dict(self) -> dict[str, object]:
+        return {
+            **self.material_dict(),
+            "status": self.status.value,
+            "not_before": self.not_before,
+            "retire_at": self.retire_at,
+        }
+
+    @property
+    def key_context_digest(self) -> str:
         return content_digest(self.canonical_dict())
 
 
@@ -400,7 +410,7 @@ class CrossAlgorithmMigrationEnvelopeV1:
     purpose: AttestationPurpose
     subject_digest: str
     payload_digest: str
-    migration_key_digest: str
+    migration_key_material_digest: str
     adapter_profile_digest: str
     signer_runtime: Mldsa65RuntimeProvenanceV1
     issued_at: int
@@ -418,7 +428,7 @@ class CrossAlgorithmMigrationEnvelopeV1:
             "source_key_digest",
             "subject_digest",
             "payload_digest",
-            "migration_key_digest",
+            "migration_key_material_digest",
             "adapter_profile_digest",
         ):
             object.__setattr__(self, name, _digest(getattr(self, name), field_name=name))
@@ -444,7 +454,7 @@ class CrossAlgorithmMigrationEnvelopeV1:
             "purpose": self.purpose.value,
             "subject_digest": self.subject_digest,
             "payload_digest": self.payload_digest,
-            "migration_key_digest": self.migration_key_digest,
+            "migration_key_material_digest": self.migration_key_material_digest,
             "adapter_profile_digest": self.adapter_profile_digest,
             "signer_runtime": self.signer_runtime.canonical_dict(),
             "issued_at": self.issued_at,
@@ -463,7 +473,8 @@ class CrossAlgorithmMigrationEnvelopeV1:
 class CrossAlgorithmVerificationV1:
     source_verification_digest: str
     migration_envelope_digest: str
-    migration_key_digest: str
+    migration_key_material_digest: str
+    migration_key_context_digest: str
     adapter_profile_digest: str
     signer_runtime_digest: str
     state: MigrationEvidenceState = MigrationEvidenceState.DUAL_VERIFIED_ADDITIVE_EVIDENCE
@@ -478,7 +489,8 @@ class CrossAlgorithmVerificationV1:
         for name in (
             "source_verification_digest",
             "migration_envelope_digest",
-            "migration_key_digest",
+            "migration_key_material_digest",
+            "migration_key_context_digest",
             "adapter_profile_digest",
             "signer_runtime_digest",
         ):
@@ -497,7 +509,8 @@ class CrossAlgorithmVerificationV1:
             "schema": self.schema,
             "source_verification_digest": self.source_verification_digest,
             "migration_envelope_digest": self.migration_envelope_digest,
-            "migration_key_digest": self.migration_key_digest,
+            "migration_key_material_digest": self.migration_key_material_digest,
+            "migration_key_context_digest": self.migration_key_context_digest,
             "adapter_profile_digest": self.adapter_profile_digest,
             "signer_runtime_digest": self.signer_runtime_digest,
             "state": self.state.value,
@@ -539,7 +552,7 @@ def _verify_source(
     expected_purpose: AttestationPurpose,
     expected_subject_digest: str,
     now: int,
-):
+) -> CryptoVerificationV1:
     return CryptoTrustVerifierV1(
         source_trust_set,
         expected_trust_set_digest=expected_source_trust_set_digest,
@@ -559,7 +572,7 @@ def sign_cross_algorithm_migration_v1(
     source_trust_set: CryptoTrustSetV1,
     expected_source_trust_set_digest: str,
     migration_key: Mldsa65MigrationKeyV1,
-    expected_migration_key_digest: str,
+    expected_migration_key_context_digest: str,
     adapter_profile: Mldsa65AdapterProfileV1,
     expected_adapter_profile_digest: str,
     private_key: MLDSA65PrivateKey,
@@ -573,15 +586,18 @@ def sign_cross_algorithm_migration_v1(
         expected_source_trust_set_digest,
         field_name="expected_source_trust_set_digest",
     )
-    expected_key = _digest(expected_migration_key_digest, field_name="expected_migration_key_digest")
+    expected_key_context = _digest(
+        expected_migration_key_context_digest,
+        field_name="expected_migration_key_context_digest",
+    )
     expected_profile = _digest(
         expected_adapter_profile_digest,
         field_name="expected_adapter_profile_digest",
     )
     if source_trust_set.trust_set_digest != expected_source:
         raise CrossAlgorithmMigrationError("source trust-set identity mismatch")
-    if migration_key.key_digest != expected_key:
-        raise CrossAlgorithmMigrationError("migration key identity mismatch")
+    if migration_key.key_context_digest != expected_key_context:
+        raise CrossAlgorithmMigrationError("migration key context identity mismatch")
     if adapter_profile.profile_digest != expected_profile:
         raise CrossAlgorithmMigrationError("adapter profile identity mismatch")
     if migration_key.adapter_profile_digest != adapter_profile.profile_digest:
@@ -622,7 +638,7 @@ def sign_cross_algorithm_migration_v1(
         "purpose": source_attestation.purpose.value,
         "subject_digest": source_attestation.subject_digest,
         "payload_digest": payload_digest,
-        "migration_key_digest": migration_key.key_digest,
+        "migration_key_material_digest": migration_key.key_material_digest,
         "adapter_profile_digest": adapter_profile.profile_digest,
         "signer_runtime": runtime.canonical_dict(),
         "issued_at": issued_at,
@@ -640,7 +656,7 @@ def sign_cross_algorithm_migration_v1(
         purpose=source_attestation.purpose,
         subject_digest=source_attestation.subject_digest,
         payload_digest=payload_digest,
-        migration_key_digest=migration_key.key_digest,
+        migration_key_material_digest=migration_key.key_material_digest,
         adapter_profile_digest=adapter_profile.profile_digest,
         signer_runtime=runtime,
         issued_at=issued_at,
@@ -657,7 +673,7 @@ def verify_cross_algorithm_migration_v1(
     source_trust_set: CryptoTrustSetV1,
     expected_source_trust_set_digest: str,
     migration_key: Mldsa65MigrationKeyV1,
-    expected_migration_key_digest: str,
+    expected_migration_key_context_digest: str,
     adapter_profile: Mldsa65AdapterProfileV1,
     expected_adapter_profile_digest: str,
     now: int,
@@ -669,15 +685,18 @@ def verify_cross_algorithm_migration_v1(
         expected_source_trust_set_digest,
         field_name="expected_source_trust_set_digest",
     )
-    expected_key = _digest(expected_migration_key_digest, field_name="expected_migration_key_digest")
+    expected_key_context = _digest(
+        expected_migration_key_context_digest,
+        field_name="expected_migration_key_context_digest",
+    )
     expected_profile = _digest(
         expected_adapter_profile_digest,
         field_name="expected_adapter_profile_digest",
     )
     if source_trust_set.trust_set_digest != expected_source:
         raise CrossAlgorithmMigrationError("source trust-set identity mismatch")
-    if migration_key.key_digest != expected_key:
-        raise CrossAlgorithmMigrationError("migration key identity mismatch")
+    if migration_key.key_context_digest != expected_key_context:
+        raise CrossAlgorithmMigrationError("migration key context identity mismatch")
     if adapter_profile.profile_digest != expected_profile:
         raise CrossAlgorithmMigrationError("adapter profile identity mismatch")
     if migration_key.adapter_profile_digest != adapter_profile.profile_digest:
@@ -713,7 +732,7 @@ def verify_cross_algorithm_migration_v1(
         "purpose": source_attestation.purpose,
         "subject_digest": source_attestation.subject_digest,
         "payload_digest": content_digest(dict(source_payload)),
-        "migration_key_digest": migration_key.key_digest,
+        "migration_key_material_digest": migration_key.key_material_digest,
         "adapter_profile_digest": adapter_profile.profile_digest,
     }
     for name, expected in expected_bindings.items():
@@ -738,7 +757,8 @@ def verify_cross_algorithm_migration_v1(
     return CrossAlgorithmVerificationV1(
         source_verification_digest=source_verification.verification_digest,
         migration_envelope_digest=envelope.envelope_digest,
-        migration_key_digest=migration_key.key_digest,
+        migration_key_material_digest=migration_key.key_material_digest,
+        migration_key_context_digest=migration_key.key_context_digest,
         adapter_profile_digest=adapter_profile.profile_digest,
         signer_runtime_digest=envelope.signer_runtime.provenance_digest,
     )
