@@ -1,8 +1,8 @@
 # LRD-01L — Periodic Replay Revalidation & Missed-Drill Detection v1
 
-Status: **IMPLEMENTATION CANDIDATE / NOT CLOSED**  
+Status: **CLOSED / ENGINEERING PASS**  
 Parent program: `continuous LRD-01`  
-Measured base: `main @ 7428b400204431dc4218fc86e1c0099ede65aacc`
+Implementation base: `main @ 7428b400204431dc4218fc86e1c0099ede65aacc`
 
 This document is a stage contract/evidence map only. The sole engineering-process authority remains
 `docs/WORKING_PRINCIPLES.md`.
@@ -89,12 +89,12 @@ unchanged. No AWS/provider PASS is claimed.
 
 ## Validation
 
-Focused/adversarial coverage must include content addressing, strict schemas, CURRENT/DUE/OVERDUE/
+Focused/adversarial coverage includes content addressing, strict schemas, CURRENT/DUE/OVERDUE/
 UNVERIFIABLE boundaries, missing initial drill, historical missed interval, unhealthy LRD-01E
 input, semantic drift from LRD-01K, evidence substitution, invalid SHA, future time, chain swap,
 duplicate observation, digest tamper and scheduler-authority injection.
 
-The dedicated exact-SHA workflow also re-runs LRD-01E, LRD-01K and LRD-01D regressions on supported
+The dedicated exact-SHA workflow re-runs LRD-01E, LRD-01K and LRD-01D regressions on supported
 Python endpoints and explicitly rejects accidental introduction of a `schedule:` trigger.
 Repo-wide security/policy/regression workflows remain mandatory before merge.
 
@@ -111,9 +111,29 @@ LRD-01L is closed only after one fresh exact candidate:
 7. leaves historical `v1.0.1` tag object, target and published release unchanged;
 8. receives canonical closure evidence through a fresh closure SHA and resulting-main validation.
 
+## Canonical closure evidence
+
+Implementation candidate: `549b716858d9cc3df771e6b0e0f704dc61871c95`.
+
+Implementation PR: `#232`, merged only after the unchanged head/base guard. The exact candidate
+completed the full pull-request qualification set with **34/34 SUCCESS** and no terminal failure.
+The resulting implementation main is `c051e031c53b6446e81f2b02f2463692ee1d8cbc`.
+
+Independent post-merge qualification of that resulting main completed with **30/30 SUCCESS** and
+no terminal failure before this closure record was created. The closure record is intentionally a
+fresh documentation-only change based on that validated resulting main and must itself pass fresh
+exact-SHA CI, guarded merge, and resulting-main post-merge validation before this status is treated
+as canonical.
+
+No GitHub Actions run IDs are used as evidence authority. Workflow identity, exact commit identity,
+terminal status and aggregate counts are sufficient for this closure record and avoid encoding
+incidental run-number values as durable identity.
+
 ## Non-claims
 
-Engineering PASS for 01L will not mean continuous monitoring is active. It will not prove that a
+Engineering PASS for 01L does not mean continuous monitoring is active. It does not prove that a
 real recurring scheduler has run for any elapsed interval, choose an operational cadence, prove
 10+ years of elapsed survivability, activate provider storage, perform disaster recovery, or claim
-human/independent/security/regulatory certification.
+human/independent/security/regulatory certification. It also does not prove physical storage
+separation, provider durability, geographic redundancy or real-case long-horizon elapsed-time
+validation.
