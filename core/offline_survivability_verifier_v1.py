@@ -520,7 +520,9 @@ def verify_survivability_bundle(
         if not isinstance(size, int) or isinstance(size, bool) or size < 0:
             raise OfflineSurvivabilityVerificationError("invalid inventory size")
         if size > _MAX_FILE_BYTES:
-            raise OfflineSurvivabilityVerificationError("inventory file exceeds verifier byte limit")
+            raise OfflineSurvivabilityVerificationError(
+                "inventory file exceeds verifier byte limit"
+            )
         declared_total += size
         if declared_total > _MAX_BUNDLE_BYTES:
             raise OfflineSurvivabilityVerificationError("survivability bundle exceeds byte limit")
