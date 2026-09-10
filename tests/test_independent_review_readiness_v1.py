@@ -33,7 +33,7 @@ def _repo(tmp_path: Path) -> tuple[Path, str]:
     root = tmp_path / "repo"
     root.mkdir()
     _git(root, "init")
-    _git(root, "config", "user.email", "irr@example.invalid")
+    _git(root, "config", "user.email", "irr-review-fixture.invalid")
     _git(root, "config", "user.name", "IRR Test")
     files = {
         "README.md": "public readme\n",
