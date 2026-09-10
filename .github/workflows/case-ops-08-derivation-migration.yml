@@ -1,0 +1,71 @@
+name: CASE-OPS-08 Derivation Migration Readiness
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  case-ops-08-derivation-migration:
+    runs-on: ubuntu-latest
+    env:
+      CANDIDATE_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+      PIP_DISABLE_PIP_VERSION_CHECK: "1"
+    steps:
+      - name: Checkout exact candidate SHA
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: Install validation environment
+        run: python -m pip install -e ".[dev]"
+
+      - name: Verify exact checkout identity
+        run: |
+          test "$(git rev-parse HEAD)" = "${CANDIDATE_SHA}"
+          echo "CASE_OPS_08_EXACT_SHA=${CANDIDATE_SHA}"
+
+      - name: Focused lint and type-check
+        run: |
+          ruff check \
+            core/private_derivation_migration_v1.py \
+            scripts/private_derivation_migration.py \
+            tests/test_private_derivation_migration_v1.py
+          mypy core/private_derivation_migration_v1.py scripts/private_derivation_migration.py
+
+      - name: Focused and adversarial migration-readiness tests
+        run: pytest -q tests/test_private_derivation_migration_v1.py
+
+      - name: CASE-OPS provenance replay regression
+        run: |
+          pytest -q \
+            tests/test_private_evidence_derivation_v1.py \
+            tests/test_private_case_runtime_bridge_v1.py \
+            tests/test_private_ocr_replay_v1.py \
+            tests/test_private_case_pilot_v1.py \
+            tests/test_private_derivation_migration_v1.py
+
+      - name: Operator CLI surface smoke
+        run: python scripts/private_derivation_migration.py --help >/dev/null
+
+      - name: Public CI boundary
+        run: |
+          echo "REAL_CASE_DATA_IN_PUBLIC_CI=false"
+          echo "PRIVATE_KEY_IN_PUBLIC_CI=false"
+          echo "HISTORICAL_RECEIPT_MUTATION=false"
+          echo "IMPLICIT_UNKNOWN_MIGRATION=false"
+          echo "CCL_WRITE_AUTHORITY=false"
+          echo "INDEPENDENT_REVIEW_CLAIMED=false"
+          echo "CLOUD_PROVIDER_REQUIRED=false"
