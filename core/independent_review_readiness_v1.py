@@ -162,8 +162,7 @@ def _git(repo_root: Path, *args: str) -> bytes:
     result = subprocess.run(
         ["git", "-C", str(repo_root), *args],
         check=False,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
+        capture_output=True,
     )
     if result.returncode != 0:
         message = result.stderr.decode("utf-8", errors="replace").strip()
