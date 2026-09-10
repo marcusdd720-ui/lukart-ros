@@ -154,7 +154,9 @@ def _cross_environment_report(
 
 
 def _health(
-    *, state: LongRangeHealthState = LongRangeHealthState.HEALTHY
+    *,
+    state: LongRangeHealthState = LongRangeHealthState.HEALTHY,
+    evaluated_at: int = 990,
 ) -> LongRangeHealthReportV1:
     if state is LongRangeHealthState.HEALTHY:
         dimension = HealthDimensionState.FRESH
@@ -164,7 +166,7 @@ def _health(
         violations = ("crypto_renewal_stale",)
     return LongRangeHealthReportV1(
         case_id=CASE_ID,
-        evaluated_at=990,
+        evaluated_at=evaluated_at,
         freshness_policy_digest=D["freshness"],
         drift_report_digest=D["drift"],
         crypto_state=dimension,
@@ -192,7 +194,7 @@ def _observation(
         cross_environment_report=_cross_environment_report(
             lrd01d_classification=classification
         ),
-        long_range_health_report=health or _health(),
+        long_range_health_report=health or _health(evaluated_at=min(990, observed_at)),
         previous=previous,
     )
 
