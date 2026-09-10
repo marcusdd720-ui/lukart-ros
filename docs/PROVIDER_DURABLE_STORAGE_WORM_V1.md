@@ -8,6 +8,29 @@ First provider adapter: `AWS S3 Object Lock`
 Writable case-history SSOT: Canonical Case Ledger only
 Historical release baseline: `v1.0.1` unchanged and outside this stage's release authority
 
+## Execution deferral — owner decision
+
+Real AWS resource provisioning and the live provider-evidence drill are deferred until **March 2027**
+by explicit owner/business sequencing decision. Before that execution window, no AWS account,
+bucket, Object Lock policy, retention policy, IAM principal or credential domain is to be provisioned
+for LRD-01H unless a new explicit owner/business decision supersedes this deferral.
+
+This scheduling decision does not weaken or satisfy any LRD-01H Definition-of-Done requirement.
+External provider evidence remains `INCOMPLETE`, LRD-01H remains an implementation candidate, and no
+mock, fixture, repository CI result or planning text may be promoted to real provider evidence.
+
+The parent `continuous LRD-01` program may continue with provider-neutral/offline engineering while
+this external-evidence dependency is parked. Subsequent work must not inherit, imply or claim an
+LRD-01H provider PASS. The planned order before returning to the live provider drill is:
+
+1. post-01H gap audit;
+2. offline long-range survivability;
+3. crypto migration/renewal;
+4. cross-environment replay;
+5. expanded critical-invariant verification;
+6. further provider-neutral durability/recovery;
+7. live AWS LRD-01H closure work in the March 2027 execution window.
+
 ## 1. Problem
 
 LRD-01G proves backend-neutral two-location replication and restore conformance, while deliberately
