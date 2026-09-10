@@ -1,6 +1,6 @@
 # LRD-01I — Offline Long-Range Survivability Package v1
 
-Status: `IMPLEMENTATION CANDIDATE`
+Status: `CLOSED / ENGINEERING PASS` closure candidate; authoritative after guarded closure merge
 Parent program: `continuous LRD-01`
 Depends on: LRD-01B, LRD-01C and SSC-02 engineering closures
 Provider boundary: `LOCAL / PROVIDER-NEUTRAL / NO AWS REQUIRED`
@@ -183,3 +183,51 @@ After 01I engineering closure, the owner-approved provider-neutral sequence cont
 **crypto migration/renewal**, then **cross-environment replay**, expanded critical-invariant
 verification and further provider-neutral durability/recovery. LRD-01H live AWS provider evidence
 remains deferred to the March 2027 execution window and no 01I result may be used as an AWS PASS.
+
+## 11. Implementation closure evidence
+
+LRD-01I was developed from exact measured base
+`26ff869b98995290c30ad26531750f9b0f190973` in implementation PR #226. After the canonical repair
+loop, the final implementation head
+`9144a28d5fad445e6ee9963fdf604a74c4dceb5a` passed `32/32` exact-SHA workflow runs: all 31
+PR-triggered workflows plus the Stage Gate dispatched by Stage Orchestrator. The set included the
+dedicated `LRD-01I Offline Long-Range Survivability`, CI Foundation, Stage Gate, Enterprise CodeQL,
+Enterprise Hardcore Gate, LRD-01C, LRD-01D, LRD-01E, LRD-01F, LRD-01G, LRD-01H, SSC-02, FIV-02,
+OPR-01, IRR-01, IRH-01 and Production Validation Program. At pre-merge evaluation there were zero
+failed, queued or in-progress exact-SHA workflow runs.
+
+The dedicated LRD-01I gate verified exact checkout, Ruff, strict MyPy, focused/adversarial tests and
+LRD-01B/LRD-01C/SSC-02 regression. During the repair loop the standalone verifier was corrected to
+consume the canonical SSC-02 `continuity-manifest.json` filename instead of an incorrect local
+hardcoded filename. No test, scanner, security control, invariant, authority boundary or trust
+boundary was weakened to obtain PASS.
+
+Immediately before merge, live GitHub still reported PR #226 head
+`9144a28d5fad445e6ee9963fdf604a74c4dceb5a`, base `main`, base SHA
+`26ff869b98995290c30ad26531750f9b0f190973`, and `behind_by=0`. Guarded merge used that exact
+expected head and produced implementation main
+`48b04eda607482bb4d2cea31699e572bad6265d7`; its direct parents are the measured base and exact
+validated implementation head.
+
+The exact implementation main completed `30/30` recorded post-merge workflow runs, all terminal
+`SUCCESS`, with zero failed, queued or in-progress runs at closure-evidence preparation. This
+includes 27 push-triggered workflows, the orchestrated Stage Gate, `MVROS v1 Release`, and
+Governance Closure PR Preparation. The dedicated LRD-01I push gate is included in that successful
+post-merge set.
+
+Historical release identity remained unchanged after implementation merge. The `v1.0.1` annotated
+tag object remains `9f7c0b28f766c8921e63b1d517fefcc96aa991d4`, that tag still targets
+`802013c4d0e53dc12306a97e1877ebba86af64a7`, and the latest published release remains `v1.0.1` /
+`MVROS 1.0.1`, with `draft=false` and `prerelease=false`. No LRD-01I release or tag was published or
+moved.
+
+This closure record does not manufacture operational evidence outside repository authority.
+`physical_interpreter_preserved` remains false; compatible-interpreter availability remains an
+external bootstrap dependency; no external/geographic/independent-media durability, ransomware
+resistance, AWS/provider durability, ten-year storage SLA, provider-side WORM evidence,
+human-independent custody, independent review or external certification is claimed.
+
+This record becomes authoritative only after this exact closure candidate itself passes fresh
+exact-head CI, guarded unchanged-head/base closure merge, resulting-final-main post-merge validation
+and final historical `v1.0.1` tag/target/release re-verification. No PASS evidence from another SHA
+may be substituted.
