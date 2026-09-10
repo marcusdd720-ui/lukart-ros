@@ -53,6 +53,8 @@ _IDENTITY_PATHS = {
 }
 _MAX_BUNDLE_FILES = 20_000
 _MAX_BUNDLE_BYTES = 2 * 1024 * 1024 * 1024
+_MAX_FILE_BYTES = 512 * 1024 * 1024
+_MAX_JSON_BYTES = 8 * 1024 * 1024
 _IO_CHUNK = 1024 * 1024
 
 
@@ -68,7 +70,14 @@ def _json_object(path: Path, *, field_name: str) -> dict[str, object]:
     if path.is_symlink() or not path.is_file():
         raise OfflineLongRangeSurvivabilityError(f"{field_name} must be a regular file")
     try:
-        decoded: object = json.loads(path.read_text(encoding="utf-8"))
+        size = path.stat().st_size
+        if size > _MAX_JSON_BYTES:
+            raise OfflineLongRangeSurvivabilityError(f"{field_name} exceeds JSON byte limit")
+        with path.open("rb") as handle:
+            raw = handle.read(_MAX_JSON_BYTES + 1)
+        if len(raw) > _MAX_JSON_BYTES:
+            raise OfflineLongRangeSurvivabilityError(f"{field_name} exceeds JSON byte limit")
+        decoded: object = json.loads(raw.decode("utf-8"))
     except (OSError, UnicodeError, json.JSONDecodeError) as exc:
         raise OfflineLongRangeSurvivabilityError(f"cannot read {field_name}") from exc
     if not isinstance(decoded, dict) or any(not isinstance(key, str) for key in decoded):
@@ -77,10 +86,22 @@ def _json_object(path: Path, *, field_name: str) -> dict[str, object]:
 
 
 def _sha256_file(path: Path) -> str:
+    try:
+        size = path.stat().st_size
+    except OSError as exc:
+        raise OfflineLongRangeSurvivabilityError(f"cannot stat bundle file: {path}") from exc
+    if size > _MAX_FILE_BYTES:
+        raise OfflineLongRangeSurvivabilityError("bundle file exceeds per-file byte limit")
     digest = hashlib.sha256()
+    counted = 0
     try:
         with path.open("rb") as handle:
             for chunk in iter(lambda: handle.read(_IO_CHUNK), b""):
+                counted += len(chunk)
+                if counted > _MAX_FILE_BYTES:
+                    raise OfflineLongRangeSurvivabilityError(
+                        "bundle file grew beyond per-file byte limit"
+                    )
                 digest.update(chunk)
     except OSError as exc:
         raise OfflineLongRangeSurvivabilityError(f"cannot hash bundle file: {path}") from exc
@@ -122,8 +143,13 @@ def _copy_tree_strict(source: Path, target: Path) -> None:
             raise OfflineLongRangeSurvivabilityError(
                 "supply-chain bundle contains a non-regular entry"
             )
+        size = candidate.stat().st_size
+        if size > _MAX_FILE_BYTES:
+            raise OfflineLongRangeSurvivabilityError(
+                "supply-chain file exceeds per-file byte limit"
+            )
         file_count += 1
-        total_bytes += candidate.stat().st_size
+        total_bytes += size
         if file_count > _MAX_BUNDLE_FILES or total_bytes > _MAX_BUNDLE_BYTES:
             raise OfflineLongRangeSurvivabilityError("supply-chain material exceeds bundle limits")
         destination.parent.mkdir(parents=True, exist_ok=True)
@@ -197,14 +223,17 @@ def _inventory(stage: Path) -> list[dict[str, object]]:
         relative = _safe_relative(candidate, root=stage)
         if relative == SURVIVABILITY_MANIFEST_NAME:
             continue
-        total_bytes += candidate.stat().st_size
+        size = candidate.stat().st_size
+        if size > _MAX_FILE_BYTES:
+            raise OfflineLongRangeSurvivabilityError("bundle file exceeds per-file byte limit")
+        total_bytes += size
         if len(records) + 1 > _MAX_BUNDLE_FILES or total_bytes > _MAX_BUNDLE_BYTES:
             raise OfflineLongRangeSurvivabilityError("survivability bundle exceeds limits")
         records.append(
             {
                 "path": relative,
                 "role": _classify(relative),
-                "size": candidate.stat().st_size,
+                "size": size,
                 "sha256": _sha256_file(candidate),
             }
         )
@@ -255,7 +284,12 @@ def build_offline_survivability_bundle(
         )
     escrow_manifest.verify_against(lrd_manifest)
 
-    continuity_root = Path(continuity_bundle_root).resolve(strict=True)
+    raw_continuity_root = Path(continuity_bundle_root).expanduser()
+    if raw_continuity_root.is_symlink() or not raw_continuity_root.is_dir():
+        raise OfflineLongRangeSurvivabilityError(
+            "supply-chain bundle root must be a regular directory"
+        )
+    continuity_root = raw_continuity_root.resolve(strict=True)
     ssc_manifest, ssc_digest = _load_ssc_manifest(continuity_root)
     if ssc_manifest.get("source_sha") != lrd_manifest.code_commit_sha:
         raise OfflineLongRangeSurvivabilityError(
@@ -270,9 +304,7 @@ def build_offline_survivability_bundle(
     if output.exists():
         raise OfflineLongRangeSurvivabilityError("survivability output must not already exist")
     output.parent.mkdir(parents=True, exist_ok=True)
-    stage = Path(
-        tempfile.mkdtemp(prefix=f".{output.name}.stage-", dir=output.parent)
-    )
+    stage = Path(tempfile.mkdtemp(prefix=f".{output.name}.stage-", dir=output.parent))
     active_limits = limits or EscrowLimitsV1()
     try:
         _write_identity_files(
@@ -336,7 +368,9 @@ def verify_offline_survivability_bundle(
     try:
         verified = verify_survivability_bundle(root, expected_digest=expected_digest)
     except OfflineSurvivabilityVerificationError as exc:
-        raise OfflineLongRangeSurvivabilityError("standalone survivability verification failed") from exc
+        raise OfflineLongRangeSurvivabilityError(
+            "standalone survivability verification failed"
+        ) from exc
 
     lrd = LongRangeReplayManifestV1.from_dict(
         _json_object(root / "identity" / "long-range-manifest.json", field_name="LRD manifest")
