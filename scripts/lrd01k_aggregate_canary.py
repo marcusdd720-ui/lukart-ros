@@ -53,10 +53,18 @@ def main() -> int:
         )
         for profile, observation in zip(profiles, observed, strict=True)
     ]
-    report = build_replay_report(plan=plan, profiles=profiles, observed_environments=observed, receipts=receipts)
+    report = build_replay_report(
+        plan=plan,
+        profiles=profiles,
+        observed_environments=observed,
+        receipts=receipts,
+    )
     output = Path(args.output)
     output.parent.mkdir(parents=True, exist_ok=True)
-    output.write_text(json.dumps(report, sort_keys=True, separators=(",", ":")) + "\n", encoding="utf-8")
+    output.write_text(
+        json.dumps(report, sort_keys=True, separators=(",", ":")) + "\n",
+        encoding="utf-8",
+    )
     verified = verify_file(output, str(report["report_digest"]))
     print(verified)
     return 0
