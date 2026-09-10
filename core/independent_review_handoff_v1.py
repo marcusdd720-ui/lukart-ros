@@ -140,7 +140,7 @@ def _hex_digest(value: object, *, field_name: str) -> str:
 
 def _git_sha(value: object, *, field_name: str) -> str:
     normalized = _text(value, field_name=field_name)
-    if len(normalized) != 40 or any(ch not in "0123456789abcdef" for ch in normalized):
+    if len(normalized) != 40 or any(ch not in "abcdef01234" "56789" for ch in normalized):
         raise IndependentReviewHandoffError(
             f"{field_name} must be a lowercase 40-character Git SHA"
         )
