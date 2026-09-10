@@ -162,6 +162,8 @@ jobs:
         shell: bash
         run: |
           mkdir -p _lrd01k/oci
+          docker buildx create --name lrd01k-oci --driver docker-container --use
+          docker buildx inspect --bootstrap
           docker buildx build \
             --file scripts/lrd01k_capsule.Dockerfile \
             --output type=oci,dest=_lrd01k/capsule.tar .
