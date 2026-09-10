@@ -1,6 +1,6 @@
 # LRD-01J — Cross-Algorithm Crypto Migration v1
 
-Status: `IMPLEMENTATION CANDIDATE — NOT CLOSED`
+Status: `CLOSED / ENGINEERING PASS` closure candidate; authoritative after guarded closure merge
 Parent program: `continuous LRD-01`
 Depends on: `CRY-01`, `LRD-01E`, `LRD-01F`
 Measured base: `main @ 1d673e81f188317cceeb49ea5daf7172f5a4f0cf`
@@ -195,3 +195,52 @@ LRD-01J does not:
 7. resulting `main` completes terminal post-merge validation;
 8. `v1.0.1` tag object, target and published release remain unchanged;
 9. canonical closure evidence is merged and independently revalidated on resulting main.
+
+## 13. Implementation closure evidence
+
+LRD-01J was developed from exact measured base
+`1d673e81f188317cceeb49ea5daf7172f5a4f0cf` in implementation PR #228. The final validated
+implementation head `f7f6232eab2d5ef1d7ac5ccbd8b12c3e47572c02` passed `33/33` exact-SHA
+workflow runs: all 32 PR-triggered workflows plus the Stage Gate dispatched by Stage Orchestrator.
+The successful set included the dedicated `LRD-01J Cross-Algorithm Crypto Migration`, CI Foundation,
+Stage Gate, Stage Orchestrator, Enterprise CodeQL, Enterprise Hardcore Gate, OPR-01, LRD-01E,
+LRD-01F, LRD-01I, SSC-02, FIV-02, IRR-01, IRH-01 and Production Validation Program. At guarded
+pre-merge evaluation there were zero failed, queued, in-progress, cancelled or timed-out exact-SHA
+workflow runs.
+
+The 01J gate exercised Python 3.11 through 3.14, exact `pyca-cryptography 50.0.1` and dependency-lock
+identity, runtime ML-DSA-65 capability, Ruff, strict MyPy, focused/adversarial migration tests,
+bounded sign/verify performance, pinned NIST ACVP ML-DSA-65 vector evidence and explicit
+CRY-01/LRD-01E/LRD-01F regression. The repair loop corrected a focused lint failure before the
+fresh validated head was accepted. No test, scanner, security control, invariant, authority boundary
+or trust boundary was weakened to obtain PASS.
+
+Immediately before merge, live GitHub still reported PR #228 head
+`f7f6232eab2d5ef1d7ac5ccbd8b12c3e47572c02`, base `main`, base SHA
+`1d673e81f188317cceeb49ea5daf7172f5a4f0cf`, and the branch was `behind_by=0`. Guarded merge used
+that exact expected head and produced implementation main
+`b84ce49416d20334d35ee906bc25c7dd9028fc90`.
+
+The exact implementation main completed `28/28` push-triggered workflow runs, all terminal
+`SUCCESS`, with zero failed, queued, in-progress, cancelled or timed-out push runs at closure-evidence
+preparation. The dedicated LRD-01J push gate is included in that successful set. The exact resulting
+main also completed `MVROS v1 Release` and `Governance Closure PR Preparation` workflow-run follow-ups
+with `SUCCESS`; these did not publish or move a release or tag.
+
+Historical release identity remained unchanged after implementation merge. The `v1.0.1` annotated
+tag object remains `9f7c0b28f766c8921e63b1d517fefcc96aa991d4`, that tag still targets
+`802013c4d0e53dc12306a97e1877ebba86af64a7`, and the latest published release remains `v1.0.1` /
+`MVROS 1.0.1`, targeting the same commit, with `draft=false` and `prerelease=false`. No LRD-01J
+release or tag was published or moved.
+
+This closure record preserves the 01J authority boundary. It proves an additive ML-DSA-65 migration
+mechanism under the exact pinned implementation/profile and repository validation described above.
+It does not promote an ML-DSA key to organizational trust, select or prove production HSM/KMS/key
+custody, authorize production cutover, prove cross-vendor or HSM interoperability, claim FIPS
+validation, claim independent cryptographic review, claim post-quantum certification or create any
+external certification. Historical Ed25519 evidence and CRY-01 authority remain intact.
+
+This record becomes authoritative only after this exact closure candidate itself passes fresh
+exact-head CI, guarded unchanged-head/base closure merge, resulting-final-main post-merge validation
+and final historical `v1.0.1` tag/target/release re-verification. No PASS evidence from another SHA
+may be substituted.
