@@ -231,8 +231,13 @@ def load_operator_config(path: Path) -> _OperatorConfig:
 
 
 def _git_identity(expected_sha: str) -> tuple[str, str]:
-    if len(expected_sha) != 40 or any(character not in "0123456789abcdef" for character in expected_sha):
-        raise ProviderDrillOperatorError("code SHA must be exact lowercase 40-character Git SHA")
+    valid_sha = len(expected_sha) == 40 and all(
+        character in "0123456789abcdef" for character in expected_sha
+    )
+    if not valid_sha:
+        raise ProviderDrillOperatorError(
+            "code SHA must be exact lowercase 40-character Git SHA"
+        )
     try:
         actual = subprocess.run(
             ["git", "rev-parse", "HEAD"],
@@ -377,7 +382,7 @@ def _synthetic_manifest(
     data_by_role = {
         role: (
             f"LRD-01H synthetic provider drill artifact::{role.value}\n"
-        ).encode("utf-8")
+        ).encode()
         for role in ReplayArtifactRole
     }
     bindings = tuple(
