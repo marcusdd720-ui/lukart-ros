@@ -1,0 +1,118 @@
+name: LRD-01J Cross-Algorithm Crypto Migration
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  lrd01j-migration:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.11", "3.12", "3.13", "3.14"]
+    env:
+      CANDIDATE_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+      NIST_ACVP_SHA: 975de31eb83d87039ec88934fdc47d8c312b892d
+      UV_LOCK_BLOB_SHA: 9c018011129dc660a1451289de3befb1f92d7280
+      PIP_DISABLE_PIP_VERSION_CHECK: "1"
+    steps:
+      - name: Checkout exact candidate SHA
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install pinned uv
+        run: python -m pip install "uv==0.12.10"
+
+      - name: Frozen validation environment
+        run: uv sync --frozen --extra dev
+
+      - name: Verify exact checkout and dependency identity
+        shell: bash
+        run: |
+          test "$(git rev-parse HEAD)" = "${CANDIDATE_SHA}"
+          test "$(git hash-object uv.lock)" = "${UV_LOCK_BLOB_SHA}"
+          uv run --frozen --extra dev python - <<'PY'
+          import cryptography
+          from core.cross_algorithm_crypto_migration_v1 import require_mldsa65_runtime_support_v1
+
+          assert cryptography.__version__ == "50.0.1"
+          runtime = require_mldsa65_runtime_support_v1()
+          print(f"cryptography={runtime.cryptography_version}")
+          print(f"openssl={runtime.openssl_version}")
+          print(f"python={runtime.python_version}")
+          PY
+
+      - name: LRD-01J lint and strict type-check
+        run: |
+          uv run --frozen --extra dev ruff check \
+            core/cross_algorithm_crypto_migration_v1.py \
+            scripts/verify_mldsa65_acvp_vector.py \
+            tests/test_cross_algorithm_crypto_migration_v1.py
+          uv run --frozen --extra dev mypy \
+            core/cross_algorithm_crypto_migration_v1.py \
+            scripts/verify_mldsa65_acvp_vector.py \
+            tests/test_cross_algorithm_crypto_migration_v1.py
+
+      - name: LRD-01J focused and adversarial suite
+        run: uv run --frozen --extra dev pytest -q tests/test_cross_algorithm_crypto_migration_v1.py
+
+      - name: Bounded ML-DSA-65 performance measurement
+        run: |
+          uv run --frozen --extra dev python - <<'PY'
+          import json
+          from core.cross_algorithm_crypto_migration_v1 import measure_mldsa65_performance_v1
+
+          report = measure_mldsa65_performance_v1(iterations=5)
+          print(json.dumps(report, sort_keys=True))
+          if report["within_budget"] is not True:
+              raise SystemExit("LRD-01J performance budget exceeded")
+          PY
+
+      - name: Checkout exact NIST ACVP evidence
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: usnistgov/ACVP-Server
+          ref: 975de31eb83d87039ec88934fdc47d8c312b892d
+          path: _external/nist-acvp
+          fetch-depth: 1
+          persist-credentials: false
+          sparse-checkout: gen-val/json-files/ML-DSA-keyGen-FIPS204
+
+      - name: Verify pinned NIST ACVP ML-DSA-65 vector
+        shell: bash
+        run: |
+          test "$(git -C _external/nist-acvp rev-parse HEAD)" = "${NIST_ACVP_SHA}"
+          uv run --frozen --extra dev python scripts/verify_mldsa65_acvp_vector.py \
+            _external/nist-acvp/gen-val/json-files/ML-DSA-keyGen-FIPS204
+
+      - name: CRY-01 and long-range crypto regression
+        run: |
+          uv run --frozen --extra dev pytest -q \
+            tests/test_crypto_agility_v1.py \
+            tests/test_long_range_health_v1.py \
+            tests/test_post_quantum_readiness_v1.py
+
+  migration-authority-boundary:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Automation does not manufacture crypto authority
+        run: |
+          echo "AUTOMATION_CAN_PROMOTE_TRUST=false"
+          echo "FIPS_VALIDATION_CLAIM=false"
+          echo "INDEPENDENT_CRYPTO_REVIEW_CLAIM=false"
+          echo "PRODUCTION_CUTOVER=false"
+          echo "CROSS_IMPLEMENTATION_INTEROPERABILITY_PROVEN=false"
