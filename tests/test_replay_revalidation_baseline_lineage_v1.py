@@ -115,7 +115,10 @@ def _blocked_and_advanced_entries() -> tuple[
         transition=advanced_evaluation.transition,
         resulting_baseline=advanced_evaluation.resulting_baseline,
     )
-    assert blocked.transition.state is ReplayRevalidationBaselineTransitionState.REVALIDATION_REQUIRED
+    assert (
+        blocked.transition.state
+        is ReplayRevalidationBaselineTransitionState.REVALIDATION_REQUIRED
+    )
     assert advanced.transition.state is ReplayRevalidationBaselineTransitionState.BASELINE_ADVANCED
     return baseline, blocked, advanced
 
@@ -167,7 +170,12 @@ def test_append_is_immutable_and_preserves_previous_lineage_identity() -> None:
     assert original.lineage_digest == original_digest
     assert with_blocked.current_baseline == baseline
     assert with_advance.current_baseline == advanced.resulting_baseline
-    assert len({original.lineage_digest, with_blocked.lineage_digest, with_advance.lineage_digest}) == 3
+    lineage_digests = {
+        original.lineage_digest,
+        with_blocked.lineage_digest,
+        with_advance.lineage_digest,
+    }
+    assert len(lineage_digests) == 3
 
 
 def test_reordered_entries_fail_closed_as_stale_parent() -> None:
