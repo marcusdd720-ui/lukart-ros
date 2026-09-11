@@ -1,6 +1,6 @@
 # LRD-01Q — Revalidation Baseline Lineage v1
 
-Status: **IMPLEMENTATION / VALIDATION IN PROGRESS**  
+Status: **CLOSED / ENGINEERING PASS**  
 Parent program: `continuous LRD-01`  
 Implementation base: `main @ aee5e2288e7b9009711558fba8ce7dc6783a519a`
 
@@ -11,7 +11,7 @@ This document is a stage contract/evidence map only. The sole engineering-proces
 
 LRD-01O preserves one exact verified replay state as an immutable baseline capsule and LRD-01P
 proves one exact transition from a prior baseline to either the same baseline, a freshly verified
-replacement, or a blocked state. The remaining gap is longitudinal selection across more than one
+replacement, or a blocked state. The remaining gap was longitudinal selection across more than one
 transition.
 
 A set of individually valid transition records is insufficient to determine one current verified
@@ -86,7 +86,7 @@ The dedicated workflow is read-only and has no `schedule:` trigger. Provider pre
 
 ## Validation
 
-Focused/adversarial coverage must prove at least:
+Focused/adversarial coverage proves:
 
 - empty lineage derives the exact genesis baseline;
 - blocked → advanced → reused sequence derives the exact advanced baseline;
@@ -103,9 +103,33 @@ Focused/adversarial coverage must prove at least:
 Required regressions include LRD-01P, LRD-01O, LRD-01N, LRD-01M, LRD-01K and periodic
 revalidation. Repo-wide security, policy, supply-chain and regression gates remain mandatory.
 
+## Canonical implementation evidence
+
+- Initial implementation candidate: `87fcd120f6648fcb23620fdd9047fd639cdd6b59`.
+- Initial own-stage CI exposed exactly three Ruff `E501` findings. The repair changed line wrapping
+  only; no semantics, assertions, authority boundary or gate was weakened.
+- Fresh implementation candidate: `c86424e2aa15594d0706d36d8f49df932056f97a`.
+- Implementation PR: #242.
+- Fresh exact-SHA PR qualification: **39/39 SUCCESS**.
+- Guard before merge proved PR head unchanged at the validated candidate, base unchanged at
+  `aee5e2288e7b9009711558fba8ce7dc6783a519a`, and live `main` unchanged at that same base.
+- Guarded merge used the exact validated head.
+- Resulting implementation `main`: `90abd11da9584d8f8cf1f3b7e8a9636b34674d83`.
+- Resulting-main validation: **35/35 push workflows SUCCESS**.
+- Historical `v1.0.1` remained unchanged: tag object
+  `9f7c0b28f766c8921e63b1d517fefcc96aa991d4`, annotated target
+  `802013c4d0e53dc12306a97e1877ebba86af64a7`, published release `MVROS 1.0.1` targeting the same
+  commit.
+- No GitHub Actions run ID is used as durable evidence authority; exact SHAs, workflow identity and
+  terminal status are the durable closure evidence.
+
+This documentation-only closure record is a fresh SHA and must itself pass the complete exact-SHA
+repository CI set, unchanged-head/base guarded merge, resulting-main validation, and final release
+invariant check before this CLOSED status is treated as canonical on `main`.
+
 ## Definition of Done
 
-LRD-01Q may become **CLOSED / ENGINEERING PASS** only after one fresh exact implementation line:
+LRD-01Q is closed only after one fresh exact implementation line:
 
 1. proves deterministic current-baseline derivation from genesis plus ordered transition evidence;
 2. proves fork/stale-parent/reorder/duplicate transition rejection;
@@ -123,8 +147,8 @@ LRD-01Q may become **CLOSED / ENGINEERING PASS** only after one fresh exact impl
 
 ## Non-claims
 
-Engineering PASS for 01Q will prove immutable lineage semantics and deterministic current-baseline
-derivation only. It will not prove that a scheduler is active, that a mutable/durable latest-baseline
+Engineering PASS for 01Q proves immutable lineage semantics and deterministic current-baseline
+derivation only. It does not prove that a scheduler is active, that a mutable/durable latest-baseline
 pointer exists, that workflow artifacts survive configured retention, that a lineage is operationally
 selected or durably persisted, that provider storage is activated, that real elapsed years have
 passed, or that an independent external reviewer/security auditor certified the system.
