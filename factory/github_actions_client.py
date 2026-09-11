@@ -63,6 +63,7 @@ class GitHubActionsClient:
         required = (
             "LUKART_ROS_FACTORY_APP_ID",
             "LUKART_ROS_FACTORY_PRIVATE_KEY",
+            "GITHUB_REPOSITORY",
         )
         missing = [name for name in required if not os.environ.get(name)]
         if missing:
@@ -75,7 +76,7 @@ class GitHubActionsClient:
             installation_id=int(installation_raw) if installation_raw else None,
             private_key=os.environ[required[1]].replace("\\n", "\n"),
             client_id=os.environ.get("LUKART_ROS_FACTORY_CLIENT_ID"),
-            repository=os.environ.get("GITHUB_REPOSITORY", "lukart-ros"),
+            repository=os.environ[required[2]],
         )
 
     def _app_jwt(self) -> str:
