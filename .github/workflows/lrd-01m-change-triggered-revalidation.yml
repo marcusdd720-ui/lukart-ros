@@ -49,7 +49,8 @@ jobs:
         run: |
           uv run --frozen --extra dev ruff check \
             core/replay_revalidation_invalidation_v1.py \
-            tests/test_replay_revalidation_invalidation_v1.py
+            tests/test_replay_revalidation_invalidation_v1.py \
+            tests/test_replay_revalidation_invalidation_adversarial_v1.py
           uv run --frozen --extra dev mypy \
             core/replay_revalidation_invalidation_v1.py
 
@@ -57,6 +58,7 @@ jobs:
         run: >-
           uv run --frozen --extra dev pytest -q
           tests/test_replay_revalidation_invalidation_v1.py
+          tests/test_replay_revalidation_invalidation_adversarial_v1.py
 
       - name: Runtime replay storage and cadence authority regression
         run: >-
