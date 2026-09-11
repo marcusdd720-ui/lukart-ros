@@ -18,6 +18,7 @@ def test_environment_configuration_requires_all_values(monkeypatch: pytest.Monke
     monkeypatch.delenv("LUKART_ROS_FACTORY_APP_ID", raising=False)
     monkeypatch.delenv("LUKART_ROS_FACTORY_INSTALLATION_ID", raising=False)
     monkeypatch.delenv("LUKART_ROS_FACTORY_PRIVATE_KEY", raising=False)
+    monkeypatch.delenv("GITHUB_REPOSITORY", raising=False)
 
     with pytest.raises(GitHubActionsError, match="Missing GitHub App configuration"):
         GitHubActionsClient.from_environment()
@@ -47,6 +48,7 @@ def test_environment_configuration_uses_optional_client_id(
     monkeypatch.setenv("LUKART_ROS_FACTORY_INSTALLATION_ID", str(TEST_INSTALLATION_ID))
     monkeypatch.setenv("LUKART_ROS_FACTORY_PRIVATE_KEY", "key")
     monkeypatch.setenv("LUKART_ROS_FACTORY_CLIENT_ID", TEST_CLIENT_ID)
+    monkeypatch.setenv("GITHUB_REPOSITORY", "marcusdd720-ui/lukart-ros")
 
     client = GitHubActionsClient.from_environment()
 
