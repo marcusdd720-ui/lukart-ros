@@ -6,7 +6,7 @@ backend-path = ["."]
 [project]
 name = "lukart-ros"
 version = "1.1.0.dev0"
-description = "LukArt ROS – Knowledge Operating System and virtual chambers factory"
+description = "Lukart ROS – Knowledge Operating System and virtual chambers factory"
 readme = "README.md"
 requires-python = ">=3.11,<3.15"
 authors = [
@@ -101,6 +101,7 @@ module = [
   "core.product_verification_evidence_v1",
   "core.provider_durable_evidence_bundle_v1",
   "core.provider_durable_storage_v1",
+  "core.replay_revalidation_fulfilment_v1",
   "core.replay_revalidation_invalidation_v1",
   "core.semantic_change_v2",
   "knowledge.epistemic",
