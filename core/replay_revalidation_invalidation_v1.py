@@ -10,7 +10,6 @@ from __future__ import annotations
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from enum import StrEnum
-from typing import cast
 
 from core.p3.contracts import RuntimeIdentity, content_digest, require_hex_digest
 
@@ -52,13 +51,21 @@ class ReplayChangeDomain(StrEnum):
     STORAGE = "STORAGE"
 
 
+def _text(value: object, *, field: str) -> str:
+    if not isinstance(value, str) or not value or value != value.strip():
+        raise ReplayRevalidationError(f"{field} must be canonical nonblank text")
+    return value
+
+
 def _digest(value: object, *, field: str) -> str:
-    if not isinstance(value, str):
-        raise ReplayRevalidationError(f"{field} must be a lowercase sha256 digest")
+    text = _text(value, field=field)
     try:
-        return require_hex_digest(value, field_name=field)
+        normalized = require_hex_digest(text, field_name=field)
     except ValueError as exc:
         raise ReplayRevalidationError(str(exc)) from exc
+    if normalized != text:
+        raise ReplayRevalidationError(f"{field} must be canonical lowercase sha256")
+    return normalized
 
 
 def _optional_digest(value: object, *, field: str) -> str | None:
@@ -77,17 +84,22 @@ def _strict(value: Mapping[str, object], expected: frozenset[str], *, field: str
 
 
 def _digest_inventory(
-    values: Sequence[str],
+    values: Sequence[object],
     *,
     field: str,
     minimum: int,
 ) -> tuple[str, ...]:
-    normalized = tuple(sorted({_digest(value, field=field) for value in values}))
+    parsed = tuple(_digest(value, field=field) for value in values)
+    normalized = tuple(sorted(set(parsed)))
     if len(normalized) < minimum:
         raise ReplayRevalidationError(
             f"{field} requires at least {minimum} unique content identities"
         )
     return normalized
+
+
+def _text_inventory(values: Sequence[object], *, field: str) -> tuple[str, ...]:
+    return tuple(sorted({_text(value, field=field) for value in values}))
 
 
 _FINGERPRINT_KEYS = frozenset(
@@ -109,7 +121,7 @@ _FINGERPRINT_KEYS = frozenset(
 
 @dataclass(frozen=True, slots=True)
 class ReplayRevalidationFingerprintV1:
-    """Content-addressed identity of the inputs whose change invalidates an old replay PASS."""
+    """Content-addressed identity of inputs whose change invalidates an old replay PASS."""
 
     runtime_identity_digest: str
     lrd01i_bundle_digest: str
@@ -214,7 +226,7 @@ class ReplayRevalidationFingerprintV1:
         if not isinstance(raw_environments, list) or not isinstance(raw_storage, list):
             raise ReplayRevalidationError("fingerprint identity inventories must be lists")
         result = cls(
-            schema=cast(str, value.get("schema")),
+            schema=_text(value.get("schema"), field="schema"),
             runtime_identity_digest=_digest(
                 value.get("runtime_identity_digest"), field="runtime_identity_digest"
             ),
@@ -224,8 +236,10 @@ class ReplayRevalidationFingerprintV1:
             ssc02_manifest_digest=_digest(
                 value.get("ssc02_manifest_digest"), field="ssc02_manifest_digest"
             ),
-            environment_profile_digests=tuple(
-                _digest(item, field="environment_profile_digest") for item in raw_environments
+            environment_profile_digests=_digest_inventory(
+                raw_environments,
+                field="environment_profile_digest",
+                minimum=2,
             ),
             replay_policy_digest=_digest(
                 value.get("replay_policy_digest"), field="replay_policy_digest"
@@ -240,13 +254,17 @@ class ReplayRevalidationFingerprintV1:
             crypto_profile_digest=_digest(
                 value.get("crypto_profile_digest"), field="crypto_profile_digest"
             ),
-            storage_profile_digests=tuple(
-                _digest(item, field="storage_profile_digest") for item in raw_storage
+            storage_profile_digests=_digest_inventory(
+                raw_storage,
+                field="storage_profile_digest",
+                minimum=1,
             ),
         )
         expected = _digest(value.get("fingerprint_digest"), field="fingerprint_digest")
         if result.fingerprint_digest != expected:
             raise ReplayRevalidationError("fingerprint_digest mismatch")
+        if dict(value) != result.canonical_dict():
+            raise ReplayRevalidationError("revalidation fingerprint is not canonical")
         return result
 
 
@@ -297,19 +315,19 @@ class ReplayRevalidationDecisionV1:
         )
         if not isinstance(self.state, ReplayRevalidationState):
             raise ReplayRevalidationError("unknown replay revalidation state")
-        domains = tuple(sorted(set(self.changed_domains), key=lambda item: item.value))
-        fields = tuple(sorted(set(self.changed_fields)))
-        violations = tuple(sorted(set(self.violations)))
-        if any(not isinstance(item, ReplayChangeDomain) for item in domains):
+        if any(not isinstance(item, ReplayChangeDomain) for item in self.changed_domains):
             raise ReplayRevalidationError("changed_domains contains an unknown domain")
-        if any(not item or item != item.strip() for item in (*fields, *violations)):
-            raise ReplayRevalidationError("decision text inventories must be canonical nonblank text")
+        domains = tuple(sorted(set(self.changed_domains), key=lambda item: item.value))
+        fields = _text_inventory(self.changed_fields, field="changed_field")
+        violations = _text_inventory(self.violations, field="violation")
         object.__setattr__(self, "changed_domains", domains)
         object.__setattr__(self, "changed_fields", fields)
         object.__setattr__(self, "violations", violations)
         if self.state is ReplayRevalidationState.UNCHANGED:
             if self.baseline_fingerprint_digest is None or domains or fields or violations:
-                raise ReplayRevalidationError("UNCHANGED decision cannot contain change/error evidence")
+                raise ReplayRevalidationError(
+                    "UNCHANGED decision cannot contain change/error evidence"
+                )
         elif self.state is ReplayRevalidationState.REVALIDATION_REQUIRED:
             if self.baseline_fingerprint_digest is None or not domains or not fields or violations:
                 raise ReplayRevalidationError(
@@ -364,14 +382,15 @@ class ReplayRevalidationDecisionV1:
         if not all(isinstance(item, list) for item in (raw_domains, raw_fields, raw_violations)):
             raise ReplayRevalidationError("decision inventories must be lists")
         try:
-            state = ReplayRevalidationState(cast(str, value.get("state")))
+            state = ReplayRevalidationState(_text(value.get("state"), field="state"))
             domains = tuple(
-                ReplayChangeDomain(cast(str, item)) for item in cast(list[object], raw_domains)
+                ReplayChangeDomain(_text(item, field="changed_domain"))
+                for item in raw_domains
             )
         except ValueError as exc:
             raise ReplayRevalidationError("unknown revalidation state or change domain") from exc
         result = cls(
-            schema=cast(str, value.get("schema")),
+            schema=_text(value.get("schema"), field="schema"),
             baseline_fingerprint_digest=_optional_digest(
                 value.get("baseline_fingerprint_digest"),
                 field="baseline_fingerprint_digest",
@@ -382,16 +401,16 @@ class ReplayRevalidationDecisionV1:
             ),
             state=state,
             changed_domains=domains,
-            changed_fields=tuple(cast(str, item) for item in cast(list[object], raw_fields)),
-            violations=tuple(
-                cast(str, item) for item in cast(list[object], raw_violations)
-            ),
+            changed_fields=_text_inventory(raw_fields, field="changed_field"),
+            violations=_text_inventory(raw_violations, field="violation"),
         )
         if value.get("baseline_replay_reusable") is not result.baseline_replay_reusable:
             raise ReplayRevalidationError("baseline_replay_reusable mismatch")
         expected = _digest(value.get("decision_digest"), field="decision_digest")
         if result.decision_digest != expected:
             raise ReplayRevalidationError("decision_digest mismatch")
+        if dict(value) != result.canonical_dict():
+            raise ReplayRevalidationError("revalidation decision is not canonical")
         return result
 
 
@@ -502,7 +521,9 @@ def evaluate_revalidation_requirement_v1(
         raise ReplayRevalidationError("candidate RuntimeIdentity substitution detected")
     if not candidate_runtime_identity.complete_for_replay:
         return ReplayRevalidationDecisionV1(
-            baseline_fingerprint_digest=(None if baseline is None else baseline.fingerprint_digest),
+            baseline_fingerprint_digest=(
+                None if baseline is None else baseline.fingerprint_digest
+            ),
             candidate_fingerprint_digest=candidate.fingerprint_digest,
             state=ReplayRevalidationState.UNVERIFIABLE,
             changed_domains=(),
