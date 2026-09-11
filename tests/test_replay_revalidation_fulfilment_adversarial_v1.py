@@ -3,6 +3,7 @@ from __future__ import annotations
 import copy
 
 import pytest
+from test_replay_revalidation_fulfilment_v1 import _material, h
 
 from core.cross_environment_replay_v1 import (
     ReplayExecutionStatus,
@@ -15,7 +16,6 @@ from core.replay_revalidation_fulfilment_v1 import (
     ReplayRevalidationFulfilmentV1,
     evaluate_revalidation_fulfilment_v1,
 )
-from test_replay_revalidation_fulfilment_v1 import _material, h
 
 
 def _evaluate(
