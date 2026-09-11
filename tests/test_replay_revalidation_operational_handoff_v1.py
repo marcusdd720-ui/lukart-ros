@@ -26,6 +26,7 @@ from tests.test_replay_revalidation_baseline_transition_v1 import (
     _fingerprint,
     _runtime,
 )
+from tests.test_replay_revalidation_candidate_snapshot_v1 import _snapshot
 
 
 def _ledger_with_genesis(
@@ -36,6 +37,40 @@ def _ledger_with_genesis(
     ledger = ReplayRevalidationBaselineSelectionLedgerV1(store)
     ledger.append(ReplayRevalidationBaselineLineageV1.build(genesis_baseline=baseline))
     return store, ledger
+
+
+def test_candidate_snapshot_handoff_inputs_compose_with_operational_handoff(
+    tmp_path: Path,
+) -> None:
+    snapshot = _snapshot()
+    candidate, candidate_runtime, repository_sha = snapshot.handoff_inputs()
+    store, ledger = _ledger_with_genesis(tmp_path / "handoff.db")
+    try:
+        prior = ledger.current_selection()
+        assert prior is not None
+        result = execute_revalidation_operational_handoff_v1(
+            ledger=ledger,
+            candidate=candidate,
+            candidate_runtime_identity=candidate_runtime,
+            candidate_repository_sha=repository_sha,
+        )
+        assert result.decision.state is ReplayRevalidationState.REVALIDATION_REQUIRED
+        assert (
+            result.decision.candidate_fingerprint_digest
+            == snapshot.fingerprint.fingerprint_digest
+        )
+        assert result.fulfilment.state is ReplayRevalidationFulfilmentState.REVALIDATION_REQUIRED
+        assert (
+            result.fulfilment.candidate_fingerprint_digest
+            == snapshot.fingerprint.fingerprint_digest
+        )
+        assert result.fulfilment.candidate_repository_sha == snapshot.candidate_repository_sha
+        assert result.transition.state is (
+            ReplayRevalidationBaselineTransitionState.REVALIDATION_REQUIRED
+        )
+        assert result.selected_lineage.current_baseline == prior.lineage.current_baseline
+    finally:
+        store.close()
 
 
 def test_handoff_requires_existing_selected_lineage(tmp_path: Path) -> None:
