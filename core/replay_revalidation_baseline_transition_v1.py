@@ -181,7 +181,9 @@ class ReplayRevalidationBaselineTransitionV1:
         )
         if not isinstance(self.state, ReplayRevalidationBaselineTransitionState):
             raise ReplayRevalidationBaselineTransitionError("unknown transition state")
-        violations = tuple(sorted({_text(item, field="violation") for item in self.violations}))
+        violations = tuple(
+            sorted({_text(item, field="violation") for item in self.violations})
+        )
         object.__setattr__(self, "violations", violations)
 
         if self.state is ReplayRevalidationBaselineTransitionState.BASELINE_REUSED:
@@ -333,7 +335,9 @@ class ReplayRevalidationBaselineTransitionV1:
                 value.get("resulting_baseline_digest"),
                 field="resulting_baseline_digest",
             ),
-            violations=tuple(_text(item, field="violation") for item in raw_violations),
+            violations=tuple(
+                _text(item, field="violation") for item in raw_violations
+            ),
         )
         if value.get("baseline_reused") is not result.baseline_reused:
             raise ReplayRevalidationBaselineTransitionError("baseline_reused mismatch")
@@ -356,7 +360,11 @@ class ReplayRevalidationBaselineTransitionEvaluationV1:
 
     def __post_init__(self) -> None:
         expected = self.transition.resulting_baseline_digest
-        actual = None if self.resulting_baseline is None else self.resulting_baseline.baseline_digest
+        actual = (
+            None
+            if self.resulting_baseline is None
+            else self.resulting_baseline.baseline_digest
+        )
         if actual != expected:
             raise ReplayRevalidationBaselineTransitionError(
                 "transition/resulting baseline evidence mismatch"
@@ -386,7 +394,9 @@ def _build_transition(
     resulting_baseline: ReplayRevalidationBaselineV1 | None,
     violations: tuple[str, ...],
 ) -> ReplayRevalidationBaselineTransitionEvaluationV1:
-    result_digest = None if resulting_baseline is None else resulting_baseline.baseline_digest
+    result_digest = (
+        None if resulting_baseline is None else resulting_baseline.baseline_digest
+    )
     transition = ReplayRevalidationBaselineTransitionV1(
         prior_baseline_digest=prior.baseline_digest,
         prior_repository_sha=prior.repository_sha,
