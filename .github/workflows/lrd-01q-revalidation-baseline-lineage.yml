@@ -1,0 +1,104 @@
+name: LRD-01Q Revalidation Baseline Lineage
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  baseline-lineage:
+    name: python-${{ matrix.python-version }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.11", "3.14"]
+    env:
+      CANDIDATE_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+      PIP_DISABLE_PIP_VERSION_CHECK: "1"
+      PYTHONHASHSEED: "17"
+    steps:
+      - name: Checkout exact candidate SHA
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install pinned uv
+        run: python -m pip install "uv==0.12.10"
+
+      - name: Frozen validation environment
+        run: uv sync --frozen --extra dev
+
+      - name: Verify exact checkout
+        run: |
+          test "$(git rev-parse HEAD)" = "${CANDIDATE_SHA}"
+          echo "LRD01Q_EXACT_SHA=${CANDIDATE_SHA}"
+
+      - name: LRD-01Q lint and strict type-check
+        run: |
+          uv run --frozen --extra dev ruff check \
+            core/replay_revalidation_baseline_lineage_v1.py \
+            tests/test_replay_revalidation_baseline_lineage_v1.py
+          uv run --frozen --extra dev mypy \
+            core/replay_revalidation_baseline_lineage_v1.py
+
+      - name: LRD-01Q focused lineage suite
+        run: >-
+          uv run --frozen --extra dev pytest -q
+          tests/test_replay_revalidation_baseline_lineage_v1.py
+          -k 'empty_lineage or derives_current or append_is_immutable'
+
+      - name: LRD-01Q adversarial lineage suite
+        run: >-
+          uv run --frozen --extra dev pytest -q
+          tests/test_replay_revalidation_baseline_lineage_v1.py
+          -k 'reordered or forked or duplicate or requires_exact or rejects or tamper or authority'
+
+      - name: Upstream replay-revalidation regression
+        run: >-
+          uv run --frozen --extra dev pytest -q
+          tests/test_replay_revalidation_baseline_transition_v1.py
+          tests/test_replay_revalidation_baseline_v1.py
+          tests/test_replay_revalidation_fulfilment_v1.py
+          tests/test_replay_revalidation_fulfilment_adversarial_v1.py
+          tests/test_replay_revalidation_invalidation_v1.py
+          tests/test_cross_environment_replay_v1.py
+          tests/test_periodic_replay_revalidation_v1.py
+
+      - name: Verify authority boundaries remain non-operational
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          workflow = Path(".github/workflows/lrd-01q-revalidation-baseline-lineage.yml").read_text()
+          module = Path("core/replay_revalidation_baseline_lineage_v1.py").read_text()
+          workflow_lines = {line.strip() for line in workflow.splitlines()}
+          if "schedule:" in workflow_lines:
+              raise SystemExit("LRD-01Q must not introduce scheduler authority")
+          if "contents: write" in workflow_lines or "actions: write" in workflow_lines:
+              raise SystemExit("LRD-01Q workflow must remain read-only")
+          for marker in (
+              '"scheduler_authority": False',
+              '"release_authority": False',
+              '"product_write_authority": False',
+              '"ccl_write_authority": False',
+              '"storage_authority": False',
+              '"provider_authority": False',
+              '"persistence_authority": False',
+              '"mutable_pointer_authority": False',
+          ):
+              if marker not in module:
+                  raise SystemExit(f"missing authority non-claim: {marker}")
+          print("LRD01Q_AUTHORITY_BOUNDARY=PASS")
+          PY
