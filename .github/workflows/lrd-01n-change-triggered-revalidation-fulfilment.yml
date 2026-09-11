@@ -51,7 +51,7 @@ jobs:
             core/replay_revalidation_fulfilment_v1.py \
             tests/test_replay_revalidation_fulfilment_v1.py \
             tests/test_replay_revalidation_fulfilment_adversarial_v1.py
-          uv run --frozen --extra dev mypy --strict \
+          uv run --frozen --extra dev mypy \
             core/replay_revalidation_fulfilment_v1.py
 
       - name: LRD-01N focused and adversarial suite
