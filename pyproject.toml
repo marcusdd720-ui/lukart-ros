@@ -107,6 +107,7 @@ module = [
   "core.replay_revalidation_baseline_v1",
   "core.replay_revalidation_fulfilment_v1",
   "core.replay_revalidation_invalidation_v1",
+  "core.replay_revalidation_operational_handoff_v1",
   "core.semantic_change_v2",
   "knowledge.epistemic",
   "knowledge.epistemic_assertions",
