@@ -5,10 +5,10 @@ from copy import deepcopy
 import pytest
 
 from core.replay_revalidation_candidate_snapshot_v1 import (
+    materialize_revalidation_candidate_snapshot_v1,
     ReplayRevalidationCandidateSnapshotError,
     ReplayRevalidationCandidateSnapshotV1,
     ReplayRevalidationRuntimeMaterialV1,
-    materialize_revalidation_candidate_snapshot_v1,
 )
 from core.replay_revalidation_invalidation_v1 import ReplayRevalidationFingerprintV1
 
