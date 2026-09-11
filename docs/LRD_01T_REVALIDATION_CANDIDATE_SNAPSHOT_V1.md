@@ -1,6 +1,6 @@
 # LRD-01T — Revalidation Candidate Snapshot v1
 
-Status: **IMPLEMENTATION CANDIDATE / NOT CLOSED**  
+Status: **CLOSED / ENGINEERING PASS**  
 Parent program: `continuous LRD-01`  
 Implementation base: `main @ 27b7416924548d947140920dc2d347dcc4c648f6`
 
@@ -132,7 +132,24 @@ LRD-01T is closed only when:
 
 ## Canonical closure evidence
 
-**Pending.** This implementation candidate is not a closure claim. Exact implementation candidate SHA, PR identity, complete workflow result, guarded merge SHA, resulting-main validation and immutable release-invariant evidence are recorded only after they actually exist.
+Implementation qualification:
+
+- implementation PR: **#249**
+- exact implementation candidate SHA: `259d82b18a893ed8a3d7a1b3d50ccf44cc8d3ebe`
+- implementation PR base SHA: `27b7416924548d947140920dc2d347dcc4c648f6`
+- exact-SHA pull-request workflow qualification: **42/42 SUCCESS**
+- guarded implementation merge resulting main: `c25b59cde216b321df86d3441de35d7a9a4b7b2a`
+- resulting-main push validation: **38/38 SUCCESS**, 0 queued, 0 in-progress, 0 failure
+
+Immutable release invariant after implementation merge:
+
+- `v1.0.1` tag ref object SHA: `9f7c0b28f766c8921e63b1d517fefcc96aa991d4`
+- annotated tag target commit: `802013c4d0e53dc12306a97e1877ebba86af64a7`
+- release name: `MVROS 1.0.1`
+- release target: `802013c4d0e53dc12306a97e1877ebba86af64a7`
+- invariant result: unchanged
+
+This document is the canonical closure candidate. It may enter `main` only after exact-SHA closure CI and an unchanged head/base guarded merge. The final main push and release invariant are revalidated after that merge; no closure claim relies on an unobserved future result.
 
 ## Non-claims
 
