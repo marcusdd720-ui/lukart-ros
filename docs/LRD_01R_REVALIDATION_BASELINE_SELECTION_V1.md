@@ -1,6 +1,6 @@
 # LRD-01R — Revalidation Baseline Selection Ledger v1
 
-Status: **IMPLEMENTED / VALIDATION PENDING**
+Status: **CLOSED / ENGINEERING PASS**
 
 ## Problem
 
@@ -105,6 +105,26 @@ LRD-01R does **not** provide:
 
 Provider preservation remains deferred until **2027-03-09** unless requirements materially change.
 
-## Closure evidence
+## Canonical closure evidence
 
-Canonical implementation SHA, exact-SHA CI evidence, PR/merge identity, resulting `main`, post-merge validation and immutable `v1.0.1` verification will be recorded only after those facts are observed. Until then this stage remains **IMPLEMENTED / VALIDATION PENDING**.
+Implementation qualification:
+
+- implementation PR: **#244**
+- exact implementation candidate SHA: `c23b30f4aa9b87ab740416933f181a9ec00cc04b`
+- implementation PR base SHA: `c21f3c4577c17c012b7101becb2f9e7c32949778`
+- PR head/base guard: unchanged immediately before merge
+- PR mergeability: `true`
+- dedicated LRD-01R gate: Python 3.11 and 3.14 both passed exact checkout, frozen environment, Ruff, strict MyPy, focused suite, adversarial suite, full 01R suite, upstream replay-revalidation regression and authority-boundary verification
+- full exact-SHA PR workflow set: all observed workflows completed successfully with no failure before guarded merge
+- guarded implementation merge resulting main: `4f52be9a92a2043216d84e4484da03b34f8d7c4e`
+- resulting-main push validation: **36/36 SUCCESS**, 0 queued, 0 in-progress, 0 failure
+
+Immutable release invariant after implementation merge:
+
+- `v1.0.1` tag ref object SHA: `9f7c0b28f766c8921e63b1d517fefcc96aa991d4`
+- annotated tag target commit: `802013c4d0e53dc12306a97e1877ebba86af64a7`
+- release name: `MVROS 1.0.1`
+- release target: `802013c4d0e53dc12306a97e1877ebba86af64a7`
+- invariant result: unchanged
+
+This document is the canonical closure candidate. It may enter `main` only after exact-SHA closure CI and an unchanged head/base guarded merge. The final main push and release invariant are revalidated after that merge; no closure claim relies on an unobserved future result.
