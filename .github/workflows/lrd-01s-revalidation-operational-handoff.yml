@@ -49,9 +49,12 @@ jobs:
         run: |
           uv run --frozen --extra dev ruff check \
             core/replay_revalidation_operational_handoff_v1.py \
-            tests/test_replay_revalidation_operational_handoff_v1.py
+            core/replay_revalidation_operational_freshness_v1.py \
+            tests/test_replay_revalidation_operational_handoff_v1.py \
+            tests/test_replay_revalidation_operational_freshness_v1.py
           uv run --frozen --extra dev mypy \
-            core/replay_revalidation_operational_handoff_v1.py
+            core/replay_revalidation_operational_handoff_v1.py \
+            core/replay_revalidation_operational_freshness_v1.py
 
       - name: LRD-01S focused handoff suite
         run: >-
@@ -59,20 +62,34 @@ jobs:
           tests/test_replay_revalidation_operational_handoff_v1.py
           -k 'unchanged or without_replay or with_verified_replay'
 
+      - name: Periodic freshness focused suite
+        run: >-
+          uv run --frozen --extra dev pytest -q
+          tests/test_replay_revalidation_operational_freshness_v1.py
+          -k 'current or due or fresh_changed'
+
       - name: LRD-01S adversarial handoff suite
         run: >-
           uv run --frozen --extra dev pytest -q
           tests/test_replay_revalidation_operational_handoff_v1.py
           -k 'requires_existing or duplicate or substitution or authority'
 
-      - name: LRD-01S full handoff suite
+      - name: Periodic freshness adversarial suite
+        run: >-
+          uv run --frozen --extra dev pytest -q
+          tests/test_replay_revalidation_operational_freshness_v1.py
+          -k 'overdue or unverifiable or substitution or supplied_replay'
+
+      - name: LRD-01S full handoff and freshness suite
         run: >-
           uv run --frozen --extra dev pytest -q
           tests/test_replay_revalidation_operational_handoff_v1.py
+          tests/test_replay_revalidation_operational_freshness_v1.py
 
       - name: Upstream replay-revalidation regression
         run: >-
           uv run --frozen --extra dev pytest -q
+          tests/test_periodic_replay_revalidation_v1.py
           tests/test_replay_revalidation_baseline_selection_v1.py
           tests/test_replay_revalidation_baseline_lineage_v1.py
           tests/test_replay_revalidation_baseline_transition_v1.py
@@ -87,7 +104,8 @@ jobs:
           from pathlib import Path
 
           workflow = Path(".github/workflows/lrd-01s-revalidation-operational-handoff.yml").read_text()
-          module = Path("core/replay_revalidation_operational_handoff_v1.py").read_text()
+          handoff = Path("core/replay_revalidation_operational_handoff_v1.py").read_text()
+          freshness = Path("core/replay_revalidation_operational_freshness_v1.py").read_text()
           workflow_lines = {line.strip() for line in workflow.splitlines()}
           if "schedule:" in workflow_lines:
               raise SystemExit("LRD-01S must not introduce scheduler authority")
@@ -106,11 +124,18 @@ jobs:
               "provider_authority",
           )
           for name in required_properties:
-              if f"def {name}(" not in module:
-                  raise SystemExit(f"missing authority boundary property: {name}")
+              if f"def {name}(" not in handoff:
+                  raise SystemExit(f"missing handoff authority boundary property: {name}")
+              if f"def {name}(" not in freshness:
+                  raise SystemExit(f"missing freshness authority boundary property: {name}")
+          if "def cadence_policy_authority(" not in freshness:
+              raise SystemExit("missing freshness cadence-policy authority boundary property")
           forbidden = ("boto3", "azure.storage", "google.cloud", "schedule:", "cron:")
-          for marker in forbidden:
-              if marker in module:
-                  raise SystemExit(f"forbidden authority marker in handoff module: {marker}")
+          for module_name, module in (("handoff", handoff), ("freshness", freshness)):
+              for marker in forbidden:
+                  if marker in module:
+                      raise SystemExit(
+                          f"forbidden authority marker in {module_name} module: {marker}"
+                      )
           print("LRD01S_AUTHORITY_BOUNDARY=PASS")
           PY
