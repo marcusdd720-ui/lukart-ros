@@ -101,6 +101,7 @@ module = [
   "core.product_verification_evidence_v1",
   "core.provider_durable_evidence_bundle_v1",
   "core.provider_durable_storage_v1",
+  "core.replay_revalidation_baseline_lineage_v1",
   "core.replay_revalidation_baseline_transition_v1",
   "core.replay_revalidation_baseline_v1",
   "core.replay_revalidation_fulfilment_v1",
