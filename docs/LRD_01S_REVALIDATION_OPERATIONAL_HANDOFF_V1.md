@@ -1,6 +1,6 @@
 # LRD-01S — Revalidation Operational Handoff v1
 
-Status: **IMPLEMENTED / VALIDATION PENDING**
+Status: **CLOSED / ENGINEERING PASS**
 
 ## Problem
 
@@ -90,6 +90,23 @@ LRD-01S does **not** provide:
 
 Provider preservation remains deferred until **2027-03-09** unless requirements materially change.
 
-## Closure evidence
+## Canonical closure evidence
 
-Canonical implementation SHA, exact-SHA CI evidence, PR/merge identity, resulting `main`, post-merge validation and immutable `v1.0.1` verification will be recorded only after those facts are observed. Until then this stage remains **IMPLEMENTED / VALIDATION PENDING**.
+Implementation qualification:
+
+- implementation PR: **#247**
+- exact implementation candidate SHA: `50c2d177a9779e138eba9385e5465f0f481487eb`
+- implementation PR base SHA: `ac6e43ad1b640a03f5f22908f541a3ea5198f4ba`
+- exact-SHA pull-request workflow qualification: **41/41 SUCCESS**
+- guarded implementation merge resulting main: `59999410c7fd5aac9728dc8dfb6e125c2144a776`
+- resulting-main push validation: **37/37 SUCCESS**, 0 queued, 0 in-progress, 0 failure
+
+Immutable release invariant after implementation merge:
+
+- `v1.0.1` tag ref object SHA: `9f7c0b28f766c8921e63b1d517fefcc96aa991d4`
+- annotated tag target commit: `802013c4d0e53dc12306a97e1877ebba86af64a7`
+- release name: `MVROS 1.0.1`
+- release target: `802013c4d0e53dc12306a97e1877ebba86af64a7`
+- invariant result: unchanged
+
+This document is the canonical closure candidate. It may enter `main` only after exact-SHA closure CI and an unchanged head/base guarded merge. The final main push and release invariant are revalidated after that merge; no closure claim relies on an unobserved future result.
