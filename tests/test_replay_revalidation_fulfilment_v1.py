@@ -22,6 +22,7 @@ from core.replay_revalidation_fulfilment_v1 import (
     verify_revalidation_fulfilment_v1,
 )
 from core.replay_revalidation_invalidation_v1 import (
+    ReplayRevalidationDecisionV1,
     ReplayRevalidationFingerprintV1,
     ReplayRevalidationState,
     evaluate_revalidation_requirement_v1,
@@ -136,37 +137,38 @@ def _cached_replay_material() -> tuple[dict[str, object], dict[str, object]]:
     return plan, report
 
 
+def _fingerprint(
+    runtime_identity: RuntimeIdentity,
+    plan: dict[str, object],
+) -> ReplayRevalidationFingerprintV1:
+    profiles = plan["environment_profile_digests"]
+    assert isinstance(profiles, list)
+    return ReplayRevalidationFingerprintV1.build(
+        runtime_identity=runtime_identity,
+        lrd01i_bundle_digest=str(plan["lrd01i_bundle_digest"]),
+        ssc02_manifest_digest=str(plan["ssc02_manifest_digest"]),
+        environment_profile_digests=tuple(str(item) for item in profiles),
+        replay_policy_digest=str(plan["replay_policy_digest"]),
+        migration_registry_digest=str(plan["migration_registry_digest"]),
+        canonicalization_profile_digest=str(plan["canonicalization_profile_digest"]),
+        crypto_profile_digest=str(plan["crypto_profile_digest"]),
+        storage_profile_digests=(h("storage-profile"),),
+    )
+
+
 def _material() -> tuple[
     RuntimeIdentity,
     RuntimeIdentity,
     ReplayRevalidationFingerprintV1,
     ReplayRevalidationFingerprintV1,
-    object,
+    ReplayRevalidationDecisionV1,
     dict[str, object],
 ]:
     plan, report = copy.deepcopy(_cached_replay_material())
     baseline_runtime = _runtime("a" * 40)
     candidate_runtime = _runtime("b" * 40)
-    plan_profiles = plan["environment_profile_digests"]
-    assert isinstance(plan_profiles, list)
-    fingerprint_args = {
-        "lrd01i_bundle_digest": str(plan["lrd01i_bundle_digest"]),
-        "ssc02_manifest_digest": str(plan["ssc02_manifest_digest"]),
-        "environment_profile_digests": tuple(str(item) for item in plan_profiles),
-        "replay_policy_digest": str(plan["replay_policy_digest"]),
-        "migration_registry_digest": str(plan["migration_registry_digest"]),
-        "canonicalization_profile_digest": str(plan["canonicalization_profile_digest"]),
-        "crypto_profile_digest": str(plan["crypto_profile_digest"]),
-        "storage_profile_digests": (h("storage-profile"),),
-    }
-    baseline = ReplayRevalidationFingerprintV1.build(
-        runtime_identity=baseline_runtime,
-        **fingerprint_args,
-    )
-    candidate = ReplayRevalidationFingerprintV1.build(
-        runtime_identity=candidate_runtime,
-        **fingerprint_args,
-    )
+    baseline = _fingerprint(baseline_runtime, plan)
+    candidate = _fingerprint(candidate_runtime, plan)
     decision = evaluate_revalidation_requirement_v1(
         baseline=baseline,
         candidate=candidate,
@@ -225,19 +227,7 @@ def test_required_change_with_exact_verified_matrix_is_revalidated() -> None:
 def test_unchanged_candidate_reuses_verified_baseline_without_new_report() -> None:
     plan, _ = copy.deepcopy(_cached_replay_material())
     runtime = _runtime("a" * 40)
-    profiles = plan["environment_profile_digests"]
-    assert isinstance(profiles, list)
-    fingerprint = ReplayRevalidationFingerprintV1.build(
-        runtime_identity=runtime,
-        lrd01i_bundle_digest=str(plan["lrd01i_bundle_digest"]),
-        ssc02_manifest_digest=str(plan["ssc02_manifest_digest"]),
-        environment_profile_digests=tuple(str(item) for item in profiles),
-        replay_policy_digest=str(plan["replay_policy_digest"]),
-        migration_registry_digest=str(plan["migration_registry_digest"]),
-        canonicalization_profile_digest=str(plan["canonicalization_profile_digest"]),
-        crypto_profile_digest=str(plan["crypto_profile_digest"]),
-        storage_profile_digests=(h("storage-profile"),),
-    )
+    fingerprint = _fingerprint(runtime, plan)
     decision = evaluate_revalidation_requirement_v1(
         baseline=fingerprint,
         candidate=fingerprint,
@@ -260,19 +250,7 @@ def test_unchanged_candidate_reuses_verified_baseline_without_new_report() -> No
 def test_missing_baseline_decision_remains_unverifiable() -> None:
     plan, _ = copy.deepcopy(_cached_replay_material())
     runtime = _runtime("b" * 40)
-    profiles = plan["environment_profile_digests"]
-    assert isinstance(profiles, list)
-    candidate = ReplayRevalidationFingerprintV1.build(
-        runtime_identity=runtime,
-        lrd01i_bundle_digest=str(plan["lrd01i_bundle_digest"]),
-        ssc02_manifest_digest=str(plan["ssc02_manifest_digest"]),
-        environment_profile_digests=tuple(str(item) for item in profiles),
-        replay_policy_digest=str(plan["replay_policy_digest"]),
-        migration_registry_digest=str(plan["migration_registry_digest"]),
-        canonicalization_profile_digest=str(plan["canonicalization_profile_digest"]),
-        crypto_profile_digest=str(plan["crypto_profile_digest"]),
-        storage_profile_digests=(h("storage-profile"),),
-    )
+    candidate = _fingerprint(runtime, plan)
     decision = evaluate_revalidation_requirement_v1(
         baseline=None,
         candidate=candidate,
