@@ -55,7 +55,7 @@ addopts = "-q"
 [tool.ruff]
 line-length = 100
 target-version = "py311"
-extend-exclude = ["build", "dist", "*.egg-info"]
+ext-exclude = ["build", "dist", "*.egg-info"]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP"]
@@ -107,6 +107,7 @@ module = [
   "core.replay_revalidation_baseline_v1",
   "core.replay_revalidation_fulfilment_v1",
   "core.replay_revalidation_invalidation_v1",
+  "core.replay_revalidation_operational_handoff_v1",
   "core.semantic_change_v2",
   "knowledge.epistemic",
   "knowledge.epistemic_assertions",
