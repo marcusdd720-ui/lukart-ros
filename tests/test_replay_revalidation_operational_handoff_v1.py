@@ -14,6 +14,9 @@ from core.replay_revalidation_baseline_selection_v1 import (
 from core.replay_revalidation_baseline_transition_v1 import (
     ReplayRevalidationBaselineTransitionState,
 )
+from core.replay_revalidation_candidate_snapshot_v1 import (
+    materialize_revalidation_candidate_snapshot_v1,
+)
 from core.replay_revalidation_fulfilment_v1 import ReplayRevalidationFulfilmentState
 from core.replay_revalidation_invalidation_v1 import ReplayRevalidationState
 from core.replay_revalidation_operational_handoff_v1 import (
@@ -24,9 +27,14 @@ from tests.test_replay_revalidation_baseline_transition_v1 import (
     _baseline,
     _changed_material,
     _fingerprint,
+    _replay_material,
     _runtime,
+    h,
 )
-from tests.test_replay_revalidation_candidate_snapshot_v1 import _snapshot
+from tests.test_replay_revalidation_candidate_snapshot_v1 import (
+    _runtime_material,
+    _snapshot,
+)
 
 
 def _ledger_with_genesis(
@@ -69,6 +77,61 @@ def test_candidate_snapshot_handoff_inputs_compose_with_operational_handoff(
             ReplayRevalidationBaselineTransitionState.REVALIDATION_REQUIRED
         )
         assert result.selected_lineage.current_baseline == prior.lineage.current_baseline
+    finally:
+        store.close()
+
+
+def test_candidate_snapshot_with_verified_replay_advances_and_persists_baseline(
+    tmp_path: Path,
+) -> None:
+    baseline, plan = _baseline()
+    _, report = _replay_material()
+    profiles = plan["environment_profile_digests"]
+    assert isinstance(profiles, list)
+    repository_sha = "b" * 40
+    snapshot = materialize_revalidation_candidate_snapshot_v1(
+        candidate_repository_sha=repository_sha,
+        runtime_material=_runtime_material(),
+        lrd01i_bundle_digest=str(plan["lrd01i_bundle_digest"]),
+        ssc02_manifest_digest=str(plan["ssc02_manifest_digest"]),
+        environment_profile_digests=tuple(str(item) for item in profiles),
+        replay_policy_digest=str(plan["replay_policy_digest"]),
+        migration_registry_digest=str(plan["migration_registry_digest"]),
+        canonicalization_profile_digest=str(plan["canonicalization_profile_digest"]),
+        crypto_profile_digest=str(plan["crypto_profile_digest"]),
+        storage_profile_digests=(h("storage-profile"),),
+    )
+    candidate, candidate_runtime, handoff_repository_sha = snapshot.handoff_inputs()
+    assert handoff_repository_sha == repository_sha
+
+    store = SQLiteProvenanceStore(tmp_path / "handoff.db")
+    try:
+        ledger = ReplayRevalidationBaselineSelectionLedgerV1(store)
+        ledger.append(ReplayRevalidationBaselineLineageV1.build(genesis_baseline=baseline))
+        result = execute_revalidation_operational_handoff_v1(
+            ledger=ledger,
+            candidate=candidate,
+            candidate_runtime_identity=candidate_runtime,
+            candidate_repository_sha=handoff_repository_sha,
+            replay_report=report,
+            replay_repository_sha=handoff_repository_sha,
+        )
+        assert result.decision.state is ReplayRevalidationState.REVALIDATION_REQUIRED
+        assert result.fulfilment.state is ReplayRevalidationFulfilmentState.REVALIDATED
+        assert (
+            result.fulfilment.candidate_fingerprint_digest
+            == snapshot.fingerprint.fingerprint_digest
+        )
+        assert result.transition.state is (
+            ReplayRevalidationBaselineTransitionState.BASELINE_ADVANCED
+        )
+        assert result.selected_lineage.baseline_advance_count == 1
+        advanced = result.selected_lineage.current_baseline
+        assert advanced.fingerprint == snapshot.fingerprint
+        assert advanced.runtime_identity == snapshot.runtime_identity
+        assert advanced.repository_sha == handoff_repository_sha
+        assert result.resulting_selection.current_repository_sha == handoff_repository_sha
+        assert result.resulting_selection.current_baseline_digest == advanced.baseline_digest
     finally:
         store.close()
 
