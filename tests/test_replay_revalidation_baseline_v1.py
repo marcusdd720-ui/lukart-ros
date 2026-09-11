@@ -239,7 +239,10 @@ def test_fingerprint_runtime_substitution_fails_closed() -> None:
     assert isinstance(plan, dict)
     foreign_runtime = _runtime("b" * 40)
     foreign_fingerprint = _fingerprint(foreign_runtime, plan)
-    with pytest.raises(ReplayRevalidationBaselineError, match="fingerprint RuntimeIdentity mismatch"):
+    with pytest.raises(
+        ReplayRevalidationBaselineError,
+        match="fingerprint RuntimeIdentity mismatch",
+    ):
         ReplayRevalidationBaselineV1.build(
             repository_sha=baseline.repository_sha,
             replay_repository_sha=baseline.repository_sha,
