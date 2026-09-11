@@ -1,6 +1,6 @@
 # LRD-01O — Replay Revalidation Baseline Capsule v1
 
-Status: **IMPLEMENTATION / VALIDATION IN PROGRESS**  
+Status: **CLOSED / ENGINEERING PASS**  
 Parent program: `continuous LRD-01`  
 Implementation base: `main @ 7899fad3efb0c530748333145855b9dbbd52304c`
 
@@ -95,7 +95,7 @@ backlog remains deferred and no AWS/provider activation is part of this stage.
 
 ## Validation
 
-Focused/adversarial coverage must prove at least:
+Focused/adversarial coverage proves at least:
 
 - canonical content-addressed build/parse round trip;
 - exact publish/read through existing filesystem escrow;
@@ -113,7 +113,7 @@ supply-chain and regression gates remain mandatory.
 
 ## Definition of Done
 
-LRD-01O may become **CLOSED / ENGINEERING PASS** only after one fresh exact implementation line:
+LRD-01O is closed only after one fresh exact implementation line:
 
 1. proves deterministic self-contained baseline identity;
 2. proves exact RuntimeIdentity/fingerprint/replay-report/repository-SHA binding;
@@ -128,12 +128,41 @@ LRD-01O may become **CLOSED / ENGINEERING PASS** only after one fresh exact impl
 11. leaves historical `v1.0.1` tag object, target and published release unchanged;
 12. receives canonical closure evidence through a fresh closure SHA and resulting-main validation.
 
+## Canonical closure evidence
+
+Implementation candidate: `c56beaa0083479b369b8b1a3775f7d4a9942eb19`.
+
+Implementation PR: `#238`, merged only after the unchanged head/base guard. The exact candidate
+completed the full pull-request qualification set with **37/37 SUCCESS**. During qualification one
+LRD-01K frozen-OCI job encountered an external Docker Hub connection reset while pulling the
+BuildKit image; all preceding 01K environment, aggregation and authority checks had succeeded. The
+failed job was rerun on the unchanged candidate SHA and completed successfully, with no code,
+workflow or gate weakening and no replacement candidate commit. The resulting implementation main
+is `ec615c31bf10cf493254cb8dcd14b60095e9bc11`.
+
+Post-merge qualification of that exact resulting main completed with **33/33 push workflows
+SUCCESS**, with no failed, queued or in-progress push workflow before this closure record was
+created.
+
+The closure record is intentionally a fresh documentation-only change based on that validated
+resulting main and must itself pass fresh exact-SHA CI, guarded merge, and resulting-main post-merge
+validation before this status is treated as canonical.
+
+The historical `v1.0.1` tag object remains
+`9f7c0b28f766c8921e63b1d517fefcc96aa991d4`, targeting
+`802013c4d0e53dc12306a97e1877ebba86af64a7`; the published `MVROS 1.0.1` release remains bound to
+that target. No release or tag mutation is part of LRD-01O closure.
+
+No GitHub Actions run IDs are used as evidence authority. Workflow identity, exact commit identity,
+terminal status and aggregate counts are sufficient for this closure record and avoid encoding
+incidental run-number values as durable identity.
+
 ## Non-claims
 
-Engineering PASS for 01O will prove a portable verified baseline representation and exact-byte
-escrow compatibility. It will not prove that a production baseline has already been durably
-retained for any elapsed period, that future changes automatically consume the latest capsule, that
-01K artifacts are preserved beyond their configured workflow retention, that a scheduler is active,
-or that real cases survived 10+ elapsed years. It will not activate provider storage, prove
+Engineering PASS for 01O proves a portable verified baseline representation and exact-byte escrow
+compatibility. It does not prove that a production baseline has already been durably retained for
+any elapsed period, that future changes automatically consume the latest capsule, that 01K
+artifacts are preserved beyond their configured workflow retention, that a scheduler is active, or
+that real cases survived 10+ elapsed years. It does not activate provider storage, prove
 physical/geographic media separation, perform disaster recovery, establish key custody, or provide
 independent/security/regulatory certification.
