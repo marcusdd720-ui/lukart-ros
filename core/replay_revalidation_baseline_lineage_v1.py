@@ -292,7 +292,10 @@ class ReplayRevalidationBaselineLineageV1:
     def current_baseline(self) -> ReplayRevalidationBaselineV1:
         current = self.genesis_baseline
         for entry in self.entries:
-            if entry.transition.state is ReplayRevalidationBaselineTransitionState.BASELINE_ADVANCED:
+            if (
+                entry.transition.state
+                is ReplayRevalidationBaselineTransitionState.BASELINE_ADVANCED
+            ):
                 assert entry.resulting_baseline is not None
                 current = entry.resulting_baseline
         return current
