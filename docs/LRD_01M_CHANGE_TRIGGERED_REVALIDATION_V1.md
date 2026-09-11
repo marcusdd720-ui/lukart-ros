@@ -1,6 +1,6 @@
 # LRD-01M — Change-Triggered Replay Invalidation & Revalidation Requirement v1
 
-Status: **IMPLEMENTATION / VALIDATION IN PROGRESS**  
+Status: **CLOSED / ENGINEERING PASS**  
 Parent program: `continuous LRD-01`  
 Implementation base: `main @ 2a138055fd4f50126ba5c90e3821cbd24ad283be`
 
@@ -87,7 +87,7 @@ explicitly rejects an introduced `schedule:` trigger. A business/operational cad
 
 ## Adversarial acceptance
 
-Focused coverage must fail closed for at least:
+Focused coverage fails closed for at least:
 
 - runtime identity substitution against a bound fingerprint;
 - missing baseline identity;
@@ -105,7 +105,7 @@ Runtime identity, Case Replay v2, LRD-01K, LRD-01L and LRD-01G remain regression
 
 ## Definition of Done
 
-LRD-01M may become **CLOSED / ENGINEERING PASS** only after one fresh exact implementation line:
+LRD-01M is closed only after one fresh exact implementation line:
 
 1. proves deterministic content-addressed fingerprint and decision identities;
 2. proves every tracked dependency change invalidates reuse of the prior replay PASS;
@@ -119,9 +119,32 @@ LRD-01M may become **CLOSED / ENGINEERING PASS** only after one fresh exact impl
 10. leaves historical `v1.0.1` tag object, target and published release unchanged;
 11. receives canonical closure evidence through a fresh closure SHA and resulting-main validation.
 
+## Canonical closure evidence
+
+Implementation candidate: `8f642a633456bae34d3ffe25a91abd6029279593`.
+
+Implementation PR: `#234`, merged only after the unchanged head/base guard. The exact candidate
+completed the full pull-request qualification set with **35/35 SUCCESS** and no terminal failure.
+The resulting implementation main is `fbf7cf0241d50f7ebed0ee37f2eebc1aa8c6c538`.
+
+Post-merge qualification of that exact resulting main completed with **31/31 SUCCESS**, with no
+failed, queued or in-progress workflow run before this closure record was created. The closure
+record is intentionally a fresh documentation-only change based on that validated resulting main
+and must itself pass fresh exact-SHA CI, guarded merge, and resulting-main post-merge validation
+before this status is treated as canonical.
+
+The historical `v1.0.1` tag object remains
+`9f7c0b28f766c8921e63b1d517fefcc96aa991d4`, targeting
+`802013c4d0e53dc12306a97e1877ebba86af64a7`; the published `MVROS 1.0.1` release remains bound to
+that target. No release or tag mutation is part of LRD-01M closure.
+
+No GitHub Actions run IDs are used as evidence authority. Workflow identity, exact commit identity,
+terminal status and aggregate counts are sufficient for this closure record and avoid encoding
+incidental run-number values as durable identity.
+
 ## Non-claims
 
-Engineering PASS for 01M will not mean that a replay was automatically executed after every real
+Engineering PASS for 01M does not mean that a replay is automatically executed after every real
 change, that continuous monitoring is active, that a scheduler/cadence exists, or that historical
 cases survived 10+ elapsed years. It does not prove provider durability, physical/geographic media
 separation, disaster-recovery execution, external model availability, key custody, or
