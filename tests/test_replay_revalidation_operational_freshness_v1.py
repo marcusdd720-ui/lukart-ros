@@ -263,8 +263,9 @@ def test_supplied_replay_must_match_latest_periodic_report_identity(tmp_path: Pa
                 replay_repository_sha=runtime.code_sha,
             )
         assert len(ledger.selections()) == 1
-        assert ledger.current_selection() is not None
-        assert ledger.current_selection().current_baseline_digest == baseline.baseline_digest
+        current = ledger.current_selection()
+        assert current is not None
+        assert current.current_baseline_digest == baseline.baseline_digest
     finally:
         store.close()
 
