@@ -60,7 +60,10 @@ class ReplayRevalidationOperationalHandoffResultV1:
     resulting_selection: ReplayRevalidationBaselineSelectionV1
 
     def __post_init__(self) -> None:
-        if self.resulting_selection.previous_selection_digest != self.prior_selection.selection_digest:
+        if (
+            self.resulting_selection.previous_selection_digest
+            != self.prior_selection.selection_digest
+        ):
             raise ReplayRevalidationOperationalHandoffError(
                 "resulting selection is not chained to the exact prior selection"
             )
