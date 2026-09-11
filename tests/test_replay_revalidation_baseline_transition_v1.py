@@ -260,7 +260,9 @@ def test_changed_candidate_with_verified_replay_advances_exact_baseline() -> Non
         replay_report=report,
         replay_repository_sha=runtime.code_sha,
     )
-    assert evaluation.transition.state is ReplayRevalidationBaselineTransitionState.BASELINE_ADVANCED
+    assert evaluation.transition.state is (
+        ReplayRevalidationBaselineTransitionState.BASELINE_ADVANCED
+    )
     advanced = evaluation.resulting_baseline
     assert advanced is not None
     assert advanced.repository_sha == runtime.code_sha
