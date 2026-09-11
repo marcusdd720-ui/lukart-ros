@@ -1,6 +1,6 @@
 # LRD-01P — Revalidation Baseline Transition v1
 
-Status: **IMPLEMENTATION / VALIDATION IN PROGRESS**  
+Status: **CLOSED / ENGINEERING PASS**  
 Parent program: `continuous LRD-01`  
 Implementation base: `main @ 5a2e802366989377afad8d102ec789e21843ebde`
 
@@ -13,11 +13,11 @@ LRD-01M deterministically decides whether a prior replay baseline is unchanged, 
 revalidation, or is unverifiable. LRD-01N binds that decision to exact LRD-01K replay evidence.
 LRD-01O preserves one exact verified replay state as an immutable/content-addressed baseline capsule.
 
-The remaining gap is the transition between those independently valid objects. There is no
-machine-verifiable record proving that one exact prior LRD-01O baseline was either reused or replaced
-only by the exact candidate that successfully satisfied 01M/01N. Without that contract, a future
-operational workflow would have to decide outside the evidence model when a candidate becomes the
-next baseline. That would create an unverified promotion boundary.
+The remaining gap was the transition between those independently valid objects. Before LRD-01P,
+there was no machine-verifiable record proving that one exact prior LRD-01O baseline was either
+reused or replaced only by the exact candidate that successfully satisfied 01M/01N. Without that
+contract, a future operational workflow would have to decide outside the evidence model when a
+candidate becomes the next baseline. That would create an unverified promotion boundary.
 
 ## Existing authority reused
 
@@ -90,7 +90,7 @@ remains deferred and no AWS/provider activation is part of this stage.
 
 ## Validation
 
-Focused/adversarial coverage must prove at least:
+Focused/adversarial qualification proves:
 
 - unchanged candidate reuses the exact prior baseline identity;
 - changed + exact verified replay advances to one newly rebuilt exact LRD-01O baseline;
@@ -103,29 +103,65 @@ Focused/adversarial coverage must prove at least:
 - stale decision/fulfilment evidence cannot advance a different candidate;
 - authority injection, unknown fields and transition-digest tampering fail closed.
 
-Required regressions include LRD-01M, LRD-01N, LRD-01O, LRD-01K and periodic revalidation. Repo-wide
-security, policy, supply-chain and regression gates remain mandatory.
+Required regressions included LRD-01M, LRD-01N, LRD-01O, LRD-01K and periodic revalidation. Repo-wide
+security, policy, supply-chain and regression gates remained mandatory.
 
 ## Definition of Done
 
-LRD-01P may become **CLOSED / ENGINEERING PASS** only after one fresh exact implementation line:
+LRD-01P is **CLOSED / ENGINEERING PASS** after satisfying the complete engineering line:
 
-1. proves deterministic prior-baseline-to-resulting-baseline transition identity;
-2. proves 01M decision and 01N fulfilment are recomputed from exact upstream evidence;
-3. proves unchanged state can only reuse the exact prior baseline;
-4. proves only exact `REVALIDATED` evidence can produce a newly rebuilt 01O baseline;
-5. proves REQUIRED/FAILED/UNVERIFIABLE states cannot produce a resulting baseline;
-6. passes focused/adversarial tests, Ruff, strict MyPy and required upstream regressions;
-7. passes the complete required exact-SHA repository CI set;
-8. retains unchanged PR head/base before guarded merge;
-9. is merged using the unchanged validated head;
-10. completes terminal post-merge validation on resulting `main`;
-11. leaves historical `v1.0.1` tag object, target and published release unchanged;
-12. receives canonical closure evidence through a fresh closure SHA and resulting-main validation.
+1. deterministic prior-baseline-to-resulting-baseline transition identity is proven;
+2. 01M decision and 01N fulfilment are recomputed from exact upstream evidence;
+3. unchanged state can only reuse the exact prior baseline;
+4. only exact `REVALIDATED` evidence can produce a newly rebuilt 01O baseline;
+5. REQUIRED/FAILED/UNVERIFIABLE states cannot produce a resulting baseline;
+6. focused/adversarial tests, Ruff, strict MyPy and required upstream regressions pass;
+7. the complete required exact-SHA repository CI set passes;
+8. PR head/base remain unchanged before guarded merge;
+9. merge uses the unchanged validated head;
+10. terminal post-merge validation passes on resulting `main`;
+11. historical `v1.0.1` tag object, target and published release remain unchanged;
+12. canonical closure evidence is recorded through a fresh documentation-only closure candidate,
+    which itself must pass exact-SHA CI, guarded merge and resulting-main validation before this
+    closure record is canonical on `main`.
+
+## Canonical closure evidence
+
+Implementation candidate:
+`bb5de1eac3ce347384b30ee5f97033dc830454e1`
+
+Implementation PR:
+`#240`
+
+Implementation PR exact-SHA qualification:
+**38/38 SUCCESS** on the exact candidate SHA.
+
+Resulting implementation `main`:
+`387aee9e6888fcef716030b8083b07b085594dbd`
+
+Resulting implementation-main post-merge qualification:
+**34/34 push workflows SUCCESS** for the exact resulting implementation SHA, with no failed run
+before creation of this closure record.
+
+Historical release invariant remained unchanged during implementation qualification:
+
+- `v1.0.1` tag object: `9f7c0b28f766c8921e63b1d517fefcc96aa991d4`;
+- annotated tag target commit: `802013c4d0e53dc12306a97e1877ebba86af64a7`;
+- published release: `MVROS 1.0.1`;
+- release target: `802013c4d0e53dc12306a97e1877ebba86af64a7`.
+
+GitHub Actions run IDs are deliberately not treated as durable evidence authority. Workflow names,
+exact repository SHAs, terminal status sets and content-addressed stage evidence are the durable
+closure referents.
+
+This closure document is a fresh documentation-only candidate. Its own exact SHA must pass the
+complete required PR CI set, retain unchanged head/base through guarded merge, and the resulting
+closure `main` must pass the complete push validation set before LRD-01P is treated as canonically
+closed on `main`.
 
 ## Non-claims
 
-Engineering PASS for 01P will prove transition semantics and exact evidence binding only. It will not
+Engineering PASS for 01P proves transition semantics and exact evidence binding only. It does not
 prove that a scheduler is active, that a latest-baseline pointer is durably persisted, that workflow
 artifacts survive their configured retention period, that any provider storage is activated, that a
 real case has survived elapsed years, or that an independent external reviewer/security auditor has
