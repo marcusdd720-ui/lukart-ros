@@ -258,7 +258,9 @@ class ReplayRevalidationBaselineV1:
                 "RuntimeIdentity code_sha must be an exact 40-char repository SHA"
             )
         if self.runtime_identity.code_sha != repository_sha or replay_sha != repository_sha:
-            raise ReplayRevalidationBaselineError("baseline repository identity substitution detected")
+            raise ReplayRevalidationBaselineError(
+                "baseline repository identity substitution detected"
+            )
         if not self.runtime_identity.complete_for_replay:
             missing = ",".join(self.runtime_identity.incomplete_fields()) or "runtime_identity_v3"
             raise ReplayRevalidationBaselineError(
@@ -412,7 +414,9 @@ def restore_revalidation_baseline_v1(
     try:
         decoded: object = json.loads(data.decode("utf-8"))
     except (UnicodeDecodeError, json.JSONDecodeError) as exc:
-        raise ReplayRevalidationBaselineError("baseline capsule bytes are not valid UTF-8 JSON") from exc
+        raise ReplayRevalidationBaselineError(
+            "baseline capsule bytes are not valid UTF-8 JSON"
+        ) from exc
     if not isinstance(decoded, Mapping):
         raise ReplayRevalidationBaselineError("baseline capsule root must be an object")
     result = ReplayRevalidationBaselineV1.from_dict(cast(Mapping[str, object], decoded))
