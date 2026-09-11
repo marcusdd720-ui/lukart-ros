@@ -124,7 +124,9 @@ def test_changed_candidate_with_verified_replay_advances_and_persists_baseline(
             replay_repository_sha=runtime.code_sha,
         )
         assert result.fulfilment.state is ReplayRevalidationFulfilmentState.REVALIDATED
-        assert result.transition.state is ReplayRevalidationBaselineTransitionState.BASELINE_ADVANCED
+        assert result.transition.state is (
+            ReplayRevalidationBaselineTransitionState.BASELINE_ADVANCED
+        )
         assert result.selected_lineage.baseline_advance_count == 1
         assert result.selected_lineage.current_repository_sha == runtime.code_sha
         assert result.resulting_selection.current_repository_sha == runtime.code_sha
