@@ -6,7 +6,7 @@ backend-path = ["."]
 [project]
 name = "lukart-ros"
 version = "1.1.0.dev0"
-description = "Lukart ROS – Knowledge Operating System and virtual chambers factory"
+description = "LukArt ROS – Knowledge Operating System and virtual chambers factory"
 readme = "README.md"
 requires-python = ">=3.11,<3.15"
 authors = [
