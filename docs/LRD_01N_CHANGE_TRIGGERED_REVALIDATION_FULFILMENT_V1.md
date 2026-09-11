@@ -1,6 +1,6 @@
 # LRD-01N — Change-Triggered Revalidation Fulfilment v1
 
-Status: **IMPLEMENTED / VALIDATION PENDING**  
+Status: **CLOSED / ENGINEERING PASS**  
 Parent program: `continuous LRD-01`  
 Implementation base: `main @ d951ff2899602c27bc5aa2b260860c88d1c12e24`
 
@@ -97,7 +97,7 @@ or write permissions.
 
 ## Validation
 
-Focused/adversarial coverage must include at least:
+Focused/adversarial coverage includes at least:
 
 - changed candidate with no new replay remains `REVALIDATION_REQUIRED`;
 - exact candidate-bound complete 01K matrix becomes `REVALIDATED`;
@@ -116,7 +116,7 @@ policy, supply-chain and regression gates remain mandatory.
 
 ## Definition of Done
 
-LRD-01N closes only after one fresh exact implementation line:
+LRD-01N is closed only after one fresh exact implementation line:
 
 1. proves deterministic content-addressed fulfilment identity;
 2. recomputes the exact LRD-01M decision instead of trusting its state label;
@@ -132,12 +132,39 @@ LRD-01N closes only after one fresh exact implementation line:
 11. leaves historical `v1.0.1` tag object, target and published release unchanged;
 12. receives canonical closure evidence through a fresh closure SHA and resulting-main validation.
 
+## Canonical closure evidence
+
+Implementation candidate: `fdbd9ff27d72f44fe0a9d845defec79bc27e7c13`.
+
+Implementation PR: `#236`, merged only after the unchanged head/base guard. The exact candidate
+completed the full pull-request qualification set with **36/36 SUCCESS** and no terminal failure.
+The resulting implementation main is `e10a50c7826253973cf874ec3fbf410b06c42221`.
+
+Post-merge qualification of that exact resulting main completed with **32/32 push workflows
+SUCCESS**, with no failed, queued or in-progress push workflow before this closure record was
+created. Three additional downstream workflow-run events associated with the same SHA also
+completed successfully; they are intentionally excluded from the 32/32 push-workflow metric so the
+evidence count remains event-class precise.
+
+The closure record is intentionally a fresh documentation-only change based on that validated
+resulting main and must itself pass fresh exact-SHA CI, guarded merge, and resulting-main post-merge
+validation before this status is treated as canonical.
+
+The historical `v1.0.1` tag object remains
+`9f7c0b28f766c8921e63b1d517fefcc96aa991d4`, targeting
+`802013c4d0e53dc12306a97e1877ebba86af64a7`; the published `MVROS 1.0.1` release remains bound to
+that target. No release or tag mutation is part of LRD-01N closure.
+
+No GitHub Actions run IDs are used as evidence authority. Workflow identity, exact commit identity,
+terminal status and aggregate counts are sufficient for this closure record and avoid encoding
+incidental run-number values as durable identity.
+
 ## Non-claims
 
-An engineering PASS for 01N will prove the verification bridge, not continuous execution. It does
-not itself schedule or dispatch replay, prove that every future real change automatically launches a
-new replay, establish a business cadence, preserve workflow artifacts indefinitely, prove 10+ years
-of elapsed survivability, activate provider storage, prove physical/geographic separation, perform
+An engineering PASS for 01N proves the verification bridge, not continuous execution. It does not
+itself schedule or dispatch replay, prove that every future real change automatically launches a new
+replay, establish a business cadence, preserve workflow artifacts indefinitely, prove 10+ years of
+elapsed survivability, activate provider storage, prove physical/geographic separation, perform
 real disaster recovery, establish key custody, or provide independent/security/regulatory
 certification.
 
