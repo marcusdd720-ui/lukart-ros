@@ -19,6 +19,9 @@ from core.replay_revalidation_baseline_selection_v1 import (
 from core.replay_revalidation_baseline_transition_v1 import (
     ReplayRevalidationBaselineTransitionState,
 )
+from core.replay_revalidation_candidate_snapshot_v1 import (
+    materialize_revalidation_candidate_snapshot_v1,
+)
 from core.replay_revalidation_operational_freshness_v1 import (
     ReplayRevalidationOperationalFreshnessError,
     execute_fresh_revalidation_operational_handoff_v1,
@@ -29,6 +32,7 @@ from tests.test_replay_revalidation_baseline_transition_v1 import (
     _changed_material,
     h,
 )
+from tests.test_replay_revalidation_candidate_snapshot_v1 import _runtime_material
 
 
 def _policy() -> PeriodicReplayCadencePolicyV1:
@@ -295,5 +299,59 @@ def test_fresh_changed_candidate_with_matching_replay_advances_baseline(tmp_path
         )
         assert result.handoff.selected_lineage.current_baseline_digest != baseline.baseline_digest
         assert result.handoff.selected_lineage.current_repository_sha == runtime.code_sha
+    finally:
+        store.close()
+
+
+def test_candidate_snapshot_fresh_changed_replay_advances_exact_baseline(
+    tmp_path: Path,
+) -> None:
+    baseline, plan = _baseline()
+    _, _, _, report = _changed_material()
+    profiles = plan["environment_profile_digests"]
+    assert isinstance(profiles, list)
+    repository_sha = "b" * 40
+    snapshot = materialize_revalidation_candidate_snapshot_v1(
+        candidate_repository_sha=repository_sha,
+        runtime_material=_runtime_material(),
+        lrd01i_bundle_digest=str(plan["lrd01i_bundle_digest"]),
+        ssc02_manifest_digest=str(plan["ssc02_manifest_digest"]),
+        environment_profile_digests=tuple(str(item) for item in profiles),
+        replay_policy_digest=str(plan["replay_policy_digest"]),
+        migration_registry_digest=str(plan["migration_registry_digest"]),
+        canonicalization_profile_digest=str(plan["canonicalization_profile_digest"]),
+        crypto_profile_digest=str(plan["crypto_profile_digest"]),
+        storage_profile_digests=(h("storage-profile"),),
+    )
+    observation = _periodic_observation(
+        repository_sha=snapshot.candidate_repository_sha,
+        replay_report=report,
+    )
+    candidate, candidate_runtime, candidate_sha = snapshot.handoff_inputs()
+    store, ledger = _ledger_with_genesis(tmp_path / "freshness.db")
+    try:
+        result = execute_fresh_revalidation_operational_handoff_v1(
+            policy=_policy(),
+            evaluated_at=1100,
+            observations=(observation,),
+            ledger=ledger,
+            candidate=candidate,
+            candidate_runtime_identity=candidate_runtime,
+            candidate_repository_sha=candidate_sha,
+            replay_report=report,
+            replay_repository_sha=candidate_sha,
+        )
+        assert result.periodic_evaluation.state is PeriodicReplayState.CURRENT
+        assert result.handoff.transition.state is (
+            ReplayRevalidationBaselineTransitionState.BASELINE_ADVANCED
+        )
+        advanced = result.handoff.selected_lineage.current_baseline
+        assert advanced.fingerprint == snapshot.fingerprint
+        assert advanced.runtime_identity == snapshot.runtime_identity
+        assert advanced.repository_sha == snapshot.candidate_repository_sha
+        assert advanced.baseline_digest != baseline.baseline_digest
+        assert result.handoff.resulting_selection.current_baseline_digest == (
+            advanced.baseline_digest
+        )
     finally:
         store.close()
