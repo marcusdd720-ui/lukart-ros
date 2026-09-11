@@ -75,10 +75,10 @@ jobs:
 
           workflow = Path(".github/workflows/lrd-01m-change-triggered-revalidation.yml").read_text()
           module = Path("core/replay_revalidation_invalidation_v1.py").read_text()
-          for line in workflow.splitlines():
-              if line.strip() == "schedule:":
-                  raise SystemExit("LRD-01M must not introduce scheduler authority")
-          if "contents: write" in workflow or "actions: write" in workflow:
+          workflow_lines = {line.strip() for line in workflow.splitlines()}
+          if "schedule:" in workflow_lines:
+              raise SystemExit("LRD-01M must not introduce scheduler authority")
+          if "contents: write" in workflow_lines or "actions: write" in workflow_lines:
               raise SystemExit("LRD-01M workflow must remain read-only")
           for marker in ('"scheduler_authority": False', '"release_authority": False'):
               if marker not in module:
