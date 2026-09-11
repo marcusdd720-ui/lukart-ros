@@ -223,8 +223,10 @@ class ReplayRevalidationFingerprintV1:
         _strict(value, _FINGERPRINT_KEYS, field="revalidation fingerprint")
         raw_environments = value.get("environment_profile_digests")
         raw_storage = value.get("storage_profile_digests")
-        if not isinstance(raw_environments, list) or not isinstance(raw_storage, list):
-            raise ReplayRevalidationError("fingerprint identity inventories must be lists")
+        if not isinstance(raw_environments, list):
+            raise ReplayRevalidationError("environment_profile_digests must be a list")
+        if not isinstance(raw_storage, list):
+            raise ReplayRevalidationError("storage_profile_digests must be a list")
         result = cls(
             schema=_text(value.get("schema"), field="schema"),
             runtime_identity_digest=_digest(
@@ -376,19 +378,25 @@ class ReplayRevalidationDecisionV1:
         ):
             if value.get(authority) is not False:
                 raise ReplayRevalidationError(f"{authority} must remain false")
+
         raw_domains = value.get("changed_domains")
         raw_fields = value.get("changed_fields")
         raw_violations = value.get("violations")
-        if not all(isinstance(item, list) for item in (raw_domains, raw_fields, raw_violations)):
-            raise ReplayRevalidationError("decision inventories must be lists")
+        if not isinstance(raw_domains, list):
+            raise ReplayRevalidationError("changed_domains must be a list")
+        if not isinstance(raw_fields, list):
+            raise ReplayRevalidationError("changed_fields must be a list")
+        if not isinstance(raw_violations, list):
+            raise ReplayRevalidationError("violations must be a list")
+
+        state_text = _text(value.get("state"), field="state")
+        domain_texts = tuple(_text(item, field="changed_domain") for item in raw_domains)
         try:
-            state = ReplayRevalidationState(_text(value.get("state"), field="state"))
-            domains = tuple(
-                ReplayChangeDomain(_text(item, field="changed_domain"))
-                for item in raw_domains
-            )
+            state = ReplayRevalidationState(state_text)
+            domains = tuple(ReplayChangeDomain(item) for item in domain_texts)
         except ValueError as exc:
             raise ReplayRevalidationError("unknown revalidation state or change domain") from exc
+
         result = cls(
             schema=_text(value.get("schema"), field="schema"),
             baseline_fingerprint_digest=_optional_digest(
@@ -530,7 +538,7 @@ def evaluate_revalidation_requirement_v1(
             changed_fields=(),
             violations=("candidate_runtime_identity_incomplete",),
         )
-    if baseline is None or baseline_runtime_identity is None:
+    if baseline is None:
         return ReplayRevalidationDecisionV1(
             baseline_fingerprint_digest=None,
             candidate_fingerprint_digest=candidate.fingerprint_digest,
@@ -538,6 +546,15 @@ def evaluate_revalidation_requirement_v1(
             changed_domains=(),
             changed_fields=(),
             violations=("baseline_revalidation_fingerprint_missing",),
+        )
+    if baseline_runtime_identity is None:
+        return ReplayRevalidationDecisionV1(
+            baseline_fingerprint_digest=baseline.fingerprint_digest,
+            candidate_fingerprint_digest=candidate.fingerprint_digest,
+            state=ReplayRevalidationState.UNVERIFIABLE,
+            changed_domains=(),
+            changed_fields=(),
+            violations=("baseline_runtime_identity_missing",),
         )
     if baseline.runtime_identity_digest != baseline_runtime_identity.digest():
         raise ReplayRevalidationError("baseline RuntimeIdentity substitution detected")
@@ -611,6 +628,7 @@ def evaluate_revalidation_requirement_v1(
         if old != new:
             domain_set.add(domain)
             field_list.append(field)
+
     if not field_list:
         return ReplayRevalidationDecisionV1(
             baseline_fingerprint_digest=baseline.fingerprint_digest,
