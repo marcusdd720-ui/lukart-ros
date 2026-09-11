@@ -108,7 +108,7 @@ def test_fingerprint_rejects_noncanonical_order_and_duplicate_serialization() ->
 def test_uppercase_or_whitespace_digest_is_not_canonical_identity() -> None:
     fingerprint = _fingerprint(_runtime())
     uppercase = deepcopy(fingerprint.canonical_dict())
-    uppercase["lrd01i_bundle_digest"] = D["bundle"].upper()
+    uppercase["replay_policy_digest"] = D["replay"].upper()
     with pytest.raises(invalidation.ReplayRevalidationError, match="canonical lowercase"):
         invalidation.ReplayRevalidationFingerprintV1.from_dict(uppercase)
 
