@@ -16,7 +16,7 @@ from core.cirp.governed_runtime import (
     GovernedCanonicalCIRPRuntime,
     canonical_governance_request_digest,
 )
-from tests.test_cirp_canonical_runtime import NOW, request
+from tests.test_cirp_canonical_runtime import request
 
 
 def governance_for(
