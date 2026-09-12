@@ -53,7 +53,7 @@ def _selected_documents(
         raise CIRPContractError(
             "private CIRP intake references unknown document ids: " + ", ".join(missing)
         )
-    return tuple(by_id[document_id] for document_id in selected_ids)
+    return tuple(by_id[document_id] for document_id in sorted(selected_ids))
 
 
 def _projection_evidence_ids(
@@ -66,8 +66,12 @@ def _projection_evidence_ids(
 
 
 def _event_ids(events: tuple[LedgerEvent, ...], *, case_id: str) -> tuple[str, ...]:
+    ordered = sorted(events, key=lambda event: event.case_sequence)
+    sequences = tuple(event.case_sequence for event in ordered)
+    if len(sequences) != len(set(sequences)):
+        raise CIRPContractError("private CIRP intake events cannot reuse case_sequence")
     result: list[str] = []
-    for event in events:
+    for event in ordered:
         if event.case_id.value != case_id:
             raise CIRPContractError("private CIRP intake event belongs to another case")
         event.verify()
@@ -93,8 +97,12 @@ def _binding_configuration_digest(
     return content_digest(
         {
             "schema": PRIVATE_CIRP_INTAKE_SCHEMA_V1,
-            "private_projection_id": projection.projection_id,
-            "selected_document_ids": [item.document_id for item in selected_documents],
+            "private_projection_subset": {
+                "schema": projection.schema,
+                "case_id": projection.case_id,
+                "case_scope_digest": projection.case_scope_digest,
+                "documents": [item.canonical_dict() for item in selected_documents],
+            },
             "source_configuration_digest": normalized_configuration,
         }
     )
@@ -174,4 +182,8 @@ def bind_private_case_request(
             source_configuration_digest=source_configuration_digest,
         ),
     )
-    return replace(request, run_identity=identity)
+    return replace(
+        request,
+        run_identity=identity,
+        available_evidence_ids=evidence_ids,
+    )
