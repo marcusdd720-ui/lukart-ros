@@ -356,7 +356,7 @@ def request(
         evidence_requirements=(selected_requirement,),
         strategy_options=selected_strategies,
         available_evidence_ids=available,
-        decisive_evidence=(MATERIAL_EVIDENCE,),
+        decisive_evidence=(MATERIAL_EVIDENCE,) if MATERIAL_EVIDENCE in available else (),
         decisive_rules=(selected_remedy_rule.pack_token,),
         filing_specs=(filing_spec(selected_remedy_rule),) if include_filing else (),
         execution_states=(execution(),) if include_execution else (),
