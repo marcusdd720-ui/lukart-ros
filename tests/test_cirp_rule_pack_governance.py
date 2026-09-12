@@ -66,6 +66,7 @@ def test_governed_runtime_binds_approval_policy_run_request_and_replay() -> None
 
     assert first.governance_receipt is not None
     assert first.replay_manifest is not None
+    assert second.replay_manifest is not None
     assert first.governance_receipt.run_identity_digest == selected.run_identity.digest()
     assert first.governance_receipt.request_digest == canonical_governance_request_digest(selected)
     assert first.governance_receipt.rule_pack_set_digest == selected.run_identity.rule_pack_digest
