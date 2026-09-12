@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import date, datetime, timezone
+from datetime import UTC, date, datetime
 
 import pytest
 
@@ -46,7 +46,7 @@ from core.cirp.contracts import (
 
 DIGEST_A = "a" * 64
 DIGEST_B = "b" * 64
-NOW = datetime(2026, 9, 12, 8, 45, tzinfo=timezone.utc)
+NOW = datetime(2026, 9, 12, 8, 45, tzinfo=UTC)
 
 
 def legal_source() -> LegalSourceRef:
