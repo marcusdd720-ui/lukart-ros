@@ -37,6 +37,19 @@ from core.cirp.engine import (
     canonical_rule_pack_set_digest,
 )
 from core.cirp.filing import FilingPlanner, FilingSpec
+from core.cirp.governance import (
+    RulePackApproval,
+    RulePackFreshnessPolicy,
+    RulePackGovernanceReceipt,
+    RulePackRegistry,
+    verify_rule_pack_governance,
+)
+from core.cirp.governed_runtime import (
+    GovernedCanonicalCIRPRuntime,
+    GovernedCIRPReplayManifest,
+    GovernedCIRPRunResult,
+    canonical_governance_request_digest,
+)
 from core.cirp.intake import PRIVATE_CIRP_INTAKE_SCHEMA_V1, bind_private_case_request
 from core.cirp.preflight import FilingExecutionState, HardcorePreflight
 from core.cirp.remedy import (
@@ -93,6 +106,9 @@ __all__ = [
     "FilingSpec",
     "FilingTopologyDecision",
     "FilingTopologyGuard",
+    "GovernedCIRPReplayManifest",
+    "GovernedCIRPRunResult",
+    "GovernedCanonicalCIRPRuntime",
     "HardcorePreflight",
     "PRIVATE_CIRP_INTAKE_SCHEMA_V1",
     "PreflightCheck",
@@ -103,10 +119,16 @@ __all__ = [
     "RemedyEvaluationRequest",
     "RemedyGuard",
     "RemedyOption",
+    "RulePackApproval",
+    "RulePackFreshnessPolicy",
+    "RulePackGovernanceReceipt",
+    "RulePackRegistry",
     "ServiceAssessment",
     "StrategyDecision",
     "StrategyGuard",
     "StrategyOption",
     "bind_private_case_request",
+    "canonical_governance_request_digest",
     "canonical_rule_pack_set_digest",
+    "verify_rule_pack_governance",
 ]
