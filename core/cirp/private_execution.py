@@ -14,7 +14,7 @@ from core.case_ledger.contracts import LedgerEvent
 from core.cirp.contracts import CIRPContractError
 from core.cirp.engine import CIRPRunRequest
 from core.cirp.governance import RulePackFreshnessPolicy, RulePackRegistry
-from core.cirp.governed_runtime import GovernedCIRPRunResult, GovernedCanonicalCIRPRuntime
+from core.cirp.governed_runtime import GovernedCanonicalCIRPRuntime, GovernedCIRPRunResult
 from core.cirp.intake import bind_private_case_request
 from core.p3.contracts import P3ContractError, content_digest, require_hex_digest
 from core.private_evidence_v1 import PrivateEvidenceStore
