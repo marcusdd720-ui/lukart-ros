@@ -6,6 +6,7 @@ from datetime import timedelta
 import pytest
 
 from core.cirp.contracts import CIRPContractError
+from core.cirp.engine import CIRPRunRequest
 from core.cirp.governance import (
     RulePackApproval,
     RulePackFreshnessPolicy,
@@ -19,7 +20,7 @@ from tests.test_cirp_canonical_runtime import NOW, request
 
 
 def governance_for(
-    selected_request=None,
+    selected_request: CIRPRunRequest | None = None,
     *,
     approval_age_days: int = 0,
     revoked: bool = False,
