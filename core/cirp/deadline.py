@@ -311,17 +311,17 @@ class DeadlineGuard:
                     "rule pack legal source jurisdiction does not match rule pack jurisdiction"
                 )
         for rule in rules:
-            calendar = calendar_map.get(rule.calendar_profile_id)
-            if calendar is None:
+            bound_calendar = calendar_map.get(rule.calendar_profile_id)
+            if bound_calendar is None:
                 raise CIRPContractError(
                     f"missing calendar profile for executable rule: {rule.calendar_profile_id}"
                 )
-            if calendar.digest() != rule.calendar_profile_digest:
+            if bound_calendar.digest() != rule.calendar_profile_digest:
                 raise CIRPContractError(
                     f"calendar profile digest mismatch for executable rule: {rule.key}"
                 )
             missing_sources = (
-                set(rule.legal_source_ids) | set(calendar.legal_source_ids)
+                set(rule.legal_source_ids) | set(bound_calendar.legal_source_ids)
             ) - source_ids
             if missing_sources:
                 joined = ", ".join(sorted(missing_sources))
