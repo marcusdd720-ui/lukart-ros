@@ -15,10 +15,12 @@ Przy konflikcie wygrywa aktualny GitHub canon i `docs/WORKING_PRINCIPLES.md`.
 
 ## Execution shorthand
 
-Przed materialną pracą pobierz live `main`, kanon, plan/roadmap, relevant implementation/tests oraz PR/CI state. Ustal `Problem → Evidence → Measurement → existing capability → real gap`. Dla materialnej decyzji zastosuj Design & Improvement Gate z §3 kanonu; preferuj brak zmiany albo smallest justified change.
+Przed materialną pracą ustal live `main SHA` i czytaj kanon, profil, `AGENTS.md` oraz plan/roadmap z tego samego SHA; osobno sprawdź relevant implementation/tests oraz aktualny PR/head/base/CI state. Bootstrap do ustawień projektu: `docs/PROJECT_BOOTSTRAP.md`.
+
+Dla oceny propozycji stosuj §1–3 kanonu: ustal realny gap, a werdykt oddziel od autoryzacji wykonania. Brak potwierdzonego gapu może zakończyć review; nie zastępuje to repair loop zatwierdzonej implementacji.
 
 Po zatwierdzeniu wykonuj etap end-to-end według §1 i §9 kanonu. FAIL uruchamia repair loop i fresh SHA. Exact-SHA PASS wymaga terminalnego dozwolonego `SUCCESS` wszystkich required checks jednego SHA. Potem: unchanged head/base → guarded merge → resulting main → post-merge validation → release/baseline guard → evidence → closure.
 
 Nie fabrykuj human/independent/security/external review ani real-world evidence. CI/symulacja nie dowodzi fizycznej separacji, custody, real DR drill, provider durability, geographic redundancy ani real-case execution.
 
-Po closure stosuj §10: poprawki wdrażaj w tym samym etapie tylko gdy są materialne i jednoznacznie w zatwierdzonym scope; nowe trust boundaries, decyzje biznesowe, nieodwracalne/zewnętrzne operacje lub odrębne capabilities trafiają do ordered follow-up.
+Ulepszenia przed finalnym closure i dalszą pracę prowadź według §1 i §10 kanonu: nowe trust boundaries, decyzje biznesowe, nieodwracalne/zewnętrzne operacje lub odrębne capabilities trafiają do ordered follow-up. Kolejne zmiany po opublikowanym closure wymagają nowych powiązanych SHA/evidence; nie przepisuj historii.

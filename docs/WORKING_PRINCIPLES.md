@@ -6,9 +6,11 @@ Living standard Post-v1. Memory/chat nie są live state. **GitHub ma pierwszeńs
 
 Zaakceptowany etap jest jednym zadaniem. Start: live repo → stage/PR → exact candidate SHA → required checks. Nie zaczynaj późniejszego etapu przed closure.
 
+Ocena pomysłu może zakończyć się `HOLD / NO MATERIAL GAP`. Sam `ACCEPT` nie rozszerza autoryzacji ani scope; naprawialny FAIL zatwierdzonej implementacji nadal wymaga repair loop.
+
 `Problem → Evidence → Measurement → Design → Implementation → Focused Tests → Adversarial Tests → Full Regression → CI → Exact-SHA Validation → PR → Merge → Post-Merge Validation → Evidence → Closure`.
 
-Nie zatrzymuj się na branchu, commicie, PR, partial PASS, `queued/pending/in_progress`, merge-ready ani naprawialnym FAIL. Finalna odpowiedź tylko przy `CLOSED / ENGINEERING PASS` albo `HARD BLOCKER`: brak autoryzacji/sekretu/artefaktu, decyzja biznesowa, prawdziwy human/independent/external review, niezatwierdzona operacja nieodwracalna lub niedostępna niezbędna usługa. Naprawialne test/CI/security/schema/dependency/merge failures nie są HARD BLOCKEREM.
+Nie zatrzymuj się na branchu, commicie, PR, partial PASS, `queued/pending/in_progress`, merge-ready ani naprawialnym FAIL. Finalna odpowiedź etapu wykonawczego tylko przy `CLOSED / ENGINEERING PASS` albo `HARD BLOCKER`: brak autoryzacji/sekretu/artefaktu, decyzja biznesowa, prawdziwy human/independent/external review, niezatwierdzona operacja nieodwracalna lub niedostępna niezbędna usługa. Naprawialne test/CI/security/schema/dependency/merge failures nie są HARD BLOCKEREM.
 
 Repair loop:
 `FAIL → evidence → root cause → smallest justified fix → fresh SHA → focused → adversarial → regression → security/policy → exact-SHA CI → re-evaluation`.
@@ -44,7 +46,7 @@ Nie promuj FACT bez evidence; nie ukrywaj contradictions/open questions. Brak po
 
 ## 5. DETERMINIZM / PROVENANCE / MIGRACJE
 
-Krytyczne artefakty: canonical serialization, digest binding, tamper evidence i exact code/config/schema/provider/input identity. Replay identity: code SHA + config/corpus digests + schema + provider/plugin versions + input/evidence digests. Nie nazywaj replay identycznym przy niepełnej identity. Oddziel semantic change od presentation diff.
+Krytyczne artefakty: canonical serialization, digest binding, tamper evidence i pełna replay identity z §3. Nie nazywaj replay identycznym przy niepełnej identity. Oddziel semantic change od presentation diff.
 
 Migracje: explicit, versioned, deterministic, możliwie idempotentne, testowane na starych danych, fail-closed dla unknown/ambiguous path. Nie twórz drugiej authority, jeśli można rozszerzyć kanon.
 
@@ -80,7 +82,7 @@ Branch/commit/PR/fresh SHA/partial PASS/waiting CI/merge-ready != DONE. Jeśli i
 
 Aktualizacje są informacyjne, nie checkpointem. Po closure raportuj `STATUS`, `WYKONANO`, `FINAL STATE`, `WNIOSEK`, `NEXT`.
 
-Post-Closure Improvement Review: `evidence → weaknesses → alternatives → trade-offs → best-justified scenario → improvements`. Przed finalnym closure wdrażaj tylko materialne ulepszenia jednoznacznie w scope, bez nowej decyzji biznesowej, trust boundary/authority ani nieodwracalnej/zewnętrznej operacji. Resztę zapisz jako ordered follow-up bez scope creep.
+Improvement Review: `evidence → weaknesses → alternatives → trade-offs → best-justified scenario → improvements`. Przed finalnym closure wdrażaj tylko materialne ulepszenia jednoznacznie w scope, bez nowej decyzji biznesowej, trust boundary/authority ani nieodwracalnej/zewnętrznej operacji. Resztę zapisz jako ordered follow-up bez scope creep. Po opublikowanym closure kolejne zmiany tworzą nowe powiązane SHA/evidence; nie przepisuj historycznego closure.
 
 ## 11. NORTH STAR
 
