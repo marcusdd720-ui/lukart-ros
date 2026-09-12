@@ -29,9 +29,9 @@ from core.cirp.deadline import (
     ExecutableDeadlineRule,
 )
 from core.cirp.engine import (
+    CanonicalCIRPRuntime,
     CIRPRunRequest,
     CIRPRunResult,
-    CanonicalCIRPRuntime,
     DeadlineEvaluationRequest,
     RemedyEvaluationRequest,
     canonical_rule_pack_set_digest,
