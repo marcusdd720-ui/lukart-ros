@@ -28,6 +28,11 @@ from core.cirp.deadline import (
     DeadlineTriggerStatus,
     ExecutableDeadlineRule,
 )
+from core.cirp.remedy import (
+    ExecutableRemedyRule,
+    RemedyApplicabilityStatus,
+    RemedyGuard,
+)
 
 __all__ = [
     "CIRPContractError",
@@ -44,12 +49,15 @@ __all__ = [
     "DocumentKind",
     "EvidenceRequirement",
     "ExecutableDeadlineRule",
+    "ExecutableRemedyRule",
     "FilingPlan",
     "FilingTopologyDecision",
     "PreflightCheck",
     "PreflightResult",
     "ProceduralAssessment",
     "ProceduralRulePack",
+    "RemedyApplicabilityStatus",
+    "RemedyGuard",
     "RemedyOption",
     "ServiceAssessment",
     "StrategyDecision",
