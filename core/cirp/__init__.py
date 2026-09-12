@@ -35,6 +35,12 @@ from core.cirp.remedy import (
     RemedyApplicabilityStatus,
     RemedyGuard,
 )
+from core.cirp.replay import (
+    CIRPReplayArtifactRef,
+    CIRPReplayComparison,
+    CIRPReplayManifest,
+    CIRPReplayVerifier,
+)
 from core.cirp.report import CIRPReport, CIRPReportBuilder, CIRPReportStatus
 from core.cirp.strategy import (
     ConsolidationAssessment,
@@ -45,6 +51,10 @@ from core.cirp.strategy import (
 
 __all__ = [
     "CIRPContractError",
+    "CIRPReplayArtifactRef",
+    "CIRPReplayComparison",
+    "CIRPReplayManifest",
+    "CIRPReplayVerifier",
     "CIRPReport",
     "CIRPReportBuilder",
     "CIRPReportStatus",
