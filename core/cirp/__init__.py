@@ -28,11 +28,14 @@ from core.cirp.deadline import (
     DeadlineTriggerStatus,
     ExecutableDeadlineRule,
 )
+from core.cirp.filing import FilingPlanner, FilingSpec
+from core.cirp.preflight import FilingExecutionState, HardcorePreflight
 from core.cirp.remedy import (
     ExecutableRemedyRule,
     RemedyApplicabilityStatus,
     RemedyGuard,
 )
+from core.cirp.report import CIRPReport, CIRPReportBuilder, CIRPReportStatus
 from core.cirp.strategy import (
     ConsolidationAssessment,
     ConsolidationAssessmentStatus,
@@ -42,6 +45,9 @@ from core.cirp.strategy import (
 
 __all__ = [
     "CIRPContractError",
+    "CIRPReport",
+    "CIRPReportBuilder",
+    "CIRPReportStatus",
     "CIRPRunIdentity",
     "ConsolidationAssessment",
     "ConsolidationAssessmentStatus",
@@ -58,9 +64,13 @@ __all__ = [
     "EvidenceRequirement",
     "ExecutableDeadlineRule",
     "ExecutableRemedyRule",
+    "FilingExecutionState",
     "FilingPlan",
+    "FilingPlanner",
+    "FilingSpec",
     "FilingTopologyDecision",
     "FilingTopologyGuard",
+    "HardcorePreflight",
     "PreflightCheck",
     "PreflightResult",
     "ProceduralAssessment",
