@@ -39,7 +39,11 @@ def legal_source(
         authority_type="synthetic_fixture",
         formal_citation="Synthetic deadline source 1",
         source_uri="synthetic://procedural/deadline-source-1",
-        source_digest=DIGEST_A if verification_status is LegalSourceVerificationStatus.VERIFIED else None,
+        source_digest=(
+            DIGEST_A
+            if verification_status is LegalSourceVerificationStatus.VERIFIED
+            else None
+        ),
         effective_from=effective_from,
         effective_until=effective_until,
         retrieved_at=NOW,
