@@ -41,8 +41,8 @@ from core.cirp.deadline import (
     ExecutableDeadlineRule,
 )
 from core.cirp.engine import (
-    CIRPRunRequest,
     CanonicalCIRPRuntime,
+    CIRPRunRequest,
     DeadlineEvaluationRequest,
     RemedyEvaluationRequest,
     canonical_rule_pack_set_digest,
