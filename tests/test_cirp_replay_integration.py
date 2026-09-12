@@ -17,11 +17,15 @@ from core.cirp.contracts import (
     EvidenceImportance,
     EvidenceRequirement,
     EvidenceRequirementStatus,
+    FilingPlan,
+    FilingTopologyDecision,
     FilingTopologyStatus,
     MeritsStrength,
     PreflightFinalStatus,
+    PreflightResult,
     RemedyAdmissibility,
     RemedyOption,
+    StrategyDecision,
     StrategyDecisionStatus,
     StrategyOption,
     VerificationLevel,
@@ -57,7 +61,14 @@ def run_identity(*, policy_identity: str = "policy:synthetic:v1") -> CIRPRunIden
         rule_pack_digest=content_digest({"pack": "synthetic:v1"}),
         policy_identity=policy_identity,
         runtime_identity="runtime:synthetic:deterministic-core:v1",
-        evaluation_time=datetime(2030, 1, 10, 12, 0, tzinfo=ZoneInfo("Europe/Warsaw")),
+        evaluation_time=datetime(
+            2030,
+            1,
+            10,
+            12,
+            0,
+            tzinfo=ZoneInfo("Europe/Warsaw"),
+        ),
         configuration_digest=content_digest({"configuration": "synthetic:v1"}),
         model_identity=None,
     )
@@ -167,7 +178,13 @@ def build_chain(
     *,
     tamper_route: bool = False,
     critical_unknowns: tuple[str, ...] = (),
-) -> tuple[object, object, object, object, CIRPReport]:
+) -> tuple[
+    StrategyDecision,
+    FilingTopologyDecision,
+    FilingPlan,
+    PreflightResult,
+    CIRPReport,
+]:
     selected_remedy = remedy()
     selected_strategy = strategy()
     decision = StrategyGuard().decide(
@@ -240,7 +257,7 @@ def manifest(
         tamper_route=tamper_route,
         critical_unknowns=critical_unknowns,
     )
-    artifacts = (
+    artifacts: tuple[CIRPReplayArtifactRef, ...] = (
         artifact_ref("strategy-decision", decision),
         artifact_ref("filing-topology", topology),
         artifact_ref("filing-plan", plan),
@@ -309,7 +326,9 @@ def test_manifest_requires_exact_report_artifact() -> None:
 def test_missing_or_unexpected_artifact_fails_closed_as_incomplete() -> None:
     expected = manifest()
     reduced = tuple(
-        item for item in expected.artifacts if item.artifact_id != "strategy-decision"
+        item
+        for item in expected.artifacts
+        if item.artifact_id != "strategy-decision"
     )
     actual = CIRPReplayManifest(
         run_identity_digest=expected.run_identity_digest,
