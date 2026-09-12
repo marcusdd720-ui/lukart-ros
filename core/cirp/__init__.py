@@ -28,6 +28,14 @@ from core.cirp.deadline import (
     DeadlineTriggerStatus,
     ExecutableDeadlineRule,
 )
+from core.cirp.engine import (
+    CanonicalCIRPRuntime,
+    CIRPRunRequest,
+    CIRPRunResult,
+    DeadlineEvaluationRequest,
+    RemedyEvaluationRequest,
+    canonical_rule_pack_set_digest,
+)
 from core.cirp.filing import FilingPlanner, FilingSpec
 from core.cirp.preflight import FilingExecutionState, HardcorePreflight
 from core.cirp.remedy import (
@@ -59,11 +67,15 @@ __all__ = [
     "CIRPReportBuilder",
     "CIRPReportStatus",
     "CIRPRunIdentity",
+    "CIRPRunRequest",
+    "CIRPRunResult",
+    "CanonicalCIRPRuntime",
     "ConsolidationAssessment",
     "ConsolidationAssessmentStatus",
     "DeadlineAssessment",
     "DeadlineCalendarProfile",
     "DeadlineDurationUnit",
+    "DeadlineEvaluationRequest",
     "DeadlineGuard",
     "DeadlineRollConvention",
     "DeadlineStartRule",
@@ -86,10 +98,12 @@ __all__ = [
     "ProceduralAssessment",
     "ProceduralRulePack",
     "RemedyApplicabilityStatus",
+    "RemedyEvaluationRequest",
     "RemedyGuard",
     "RemedyOption",
     "ServiceAssessment",
     "StrategyDecision",
     "StrategyGuard",
     "StrategyOption",
+    "canonical_rule_pack_set_digest",
 ]
