@@ -14,7 +14,6 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from enum import StrEnum
-from types import MappingProxyType
 
 from core.cirp.contracts import (
     CIRPContractError,
@@ -192,7 +191,11 @@ class StrategyGuard:
 
         rejected_ids = tuple(rejection_reasons)
         unresolved_risks = tuple(
-            dict.fromkeys(risk for option in eligible for risk in (*option.risks, *option.unresolved))
+            dict.fromkeys(
+                risk
+                for option in eligible
+                for risk in (*option.risks, *option.unresolved)
+            )
         )
 
         if len(eligible) > 1:
@@ -268,7 +271,11 @@ class StrategyGuard:
             decisive_evidence=(),
             decisive_rules=(),
             unresolved_risks=tuple(
-                dict.fromkeys(risk for option in options for risk in (*option.risks, *option.unresolved))
+                dict.fromkeys(
+                    risk
+                    for option in options
+                    for risk in (*option.risks, *option.unresolved)
+                )
             ),
         )
 
@@ -314,7 +321,10 @@ class StrategyGuard:
         if option.deadline_safety is DeadlineSafety.RISK:
             return ("Strategy carries explicit deadline risk.", False)
         if option.unresolved:
-            return ("Strategy retains unresolved dependencies: " + "; ".join(option.unresolved), True)
+            return (
+                "Strategy retains unresolved dependencies: " + "; ".join(option.unresolved),
+                True,
+            )
         return None, False
 
 
