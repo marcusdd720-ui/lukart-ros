@@ -1,6 +1,6 @@
 # LUKART ROS — Case Intake & Response Protocol (CIRP) v1.0
 
-Status: **CIRP-05 engineering baseline**
+Status: **CIRP-06 engineering baseline**
 
 CIRP is the fail-closed Product protocol that converts a new case document or
 material case event into an evidence-bound procedural assessment and a
@@ -26,7 +26,7 @@ autonomous filing authority and not a second source of truth.
 For every new document or material event CIRP is designed to establish, or
 explicitly abstain from establishing:
 
-`Document → Procedural Posture → Service/Receipt → Deadline → Remedy/Route → Evidence Gaps → Strategy → Filing Topology → Filing Plan → Preflight → Report`
+`Document → Procedural Posture → Service/Receipt → Deadline → Remedy/Route → Evidence Gaps → Strategy → Filing Topology → Filing Plan → Preflight → Report → Replay Verification`
 
 A new material document or changed critical input creates a new CIRP run;
 historical analyses are not silently rewritten.
@@ -37,9 +37,9 @@ historical analyses are not silently rewritten.
 2. `CIRP-02` — Procedural Rule Pack + Deadline Guard — implemented.
 3. `CIRP-03` — Remedy + Evidence Gap — implemented.
 4. `CIRP-04` — Strategy + Filing Topology — implemented.
-5. `CIRP-05` — Filing Plan + Hardcore Preflight + Report — implemented in this
+5. `CIRP-05` — Filing Plan + Hardcore Preflight + Report — implemented.
+6. `CIRP-06` — Adversarial / Replay / Integration — implemented in this
    engineering baseline.
-6. `CIRP-06` — Adversarial / Replay / Integration — planned next.
 
 ## Stage boundaries
 
@@ -164,6 +164,39 @@ The report does not silently repair or suppress upstream uncertainty:
 
 A `READY_TO_FILE` report carrying a critical unknown is contract-invalid.
 
+### CIRP-06 — adversarial replay and integration
+
+`core/cirp/replay.py` closes the deterministic replay-verification boundary. A
+replay manifest is a verification artifact only. It never becomes a second case
+ledger and never stores raw evidence, source documents or case narrative.
+
+The CIRP-06 replay boundary enforces:
+
+1. the replay manifest is bound to the exact `CIRPRunIdentity.digest()`;
+2. every semantic artifact reference has an explicit logical identity, schema
+   identity and SHA-256 content digest;
+3. artifact identities are unique and are canonically ordered before manifest
+   hashing, so caller ordering cannot change replay identity;
+4. every manifest identifies exactly one final `lukart.cirp.report.v1` artifact;
+5. exact artifact-set mismatch is `INCOMPLETE`, never guessed as identical;
+6. changed run identity, report identity, artifact schema or artifact digest is
+   `DIFFERENT`;
+7. `IDENTICAL` is permitted only when run identity, report identity, exact
+   artifact set and every artifact digest match and manifest digests are equal;
+8. CIRP v1 does not claim `CROSS_VERSION_COMPARABLE`; a future version requires
+   an explicit compatibility contract before that relation can be emitted;
+9. replay verification compares derived semantics and never promotes a replayed
+   conclusion into an authoritative case fact.
+
+The CIRP-06 adversarial integration suite verifies the executable chain from
+strategy/topology through filing plan, Hardcore Preflight, report projection and
+replay manifest. It checks exact deterministic replay, canonical artifact order,
+duplicate/missing/unexpected artifacts, artifact tampering, changed run identity,
+route tampering, critical unknown propagation and multi-strategy ambiguity.
+
+CIRP-06 therefore closes the v1 engineering loop without claiming that an
+incomplete or model-assisted environment can provide byte-identical replay.
+
 ## CIRP v1 contract identities
 
 CIRP v1 uses explicit stable schema identities, including:
@@ -184,6 +217,8 @@ CIRP v1 uses explicit stable schema identities, including:
 - `lukart.cirp.preflight-check.v1`
 - `lukart.cirp.preflight-result.v1`
 - `lukart.cirp.report.v1`
+- `lukart.cirp.replay-manifest.v1`
+- `lukart.cirp.replay-comparison.v1`
 
 Older schema identities remain historically interpretable when later versions are
 introduced; semantic changes require an explicit version change rather than a
@@ -209,9 +244,14 @@ silent reinterpretation.
 15. Critical `UNKNOWN/UNRESOLVED` state remains visible in later projections.
 16. `FILING_READY` requires all critical preflight checks at `PASS` and zero
     blockers.
+17. Replay identity may be `IDENTICAL` only for an exact complete deterministic
+    semantic artifact set bound to the same run identity.
+18. Missing replay material remains `INCOMPLETE`; replay verification never
+    repairs or invents a missing artifact.
 
-CIRP-05 makes invariants 13, 15 and 16 executable at the filing/report boundary
-in addition to preserving all earlier-stage invariants.
+CIRP-06 makes replay invariants 17 and 18 executable and adversarially verifies
+that earlier uncertainty and safety boundaries survive through the final report
+and replay projection.
 
 ## One-filing preference
 
@@ -225,16 +265,22 @@ multiple filings or abstains from consolidation.
 CIRP contracts are content-digestible and use deterministic canonical JSON. A
 run identity binds the relevant evidence/event and rule-pack identities. The
 verified deterministic core is expected to reproduce the same semantic result
-for the same material inputs. Model-assisted reasoning may be environment-bound;
-CIRP does not claim byte-identical replay from incomplete runtime identity.
+for the same material inputs.
 
-CIRP-06 will close the integration/replay boundary and verify that run/result
-identity can be recorded without promoting CIRP conclusions into authoritative
-case facts.
+CIRP-06 records only derived artifact identifiers, schema identities and content
+digests in the replay manifest. Exact replay does not depend on persisting a
+second copy of case facts. Missing or partial replay identity fails closed.
+Model-assisted reasoning may be environment-bound; CIRP does not claim
+byte-identical replay from incomplete runtime/model identity.
 
-## Non-claims
+## Engineering closure and non-claims
 
-The CIRP-05 baseline does **not** claim:
+The six CIRP v1 runtime stages form a complete **engineering baseline** when the
+CIRP-06 implementation, adversarial tests, full regression, exact-SHA CI and
+post-merge validation all pass. This is an engineering result, not legal or
+independent certification.
+
+The CIRP v1 baseline does **not** claim:
 
 - correctness of any production jurisdiction deadline or remedy unless a
   separately verified current rule pack and legal sources are supplied;
@@ -244,7 +290,8 @@ The CIRP-05 baseline does **not** claim:
 - that `READY_TO_FILE` means a filing was actually sent or legally effective;
 - that a rendered DOCX/PDF may change the semantic filing plan;
 - real-case validation from public CI fixtures;
-- CIRP-06 replay/integration closure before that stage is separately validated.
+- cross-version exact/comparable replay without a separately defined and
+  validated compatibility contract.
 
 Public CIRP tests remain synthetic. Real-case evidence and operational case data
 stay outside the public repository.
