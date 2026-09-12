@@ -10,6 +10,7 @@ Ten tekst służy uruchomieniu pracy. Nie jest drugim standardem inżynierskim.
 - docs/ENGINEERING_EXECUTION_PROFILE.md — NON-AUTHORITATIVE OPERATIONAL SHORTHAND; skrót podporządkowany kanonowi.
 - AGENTS.md — instrukcje wykonawcze i ograniczenia właściwe dla repozytorium, podporządkowane kanonowi.
 - MASTER_PLAN.md i wskazany w nim aktywny roadmap — struktura programu, zatwierdzony zakres i kolejność prac.
+- docs/CASE_INTAKE_RESPONSE_PROTOCOL_V1.md — domyślny fail-closed protokół Product dla nowej realnej sprawy, nowego istotnego dokumentu lub zdarzenia proceduralnego.
 - Live GitHub — aktualny main SHA, PR/head/base, candidate SHA, CI/checks oraz stan tagów i release.
 - Implementation, tests i CI — dowody wyłącznie tego, co rzeczywiście wykonano i sprawdzono dla określonej identity.
 
@@ -24,6 +25,22 @@ Ustal na podstawie evidence: co jest CLOSED, jaki jest pierwszy niedomknięty za
 Zapisz wykorzystane SHA i źródła. Po zmianie istotnego stanu odśwież ocenę; przed merge ponownie sprawdź head/base i wymagane wyniki według kanonu. Nie mieszaj evidence różnych candidates ani nie wstawiaj historycznego SHA do tego bootstrapu jako stałej.
 
 Jeśli live GitHub jest niedostępny, oznacz aktualny stan jako UNKNOWN / NOT LIVE-VERIFIED. Możesz analizować dostępny, jawnie oznaczony snapshot. Kontynuuj czynności niewymagające brakującej weryfikacji; operacje zależne od nieznanego stanu pozostają zablokowane do jego ustalenia.
+
+## Nowa sprawa / nowe pismo — CIRP entry point
+
+Jeżeli zadanie rozpoczyna nową realną sprawę albo dotyczy nowego istotnego dokumentu lub zdarzenia, które może zmienić termin, procedural posture, remedy albo strategię filing, domyślnie uruchom CIRP zamiast zaczynać od swobodnego promptu lub od tworzenia case-specific skryptów.
+
+Przeczytaj `docs/CASE_INTAKE_RESPONSE_PROTOCOL_V1.md` z bieżącego repo SHA i wykonuj sekwencję:
+
+`Document -> Procedural Posture -> Service/Receipt -> Deadline -> Remedy/Route -> Evidence Gaps -> Strategy -> Filing Topology -> Filing Plan -> Preflight -> Report -> Replay Verification`.
+
+Najpierw ustal z evidence tożsamość dokumentu/zdarzenia, datę dokumentu, datę i sposób skutecznego doręczenia/odbioru, źródło tej daty, aktualny etap proceduralny, możliwe terminy, właściwy środek i drogę wniesienia. Nie zastępuj brakującego dowodu, aktualnej reguły ani źródła prawa pamięcią modelu. Krytyczne braki pozostają `UNKNOWN / UNRESOLVED / ABSTAIN` albo właściwym statusem CIRP.
+
+Pytaj użytkownika tylko o najmniejszy brakujący fakt/dowód, który rzeczywiście blokuje bezpieczny kolejny krok. Jeżeli brak nie blokuje dalszej pracy, kontynuuj i pokaż go jako jawny gap. Preferuj smallest procedurally safe filing set; jedno pismo jest preferencją tylko wtedy, gdy verified authority/route/timing/consolidation pozwalają bezpiecznie połączyć środki.
+
+CIRP nie zastępuje kanonicznego engineering-stage governance. Gdy zadanie dotyczy repozytorium, implementacji, roadmapy, CI lub release, obowiązuje zwykły engineering bootstrap i aktywny stage. Gdy zadanie dotyczy realnej sprawy, realne dokumenty, nazwiska, sygnatury, podpisy i sensitive evidence pozostają local-only i nie trafiają do publicznego repo/CI.
+
+Skrócona checklista operatora: `docs/NEW_CASE_CHECKLIST.md`.
 
 ## Intencja i wykonanie
 

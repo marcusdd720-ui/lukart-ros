@@ -1,6 +1,6 @@
 # LUKART ROS — Case Intake & Response Protocol (CIRP) v1.0
 
-Status: **CIRP-06 engineering baseline**
+Status: **CLOSED / ENGINEERING PASS**
 
 CIRP is the fail-closed Product protocol that converts a new case document or
 material case event into an evidence-bound procedural assessment and a
@@ -38,8 +38,8 @@ historical analyses are not silently rewritten.
 3. `CIRP-03` — Remedy + Evidence Gap — implemented.
 4. `CIRP-04` — Strategy + Filing Topology — implemented.
 5. `CIRP-05` — Filing Plan + Hardcore Preflight + Report — implemented.
-6. `CIRP-06` — Adversarial / Replay / Integration — implemented in this
-   engineering baseline.
+6. `CIRP-06` — Adversarial / Replay / Integration — implemented and
+   post-merge validated.
 
 ## Stage boundaries
 
@@ -273,11 +273,34 @@ second copy of case facts. Missing or partial replay identity fails closed.
 Model-assisted reasoning may be environment-bound; CIRP does not claim
 byte-identical replay from incomplete runtime/model identity.
 
+## Canonical engineering closure evidence
+
+CIRP v1 closed through CIRP-06 implementation PR **#263**.
+
+Implementation qualification:
+
+- exact final CIRP-06 PR head: `ddad8f63723dbcdee78bf5f26f1884aa6c5c5c02`;
+- exact-head workflow qualification: **43 SUCCESS** with no terminal failure on
+  that candidate at merge decision;
+- guarded merge resulting `main`:
+  `452de5c2388e4e5e5754ffa35b8e13281461e494`;
+- resulting-main workflow set: **41/41 SUCCESS**;
+- resulting-main terminal negative states at closure evaluation:
+  **0 failure, 0 queued, 0 in-progress, 0 cancelled, 0 timed-out**;
+- dependent `MVROS v1 Release` guard run **#980** completed `SUCCESS` on the exact
+  resulting merge SHA;
+- the resulting merge commit was GitHub-verified and became the live `main`
+  identity before this documentation follow-up was prepared.
+
+This evidence closes the six-stage CIRP v1 **engineering** baseline only. It does
+not manufacture legal, independent, security, regulatory or professional
+certification and does not convert synthetic CI into real-case validation.
+
 ## Engineering closure and non-claims
 
-The six CIRP v1 runtime stages form a complete **engineering baseline** when the
-CIRP-06 implementation, adversarial tests, full regression, exact-SHA CI and
-post-merge validation all pass. This is an engineering result, not legal or
+The six CIRP v1 runtime stages form a complete **engineering baseline** because
+the CIRP-06 implementation, adversarial tests, full regression, exact-SHA CI and
+post-merge validation all passed. This is an engineering result, not legal or
 independent certification.
 
 The CIRP v1 baseline does **not** claim:
