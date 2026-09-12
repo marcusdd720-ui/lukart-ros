@@ -14,12 +14,17 @@ from core.cirp.contracts import (
     ProceduralRulePack,
     RulePackStatus,
 )
+from core.cirp.engine import CIRPRunRequest
 from core.cirp.governance import (
     RulePackApproval,
     RulePackFreshnessPolicy,
     RulePackRegistry,
 )
-from core.cirp.private_execution import PrivateCIRPExecutionReceipt, run_private_case
+from core.cirp.private_execution import (
+    PrivateCIRPExecutionReceipt,
+    PrivateCIRPExecutionResult,
+    run_private_case,
+)
 from core.private_evidence_v1 import PrivateEvidenceStore
 from tests.test_cirp_private_intake import CONFIG, NOW, _draft_request, _projection
 
@@ -31,10 +36,10 @@ def _store() -> PrivateEvidenceStore:
 def _run(
     monkeypatch: pytest.MonkeyPatch,
     *,
-    request=None,
+    request: CIRPRunRequest | None = None,
     registry: RulePackRegistry | None = None,
     freshness_policy: RulePackFreshnessPolicy | None = None,
-):
+) -> PrivateCIRPExecutionResult:
     monkeypatch.setattr(intake, "load_verified_projection", lambda store: _projection())
     return run_private_case(
         _store(),
@@ -50,7 +55,7 @@ def _run(
 
 
 def _governed_request() -> tuple[
-    object,
+    CIRPRunRequest,
     RulePackRegistry,
     RulePackFreshnessPolicy,
 ]:
