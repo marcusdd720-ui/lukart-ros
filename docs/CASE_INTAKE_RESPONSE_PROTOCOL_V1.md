@@ -1,6 +1,6 @@
 # LUKART ROS — Case Intake & Response Protocol (CIRP) v1.0
 
-Status: **CIRP-02 engineering baseline**
+Status: **CIRP-03 engineering baseline**
 
 CIRP is the fail-closed Product protocol for converting a new case document or material case event into an evidence-bound procedural assessment and, in later stages, a best-justified action package. It is not a legal-source database, not an autonomous filing authority, and not a second source of truth.
 
@@ -25,6 +25,8 @@ A new material document or changed critical input creates a new CIRP run; histor
 `CIRP-01` defines boundary contracts, canonical serialization and enforceable invariants.
 
 `CIRP-02` adds generic executable deadline semantics and a fail-closed deadline guard. It deliberately does **not** embed jurisdiction-specific production rules, retrieve legal sources, infer missing trigger facts, perform strategy reasoning, generate documents, transmit filings to an authority, or monitor external proceedings.
+
+`CIRP-03` adds generic executable remedy semantics plus evidence-gap dependency propagation. It cryptographically binds executable remedy semantics to the active procedural rule pack, carries verified/provisional/unknown deadline state forward, and prevents unresolved critical evidence from being promoted into a verified remedy decision. It does **not** choose strategy, optimize filing topology, render filings, transmit filings, or invent missing legal/evidentiary facts.
 
 Runtime stages are planned as:
 
@@ -85,9 +87,13 @@ Legal source references are version/effective-time aware. A verified source requ
 
 CIRP-02 adds an executable deadline rule whose `pack_token` has the form `rule_id@version#semantic_digest`. An ACTIVE deadline runtime requires the rule pack's `deadline_rules` set to match the exact executable tokens. Calendar semantics are also content-digested and bound into the executable rule. Changing duration, start rule, roll convention, calendar identity, holiday set or legal-source bindings therefore changes the semantic digest and cannot silently reuse the previous rule-pack token.
 
+CIRP-03 applies the same identity principle to executable remedy rules. An ACTIVE remedy runtime requires the rule pack's `remedy_rules` set to match the exact executable remedy tokens. Changing remedy type, authority route, formal requirements, evidence dependencies, option-preservation/waiver semantics, deadline dependency, legal-source bindings or effective-time window changes the semantic digest.
+
 ### `RemedyOption` / `EvidenceRequirement`
 
-A `VERIFIED_AVAILABLE` remedy requires explicit rule identity and cannot carry unresolved blockers. Evidence requirements distinguish deadline/admissibility/merits-critical gaps from supporting/optional material.
+A `VERIFIED_AVAILABLE` remedy requires an exact executable rule identity and cannot carry unresolved blockers. Evidence requirements distinguish deadline/admissibility/merits-critical gaps from procedural/supporting/optional material.
+
+CIRP-03 requires each evidence requirement consumed by an executable remedy to be explicitly bound to the rule identity (`rule_id@version` or the exact semantic `pack_token`). Missing assessments, conflicting evidence and `NOT_APPLICABLE` states fail closed. An unresolved requirement is critical when its category is `DEADLINE_CRITICAL`, `ADMISSIBILITY_CRITICAL` or `MERITS_CRITICAL`, or when its importance is `CRITICAL`; such a dependency produces `UNKNOWN` rather than a verified remedy. Non-critical unresolved required evidence may produce only `PROVISIONALLY_AVAILABLE`.
 
 ### `StrategyOption` / `StrategyDecision`
 
@@ -123,6 +129,29 @@ The CIRP-02 deadline guard enforces the following boundary:
 
 Calendar profiles explicitly bind timezone, weekend weekdays, holiday dates and any legal sources needed to justify those calendar semantics. Synthetic fixtures are used in public CI; real case data and private legal materials remain outside the repository.
 
+## CIRP-03 remedy and evidence-gap semantics
+
+`core/cirp/remedy.py` is jurisdiction-neutral. It evaluates executable remedy semantics supplied by the active rule pack and never embeds a production jurisdiction remedy catalog.
+
+The CIRP-03 remedy guard enforces the following boundary:
+
+1. the `ProceduralRulePack` must be `ACTIVE`;
+2. `remedy_rules` must exactly match the executable remedy `pack_token` set;
+3. every executable remedy legal-source identifier must exist in the pack source set and use the pack jurisdiction;
+4. the pack, executable remedy rule and every relied-on legal source must be effective on the supplied `effective_law_date`;
+5. unverified or ineffective legal sources cannot produce `VERIFIED_AVAILABLE`;
+6. a known executable remedy rule is required; an unknown rule key is rejected rather than guessed;
+7. case-specific applicability remains explicit as `VERIFIED`, `PROVISIONAL`, `NOT_APPLICABLE`, `UNKNOWN` or `CONFLICTING`;
+8. a deadline-dependent remedy must consume a deadline assessment from the same rule pack and effective-law date;
+9. `EXPIRED` closes a deadline-dependent remedy, while provisional deadline evidence propagates only provisional availability and unresolved/conflicting deadline state propagates `UNKNOWN`;
+10. each required evidence object must be explicitly bound to the executable remedy rule identity;
+11. missing evidence-assessment objects, conflicting required evidence and contradictory `NOT_APPLICABLE` evidence dependencies produce `UNKNOWN`;
+12. unresolved critical evidence dependencies produce `UNKNOWN` and therefore cannot be promoted to a verified downstream decision;
+13. unresolved non-critical required evidence may produce only `PROVISIONALLY_AVAILABLE`;
+14. `VERIFIED_AVAILABLE` requires verified applicability, verified/effective rule and sources, satisfied deadline dependency when declared, all required evidence present, and zero blockers.
+
+Public tests use synthetic sources, authorities, rules and evidence identifiers only.
+
 ## CIRP v1 invariants
 
 1. **No Evidence → No Fact.** CIRP may represent document content or a claim, but evidence-free external assertions cannot be promoted to fact by CIRP narrative.
@@ -133,7 +162,7 @@ Calendar profiles explicitly bind timezone, weekend weekdays, holiday dates and 
 6. Conflicting service evidence remains `CONFLICTING`; it cannot carry a settled service date.
 7. `VERIFIED_AVAILABLE` remedy requires rule identity.
 8. Filing route is modeled separately from review authority.
-9. Critical evidence gaps must block dependent runtime decisions; CIRP-03 will enforce dependency propagation.
+9. Critical evidence gaps must block dependent runtime decisions; CIRP-03 enforces remedy/evidence dependency propagation.
 10. A `RECOMMENDED` strategy identifies decisive evidence and decisive rules.
 11. Every materially rejected strategy has a rejection reason.
 12. One-filing optimization must not degrade procedural safety; uncertain consolidation remains fail-closed.
@@ -142,7 +171,7 @@ Calendar profiles explicitly bind timezone, weekend weekdays, holiday dates and 
 15. Critical `UNKNOWN` / `UNRESOLVED` state must remain visible in later report rendering.
 16. `FILING_READY` requires all critical preflight checks to pass and zero blockers.
 
-CIRP-01 enforces invariant portions representable at the contract boundary. CIRP-02 additionally enforces the deadline-runtime portions of invariants 2, 3, 4 and 5. Invariants 1, 9, 12, 13, 14 and 15 also cross later component/runtime boundaries and require continued enforcement in later stages and integration tests.
+CIRP-01 enforces invariant portions representable at the contract boundary. CIRP-02 additionally enforces the deadline-runtime portions of invariants 2, 3, 4 and 5. CIRP-03 additionally enforces runtime portions of invariants 3, 4, 7 and 9 and propagates upstream deadline uncertainty into remedy availability. Invariants 1, 10, 12, 13, 14 and 15 also cross later component/runtime boundaries and require continued enforcement in later stages and integration tests.
 
 ## Deadline safety model
 
@@ -159,14 +188,15 @@ CIRP prefers the smallest procedurally safe filing set. It may combine remedies 
 
 ## Replay and identity
 
-CIRP contracts are content-digestible and reuse deterministic canonical JSON. The run identity records the relevant evidence/event and rule-pack identities. CIRP-02 additionally binds executable deadline semantics and calendar semantics through content digests. Model-assisted reasoning may later be environment-bound; CIRP must never claim byte-identical replay from incomplete identity.
+CIRP contracts are content-digestible and reuse deterministic canonical JSON. The run identity records the relevant evidence/event and rule-pack identities. CIRP-02 binds executable deadline semantics and calendar semantics through content digests; CIRP-03 binds executable remedy semantics and evidence dependencies to exact rule identities. Model-assisted reasoning may later be environment-bound; CIRP must never claim byte-identical replay from incomplete identity.
 
 ## Non-claims
 
-CIRP-02 does not claim:
+CIRP-03 does not claim:
 
 - correctness of any Polish-law deadline or remedy unless a separately verified jurisdiction rule pack and current legal sources are supplied;
-- current production legal-source coverage;
+- current production legal-source or remedy-catalog coverage;
+- strategy optimization or filing-topology correctness;
 - legal certification or independent review;
 - autonomous filing or external delivery;
 - real-case validation;
