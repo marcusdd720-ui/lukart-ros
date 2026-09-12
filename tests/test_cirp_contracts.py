@@ -110,32 +110,39 @@ def test_run_identity_rejects_naive_evaluation_time() -> None:
 
 
 def test_verified_document_cannot_be_unknown_or_evidence_free() -> None:
-    kwargs = dict(
-        document_id="DOC-001",
-        source_evidence_id="evidence:doc-1",
-        issuer="Synthetic Authority",
-        recipient="Synthetic Party",
-        document_date=date(2026, 9, 1),
-        case_reference="SYNTHETIC-001",
-        subject="Synthetic notice",
-        operative_content=("Synthetic content",),
-        requested_actions=(),
-        stated_deadlines=(),
-        open_questions=(),
-    )
     with pytest.raises(CIRPContractError, match="cannot be UNKNOWN"):
         DocumentAssessment(
-            **kwargs,
+            document_id="DOC-001",
+            source_evidence_id="evidence:doc-1",
             document_kind=DocumentKind.UNKNOWN,
+            issuer="Synthetic Authority",
+            recipient="Synthetic Party",
+            document_date=date(2026, 9, 1),
+            case_reference="SYNTHETIC-001",
+            subject="Synthetic notice",
+            operative_content=("Synthetic content",),
+            requested_actions=(),
+            stated_deadlines=(),
             classification_status=AssessmentStatus.VERIFIED,
             evidence_refs=("evidence:doc-1",),
+            open_questions=(),
         )
     with pytest.raises(CIRPContractError, match="requires evidence_refs"):
         DocumentAssessment(
-            **kwargs,
+            document_id="DOC-001",
+            source_evidence_id="evidence:doc-1",
             document_kind=DocumentKind.NOTICE,
+            issuer="Synthetic Authority",
+            recipient="Synthetic Party",
+            document_date=date(2026, 9, 1),
+            case_reference="SYNTHETIC-001",
+            subject="Synthetic notice",
+            operative_content=("Synthetic content",),
+            requested_actions=(),
+            stated_deadlines=(),
             classification_status=AssessmentStatus.VERIFIED,
             evidence_refs=(),
+            open_questions=(),
         )
 
 
