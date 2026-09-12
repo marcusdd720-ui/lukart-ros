@@ -438,7 +438,8 @@ class DeadlineGuard:
                 safe_internal_deadline=None,
                 status=DeadlineStatus.UNKNOWN_RULE,
                 blocking_questions=(
-                    f"Rule {rule.key} requires trigger type {rule.trigger_type}, not {trigger_type}.",
+                    f"Rule {rule.key} requires trigger type {rule.trigger_type}, "
+                    f"not {trigger_type}.",
                 ),
             )
 
