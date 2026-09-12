@@ -33,10 +33,18 @@ from core.cirp.remedy import (
     RemedyApplicabilityStatus,
     RemedyGuard,
 )
+from core.cirp.strategy import (
+    ConsolidationAssessment,
+    ConsolidationAssessmentStatus,
+    FilingTopologyGuard,
+    StrategyGuard,
+)
 
 __all__ = [
     "CIRPContractError",
     "CIRPRunIdentity",
+    "ConsolidationAssessment",
+    "ConsolidationAssessmentStatus",
     "DeadlineAssessment",
     "DeadlineCalendarProfile",
     "DeadlineDurationUnit",
@@ -52,6 +60,7 @@ __all__ = [
     "ExecutableRemedyRule",
     "FilingPlan",
     "FilingTopologyDecision",
+    "FilingTopologyGuard",
     "PreflightCheck",
     "PreflightResult",
     "ProceduralAssessment",
@@ -61,5 +70,6 @@ __all__ = [
     "RemedyOption",
     "ServiceAssessment",
     "StrategyDecision",
+    "StrategyGuard",
     "StrategyOption",
 ]
