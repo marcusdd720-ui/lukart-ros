@@ -164,11 +164,15 @@ def test_private_intake_replaces_draft_identity_with_verified_selected_evidence(
 
     assert bound.run_identity.case_id == CaseId("CASE-SYNTHETIC-P02")
     assert bound.run_identity.input_evidence_ids == (SOURCE_A, DERIVED_A)
+    assert bound.available_evidence_ids == (SOURCE_A, DERIVED_A)
     assert bound.run_identity.input_event_ids == ()
     assert bound.run_identity.policy_identity == "policy:cirp-p02:synthetic:v1"
     assert bound.run_identity.runtime_identity == "runtime:cirp-p02:private-intake:v1"
     assert bound.run_identity.configuration_digest != CONFIG
-    assert bound.run_identity.configuration_digest != _draft_request().run_identity.configuration_digest
+    assert (
+        bound.run_identity.configuration_digest
+        != _draft_request().run_identity.configuration_digest
+    )
 
 
 def test_private_intake_binding_is_deterministic_for_same_verified_projection(
@@ -178,6 +182,21 @@ def test_private_intake_binding_is_deterministic_for_same_verified_projection(
     second = _bind(monkeypatch)
 
     assert first.run_identity.digest() == second.run_identity.digest()
+
+
+def test_private_intake_document_selection_is_order_invariant(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    first = _bind(monkeypatch, document_ids=("DOC-001", "DOC-002"))
+    second = _bind(monkeypatch, document_ids=("DOC-002", "DOC-001"))
+
+    assert first.run_identity.digest() == second.run_identity.digest()
+    assert first.run_identity.input_evidence_ids == (
+        SOURCE_A,
+        DERIVED_A,
+        SOURCE_B,
+        DERIVED_B,
+    )
 
 
 def test_private_intake_rejects_available_evidence_outside_selected_documents(
