@@ -9,7 +9,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from core.cirp.contracts import CIRPContractError, CIRPRunIdentity, CIRP_VERSION_V1
+from core.cirp.contracts import CIRP_VERSION_V1, CIRPContractError, CIRPRunIdentity
 from core.cirp.report import CIRP_REPORT_SCHEMA_V1
 from core.p3.contracts import (
     P3ContractError,
