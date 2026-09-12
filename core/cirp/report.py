@@ -221,6 +221,9 @@ class CIRPReportBuilder:
             return CIRPReportStatus.NOT_READY
         if any(result.final_status is PreflightFinalStatus.ABSTAIN for result in preflights):
             return CIRPReportStatus.ABSTAIN
-        if any(result.final_status is not PreflightFinalStatus.FILING_READY for result in preflights):
+        if any(
+            result.final_status is not PreflightFinalStatus.FILING_READY
+            for result in preflights
+        ):
             return CIRPReportStatus.NOT_READY
         return CIRPReportStatus.READY_TO_FILE
