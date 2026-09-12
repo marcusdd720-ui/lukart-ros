@@ -12,6 +12,7 @@ from dataclasses import dataclass
 from datetime import date
 from enum import StrEnum
 from types import MappingProxyType
+from typing import TypedDict
 
 from core.cirp.contracts import (
     CIRPContractError,
@@ -38,6 +39,20 @@ class RemedyApplicabilityStatus(StrEnum):
     NOT_APPLICABLE = "NOT_APPLICABLE"
     UNKNOWN = "UNKNOWN"
     CONFLICTING = "CONFLICTING"
+
+
+class _RemedyOptionBase(TypedDict):
+    remedy_id: str
+    remedy_type: str
+    target_authority: str
+    filing_authority: str
+    filing_via: str | None
+    applicable_rule_ids: tuple[str, ...]
+    deadline_id: str | None
+    formal_requirements: tuple[str, ...]
+    required_evidence: tuple[str, ...]
+    preserves_options: tuple[str, ...]
+    waives_options: tuple[str, ...]
 
 
 def _require_nonblank(value: str, *, field_name: str) -> str:
@@ -234,7 +249,7 @@ class RemedyGuard:
             requirement_map[requirement.requirement_id] = requirement
 
         deadline_id = deadline.deadline_id if deadline is not None else None
-        common = {
+        common: _RemedyOptionBase = {
             "remedy_id": remedy_id,
             "remedy_type": rule.remedy_type,
             "target_authority": rule.target_authority,
