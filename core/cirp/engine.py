@@ -193,7 +193,8 @@ class CIRPRunResult:
 
 
 class _DigestibleArtifact(Protocol):
-    schema: str
+    @property
+    def schema(self) -> str: ...
 
     def digest(self) -> str: ...
 
@@ -366,27 +367,29 @@ class CanonicalCIRPRuntime:
         if len(execution_ids) != len(set(execution_ids)):
             raise CIRPContractError("execution_states contain duplicate filing_id values")
 
-        for evaluation in request.deadline_evaluations:
-            if evaluation.rule_pack_id not in set(pack_ids):
+        for deadline_evaluation in request.deadline_evaluations:
+            if deadline_evaluation.rule_pack_id not in set(pack_ids):
                 raise CIRPContractError(
-                    f"deadline evaluation references unknown rule pack: {evaluation.rule_pack_id}"
+                    "deadline evaluation references unknown rule pack: "
+                    + deadline_evaluation.rule_pack_id
                 )
             if (
-                evaluation.trigger_evidence is not None
-                and evaluation.trigger_evidence not in run_evidence
+                deadline_evaluation.trigger_evidence is not None
+                and deadline_evaluation.trigger_evidence not in run_evidence
             ):
                 raise CIRPContractError(
                     "deadline trigger evidence is outside run identity: "
-                    + evaluation.trigger_evidence
+                    + deadline_evaluation.trigger_evidence
                 )
             CanonicalCIRPRuntime._validate_service_trigger(
-                evaluation=evaluation,
+                evaluation=deadline_evaluation,
                 service=request.service_assessment,
             )
-        for evaluation in request.remedy_evaluations:
-            if evaluation.rule_pack_id not in set(pack_ids):
+        for remedy_evaluation in request.remedy_evaluations:
+            if remedy_evaluation.rule_pack_id not in set(pack_ids):
                 raise CIRPContractError(
-                    f"remedy evaluation references unknown rule pack: {evaluation.rule_pack_id}"
+                    "remedy evaluation references unknown rule pack: "
+                    + remedy_evaluation.rule_pack_id
                 )
 
     @staticmethod
@@ -451,15 +454,16 @@ class CanonicalCIRPRuntime:
 
         for pack in request.rule_packs:
             pack_deadline_rules = tuple(
-                rule
-                for rule in request.deadline_rules
-                if rule.pack_token in set(pack.deadline_rules)
+                deadline_rule
+                for deadline_rule in request.deadline_rules
+                if deadline_rule.pack_token in set(pack.deadline_rules)
             )
-            for rule in pack_deadline_rules:
-                previous = deadline_owners.setdefault(rule.pack_token, pack.pack_id)
+            for deadline_rule in pack_deadline_rules:
+                previous = deadline_owners.setdefault(deadline_rule.pack_token, pack.pack_id)
                 if previous != pack.pack_id:
                     raise CIRPContractError(
-                        f"deadline rule is bound by multiple packs: {rule.pack_token}"
+                        "deadline rule is bound by multiple packs: "
+                        + deadline_rule.pack_token
                     )
             if pack.deadline_rules:
                 deadline_guards[pack.pack_id] = DeadlineGuard(
@@ -469,15 +473,16 @@ class CanonicalCIRPRuntime:
                 )
 
             pack_remedy_rules = tuple(
-                rule
-                for rule in request.remedy_rules
-                if rule.pack_token in set(pack.remedy_rules)
+                remedy_rule
+                for remedy_rule in request.remedy_rules
+                if remedy_rule.pack_token in set(pack.remedy_rules)
             )
-            for rule in pack_remedy_rules:
-                previous = remedy_owners.setdefault(rule.pack_token, pack.pack_id)
+            for remedy_rule in pack_remedy_rules:
+                previous = remedy_owners.setdefault(remedy_rule.pack_token, pack.pack_id)
                 if previous != pack.pack_id:
                     raise CIRPContractError(
-                        f"remedy rule is bound by multiple packs: {rule.pack_token}"
+                        "remedy rule is bound by multiple packs: "
+                        + remedy_rule.pack_token
                     )
             if pack.remedy_rules:
                 remedy_guards[pack.pack_id] = RemedyGuard(
@@ -494,7 +499,9 @@ class CanonicalCIRPRuntime:
                 "every supplied executable remedy rule must be bound by exactly one rule pack"
             )
 
-        used_calendar_ids = {rule.calendar_profile_id for rule in request.deadline_rules}
+        used_calendar_ids = {
+            deadline_rule.calendar_profile_id for deadline_rule in request.deadline_rules
+        }
         supplied_calendar_ids = tuple(item.profile_id for item in request.deadline_calendars)
         if len(supplied_calendar_ids) != len(set(supplied_calendar_ids)):
             raise CIRPContractError("deadline_calendars contain duplicate profile_id values")
