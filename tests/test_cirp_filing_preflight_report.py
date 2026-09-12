@@ -19,6 +19,7 @@ from core.cirp.contracts import (
     FilingTopologyStatus,
     MeritsStrength,
     PreflightFinalStatus,
+    PreflightResult,
     RemedyAdmissibility,
     RemedyOption,
     StrategyDecision,
@@ -45,8 +46,10 @@ def remedy(
     deadline_id: str | None = DEADLINE_ID,
     filing_via: str | None = "synthetic-route",
 ) -> RemedyOption:
-    blockers = () if status is RemedyAdmissibility.VERIFIED_AVAILABLE else (
-        "synthetic blocker",
+    blockers = (
+        ()
+        if status is RemedyAdmissibility.VERIFIED_AVAILABLE
+        else ("synthetic blocker",)
     )
     return RemedyOption(
         remedy_id=REMEDY_ID,
@@ -87,7 +90,11 @@ def strategy() -> StrategyOption:
 def decision(
     status: StrategyDecisionStatus = StrategyDecisionStatus.RECOMMENDED,
 ) -> StrategyDecision:
-    selected = STRATEGY_ID if status is StrategyDecisionStatus.RECOMMENDED else None
+    selected = (
+        STRATEGY_ID
+        if status is StrategyDecisionStatus.RECOMMENDED
+        else None
+    )
     evidence = (EVIDENCE,) if selected is not None else ()
     rules = (RULE,) if selected is not None else ()
     return StrategyDecision(
@@ -116,8 +123,8 @@ def topology() -> FilingTopologyDecision:
 def verified_deadline(
     status: DeadlineStatus = DeadlineStatus.VERIFIED,
 ) -> DeadlineAssessment:
-    blocking = ()
-    legal_deadline = date(2030, 1, 20)
+    blocking: tuple[str, ...] = ()
+    legal_deadline: date | None = date(2030, 1, 20)
     if status in {
         DeadlineStatus.MISSING_INPUT,
         DeadlineStatus.CONFLICTING_EVIDENCE,
@@ -207,7 +214,7 @@ def execution(
     )
 
 
-def ready_preflight(plan: FilingPlan) -> object:
+def ready_preflight(plan: FilingPlan) -> PreflightResult:
     return HardcorePreflight().evaluate(
         plan=plan,
         remedies=(remedy(),),
@@ -233,6 +240,30 @@ def evidence_requirement(
     )
 
 
+def build_report(
+    *,
+    evidence_requirements: tuple[EvidenceRequirement, ...],
+    plan: FilingPlan,
+    preflight: PreflightResult,
+    critical_unknowns: tuple[str, ...] = (),
+) -> CIRPReport:
+    return CIRPReportBuilder().build(
+        case_id="case:synthetic:1",
+        run_id="cirp-run:synthetic:1",
+        document_summary="Synthetic notice",
+        procedural_summary="Synthetic response stage",
+        deadline_summaries=("Synthetic verified deadline",),
+        remedy_summaries=("Synthetic verified remedy",),
+        evidence_requirements=evidence_requirements,
+        strategy_decision=decision(),
+        strategy_summary="Synthetic recommended strategy",
+        topology=topology(),
+        filing_plans=(plan,),
+        preflights=(preflight,),
+        critical_unknowns=critical_unknowns,
+    )
+
+
 def test_filing_planner_builds_evidence_bound_plan() -> None:
     plan = build_plan()
 
@@ -247,7 +278,9 @@ def test_filing_planner_builds_evidence_bound_plan() -> None:
 def test_planner_rejects_non_recommended_strategy() -> None:
     with pytest.raises(CIRPContractError, match="RECOMMENDED"):
         FilingPlanner().plan(
-            strategy_decision=decision(StrategyDecisionStatus.NEEDS_EVIDENCE),
+            strategy_decision=decision(
+                StrategyDecisionStatus.NEEDS_EVIDENCE
+            ),
             strategies=(strategy(),),
             topology=topology(),
             remedies=(remedy(),),
@@ -266,7 +299,9 @@ def test_planner_rejects_unverified_remedy_and_deadline() -> None:
         )
 
     with pytest.raises(CIRPContractError, match="VERIFIED deadline"):
-        build_plan(deadline=verified_deadline(DeadlineStatus.PROVISIONAL))
+        build_plan(
+            deadline=verified_deadline(DeadlineStatus.PROVISIONAL)
+        )
 
 
 def test_planner_rejects_missing_rule_or_evidence_basis() -> None:
@@ -330,7 +365,9 @@ def test_preflight_blocks_incomplete_execution(
     )
 
     assert result.final_status is PreflightFinalStatus.NOT_READY
-    assert any(item.startswith(expected_check + ":") for item in result.blockers)
+    assert any(
+        item.startswith(expected_check + ":") for item in result.blockers
+    )
 
 
 def test_preflight_abstains_on_critical_unknown() -> None:
@@ -340,7 +377,9 @@ def test_preflight_abstains_on_critical_unknown() -> None:
         remedies=(remedy(),),
         deadlines=(verified_deadline(),),
         available_evidence_ids=(EVIDENCE,),
-        execution=execution(critical_unknowns=("UNKNOWN synthetic fact",)),
+        execution=execution(
+            critical_unknowns=("UNKNOWN synthetic fact",)
+        ),
     )
 
     assert result.final_status is PreflightFinalStatus.ABSTAIN
@@ -358,7 +397,9 @@ def test_preflight_detects_route_tampering() -> None:
     )
 
     assert result.final_status is PreflightFinalStatus.NOT_READY
-    assert any(item.startswith("filing-route:") for item in result.blockers)
+    assert any(
+        item.startswith("filing-route:") for item in result.blockers
+    )
 
 
 def test_preflight_abstains_when_deadline_is_unverified() -> None:
@@ -378,24 +419,17 @@ def test_preflight_abstains_when_deadline_is_unverified() -> None:
 def test_report_ready_projection_is_deterministic() -> None:
     plan = build_plan()
     preflight = ready_preflight(plan)
-    builder = CIRPReportBuilder()
-    kwargs = dict(
-        case_id="case:synthetic:1",
-        run_id="cirp-run:synthetic:1",
-        document_summary="Synthetic notice",
-        procedural_summary="Synthetic response stage",
-        deadline_summaries=("Synthetic verified deadline",),
-        remedy_summaries=("Synthetic verified remedy",),
-        evidence_requirements=(evidence_requirement(),),
-        strategy_decision=decision(),
-        strategy_summary="Synthetic recommended strategy",
-        topology=topology(),
-        filing_plans=(plan,),
-        preflights=(preflight,),
-    )
 
-    first = builder.build(**kwargs)
-    second = builder.build(**kwargs)
+    first = build_report(
+        evidence_requirements=(evidence_requirement(),),
+        plan=plan,
+        preflight=preflight,
+    )
+    second = build_report(
+        evidence_requirements=(evidence_requirement(),),
+        plan=plan,
+        preflight=preflight,
+    )
 
     assert first.status is CIRPReportStatus.READY_TO_FILE
     assert first.canonical_json() == second.canonical_json()
@@ -405,31 +439,19 @@ def test_report_ready_projection_is_deterministic() -> None:
 def test_report_exposes_evidence_gap_and_critical_unknown() -> None:
     plan = build_plan()
     preflight = ready_preflight(plan)
-    builder = CIRPReportBuilder()
-    common = dict(
-        case_id="case:synthetic:1",
-        run_id="cirp-run:synthetic:1",
-        document_summary="Synthetic notice",
-        procedural_summary="Synthetic response stage",
-        deadline_summaries=("Synthetic verified deadline",),
-        remedy_summaries=("Synthetic verified remedy",),
-        strategy_decision=decision(),
-        strategy_summary="Synthetic recommended strategy",
-        topology=topology(),
-        filing_plans=(plan,),
-        preflights=(preflight,),
-    )
 
-    gap = builder.build(
+    gap = build_report(
         evidence_requirements=(
             evidence_requirement(EvidenceRequirementStatus.MISSING),
         ),
-        **common,
+        plan=plan,
+        preflight=preflight,
     )
-    unknown = builder.build(
+    unknown = build_report(
         evidence_requirements=(evidence_requirement(),),
+        plan=plan,
+        preflight=preflight,
         critical_unknowns=("UNKNOWN synthetic issue",),
-        **common,
     )
 
     assert gap.status is CIRPReportStatus.NEEDS_EVIDENCE
@@ -469,7 +491,9 @@ def test_ready_report_contract_cannot_hide_critical_unknowns() -> None:
             evidence_gaps=(),
             strategy_status=StrategyDecisionStatus.RECOMMENDED.value,
             strategy_summary="Synthetic strategy",
-            filing_topology_status=FilingTopologyStatus.SINGLE_FILING_SAFE.value,
+            filing_topology_status=(
+                FilingTopologyStatus.SINGLE_FILING_SAFE.value
+            ),
             filing_ids=(FILING_ID,),
             preflight_statuses=(
                 f"{FILING_ID}:{PreflightFinalStatus.FILING_READY.value}",
