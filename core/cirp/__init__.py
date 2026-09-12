@@ -25,7 +25,6 @@ from core.cirp.deadline import (
     DeadlineGuard,
     DeadlineRollConvention,
     DeadlineStartRule,
-    DeadlineStatus,
     DeadlineTriggerStatus,
     ExecutableDeadlineRule,
 )
