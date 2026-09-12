@@ -106,7 +106,9 @@ class CIRPReplayManifest:
             raise CIRPContractError("CIRP replay manifest requires artifacts")
         artifact_ids = tuple(item.artifact_id for item in self.artifacts)
         if len(artifact_ids) != len(set(artifact_ids)):
-            raise CIRPContractError("CIRP replay manifest cannot contain duplicate artifact_id values")
+            raise CIRPContractError(
+                "CIRP replay manifest cannot contain duplicate artifact_id values"
+            )
         ordered = tuple(sorted(self.artifacts, key=lambda item: item.artifact_id))
         object.__setattr__(self, "artifacts", ordered)
         report_refs = tuple(
@@ -170,7 +172,9 @@ class CIRPReplayComparison:
             "unexpected_artifact_ids",
             "mismatched_artifact_ids",
         ):
-            normalized = tuple(sorted(_unique(getattr(self, field_name), field_name=field_name)))
+            normalized = tuple(
+                sorted(_unique(getattr(self, field_name), field_name=field_name))
+            )
             object.__setattr__(self, field_name, normalized)
         if self.relation is ReplayRelation.IDENTICAL:
             if (
