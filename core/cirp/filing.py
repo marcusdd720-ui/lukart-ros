@@ -27,12 +27,20 @@ from core.cirp.contracts import (
 
 def _require_nonblank(value: str, *, field_name: str) -> str:
     if not value or value != value.strip():
-        raise CIRPContractError(f"{field_name} must be nonblank and already canonical")
+        raise CIRPContractError(
+            f"{field_name} must be nonblank and already canonical"
+        )
     return value
 
 
-def _unique_nonblank(values: tuple[str, ...], *, field_name: str) -> tuple[str, ...]:
-    normalized = tuple(_require_nonblank(item, field_name=field_name) for item in values)
+def _unique_nonblank(
+    values: tuple[str, ...],
+    *,
+    field_name: str,
+) -> tuple[str, ...]:
+    normalized = tuple(
+        _require_nonblank(item, field_name=field_name) for item in values
+    )
     if len(normalized) != len(set(normalized)):
         raise CIRPContractError(f"{field_name} cannot contain duplicates")
     return normalized
@@ -59,7 +67,10 @@ class FilingSpec:
             object.__setattr__(
                 self,
                 field_name,
-                _require_nonblank(getattr(self, field_name), field_name=field_name),
+                _require_nonblank(
+                    getattr(self, field_name),
+                    field_name=field_name,
+                ),
             )
         for field_name in (
             "remedy_ids",
@@ -74,14 +85,19 @@ class FilingSpec:
             object.__setattr__(
                 self,
                 field_name,
-                _unique_nonblank(getattr(self, field_name), field_name=field_name),
+                _unique_nonblank(
+                    getattr(self, field_name),
+                    field_name=field_name,
+                ),
             )
         if not self.remedy_ids:
             raise CIRPContractError("filing spec requires remedy_ids")
         if not self.requests:
             raise CIRPContractError("filing spec requires at least one request")
         if not self.allegations_or_grounds:
-            raise CIRPContractError("filing spec requires allegations_or_grounds")
+            raise CIRPContractError(
+                "filing spec requires allegations_or_grounds"
+            )
 
 
 class FilingPlanner:
@@ -104,19 +120,26 @@ class FilingPlanner:
             FilingTopologyStatus.NO_FILING_REQUIRED,
         }:
             raise CIRPContractError(
-                f"cannot build filing plans from topology {topology.status.value}"
+                "cannot build filing plans from topology "
+                f"{topology.status.value}"
             )
         self._validate_partition(selected, topology, specs)
 
         remedy_map = self._remedy_map(remedies)
         deadline_map = self._deadline_map(deadlines)
         available_evidence = set(
-            _unique_nonblank(available_evidence_ids, field_name="available_evidence_ids")
+            _unique_nonblank(
+                available_evidence_ids,
+                field_name="available_evidence_ids",
+            )
         )
 
         plans: list[FilingPlan] = []
         for spec in specs:
-            selected_remedies = tuple(self._verified_remedy(remedy_id, remedy_map) for remedy_id in spec.remedy_ids)
+            selected_remedies = tuple(
+                self._verified_remedy(remedy_id, remedy_map)
+                for remedy_id in spec.remedy_ids
+            )
             self._validate_route(selected_remedies)
             self._validate_basis(
                 spec=spec,
@@ -135,7 +158,8 @@ class FilingPlanner:
             deadline_id = deadline_ids[0] if len(deadline_ids) == 1 else None
             if len(deadline_ids) > 1:
                 raise CIRPContractError(
-                    "one filing unit cannot contain remedies with different deadline identities"
+                    "one filing unit cannot contain remedies with different "
+                    "deadline identities"
                 )
             plans.append(
                 FilingPlan(
@@ -166,22 +190,32 @@ class FilingPlanner:
         strategies: tuple[StrategyOption, ...],
     ) -> StrategyOption:
         if decision.decision_status is not StrategyDecisionStatus.RECOMMENDED:
-            raise CIRPContractError("filing planning requires a RECOMMENDED strategy")
+            raise CIRPContractError(
+                "filing planning requires a RECOMMENDED strategy"
+            )
         strategy_map: dict[str, StrategyOption] = {}
         for strategy in strategies:
             if strategy.strategy_id in strategy_map:
-                raise CIRPContractError(f"duplicate strategy_id: {strategy.strategy_id}")
+                raise CIRPContractError(
+                    f"duplicate strategy_id: {strategy.strategy_id}"
+                )
             strategy_map[strategy.strategy_id] = strategy
         if decision.selected_strategy_id not in strategy_map:
-            raise CIRPContractError("selected strategy is not present in supplied strategies")
+            raise CIRPContractError(
+                "selected strategy is not present in supplied strategies"
+            )
         return strategy_map[decision.selected_strategy_id]
 
     @staticmethod
-    def _remedy_map(remedies: tuple[RemedyOption, ...]) -> dict[str, RemedyOption]:
+    def _remedy_map(
+        remedies: tuple[RemedyOption, ...],
+    ) -> dict[str, RemedyOption]:
         result: dict[str, RemedyOption] = {}
         for remedy in remedies:
             if remedy.remedy_id in result:
-                raise CIRPContractError(f"duplicate remedy_id: {remedy.remedy_id}")
+                raise CIRPContractError(
+                    f"duplicate remedy_id: {remedy.remedy_id}"
+                )
             result[remedy.remedy_id] = remedy
         return result
 
@@ -192,7 +226,9 @@ class FilingPlanner:
         result: dict[str, DeadlineAssessment] = {}
         for deadline in deadlines:
             if deadline.deadline_id in result:
-                raise CIRPContractError(f"duplicate deadline_id: {deadline.deadline_id}")
+                raise CIRPContractError(
+                    f"duplicate deadline_id: {deadline.deadline_id}"
+                )
             result[deadline.deadline_id] = deadline
         return result
 
@@ -203,9 +239,16 @@ class FilingPlanner:
     ) -> RemedyOption:
         remedy = remedy_map.get(remedy_id)
         if remedy is None:
-            raise CIRPContractError(f"missing remedy assessment: {remedy_id}")
-        if remedy.admissibility_status is not RemedyAdmissibility.VERIFIED_AVAILABLE:
-            raise CIRPContractError(f"remedy is not VERIFIED_AVAILABLE: {remedy_id}")
+            raise CIRPContractError(
+                f"missing remedy assessment: {remedy_id}"
+            )
+        if (
+            remedy.admissibility_status
+            is not RemedyAdmissibility.VERIFIED_AVAILABLE
+        ):
+            raise CIRPContractError(
+                f"remedy is not VERIFIED_AVAILABLE: {remedy_id}"
+            )
         return remedy
 
     @staticmethod
@@ -215,18 +258,38 @@ class FilingPlanner:
         specs: tuple[FilingSpec, ...],
     ) -> None:
         if len(specs) != topology.filing_count:
-            raise CIRPContractError("filing spec count does not match topology filing_count")
+            raise CIRPContractError(
+                "filing spec count does not match topology filing_count"
+            )
         filing_ids = tuple(spec.filing_id for spec in specs)
         if len(filing_ids) != len(set(filing_ids)):
-            raise CIRPContractError("filing specs cannot contain duplicate filing_id values")
-        flattened = tuple(remedy_id for spec in specs for remedy_id in spec.remedy_ids)
+            raise CIRPContractError(
+                "filing specs cannot contain duplicate filing_id values"
+            )
+        flattened = tuple(
+            remedy_id
+            for spec in specs
+            for remedy_id in spec.remedy_ids
+        )
         if len(flattened) != len(set(flattened)):
-            raise CIRPContractError("a remedy cannot occur in more than one filing spec")
-        if set(flattened) != set(strategy.remedy_ids) or len(flattened) != len(strategy.remedy_ids):
-            raise CIRPContractError("filing specs must exactly partition selected strategy remedies")
+            raise CIRPContractError(
+                "a remedy cannot occur in more than one filing spec"
+            )
+        if (
+            set(flattened) != set(strategy.remedy_ids)
+            or len(flattened) != len(strategy.remedy_ids)
+        ):
+            raise CIRPContractError(
+                "filing specs must exactly partition selected strategy remedies"
+            )
         if topology.status is FilingTopologyStatus.SINGLE_FILING_SAFE:
-            if len(specs) != 1 or set(specs[0].remedy_ids) != set(strategy.remedy_ids):
-                raise CIRPContractError("SINGLE_FILING_SAFE requires one exact filing unit")
+            if (
+                len(specs) != 1
+                or set(specs[0].remedy_ids) != set(strategy.remedy_ids)
+            ):
+                raise CIRPContractError(
+                    "SINGLE_FILING_SAFE requires one exact filing unit"
+                )
         if topology.status is FilingTopologyStatus.MULTIPLE_FILINGS_REQUIRED:
             combined = {
                 remedy_id
@@ -234,20 +297,34 @@ class FilingPlanner:
                 if len(spec.remedy_ids) > 1
                 for remedy_id in spec.remedy_ids
             }
-            separated = {spec.remedy_ids[0] for spec in specs if len(spec.remedy_ids) == 1}
+            separated = {
+                spec.remedy_ids[0]
+                for spec in specs
+                if len(spec.remedy_ids) == 1
+            }
             if combined != set(topology.combined_remedies):
-                raise CIRPContractError("filing specs do not match topology combined_remedies")
+                raise CIRPContractError(
+                    "filing specs do not match topology combined_remedies"
+                )
             if separated != set(topology.separated_remedies):
-                raise CIRPContractError("filing specs do not match topology separated_remedies")
+                raise CIRPContractError(
+                    "filing specs do not match topology separated_remedies"
+                )
 
     @staticmethod
     def _validate_route(remedies: tuple[RemedyOption, ...]) -> None:
         routes = {
-            (remedy.target_authority, remedy.filing_authority, remedy.filing_via)
+            (
+                remedy.target_authority,
+                remedy.filing_authority,
+                remedy.filing_via,
+            )
             for remedy in remedies
         }
         if len(routes) != 1:
-            raise CIRPContractError("filing unit contains incompatible remedy routes")
+            raise CIRPContractError(
+                "filing unit contains incompatible remedy routes"
+            )
 
     @staticmethod
     def _validate_basis(
@@ -257,21 +334,36 @@ class FilingPlanner:
         deadlines: dict[str, DeadlineAssessment],
         available_evidence: set[str],
     ) -> None:
-        required_rules = {rule for remedy in remedies for rule in remedy.applicable_rule_ids}
+        required_rules = {
+            rule
+            for remedy in remedies
+            for rule in remedy.applicable_rule_ids
+        }
         if not required_rules.issubset(spec.rule_refs):
-            raise CIRPContractError("filing spec is missing remedy rule references")
-        required_evidence = {item for remedy in remedies for item in remedy.required_evidence}
+            raise CIRPContractError(
+                "filing spec is missing remedy rule references"
+            )
+        required_evidence = {
+            item for remedy in remedies for item in remedy.required_evidence
+        }
         if not required_evidence.issubset(spec.evidence_refs):
-            raise CIRPContractError("filing spec is missing remedy evidence references")
+            raise CIRPContractError(
+                "filing spec is missing remedy evidence references"
+            )
         if not set(spec.evidence_refs).issubset(available_evidence):
-            raise CIRPContractError("filing spec references unavailable evidence")
+            raise CIRPContractError(
+                "filing spec references unavailable evidence"
+            )
         for remedy in remedies:
             if remedy.deadline_id is None:
                 continue
             deadline = deadlines.get(remedy.deadline_id)
             if deadline is None:
-                raise CIRPContractError(f"missing deadline assessment: {remedy.deadline_id}")
+                raise CIRPContractError(
+                    f"missing deadline assessment: {remedy.deadline_id}"
+                )
             if deadline.status is not DeadlineStatus.VERIFIED:
                 raise CIRPContractError(
-                    f"filing planning requires VERIFIED deadline: {remedy.deadline_id}"
+                    "filing planning requires VERIFIED deadline: "
+                    f"{remedy.deadline_id}"
                 )
