@@ -31,7 +31,6 @@ from core.cirp.filing import FilingPlanner, FilingSpec
 from core.cirp.preflight import FilingExecutionState, HardcorePreflight
 from core.cirp.report import CIRPReport, CIRPReportBuilder, CIRPReportStatus
 
-
 RULE = "rule:synthetic:review@1#" + "a" * 64
 EVIDENCE = "evidence:synthetic:primary"
 DEADLINE_ID = "deadline:synthetic:review"
