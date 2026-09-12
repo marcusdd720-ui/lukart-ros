@@ -1,6 +1,6 @@
 # LUKART ROS — Case Intake & Response Protocol (CIRP) v1.0
 
-Status: **CIRP-03 engineering baseline**
+Status: **CIRP-04 engineering baseline**
 
 CIRP is the fail-closed Product protocol for converting a new case document or material case event into an evidence-bound procedural assessment and, in later stages, a best-justified action package. It is not a legal-source database, not an autonomous filing authority, and not a second source of truth.
 
@@ -27,6 +27,8 @@ A new material document or changed critical input creates a new CIRP run; histor
 `CIRP-02` adds generic executable deadline semantics and a fail-closed deadline guard. It deliberately does **not** embed jurisdiction-specific production rules, retrieve legal sources, infer missing trigger facts, perform strategy reasoning, generate documents, transmit filings to an authority, or monitor external proceedings.
 
 `CIRP-03` adds generic executable remedy semantics plus evidence-gap dependency propagation. It cryptographically binds executable remedy semantics to the active procedural rule pack, carries verified/provisional/unknown deadline state forward, and prevents unresolved critical evidence from being promoted into a verified remedy decision. It does **not** choose strategy, optimize filing topology, render filings, transmit filings, or invent missing legal/evidentiary facts.
+
+`CIRP-04` adds fail-closed strategy selection and evidence-bound filing topology. It deliberately avoids synthetic numeric scoring: a strategy is recommended only when exactly one candidate remains fully verified and deadline-safe and explicit decisive evidence/rule references are supplied. Multiple safe candidates return `DECISION_REQUIRED`. Multiple remedies may share filing units only through an explicit verified consolidation assessment covering the exact remedy set and compatible filing routes. It does **not** generate a filing plan, render documents, perform preflight certification or transmit filings.
 
 Runtime stages are planned as:
 
@@ -99,9 +101,13 @@ CIRP-03 requires each evidence requirement consumed by an executable remedy to b
 
 Strategy uses semantic dimensions instead of false numerical precision. A `RECOMMENDED` decision requires selected strategy identity, decisive evidence and decisive rules. Every materially rejected strategy requires a recorded reason. Non-recommended outcomes may explicitly be `NEEDS_EVIDENCE`, `DECISION_REQUIRED`, `NO_SAFE_OPTION` or `ABSTAIN`.
 
+CIRP-04 makes this boundary executable: a strategy with unavailable/unverified remedies, missing required evidence, unknown admissibility, deadline risk/uncertainty or unresolved dependencies cannot be recommended. If more than one fully verified and deadline-safe candidate survives, the runtime returns `DECISION_REQUIRED` rather than assigning an invented score. A sole surviving candidate still requires explicit decisive evidence and rule references; otherwise CIRP abstains.
+
 ### `FilingTopologyDecision`
 
 One-filing is an optimization, not a rule. `SINGLE_FILING_SAFE` requires exactly one filing and no blockers. `MULTIPLE_FILINGS_REQUIRED` requires at least two filings. Uncertain consolidation must remain explicit.
+
+CIRP-04 introduces a runtime-only `ConsolidationAssessment` for an exact remedy set. A verified assessment contains an explicit remedy partition plus evidence and rule references. Every remedy occurs exactly once. Any proposed multi-remedy filing group must also share the same target authority, filing authority and filing route. Unknown/conflicting consolidation, incomplete remedy coverage, unresolved remedy availability or incompatible routes return `CONSOLIDATION_UNCERTAIN` rather than a guessed filing count.
 
 ### `FilingPlan` / `PreflightResult`
 
@@ -152,6 +158,39 @@ The CIRP-03 remedy guard enforces the following boundary:
 
 Public tests use synthetic sources, authorities, rules and evidence identifiers only.
 
+## CIRP-04 strategy and filing-topology semantics
+
+`core/cirp/strategy.py` is jurisdiction-neutral and does not contain a legal strategy ranking model.
+
+The CIRP-04 strategy guard enforces:
+
+1. every strategy identity is unique;
+2. every referenced remedy assessment must exist;
+3. a strategy depending on `NOT_AVAILABLE` remedy state is rejected as unavailable;
+4. `UNKNOWN` or `PROVISIONALLY_AVAILABLE` remedy state propagates to `NEEDS_EVIDENCE`;
+5. all strategy-required evidence identifiers must be present before recommendation;
+6. strategy admissibility must be `VERIFIED`;
+7. deadline safety must be `SAFE`; `RISK` cannot be recommended and `UNKNOWN` remains evidence-limited;
+8. unresolved strategy dependencies block recommendation;
+9. every rejected strategy receives an explicit rejection reason;
+10. more than one fully verified/safe strategy produces `DECISION_REQUIRED`, not a fabricated numeric winner;
+11. exactly one fully verified/safe strategy may be `RECOMMENDED` only with explicit decisive evidence and rule references;
+12. a safe candidate without a decisive basis produces `ABSTAIN` rather than an unsupported recommendation.
+
+The CIRP-04 filing topology guard enforces:
+
+1. no-remedy strategy produces `NO_FILING_REQUIRED`;
+2. a single verified remedy produces one filing unit;
+3. unresolved remedy availability blocks topology certification;
+4. multiple remedies require an explicit consolidation assessment for the exact selected remedy set;
+5. a verified consolidation assessment requires evidence and rule references and an exact non-overlapping remedy partition;
+6. every multi-remedy group must share target authority, filing authority and filing route;
+7. one verified group produces `SINGLE_FILING_SAFE`;
+8. multiple verified groups produce `MULTIPLE_FILINGS_REQUIRED` with the exact group count;
+9. missing/incomplete/unknown/conflicting consolidation or route incompatibility produces `CONSOLIDATION_UNCERTAIN` with blockers.
+
+CIRP-04 therefore decides only what the supplied verified semantics justify. It does not infer legal consolidation merely because two remedies happen to share an authority or transport route.
+
 ## CIRP v1 invariants
 
 1. **No Evidence → No Fact.** CIRP may represent document content or a claim, but evidence-free external assertions cannot be promoted to fact by CIRP narrative.
@@ -171,7 +210,7 @@ Public tests use synthetic sources, authorities, rules and evidence identifiers 
 15. Critical `UNKNOWN` / `UNRESOLVED` state must remain visible in later report rendering.
 16. `FILING_READY` requires all critical preflight checks to pass and zero blockers.
 
-CIRP-01 enforces invariant portions representable at the contract boundary. CIRP-02 additionally enforces the deadline-runtime portions of invariants 2, 3, 4 and 5. CIRP-03 additionally enforces runtime portions of invariants 3, 4, 7 and 9 and propagates upstream deadline uncertainty into remedy availability. Invariants 1, 10, 12, 13, 14 and 15 also cross later component/runtime boundaries and require continued enforcement in later stages and integration tests.
+CIRP-01 enforces invariant portions representable at the contract boundary. CIRP-02 additionally enforces deadline-runtime portions of invariants 2, 3, 4 and 5. CIRP-03 additionally enforces runtime portions of invariants 3, 4, 7 and 9 and propagates upstream deadline uncertainty into remedy availability. CIRP-04 additionally enforces runtime portions of invariants 8, 10, 11 and 12 and propagates unresolved remedy/evidence/deadline state into strategy and filing topology. Invariants 1, 13, 14, 15 and 16 still require continued enforcement in later stages and integration tests.
 
 ## Deadline safety model
 
@@ -184,19 +223,21 @@ The internal deadline can never be later than the legal deadline. CIRP-02 also r
 
 ## One-filing preference
 
-CIRP prefers the smallest procedurally safe filing set. It may combine remedies only when later runtime validation establishes compatible procedure, route, authority and timing. Otherwise it must select multiple filings or `CONSOLIDATION_UNCERTAIN`.
+CIRP prefers the smallest procedurally safe filing set but never infers consolidation from convenience. CIRP-04 requires an exact verified remedy partition with evidence/rule support before combining multiple remedies. A verified single group permits one filing; a verified multi-group partition requires the represented number of filings; incomplete or uncertain consolidation remains `CONSOLIDATION_UNCERTAIN`.
 
 ## Replay and identity
 
-CIRP contracts are content-digestible and reuse deterministic canonical JSON. The run identity records the relevant evidence/event and rule-pack identities. CIRP-02 binds executable deadline semantics and calendar semantics through content digests; CIRP-03 binds executable remedy semantics and evidence dependencies to exact rule identities. Model-assisted reasoning may later be environment-bound; CIRP must never claim byte-identical replay from incomplete identity.
+CIRP contracts are content-digestible and reuse deterministic canonical JSON. The run identity records relevant evidence/event and rule-pack identities. CIRP-02 binds executable deadline and calendar semantics through content digests; CIRP-03 binds executable remedy semantics and evidence dependencies to exact rule identities. CIRP-04 keeps strategy decisions tied to explicit decisive evidence/rules and requires evidence-bound consolidation partitions rather than implicit topology inference. Model-assisted reasoning may be environment-bound; CIRP must never claim byte-identical replay from incomplete identity.
 
 ## Non-claims
 
-CIRP-03 does not claim:
+CIRP-04 does not claim:
 
 - correctness of any Polish-law deadline or remedy unless a separately verified jurisdiction rule pack and current legal sources are supplied;
 - current production legal-source or remedy-catalog coverage;
-- strategy optimization or filing-topology correctness;
+- a universal legal strategy ranking or optimality theorem;
+- that matching authorities/routes alone prove remedies can be combined;
+- filing-plan completeness, preflight readiness or report completeness;
 - legal certification or independent review;
 - autonomous filing or external delivery;
 - real-case validation;
