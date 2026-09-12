@@ -11,9 +11,9 @@ from dataclasses import dataclass
 
 from core.cirp.contracts import CIRPContractError
 from core.cirp.engine import (
+    CanonicalCIRPRuntime,
     CIRPRunRequest,
     CIRPRunResult,
-    CanonicalCIRPRuntime,
     canonical_rule_pack_set_digest,
 )
 from core.cirp.governance import (
