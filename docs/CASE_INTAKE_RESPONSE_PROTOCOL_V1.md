@@ -1,6 +1,6 @@
 # LUKART ROS — Case Intake & Response Protocol (CIRP) v1.0
 
-Status: **CIRP-01 contract baseline**
+Status: **CIRP-02 engineering baseline**
 
 CIRP is the fail-closed Product protocol for converting a new case document or material case event into an evidence-bound procedural assessment and, in later stages, a best-justified action package. It is not a legal-source database, not an autonomous filing authority, and not a second source of truth.
 
@@ -20,9 +20,11 @@ For every new document or material event CIRP is designed to establish, or expli
 
 A new material document or changed critical input creates a new CIRP run; historical analyses are not silently rewritten.
 
-## CIRP-01 scope
+## Stage scope
 
-CIRP-01 defines boundary contracts, canonical serialization and enforceable invariants. It deliberately does **not** implement jurisdiction-specific deadline calculation, legal-source retrieval, strategy reasoning, document generation, transmission to an authority, or monitoring of external proceedings.
+`CIRP-01` defines boundary contracts, canonical serialization and enforceable invariants.
+
+`CIRP-02` adds generic executable deadline semantics and a fail-closed deadline guard. It deliberately does **not** embed jurisdiction-specific production rules, retrieve legal sources, infer missing trigger facts, perform strategy reasoning, generate documents, transmit filings to an authority, or monitor external proceedings.
 
 Runtime stages are planned as:
 
@@ -79,7 +81,9 @@ Represents the evidence and rule identity behind a deadline. `VERIFIED` requires
 
 ### `LegalSourceRef` / `ProceduralRulePack`
 
-Legal source references are version/effective-time aware. A verified source requires a content digest. A rule pack cryptographically binds its source set via `source_set_digest`. CIRP-02 will define executable deadline/routing rule semantics; CIRP-01 only establishes the boundary.
+Legal source references are version/effective-time aware. A verified source requires a content digest. A rule pack cryptographically binds its source set via `source_set_digest`.
+
+CIRP-02 adds an executable deadline rule whose `pack_token` has the form `rule_id@version#semantic_digest`. An ACTIVE deadline runtime requires the rule pack's `deadline_rules` set to match the exact executable tokens. Calendar semantics are also content-digested and bound into the executable rule. Changing duration, start rule, roll convention, calendar identity, holiday set or legal-source bindings therefore changes the semantic digest and cannot silently reuse the previous rule-pack token.
 
 ### `RemedyOption` / `EvidenceRequirement`
 
@@ -96,6 +100,28 @@ One-filing is an optimization, not a rule. `SINGLE_FILING_SAFE` requires exactly
 ### `FilingPlan` / `PreflightResult`
 
 The semantic filing plan is separate from DOCX/PDF rendering. `FILING_READY` requires at least one preflight check, no blockers and every critical check at `PASS`.
+
+## CIRP-02 executable deadline semantics
+
+`core/cirp/deadline.py` is jurisdiction-neutral. Production law is data/configuration supplied through verified rule packs; the runtime does not contain hard-coded Polish-law deadlines.
+
+The CIRP-02 deadline guard enforces the following boundary:
+
+1. the `ProceduralRulePack` must be `ACTIVE`;
+2. every executable deadline rule must be cryptographically bound by its exact `pack_token`;
+3. the referenced calendar profile digest must match the calendar actually used at runtime;
+4. rule and calendar legal-source identifiers must exist in the pack source set;
+5. source jurisdiction must match the rule-pack jurisdiction;
+6. the rule pack, executable rule and every relied-on legal source must be effective on the supplied `effective_law_date`;
+7. a `VERIFIED` deadline requires verified legal sources plus a verified trigger date bound to evidence;
+8. provisional trigger evidence may produce only a `PROVISIONAL` deadline;
+9. missing or conflicting trigger state returns `MISSING_INPUT` or `CONFLICTING_EVIDENCE` rather than a guessed date;
+10. unknown/mismatched rule identity returns `UNKNOWN_RULE` with an explicit blocker;
+11. deadline expiry is evaluated using a timezone-aware evaluation time converted into the bound calendar timezone;
+12. calendar-day and business-day duration semantics are explicit, including trigger inclusion/exclusion and optional roll to the next business day;
+13. a safe internal deadline may be earlier than the legal deadline but may not be configured before the trigger date.
+
+Calendar profiles explicitly bind timezone, weekend weekdays, holiday dates and any legal sources needed to justify those calendar semantics. Synthetic fixtures are used in public CI; real case data and private legal materials remain outside the repository.
 
 ## CIRP v1 invariants
 
@@ -116,7 +142,7 @@ The semantic filing plan is separate from DOCX/PDF rendering. `FILING_READY` req
 15. Critical `UNKNOWN` / `UNRESOLVED` state must remain visible in later report rendering.
 16. `FILING_READY` requires all critical preflight checks to pass and zero blockers.
 
-Invariants 1, 4, 9, 12, 13, 14 and 15 cross component/runtime boundaries and therefore also require enforcement in later CIRP stages and integration tests. CIRP-01 enforces all portions representable at the contract boundary.
+CIRP-01 enforces invariant portions representable at the contract boundary. CIRP-02 additionally enforces the deadline-runtime portions of invariants 2, 3, 4 and 5. Invariants 1, 9, 12, 13, 14 and 15 also cross later component/runtime boundaries and require continued enforcement in later stages and integration tests.
 
 ## Deadline safety model
 
@@ -125,7 +151,7 @@ CIRP deliberately distinguishes:
 - `legal_deadline` — deadline derived from a verified procedural rule and trigger;
 - `safe_internal_deadline` — earlier operational target used to reduce last-moment execution risk.
 
-The internal deadline can never be later than the legal deadline. A missing service/trigger fact or unknown rule produces an unresolved state instead of an estimated verified deadline.
+The internal deadline can never be later than the legal deadline. CIRP-02 also rejects a configured internal buffer that would move the internal target before the trigger date. A missing service/trigger fact, unknown rule, ineffective rule/source or unverified source produces an unresolved/provisional state instead of an estimated verified deadline.
 
 ## One-filing preference
 
@@ -133,14 +159,14 @@ CIRP prefers the smallest procedurally safe filing set. It may combine remedies 
 
 ## Replay and identity
 
-CIRP contracts are content-digestible and reuse deterministic canonical JSON. The run identity records the relevant evidence/event and rule-pack identities. Model-assisted reasoning may later be environment-bound; CIRP must never claim byte-identical replay from incomplete identity.
+CIRP contracts are content-digestible and reuse deterministic canonical JSON. The run identity records the relevant evidence/event and rule-pack identities. CIRP-02 additionally binds executable deadline semantics and calendar semantics through content digests. Model-assisted reasoning may later be environment-bound; CIRP must never claim byte-identical replay from incomplete identity.
 
 ## Non-claims
 
-CIRP-01 does not claim:
+CIRP-02 does not claim:
 
-- correctness of any Polish-law deadline or remedy;
-- current legal-source coverage;
+- correctness of any Polish-law deadline or remedy unless a separately verified jurisdiction rule pack and current legal sources are supplied;
+- current production legal-source coverage;
 - legal certification or independent review;
 - autonomous filing or external delivery;
 - real-case validation;
