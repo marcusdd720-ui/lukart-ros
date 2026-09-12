@@ -52,6 +52,12 @@ from core.cirp.governed_runtime import (
 )
 from core.cirp.intake import PRIVATE_CIRP_INTAKE_SCHEMA_V1, bind_private_case_request
 from core.cirp.preflight import FilingExecutionState, HardcorePreflight
+from core.cirp.private_execution import (
+    PRIVATE_CIRP_EXECUTION_SCHEMA_V1,
+    PrivateCIRPExecutionReceipt,
+    PrivateCIRPExecutionResult,
+    run_private_case,
+)
 from core.cirp.remedy import (
     ExecutableRemedyRule,
     RemedyApplicabilityStatus,
@@ -110,9 +116,12 @@ __all__ = [
     "GovernedCIRPRunResult",
     "GovernedCanonicalCIRPRuntime",
     "HardcorePreflight",
+    "PRIVATE_CIRP_EXECUTION_SCHEMA_V1",
     "PRIVATE_CIRP_INTAKE_SCHEMA_V1",
     "PreflightCheck",
     "PreflightResult",
+    "PrivateCIRPExecutionReceipt",
+    "PrivateCIRPExecutionResult",
     "ProceduralAssessment",
     "ProceduralRulePack",
     "RemedyApplicabilityStatus",
@@ -130,5 +139,6 @@ __all__ = [
     "bind_private_case_request",
     "canonical_governance_request_digest",
     "canonical_rule_pack_set_digest",
+    "run_private_case",
     "verify_rule_pack_governance",
 ]
