@@ -1,4 +1,4 @@
-"""Case Intake & Response Protocol (CIRP) public contracts."""
+"""Case Intake & Response Protocol (CIRP) public contracts and runtime surfaces."""
 
 from core.cirp.contracts import (
     CIRPContractError,
@@ -19,15 +19,31 @@ from core.cirp.contracts import (
     StrategyDecision,
     StrategyOption,
 )
+from core.cirp.deadline import (
+    DeadlineCalendarProfile,
+    DeadlineDurationUnit,
+    DeadlineGuard,
+    DeadlineRollConvention,
+    DeadlineStartRule,
+    DeadlineTriggerStatus,
+    ExecutableDeadlineRule,
+)
 
 __all__ = [
     "CIRPContractError",
     "CIRPRunIdentity",
     "DeadlineAssessment",
+    "DeadlineCalendarProfile",
+    "DeadlineDurationUnit",
+    "DeadlineGuard",
+    "DeadlineRollConvention",
+    "DeadlineStartRule",
     "DeadlineStatus",
+    "DeadlineTriggerStatus",
     "DocumentAssessment",
     "DocumentKind",
     "EvidenceRequirement",
+    "ExecutableDeadlineRule",
     "FilingPlan",
     "FilingTopologyDecision",
     "PreflightCheck",
