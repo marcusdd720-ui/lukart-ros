@@ -37,6 +37,7 @@ from core.cirp.engine import (
     canonical_rule_pack_set_digest,
 )
 from core.cirp.filing import FilingPlanner, FilingSpec
+from core.cirp.intake import PRIVATE_CIRP_INTAKE_SCHEMA_V1, bind_private_case_request
 from core.cirp.preflight import FilingExecutionState, HardcorePreflight
 from core.cirp.remedy import (
     ExecutableRemedyRule,
@@ -93,6 +94,7 @@ __all__ = [
     "FilingTopologyDecision",
     "FilingTopologyGuard",
     "HardcorePreflight",
+    "PRIVATE_CIRP_INTAKE_SCHEMA_V1",
     "PreflightCheck",
     "PreflightResult",
     "ProceduralAssessment",
@@ -105,5 +107,6 @@ __all__ = [
     "StrategyDecision",
     "StrategyGuard",
     "StrategyOption",
+    "bind_private_case_request",
     "canonical_rule_pack_set_digest",
 ]
