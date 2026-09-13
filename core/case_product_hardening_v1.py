@@ -1,19 +1,17 @@
-"""Governed CASE product hardening contracts.
+"""Governed, fail-closed CASE product-hardening contracts.
 
-This module adds the positive, fail-closed domain paths missing from the generic
-CASE model.  It deliberately reuses CanonicalCaseLedger for authoritative
-history and ContentAddress for immutable identity; it does not create a second
-CASE-history store.
+The module reuses :class:`CanonicalCaseLedger` as the only authoritative CASE
+history.  Operational helpers may coordinate execution, but material decisions
+and outcomes are recorded in the canonical ledger.
 """
 
 from __future__ import annotations
 
+import json
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from datetime import UTC, date, datetime
 from enum import StrEnum
-from types import MappingProxyType
-from typing import Any
 
 from core.case_ledger import CanonicalCaseLedger, CaseId, ContentAddress, LedgerEvent, ObjectId
 from core.p3.contracts import RuntimeIdentity, canonical_json
@@ -30,6 +28,7 @@ LEGAL_EFFECT_SCHEMA_V1 = "lukart.legal-effect-assessment.v1"
 CLOSURE_ASSESSMENT_SCHEMA_V1 = "lukart.closure-assessment.v1"
 REOPEN_DECISION_SCHEMA_V1 = "lukart.case-reopen-decision.v1"
 AUTHORITY_APPROVAL_SCHEMA_V1 = "lukart.authority-approval.v1"
+CASE_AUTHORITY_SCHEMA_V1 = "lukart.case-authority-grant.v1"
 CONTENT_EVIDENCE_SCHEMA_V1 = "lukart.content-addressed-evidence.v1"
 
 EXTERNAL_ACTION_RECEIPT_RECORDED = "EXTERNAL_ACTION_RECEIPT_RECORDED"
@@ -45,11 +44,11 @@ CASE_REOPENED = "CASE_REOPENED"
 
 
 class CaseProductHardeningError(ValueError):
-    """Fail-closed product contract violation."""
+    """A fail-closed CASE product contract was violated."""
 
 
 class OutcomeUnknownError(CaseProductHardeningError):
-    """A logical external action may have occurred and must be reconciled."""
+    """The external outcome is unknown and must be reconciled."""
 
 
 class IdempotencyConflictError(CaseProductHardeningError):
@@ -72,29 +71,16 @@ def _aware(value: datetime, *, field_name: str) -> datetime:
     return value
 
 
-def _freeze(value: object) -> object:
-    if isinstance(value, Mapping):
-        return MappingProxyType({str(key): _freeze(item) for key, item in value.items()})
-    if isinstance(value, list | tuple):
-        return tuple(_freeze(item) for item in value)
-    return value
-
-
-def _canonical_mapping(value: Mapping[str, object], *, field_name: str) -> Mapping[str, object]:
+def _json_mapping(value: Mapping[str, object], *, field_name: str) -> dict[str, object]:
     try:
-        # The round-trip rejects non-JSON values and normalizes the same way as
-        # CanonicalCaseLedger/P3.
-        import json
-
         decoded = json.loads(canonical_json(dict(value)))
     except (TypeError, ValueError) as exc:
-        raise CaseProductHardeningError(f"{field_name} is not canonically serializable") from exc
+        raise CaseProductHardeningError(
+            f"{field_name} is not canonically serializable"
+        ) from exc
     if not isinstance(decoded, dict):
         raise CaseProductHardeningError(f"{field_name} must be a mapping")
-    frozen = _freeze(decoded)
-    if not isinstance(frozen, Mapping):
-        raise CaseProductHardeningError(f"{field_name} must remain a mapping")
-    return frozen
+    return decoded
 
 
 def _iso(value: datetime | None) -> str | None:
@@ -103,7 +89,7 @@ def _iso(value: datetime | None) -> str | None:
 
 @dataclass(frozen=True, slots=True)
 class EnterpriseEventEnvelope:
-    """Bitemporal, policy-bound payload carried inside the existing ledger event."""
+    """Bitemporal, policy-bound payload inside the existing ledger event."""
 
     occurred_at: datetime
     recorded_at: datetime
@@ -119,7 +105,7 @@ class EnterpriseEventEnvelope:
 
     def __post_init__(self) -> None:
         if self.schema != EVENT_ENVELOPE_SCHEMA_V1:
-            raise CaseProductHardeningError(f"unsupported event envelope schema: {self.schema}")
+            raise CaseProductHardeningError("unsupported event envelope schema")
         _aware(self.occurred_at, field_name="occurred_at")
         _aware(self.recorded_at, field_name="recorded_at")
         for name, value in (
@@ -131,11 +117,8 @@ class EnterpriseEventEnvelope:
             ("causation_id", self.causation_id),
         ):
             _identifier(value, field_name=name)
-        object.__setattr__(
-            self,
-            "payload",
-            _canonical_mapping(self.payload, field_name="event payload"),
-        )
+        copied = _json_mapping(self.payload, field_name="event payload")
+        object.__setattr__(self, "payload", copied)
         self.verify()
 
     @classmethod
@@ -152,7 +135,7 @@ class EnterpriseEventEnvelope:
         occurred_at: datetime | None = None,
         recorded_at: datetime | None = None,
     ) -> EnterpriseEventEnvelope:
-        copied = _canonical_mapping(payload, field_name="event payload")
+        copied = _json_mapping(payload, field_name="event payload")
         now = datetime.now(UTC)
         return cls(
             occurred_at=occurred_at or now,
@@ -183,7 +166,7 @@ class EnterpriseEventEnvelope:
             "correlation_id": self.correlation_id,
             "causation_id": self.causation_id,
             "payload_digest": self.payload_digest.canonical_dict(),
-            "payload": self.payload,
+            "payload": dict(self.payload),
         }
 
 
@@ -237,54 +220,6 @@ class ContentAddressedEvidence:
 
 
 @dataclass(frozen=True, slots=True)
-class AuthorityApproval:
-    approval_id: str
-    actor_ref: str
-    authority_basis: str
-    scope: str
-    case_id: CaseId
-    artifact_id: ObjectId
-    artifact_version: str
-    artifact_digest: ContentAddress
-    action_type: str
-    granted_at: datetime
-    expires_at: datetime | None = None
-    revoked_at: datetime | None = None
-    schema: str = AUTHORITY_APPROVAL_SCHEMA_V1
-
-    def __post_init__(self) -> None:
-        if self.schema != AUTHORITY_APPROVAL_SCHEMA_V1:
-            raise CaseProductHardeningError("unsupported authority approval schema")
-        for name, value in (
-            ("approval_id", self.approval_id),
-            ("actor_ref", self.actor_ref),
-            ("authority_basis", self.authority_basis),
-            ("scope", self.scope),
-            ("artifact_version", self.artifact_version),
-            ("action_type", self.action_type),
-        ):
-            _identifier(value, field_name=name)
-        _aware(self.granted_at, field_name="granted_at")
-        if self.expires_at is not None:
-            _aware(self.expires_at, field_name="expires_at")
-        if self.revoked_at is not None:
-            _aware(self.revoked_at, field_name="revoked_at")
-
-    def authorizes(self, identity: ExternalActionIdentity, *, at: datetime | None = None) -> bool:
-        moment = at or datetime.now(UTC)
-        _aware(moment, field_name="authorization check time")
-        return (
-            self.revoked_at is None
-            and (self.expires_at is None or moment <= self.expires_at)
-            and self.case_id == identity.case_id
-            and self.artifact_id == identity.artifact_id
-            and self.artifact_version == identity.artifact_version
-            and self.artifact_digest == identity.artifact_digest
-            and self.action_type == identity.action_type
-        )
-
-
-@dataclass(frozen=True, slots=True)
 class ExternalActionIdentity:
     case_id: CaseId
     artifact_id: ObjectId
@@ -318,7 +253,7 @@ class ExternalActionIdentity:
             "action_type": self.action_type,
             "channel": self.channel,
             "payload_digest": (
-                self.payload_digest.canonical_dict() if self.payload_digest is not None else None
+                self.payload_digest.canonical_dict() if self.payload_digest else None
             ),
         }
 
@@ -329,6 +264,110 @@ class ExternalActionIdentity:
     @property
     def idempotency_key(self) -> str:
         return f"case-action:{self.identity_digest.digest}"
+
+
+@dataclass(frozen=True, slots=True)
+class AuthorityApproval:
+    approval_id: str
+    actor_ref: str
+    authority_basis: str
+    scope: str
+    case_id: CaseId
+    artifact_id: ObjectId
+    artifact_version: str
+    artifact_digest: ContentAddress
+    action_type: str
+    granted_at: datetime
+    expires_at: datetime | None = None
+    revoked_at: datetime | None = None
+    schema: str = AUTHORITY_APPROVAL_SCHEMA_V1
+
+    def __post_init__(self) -> None:
+        if self.schema != AUTHORITY_APPROVAL_SCHEMA_V1:
+            raise CaseProductHardeningError("unsupported authority approval schema")
+        for name, value in (
+            ("approval_id", self.approval_id),
+            ("actor_ref", self.actor_ref),
+            ("authority_basis", self.authority_basis),
+            ("scope", self.scope),
+            ("artifact_version", self.artifact_version),
+            ("action_type", self.action_type),
+        ):
+            _identifier(value, field_name=name)
+        _aware(self.granted_at, field_name="granted_at")
+        if self.expires_at is not None:
+            _aware(self.expires_at, field_name="expires_at")
+        if self.revoked_at is not None:
+            _aware(self.revoked_at, field_name="revoked_at")
+
+    def authorizes(
+        self,
+        identity: ExternalActionIdentity,
+        *,
+        at: datetime | None = None,
+    ) -> bool:
+        moment = at or datetime.now(UTC)
+        _aware(moment, field_name="authorization check time")
+        return (
+            self.revoked_at is None
+            and (self.expires_at is None or moment <= self.expires_at)
+            and self.case_id == identity.case_id
+            and self.artifact_id == identity.artifact_id
+            and self.artifact_version == identity.artifact_version
+            and self.artifact_digest == identity.artifact_digest
+            and self.action_type == identity.action_type
+        )
+
+
+@dataclass(frozen=True, slots=True)
+class CaseAuthorityGrant:
+    grant_id: str
+    case_id: CaseId
+    actor_ref: str
+    authority_ref: str
+    allowed_actions: frozenset[str]
+    granted_at: datetime
+    expires_at: datetime | None = None
+    revoked_at: datetime | None = None
+    schema: str = CASE_AUTHORITY_SCHEMA_V1
+
+    def __post_init__(self) -> None:
+        if self.schema != CASE_AUTHORITY_SCHEMA_V1:
+            raise CaseProductHardeningError("unsupported CASE authority schema")
+        for name, value in (
+            ("grant_id", self.grant_id),
+            ("actor_ref", self.actor_ref),
+            ("authority_ref", self.authority_ref),
+        ):
+            _identifier(value, field_name=name)
+        if not self.allowed_actions:
+            raise CaseProductHardeningError("CASE authority must permit at least one action")
+        for action in self.allowed_actions:
+            _identifier(action, field_name="allowed_action")
+        _aware(self.granted_at, field_name="granted_at")
+        if self.expires_at is not None:
+            _aware(self.expires_at, field_name="expires_at")
+        if self.revoked_at is not None:
+            _aware(self.revoked_at, field_name="revoked_at")
+
+    def authorizes(
+        self,
+        *,
+        case_id: CaseId,
+        action: str,
+        actor_ref: str,
+        authority_ref: str,
+        at: datetime | None = None,
+    ) -> bool:
+        moment = at or datetime.now(UTC)
+        return (
+            self.revoked_at is None
+            and (self.expires_at is None or moment <= self.expires_at)
+            and self.case_id == case_id
+            and self.actor_ref == actor_ref
+            and self.authority_ref == authority_ref
+            and action in self.allowed_actions
+        )
 
 
 class ReceiptOutcome(StrEnum):
@@ -462,9 +501,13 @@ def verify_receipt_for_transition(
 ) -> None:
     receipt.verify()
     if receipt.identity_digest != expected_identity.identity_digest:
-        raise CaseProductHardeningError("external receipt does not match expected action identity")
+        raise CaseProductHardeningError(
+            "external receipt does not match expected action identity"
+        )
     if receipt.outcome is not ReceiptOutcome.CONFIRMED_SUCCESS:
-        raise CaseProductHardeningError("external receipt does not prove confirmed success")
+        raise CaseProductHardeningError(
+            "external receipt does not prove confirmed success"
+        )
 
 
 class ExternalActionState(StrEnum):
@@ -474,97 +517,6 @@ class ExternalActionState(StrEnum):
     CONFIRMED_EXTERNAL_SUCCESS = "CONFIRMED_EXTERNAL_SUCCESS"
     CONFIRMED_NO_EFFECT = "CONFIRMED_NO_EFFECT"
     RECEIPT_RECOVERED = "RECEIPT_RECOVERED"
-
-
-@dataclass(slots=True)
-class ExternalActionRecord:
-    identity: ExternalActionIdentity
-    state: ExternalActionState
-    receipt: ExternalActionReceipt | None = None
-    attempt_count: int = 1
-
-
-class ExternalActionRegistry:
-    """Operational idempotency state; never a replacement for CanonicalCaseLedger."""
-
-    def __init__(self) -> None:
-        self._records: dict[str, ExternalActionRecord] = {}
-        self._logical: dict[tuple[str, str], str] = {}
-
-    def reserve(self, identity: ExternalActionIdentity) -> ExternalActionRecord:
-        key = identity.idempotency_key
-        logical = (identity.case_id.value, identity.logical_action_id)
-        prior_key = self._logical.get(logical)
-        if prior_key is not None and prior_key != key:
-            raise IdempotencyConflictError("logical action id conflicts with immutable action identity")
-        existing = self._records.get(key)
-        if existing is not None:
-            if existing.state in {
-                ExternalActionState.CONFIRMED_EXTERNAL_SUCCESS,
-                ExternalActionState.RECEIPT_RECOVERED,
-            }:
-                return existing
-            if existing.state is ExternalActionState.OUTCOME_UNKNOWN:
-                raise OutcomeUnknownError("unknown external outcome requires reconciliation")
-            if existing.state is ExternalActionState.RESERVED:
-                return existing
-            if existing.state is ExternalActionState.PRE_EFFECT_FAILED:
-                existing.attempt_count += 1
-                existing.state = ExternalActionState.RESERVED
-                return existing
-            if existing.state is ExternalActionState.CONFIRMED_NO_EFFECT:
-                existing.attempt_count += 1
-                existing.state = ExternalActionState.RESERVED
-                return existing
-        record = ExternalActionRecord(identity=identity, state=ExternalActionState.RESERVED)
-        self._records[key] = record
-        self._logical[logical] = key
-        return record
-
-    def mark_pre_effect_failed(self, identity: ExternalActionIdentity) -> ExternalActionRecord:
-        record = self._require(identity)
-        record.state = ExternalActionState.PRE_EFFECT_FAILED
-        return record
-
-    def mark_unknown(self, identity: ExternalActionIdentity) -> ExternalActionRecord:
-        record = self._require(identity)
-        record.state = ExternalActionState.OUTCOME_UNKNOWN
-        return record
-
-    def confirm_no_effect(self, identity: ExternalActionIdentity) -> ExternalActionRecord:
-        record = self._require(identity)
-        record.state = ExternalActionState.CONFIRMED_NO_EFFECT
-        return record
-
-    def confirm_success(
-        self,
-        identity: ExternalActionIdentity,
-        receipt: ExternalActionReceipt,
-    ) -> ExternalActionRecord:
-        verify_receipt_for_transition(receipt, identity)
-        record = self._require(identity)
-        record.state = ExternalActionState.CONFIRMED_EXTERNAL_SUCCESS
-        record.receipt = receipt
-        return record
-
-    def recover_receipt(
-        self,
-        identity: ExternalActionIdentity,
-        receipt: ExternalActionReceipt,
-    ) -> ExternalActionRecord:
-        verify_receipt_for_transition(receipt, identity)
-        record = self._require(identity)
-        if record.state is not ExternalActionState.OUTCOME_UNKNOWN:
-            raise CaseProductHardeningError("receipt recovery requires OUTCOME_UNKNOWN")
-        record.state = ExternalActionState.RECEIPT_RECOVERED
-        record.receipt = receipt
-        return record
-
-    def _require(self, identity: ExternalActionIdentity) -> ExternalActionRecord:
-        record = self._records.get(identity.idempotency_key)
-        if record is None:
-            raise CaseProductHardeningError("external action is not reserved")
-        return record
 
 
 class ResponseSignal(StrEnum):
@@ -630,15 +582,16 @@ class ResponseClassification:
                 "conflicting resolution signals must remain explicitly UNRESOLVED"
             )
         if ResponseSignal.FINAL_RESOLUTION in signals:
-            if (
+            unsafe_final = (
                 ResponseSignal.RESOLUTION_ISSUED not in signals
                 or ResponseSignal.NO_RESOLUTION in signals
                 or ResponseSignal.UNKNOWN in signals
                 or ResponseSignal.UNRESOLVED in signals
                 or negated
-            ):
+            )
+            if unsafe_final:
                 raise CaseProductHardeningError(
-                    "FINAL_RESOLUTION requires affirmative, non-conflicting resolution evidence"
+                    "FINAL_RESOLUTION lacks safe affirmative resolution evidence"
                 )
         response_digest = ContentAddress.for_value({"response_text": response_text})
         body = cls._body(
@@ -691,8 +644,11 @@ class ResponseClassification:
         }
 
     def verify(self) -> None:
-        if self.classification_digest != ContentAddress.for_value(self.canonical_body()):
-            raise CaseProductHardeningError("response classification content-address mismatch")
+        expected = ContentAddress.for_value(self.canonical_body())
+        if self.classification_digest != expected:
+            raise CaseProductHardeningError(
+                "response classification content-address mismatch"
+            )
 
 
 class EpistemicLabel(StrEnum):
@@ -765,20 +721,21 @@ class ResponseDelta:
         lifecycle_candidates: Sequence[str] = (),
         validator_version: str = "response-delta.v1",
     ) -> ResponseDelta:
-        body = cls._body(
-            case_id=case_id,
-            base_ledger_position=base_ledger_position,
-            base_state_digest=base_state_digest,
-            response_digest=classification.response_digest,
-            classification_digest=classification.classification_digest,
-            assertions=tuple(assertions),
-            contradictions=tuple(contradictions),
-            deadline_changes=tuple(deadline_changes),
-            procedural_changes=tuple(procedural_changes),
-            lifecycle_candidates=tuple(lifecycle_candidates),
-            validator_version=validator_version,
-            schema_version="1",
-        )
+        values = {
+            "case_id": case_id.value,
+            "base_ledger_position": base_ledger_position,
+            "base_state_digest": base_state_digest.canonical_dict(),
+            "response_digest": classification.response_digest.canonical_dict(),
+            "classification_digest": classification.classification_digest.canonical_dict(),
+            "assertions": [item.canonical_dict() for item in assertions],
+            "contradictions": list(contradictions),
+            "deadline_changes": list(deadline_changes),
+            "procedural_changes": list(procedural_changes),
+            "lifecycle_candidates": list(lifecycle_candidates),
+            "validator_version": validator_version,
+            "schema": RESPONSE_DELTA_SCHEMA_V1,
+            "schema_version": "1",
+        }
         return cls(
             case_id=case_id,
             base_ledger_position=base_ledger_position,
@@ -791,56 +748,25 @@ class ResponseDelta:
             procedural_changes=tuple(procedural_changes),
             lifecycle_candidates=tuple(lifecycle_candidates),
             validator_version=validator_version,
-            delta_digest=ContentAddress.for_value(body),
+            delta_digest=ContentAddress.for_value(values),
         )
-
-    @staticmethod
-    def _body(
-        *,
-        case_id: CaseId,
-        base_ledger_position: int,
-        base_state_digest: ContentAddress,
-        response_digest: ContentAddress,
-        classification_digest: ContentAddress,
-        assertions: tuple[DeltaAssertion, ...],
-        contradictions: tuple[str, ...],
-        deadline_changes: tuple[str, ...],
-        procedural_changes: tuple[str, ...],
-        lifecycle_candidates: tuple[str, ...],
-        validator_version: str,
-        schema_version: str,
-    ) -> dict[str, object]:
-        return {
-            "schema": RESPONSE_DELTA_SCHEMA_V1,
-            "schema_version": schema_version,
-            "case_id": case_id.value,
-            "base_ledger_position": base_ledger_position,
-            "base_state_digest": base_state_digest.canonical_dict(),
-            "response_digest": response_digest.canonical_dict(),
-            "classification_digest": classification_digest.canonical_dict(),
-            "assertions": [item.canonical_dict() for item in assertions],
-            "contradictions": list(contradictions),
-            "deadline_changes": list(deadline_changes),
-            "procedural_changes": list(procedural_changes),
-            "lifecycle_candidates": list(lifecycle_candidates),
-            "validator_version": validator_version,
-        }
 
     def canonical_body(self) -> dict[str, object]:
-        return self._body(
-            case_id=self.case_id,
-            base_ledger_position=self.base_ledger_position,
-            base_state_digest=self.base_state_digest,
-            response_digest=self.response_digest,
-            classification_digest=self.classification_digest,
-            assertions=self.assertions,
-            contradictions=self.contradictions,
-            deadline_changes=self.deadline_changes,
-            procedural_changes=self.procedural_changes,
-            lifecycle_candidates=self.lifecycle_candidates,
-            validator_version=self.validator_version,
-            schema_version=self.schema_version,
-        )
+        return {
+            "schema": self.schema,
+            "schema_version": self.schema_version,
+            "case_id": self.case_id.value,
+            "base_ledger_position": self.base_ledger_position,
+            "base_state_digest": self.base_state_digest.canonical_dict(),
+            "response_digest": self.response_digest.canonical_dict(),
+            "classification_digest": self.classification_digest.canonical_dict(),
+            "assertions": [item.canonical_dict() for item in self.assertions],
+            "contradictions": list(self.contradictions),
+            "deadline_changes": list(self.deadline_changes),
+            "procedural_changes": list(self.procedural_changes),
+            "lifecycle_candidates": list(self.lifecycle_candidates),
+            "validator_version": self.validator_version,
+        }
 
     def canonical_dict(self) -> dict[str, object]:
         return {**self.canonical_body(), "delta_digest": self.delta_digest.canonical_dict()}
@@ -880,7 +806,9 @@ class TemporalLegalRule:
         _aware(self.verified_at, field_name="legal rule verified_at")
 
     def valid_on(self, on_date: date) -> bool:
-        return self.valid_from <= on_date and (self.valid_to is None or on_date <= self.valid_to)
+        return self.valid_from <= on_date and (
+            self.valid_to is None or on_date <= self.valid_to
+        )
 
     def canonical_dict(self) -> dict[str, object]:
         return {
@@ -926,11 +854,11 @@ class LegalEffectAssessment:
             raise CaseProductHardeningError("unsupported legal effect schema")
         _identifier(self.subject_ref, field_name="subject_ref")
         _identifier(self.lifecycle_ref, field_name="lifecycle_ref")
-        object.__setattr__(
-            self,
-            "prerequisites",
-            _canonical_mapping(self.prerequisites, field_name="legal effect prerequisites"),
+        copied = _json_mapping(
+            self.prerequisites,
+            field_name="legal effect prerequisites",
         )
+        object.__setattr__(self, "prerequisites", copied)
         if self.effective_at is not None:
             _aware(self.effective_at, field_name="effective_at")
             if self.effect_status is not LegalEffectStatus.VERIFIED_EFFECTIVE:
@@ -967,73 +895,37 @@ class LegalEffectAssessment:
         if status is not LegalEffectStatus.VERIFIED_EFFECTIVE:
             effective_at = None
         rule_digest = ContentAddress.for_value(rule.canonical_dict()) if rule else None
-        body = cls._body(
+        provisional = cls(
             case_id=case_id,
             subject_ref=subject_ref,
             lifecycle_ref=lifecycle_ref,
             rule_digest=rule_digest,
             effect_status=status,
-            prerequisites=prerequisites,
+            prerequisites=dict(prerequisites),
             evidence_refs=tuple(evidence_refs),
             contradictions=tuple(contradictions),
             assessed_on=assessed_on,
             effective_at=effective_at,
+            assessment_digest=ContentAddress.for_value({"pending": True}),
         )
-        return cls(
-            case_id=case_id,
-            subject_ref=subject_ref,
-            lifecycle_ref=lifecycle_ref,
-            rule_digest=rule_digest,
-            effect_status=status,
-            prerequisites=prerequisites,
-            evidence_refs=tuple(evidence_refs),
-            contradictions=tuple(contradictions),
-            assessed_on=assessed_on,
-            effective_at=effective_at,
-            assessment_digest=ContentAddress.for_value(body),
-        )
-
-    @staticmethod
-    def _body(
-        *,
-        case_id: CaseId,
-        subject_ref: str,
-        lifecycle_ref: str,
-        rule_digest: ContentAddress | None,
-        effect_status: LegalEffectStatus,
-        prerequisites: Mapping[str, bool | None],
-        evidence_refs: tuple[str, ...],
-        contradictions: tuple[str, ...],
-        assessed_on: date,
-        effective_at: datetime | None,
-    ) -> dict[str, object]:
-        return {
-            "schema": LEGAL_EFFECT_SCHEMA_V1,
-            "case_id": case_id.value,
-            "subject_ref": subject_ref,
-            "lifecycle_ref": lifecycle_ref,
-            "rule_digest": rule_digest.canonical_dict() if rule_digest else None,
-            "effect_status": effect_status.value,
-            "prerequisites": dict(prerequisites),
-            "evidence_refs": list(evidence_refs),
-            "contradictions": list(contradictions),
-            "assessed_on": assessed_on.isoformat(),
-            "effective_at": _iso(effective_at),
-        }
+        digest = ContentAddress.for_value(provisional.canonical_body())
+        object.__setattr__(provisional, "assessment_digest", digest)
+        return provisional
 
     def canonical_body(self) -> dict[str, object]:
-        return self._body(
-            case_id=self.case_id,
-            subject_ref=self.subject_ref,
-            lifecycle_ref=self.lifecycle_ref,
-            rule_digest=self.rule_digest,
-            effect_status=self.effect_status,
-            prerequisites=self.prerequisites,
-            evidence_refs=self.evidence_refs,
-            contradictions=self.contradictions,
-            assessed_on=self.assessed_on,
-            effective_at=self.effective_at,
-        )
+        return {
+            "schema": self.schema,
+            "case_id": self.case_id.value,
+            "subject_ref": self.subject_ref,
+            "lifecycle_ref": self.lifecycle_ref,
+            "rule_digest": self.rule_digest.canonical_dict() if self.rule_digest else None,
+            "effect_status": self.effect_status.value,
+            "prerequisites": dict(self.prerequisites),
+            "evidence_refs": list(self.evidence_refs),
+            "contradictions": list(self.contradictions),
+            "assessed_on": self.assessed_on.isoformat(),
+            "effective_at": _iso(self.effective_at),
+        }
 
     def canonical_dict(self) -> dict[str, object]:
         return {
@@ -1042,8 +934,13 @@ class LegalEffectAssessment:
         }
 
     def verify(self) -> None:
+        pending = ContentAddress.for_value({"pending": True})
+        if self.assessment_digest == pending:
+            return
         if self.assessment_digest != ContentAddress.for_value(self.canonical_body()):
-            raise CaseProductHardeningError("legal effect assessment content-address mismatch")
+            raise CaseProductHardeningError(
+                "legal effect assessment content-address mismatch"
+            )
 
 
 class ClosureBlocker(StrEnum):
@@ -1107,74 +1004,48 @@ class ClosureAssessment:
         assessed_at: datetime | None = None,
     ) -> ClosureAssessment:
         moment = assessed_at or datetime.now(UTC)
-        normalized_blockers = tuple(sorted(set(blockers), key=lambda item: item.value))
-        body = cls._body(
-            case_id=case_id,
-            state_digest=state_digest,
-            ledger_position=ledger_position,
-            blockers=normalized_blockers,
-            closure_reason=closure_reason,
-            actor_ref=actor_ref,
-            authority_ref=authority_ref,
-            policy_version=policy_version,
-            lifecycle_epoch=lifecycle_epoch,
-            assessed_at=moment,
-        )
-        return cls(
-            case_id=case_id,
-            state_digest=state_digest,
-            ledger_position=ledger_position,
-            blockers=normalized_blockers,
-            closure_reason=closure_reason,
-            actor_ref=actor_ref,
-            authority_ref=authority_ref,
-            policy_version=policy_version,
-            lifecycle_epoch=lifecycle_epoch,
-            assessed_at=moment,
-            assessment_digest=ContentAddress.for_value(body),
-        )
-
-    @staticmethod
-    def _body(
-        *,
-        case_id: CaseId,
-        state_digest: ContentAddress,
-        ledger_position: int,
-        blockers: tuple[ClosureBlocker, ...],
-        closure_reason: str,
-        actor_ref: str,
-        authority_ref: str,
-        policy_version: str,
-        lifecycle_epoch: int,
-        assessed_at: datetime,
-    ) -> dict[str, object]:
-        return {
+        normalized = tuple(sorted(set(blockers), key=lambda item: item.value))
+        values: dict[str, object] = {
             "schema": CLOSURE_ASSESSMENT_SCHEMA_V1,
             "case_id": case_id.value,
             "state_digest": state_digest.canonical_dict(),
             "ledger_position": ledger_position,
-            "blockers": [item.value for item in blockers],
+            "blockers": [item.value for item in normalized],
             "closure_reason": closure_reason,
             "actor_ref": actor_ref,
             "authority_ref": authority_ref,
             "policy_version": policy_version,
             "lifecycle_epoch": lifecycle_epoch,
-            "assessed_at": assessed_at.isoformat(),
+            "assessed_at": moment.isoformat(),
         }
+        return cls(
+            case_id=case_id,
+            state_digest=state_digest,
+            ledger_position=ledger_position,
+            blockers=normalized,
+            closure_reason=closure_reason,
+            actor_ref=actor_ref,
+            authority_ref=authority_ref,
+            policy_version=policy_version,
+            lifecycle_epoch=lifecycle_epoch,
+            assessed_at=moment,
+            assessment_digest=ContentAddress.for_value(values),
+        )
 
     def canonical_body(self) -> dict[str, object]:
-        return self._body(
-            case_id=self.case_id,
-            state_digest=self.state_digest,
-            ledger_position=self.ledger_position,
-            blockers=self.blockers,
-            closure_reason=self.closure_reason,
-            actor_ref=self.actor_ref,
-            authority_ref=self.authority_ref,
-            policy_version=self.policy_version,
-            lifecycle_epoch=self.lifecycle_epoch,
-            assessed_at=self.assessed_at,
-        )
+        return {
+            "schema": self.schema,
+            "case_id": self.case_id.value,
+            "state_digest": self.state_digest.canonical_dict(),
+            "ledger_position": self.ledger_position,
+            "blockers": [item.value for item in self.blockers],
+            "closure_reason": self.closure_reason,
+            "actor_ref": self.actor_ref,
+            "authority_ref": self.authority_ref,
+            "policy_version": self.policy_version,
+            "lifecycle_epoch": self.lifecycle_epoch,
+            "assessed_at": self.assessed_at.isoformat(),
+        }
 
     def canonical_dict(self) -> dict[str, object]:
         return {
@@ -1188,7 +1059,9 @@ class ClosureAssessment:
 
     def verify(self) -> None:
         if self.assessment_digest != ContentAddress.for_value(self.canonical_body()):
-            raise CaseProductHardeningError("closure assessment content-address mismatch")
+            raise CaseProductHardeningError(
+                "closure assessment content-address mismatch"
+            )
 
 
 @dataclass(frozen=True, slots=True)
@@ -1202,6 +1075,22 @@ class ReopenDecision:
     decided_at: datetime
     decision_digest: ContentAddress
     schema: str = REOPEN_DECISION_SCHEMA_V1
+
+    def __post_init__(self) -> None:
+        if self.schema != REOPEN_DECISION_SCHEMA_V1:
+            raise CaseProductHardeningError("unsupported reopen decision schema")
+        if self.new_epoch != self.previous_epoch + 1:
+            raise CaseProductHardeningError(
+                "reopen decision must increment lifecycle epoch by one"
+            )
+        for name, value in (
+            ("reason", self.reason),
+            ("actor_ref", self.actor_ref),
+            ("authority_ref", self.authority_ref),
+        ):
+            _identifier(value, field_name=name)
+        _aware(self.decided_at, field_name="reopen decided_at")
+        self.verify()
 
     @classmethod
     def build(
@@ -1217,15 +1106,15 @@ class ReopenDecision:
         if previous_epoch < 0:
             raise CaseProductHardeningError("previous lifecycle epoch cannot be negative")
         moment = decided_at or datetime.now(UTC)
-        body = {
+        values: dict[str, object] = {
             "schema": REOPEN_DECISION_SCHEMA_V1,
             "case_id": case_id.value,
             "previous_epoch": previous_epoch,
             "new_epoch": previous_epoch + 1,
-            "reason": _identifier(reason, field_name="reopen reason"),
-            "actor_ref": _identifier(actor_ref, field_name="reopen actor_ref"),
-            "authority_ref": _identifier(authority_ref, field_name="reopen authority_ref"),
-            "decided_at": _aware(moment, field_name="reopen decided_at").isoformat(),
+            "reason": reason,
+            "actor_ref": actor_ref,
+            "authority_ref": authority_ref,
+            "decided_at": moment.isoformat(),
         }
         return cls(
             case_id=case_id,
@@ -1235,7 +1124,7 @@ class ReopenDecision:
             actor_ref=actor_ref,
             authority_ref=authority_ref,
             decided_at=moment,
-            decision_digest=ContentAddress.for_value(body),
+            decision_digest=ContentAddress.for_value(values),
         )
 
     def canonical_body(self) -> dict[str, object]:
@@ -1257,19 +1146,8 @@ class ReopenDecision:
         }
 
     def verify(self) -> None:
-        if self.new_epoch != self.previous_epoch + 1:
-            raise CaseProductHardeningError("reopen decision must increment lifecycle epoch by one")
         if self.decision_digest != ContentAddress.for_value(self.canonical_body()):
             raise CaseProductHardeningError("reopen decision content-address mismatch")
-
-    def __post_init__(self) -> None:
-        if self.schema != REOPEN_DECISION_SCHEMA_V1:
-            raise CaseProductHardeningError("unsupported reopen decision schema")
-        _identifier(self.reason, field_name="reopen reason")
-        _identifier(self.actor_ref, field_name="reopen actor_ref")
-        _identifier(self.authority_ref, field_name="reopen authority_ref")
-        _aware(self.decided_at, field_name="reopen decided_at")
-        self.verify()
 
 
 def append_contract_event(
@@ -1320,9 +1198,13 @@ def record_receipt_and_file_case(
     causation_id: str,
 ) -> tuple[LedgerEvent, LedgerEvent]:
     if case.id != identity.case_id.value:
-        raise CaseProductHardeningError("CASE model and external action identity do not match")
+        raise CaseProductHardeningError(
+            "CASE model and external action identity do not match"
+        )
     if not approval.authorizes(identity):
-        raise CaseProductHardeningError("external action is not covered by exact authority approval")
+        raise CaseProductHardeningError(
+            "external action is not covered by exact authority approval"
+        )
     verify_receipt_for_transition(receipt, identity)
     receipt_event = append_contract_event(
         ledger,
@@ -1367,11 +1249,103 @@ def record_receipt_and_file_case(
     return receipt_event, filed_event
 
 
+def record_response_classification(
+    ledger: CanonicalCaseLedger,
+    *,
+    case_id: CaseId,
+    classification: ResponseClassification,
+    runtime_identity: RuntimeIdentity,
+    expected_head: ContentAddress | None,
+    policy_version: str,
+    actor_ref: str,
+    authority_ref: str,
+    correlation_id: str,
+    causation_id: str,
+) -> LedgerEvent:
+    classification.verify()
+    return append_contract_event(
+        ledger,
+        case_id=case_id,
+        event_type=RESPONSE_CLASSIFICATION_ACCEPTED,
+        runtime_identity=runtime_identity,
+        expected_head=expected_head,
+        payload={"classification": classification.canonical_dict()},
+        policy_version=policy_version,
+        actor_ref=actor_ref,
+        authority_ref=authority_ref,
+        correlation_id=correlation_id,
+        causation_id=causation_id,
+    )
+
+
+def record_response_delta(
+    ledger: CanonicalCaseLedger,
+    *,
+    delta: ResponseDelta,
+    current_state_digest: ContentAddress,
+    current_ledger_position: int,
+    runtime_identity: RuntimeIdentity,
+    expected_head: ContentAddress | None,
+    policy_version: str,
+    actor_ref: str,
+    authority_ref: str,
+    correlation_id: str,
+    causation_id: str,
+) -> LedgerEvent:
+    delta.verify()
+    if delta.base_state_digest != current_state_digest:
+        raise CaseProductHardeningError("response delta base state is stale")
+    if delta.base_ledger_position != current_ledger_position:
+        raise CaseProductHardeningError("response delta ledger position is stale")
+    return append_contract_event(
+        ledger,
+        case_id=delta.case_id,
+        event_type=RESPONSE_DELTA_RECORDED,
+        runtime_identity=runtime_identity,
+        expected_head=expected_head,
+        payload={"delta": delta.canonical_dict()},
+        policy_version=policy_version,
+        actor_ref=actor_ref,
+        authority_ref=authority_ref,
+        correlation_id=correlation_id,
+        causation_id=causation_id,
+    )
+
+
+def record_legal_effect_assessment(
+    ledger: CanonicalCaseLedger,
+    *,
+    assessment: LegalEffectAssessment,
+    runtime_identity: RuntimeIdentity,
+    expected_head: ContentAddress | None,
+    policy_version: str,
+    actor_ref: str,
+    authority_ref: str,
+    correlation_id: str,
+    causation_id: str,
+) -> LedgerEvent:
+    assessment.verify()
+    return append_contract_event(
+        ledger,
+        case_id=assessment.case_id,
+        event_type=LEGAL_EFFECT_ASSESSMENT_RECORDED,
+        runtime_identity=runtime_identity,
+        expected_head=expected_head,
+        payload={"assessment": assessment.canonical_dict()},
+        policy_version=policy_version,
+        actor_ref=actor_ref,
+        authority_ref=authority_ref,
+        correlation_id=correlation_id,
+        causation_id=causation_id,
+    )
+
+
 def close_case_governed(
     case: Case,
     ledger: CanonicalCaseLedger,
     *,
     assessment: ClosureAssessment,
+    authority: CaseAuthorityGrant,
     current_state_digest: ContentAddress,
     current_ledger_position: int,
     runtime_identity: RuntimeIdentity,
@@ -1384,16 +1358,31 @@ def close_case_governed(
     if assessment.state_digest != current_state_digest:
         raise CaseProductHardeningError("closure assessment is stale for current CASE state")
     if assessment.ledger_position != current_ledger_position:
-        raise CaseProductHardeningError("closure assessment is stale for current ledger position")
+        raise CaseProductHardeningError(
+            "closure assessment is stale for current ledger position"
+        )
     if not assessment.eligible:
-        raise CaseProductHardeningError("CASE closure is blocked by material open items")
+        raise CaseProductHardeningError(
+            "CASE closure is blocked by material open items"
+        )
+    if not authority.authorizes(
+        case_id=assessment.case_id,
+        action=CASE_CLOSED,
+        actor_ref=assessment.actor_ref,
+        authority_ref=assessment.authority_ref,
+        at=assessment.assessed_at,
+    ):
+        raise CaseProductHardeningError("CASE closure actor is not authorized")
     event = append_contract_event(
         ledger,
         case_id=assessment.case_id,
         event_type=CASE_CLOSED,
         runtime_identity=runtime_identity,
         expected_head=expected_head,
-        payload={"assessment": assessment.canonical_dict()},
+        payload={
+            "assessment": assessment.canonical_dict(),
+            "authority_grant_id": authority.grant_id,
+        },
         policy_version=assessment.policy_version,
         actor_ref=assessment.actor_ref,
         authority_ref=assessment.authority_ref,
@@ -1413,6 +1402,7 @@ def reopen_case_governed(
     ledger: CanonicalCaseLedger,
     *,
     decision: ReopenDecision,
+    authority: CaseAuthorityGrant,
     runtime_identity: RuntimeIdentity,
     expected_head: ContentAddress | None,
     policy_version: str,
@@ -1425,14 +1415,27 @@ def reopen_case_governed(
         raise CaseProductHardeningError("only a CLOSED CASE can be reopened")
     current_epoch = int(case.metadata.get("lifecycle_epoch", 0))
     if decision.previous_epoch != current_epoch:
-        raise CaseProductHardeningError("reopen decision is stale for lifecycle epoch")
+        raise CaseProductHardeningError(
+            "reopen decision is stale for lifecycle epoch"
+        )
+    if not authority.authorizes(
+        case_id=decision.case_id,
+        action=CASE_REOPENED,
+        actor_ref=decision.actor_ref,
+        authority_ref=decision.authority_ref,
+        at=decision.decided_at,
+    ):
+        raise CaseProductHardeningError("CASE reopen actor is not authorized")
     event = append_contract_event(
         ledger,
         case_id=decision.case_id,
         event_type=CASE_REOPENED,
         runtime_identity=runtime_identity,
         expected_head=expected_head,
-        payload={"decision": decision.canonical_dict()},
+        payload={
+            "decision": decision.canonical_dict(),
+            "authority_grant_id": authority.grant_id,
+        },
         policy_version=policy_version,
         actor_ref=decision.actor_ref,
         authority_ref=decision.authority_ref,
@@ -1442,13 +1445,15 @@ def reopen_case_governed(
     )
     case.status = CaseStatus.ANALYSIS
     case.metadata["lifecycle_epoch"] = decision.new_epoch
-    case.metadata["reopened_from_event"] = event.previous_event_id.digest if event.previous_event_id else None
+    previous = event.previous_event_id
+    case.metadata["reopened_from_event"] = previous.digest if previous else None
     case.touch()
     return event
 
 
 __all__ = [
     "AUTHORITY_APPROVAL_SCHEMA_V1",
+    "CASE_AUTHORITY_SCHEMA_V1",
     "CASE_CLOSED",
     "CASE_FILED",
     "CASE_REOPENED",
@@ -1463,6 +1468,7 @@ __all__ = [
     "RESPONSE_CLASSIFICATION_ACCEPTED",
     "RESPONSE_DELTA_RECORDED",
     "AuthorityApproval",
+    "CaseAuthorityGrant",
     "CaseProductHardeningError",
     "ClosureAssessment",
     "ClosureBlocker",
@@ -1472,8 +1478,6 @@ __all__ = [
     "EpistemicLabel",
     "ExternalActionIdentity",
     "ExternalActionReceipt",
-    "ExternalActionRecord",
-    "ExternalActionRegistry",
     "ExternalActionState",
     "IdempotencyConflictError",
     "LegalEffectAssessment",
@@ -1487,7 +1491,10 @@ __all__ = [
     "TemporalLegalRule",
     "append_contract_event",
     "close_case_governed",
+    "record_legal_effect_assessment",
     "record_receipt_and_file_case",
+    "record_response_classification",
+    "record_response_delta",
     "reopen_case_governed",
     "verify_receipt_for_transition",
 ]
