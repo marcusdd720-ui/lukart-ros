@@ -479,6 +479,14 @@ class Case:
         return self.decisions[-1]
 
     def advance_to(self, status: CaseStatus) -> None:
+        if status is CaseStatus.FILED:
+            raise ValueError(
+                "Case filing requires an explicit governed filing contract"
+            )
+        if status is CaseStatus.CLOSED:
+            raise ValueError(
+                "Case closure requires an explicit governed closure contract"
+            )
         self.status = status
         self.touch()
 
