@@ -7,7 +7,9 @@ Scope: Repository-wide
 
 All contributors, coding agents, reviewers and automation MUST read and obey `docs/WORKING_PRINCIPLES.md`. It is the **single canonical living execution/trust standard**.
 
-This file MUST remain a thin repository-specific bridge. It MUST NOT duplicate the full operating standard. If this file appears to conflict with `docs/WORKING_PRINCIPLES.md`, an Accepted ADR, or an explicit safety/privacy invariant, stop the conflicting action, preserve the safer state and resolve the contradiction in the canonical source rather than creating another rule list.
+For private real-case work, agents MUST also read `docs/PRIVATE_CASE_OPERATING_STANDARD.md`. It is the single living **operator standard for private CASE handling**, subordinate to the engineering/trust authority above and to the CIRP/canonical architecture contracts it composes. It MUST NOT be treated as a second engineering standard or case-history truth store.
+
+This file MUST remain a thin repository-specific bridge. It MUST NOT duplicate the full operating standard. If this file appears to conflict with `docs/WORKING_PRINCIPLES.md`, `docs/PRIVATE_CASE_OPERATING_STANDARD.md`, an Accepted ADR, or an explicit safety/privacy invariant, stop the conflicting action, preserve the safer state and resolve the contradiction in the appropriate canonical source rather than creating another rule list.
 
 Memory, previous chats, summaries and previous agent output are non-authoritative for live repository state. Before substantive work, verify live `main`, current stage/PR, exact PR-head/candidate SHA and required CI. GitHub state wins when stale context differs.
 
@@ -23,6 +25,8 @@ Memory, previous chats, summaries and previous agent output are non-authoritativ
 ## Execution
 
 For accepted work, execute the no-stop lifecycle in `docs/WORKING_PRINCIPLES.md` end-to-end. A branch, commit, PR, partial PASS, running CI or repairable FAIL is not a stopping point.
+
+For private CASE work, do not jump directly from a user request for a letter/document to final rendering. Apply the private-case lifecycle and Hardcore Preflight in `docs/PRIVATE_CASE_OPERATING_STANDARD.md`; rendering remains downstream from evidence, procedure, strategy and filing-plan decisions.
 
 After any result-affecting change:
 1. create/use the fresh candidate SHA;

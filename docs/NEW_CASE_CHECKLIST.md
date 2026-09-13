@@ -1,94 +1,123 @@
-# New case checklist — CIRP entry (LUKART ROS)
+# New case checklist — private CASE / CIRP entry
 
-Use this checklist for every new real matter, every material new document and every event that can change procedural posture, deadline, remedy or filing strategy.
+Use this checklist for every new real matter, every material new document and every event that can change procedural posture, deadline, remedy, evidence state or filing strategy.
 
-The default operator path is CIRP. Engineering case-workspace registration is secondary and must not replace the procedural assessment.
+Primary operator authority: `docs/PRIVATE_CASE_OPERATING_STANDARD.md`.  
+CIRP Product contract: `docs/CASE_INTAKE_RESPONSE_PROTOCOL_V1.md`.  
+Canonical engineering/trust authority: `docs/WORKING_PRINCIPLES.md`.
 
-## 1. Privacy boundary
+This checklist is a thin execution aid. It does not replace the living operator standard.
 
-- [ ] Keep real documents, names, signatures, case numbers and sensitive evidence local-only.
+## 1. Privacy and scope
+
+- [ ] Create/use a separate CASE boundary; do not import facts from another CASE without explicit authorization/reference.
+- [ ] Keep real documents, names, signatures, case numbers and sensitive evidence private/local.
 - [ ] Public GitHub/CI may contain only approved code, documentation and synthetic/anonymized fixtures.
-- [ ] Do not copy raw private evidence into repository documentation, tests, branch names or commit messages.
+- [ ] State the decision need/problem and desired outcome before strategy or drafting.
 
-## 2. Intake identity
+## 2. Intake identity / inventory
 
-Before conclusions, establish or explicitly mark UNKNOWN:
+Before conclusions, establish or explicitly mark `UNKNOWN`:
 
-- [ ] document / event identity and source evidence;
-- [ ] document kind and subject;
-- [ ] issuer and recipient;
-- [ ] document date;
+- [ ] document/event identity and source evidence;
+- [ ] issuer/source and recipient;
+- [ ] document/event date;
 - [ ] case reference, if present;
 - [ ] requested action / operative content;
-- [ ] stated deadline, if the source states one;
+- [ ] stated deadline, if any;
 - [ ] date and method of receipt/service;
-- [ ] evidence of receipt/service (UPO, e-Doręczenie, envelope, acknowledgment or equivalent).
+- [ ] evidence of receipt/service;
+- [ ] stable evidence/document IDs;
+- [ ] source/provenance, original/copy status and SHA-256 where practical.
 
 A statement in a document is evidence of what the document says; it is not automatically a verified fact about the underlying matter.
 
-## 3. Mandatory CIRP assessment
+## 3. Evidence ceiling / epistemic state
 
-Run the evidence-bound sequence:
+- [ ] classify material propositions as `FACT`, `CLAIM`, `HYPOTHESIS`, `INTERPRETATION`, `UNKNOWN` or `UNRESOLVED`;
+- [ ] identify contradictions and competing accounts;
+- [ ] record what the current material cannot establish;
+- [ ] do not promote a claim to fact merely because it appears in an official/private document;
+- [ ] use `ABSTAIN` when safe conclusion is not supportable.
 
-`Document -> Procedural Posture -> Service/Receipt -> Deadline -> Remedy/Route -> Evidence Gaps -> Strategy -> Filing Topology -> Filing Plan -> Preflight -> Report -> Replay Verification`
+## 4. Mandatory CIRP/procedural assessment
 
-Create or derive, as applicable:
+Run the evidence-bound sequence appropriate to the matter:
 
-- [ ] `DocumentAssessment`;
-- [ ] `ProceduralAssessment`;
-- [ ] `ServiceAssessment`;
-- [ ] `DeadlineAssessment`;
-- [ ] remedy assessment / `RemedyOption` set;
-- [ ] `EvidenceRequirement` gap set;
-- [ ] `StrategyDecision`;
-- [ ] `FilingTopologyDecision`;
-- [ ] `FilingPlan` set;
-- [ ] `PreflightResult`;
-- [ ] `CIRPReport`;
-- [ ] CIRP replay manifest/comparison when replay verification is applicable.
+`Document/Event -> Procedural Posture -> Service/Receipt -> Deadline -> Remedy/Route -> Evidence Gaps -> Strategy -> Filing Topology -> Filing Plan -> Preflight -> Report -> Replay Verification`.
 
-## 4. Deadline guard — fail closed
+In operator terms this sits inside the larger private-CASE lifecycle in `docs/PRIVATE_CASE_OPERATING_STANDARD.md`.
+
+## 5. Deadline / current-law guard
 
 Never turn an estimate or model memory into a verified legal deadline.
 
-- [ ] verified trigger/service evidence exists, or status remains `MISSING_INPUT` / `PROVISIONAL`;
-- [ ] current/effective rule identity and legal-source identity exist, or status remains `UNKNOWN_RULE`;
-- [ ] conflicting service evidence remains `CONFLICTING_EVIDENCE`;
-- [ ] `safe_internal_deadline <= legal_deadline` whenever both exist;
-- [ ] expired/unknown deadlines remain explicit and cannot be hidden by narrative.
+- [ ] verified trigger/service evidence exists or status remains provisional/missing;
+- [ ] current/effective rule identity and authoritative legal source are verified;
+- [ ] conflicting service evidence remains explicit;
+- [ ] safe internal deadline does not exceed verified legal deadline;
+- [ ] expired/unknown deadlines remain visible;
+- [ ] material case law is correctly characterized and not overstated.
 
-## 5. Evidence and strategy
+## 6. Standing / authority / route
+
+- [ ] identify the party/pokrzywdzony/applicant and represented interest;
+- [ ] identify who may sign/act and on what authority;
+- [ ] distinguish competent/review authority, filing authority and filing route;
+- [ ] identify formal prerequisites, required copies and signature requirements;
+- [ ] unresolved standing/representation that affects validity blocks final filing.
+
+## 7. Evidence, remedy and strategy
 
 - [ ] distinguish deadline-critical, admissibility-critical, merits-critical, procedural, supporting and optional evidence;
 - [ ] identify which missing items block action now;
 - [ ] compare materially different safe options only when they can change the decision;
+- [ ] use multi-track strategy when appropriate;
 - [ ] recommendation identifies decisive evidence and decisive rules;
-- [ ] if more than one safe strategy remains, use `DECISION_REQUIRED` rather than inventing certainty;
-- [ ] if evidence/rules are insufficient, use `NEEDS_EVIDENCE`, `UNKNOWN_RULE`, `CONFLICTING_EVIDENCE`, `NO_SAFE_OPTION` or `ABSTAIN` as appropriate.
+- [ ] preserve `DECISION_REQUIRED`, `NEEDS_EVIDENCE`, `NO_SAFE_OPTION` or `ABSTAIN` instead of manufacturing certainty;
+- [ ] prefer the smallest procedurally safe filing set; one filing is an optimization, not a rule.
 
-## 6. Filing package
+## 8. Draft / Red Team / Hardcore Preflight
 
-Prefer the smallest procedurally safe filing set, not automatically one document.
+Do not render final DOCX/PDF before preflight.
 
-- [ ] one filing only when authority, route, timing and verified consolidation are compatible;
-- [ ] otherwise preserve multiple filings or `CONSOLIDATION_UNCERTAIN`;
-- [ ] semantic `FilingPlan` is complete before DOCX/PDF rendering;
-- [ ] requests, grounds, evidence mapping, rule mapping, attachments, signature/copies and delivery route are explicit;
-- [ ] every critical preflight check passes before `FILING_READY`;
-- [ ] `READY_TO_FILE` does not mean sent, delivered or legally effective.
+- [ ] Pass A legal/evidence draft exists;
+- [ ] Red Team checked unsupported facts, stale/wrong law, overstated precedent, standing, recipient/route, attachments, privacy and remedy competence;
+- [ ] fact/evidence mapping is complete for material assertions;
+- [ ] rule/legal-source mapping is complete for material legal requests;
+- [ ] required attachments/signatures/copies are present;
+- [ ] no critical `UNKNOWN/UNRESOLVED` is hidden;
+- [ ] all critical preflight checks PASS before `FILING_READY` / `SEND_READY`.
 
-## 7. Ask the operator only when genuinely blocking
+## 9. SEND READY / execution lifecycle
 
-Do not stop for information that can be derived safely from available evidence. Ask for the smallest missing fact/evidence that blocks a truthful next step, for example:
+- [ ] final artifact is professionally formatted and contains no internal/debug commentary or unused placeholders;
+- [ ] current date, sender/recipient, signature and attachments are correct;
+- [ ] state is explicit: `DRAFT -> PREFLIGHTED -> SEND_READY -> APPROVED -> SENT/FILED -> RECEIVED/DELIVERED -> RESPONDED -> ASSESSED -> CLOSED/ARCHIVED`;
+- [ ] remember: `PREPARED != SENT != RECEIVED != EFFECTIVE`;
+- [ ] receipt/proof of submission is stored;
+- [ ] response/follow-up deadline is recorded;
+- [ ] new response/event triggers delta analysis rather than silent rewrite.
 
-- effective receipt/service date;
-- missing source document or attachment;
-- unresolved authority/jurisdiction/procedural route;
-- evidence needed for admissibility or a material factual allegation;
-- a genuine business/legal choice between equally safe strategies.
+## 10. Ask the operator only when genuinely blocking
 
-## 8. Optional engineering workspace onboarding
+Do not stop for information that can be derived safely from authorized evidence. Ask only for the smallest missing item that blocks a truthful next step, e.g.:
 
-Only when the private matter is also being onboarded into the local LUKART runtime/workspace, use the existing case registry/workspace conventions. Do not create a second FactAgent/LawAgent, a parallel case truth store or case-specific export/pipeline architecture.
+- identity/standing/representation;
+- receipt/service evidence;
+- missing source document/attachment;
+- transaction evidence;
+- unresolved authority/route;
+- a real decision between materially different safe strategies.
 
-The authoritative CIRP contract is `docs/CASE_INTAKE_RESPONSE_PROTOCOL_V1.md`. The canonical engineering standard remains `docs/WORKING_PRINCIPLES.md`.
+## 11. Minimal user trigger
+
+New matter:
+
+`LUKART ROS — NEW CASE: <name>. CIRP REAL CASE RUN.`
+
+Existing matter:
+
+`LUKART ROS — CASE <name> — CONTINUE.`
+
+The user should not need to paste the full operating standard in every chat.
