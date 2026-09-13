@@ -1,8 +1,7 @@
 """Governed, fail-closed CASE product-hardening contracts.
 
 The module reuses :class:`CanonicalCaseLedger` as the only authoritative CASE
-history.  Operational helpers may coordinate execution, but material decisions
-and outcomes are recorded in the canonical ledger.
+history. Operational execution state is never a replacement for that ledger.
 """
 
 from __future__ import annotations
@@ -89,8 +88,6 @@ def _iso(value: datetime | None) -> str | None:
 
 @dataclass(frozen=True, slots=True)
 class EnterpriseEventEnvelope:
-    """Bitemporal, policy-bound payload inside the existing ledger event."""
-
     occurred_at: datetime
     recorded_at: datetime
     schema_version: str
@@ -360,6 +357,7 @@ class CaseAuthorityGrant:
         at: datetime | None = None,
     ) -> bool:
         moment = at or datetime.now(UTC)
+        _aware(moment, field_name="authorization check time")
         return (
             self.revoked_at is None
             and (self.expires_at is None or moment <= self.expires_at)
@@ -721,21 +719,20 @@ class ResponseDelta:
         lifecycle_candidates: Sequence[str] = (),
         validator_version: str = "response-delta.v1",
     ) -> ResponseDelta:
-        values = {
-            "case_id": case_id.value,
-            "base_ledger_position": base_ledger_position,
-            "base_state_digest": base_state_digest.canonical_dict(),
-            "response_digest": classification.response_digest.canonical_dict(),
-            "classification_digest": classification.classification_digest.canonical_dict(),
-            "assertions": [item.canonical_dict() for item in assertions],
-            "contradictions": list(contradictions),
-            "deadline_changes": list(deadline_changes),
-            "procedural_changes": list(procedural_changes),
-            "lifecycle_candidates": list(lifecycle_candidates),
-            "validator_version": validator_version,
-            "schema": RESPONSE_DELTA_SCHEMA_V1,
-            "schema_version": "1",
-        }
+        body = cls._body(
+            case_id=case_id,
+            base_ledger_position=base_ledger_position,
+            base_state_digest=base_state_digest,
+            response_digest=classification.response_digest,
+            classification_digest=classification.classification_digest,
+            assertions=tuple(assertions),
+            contradictions=tuple(contradictions),
+            deadline_changes=tuple(deadline_changes),
+            procedural_changes=tuple(procedural_changes),
+            lifecycle_candidates=tuple(lifecycle_candidates),
+            validator_version=validator_version,
+            schema_version="1",
+        )
         return cls(
             case_id=case_id,
             base_ledger_position=base_ledger_position,
@@ -748,25 +745,56 @@ class ResponseDelta:
             procedural_changes=tuple(procedural_changes),
             lifecycle_candidates=tuple(lifecycle_candidates),
             validator_version=validator_version,
-            delta_digest=ContentAddress.for_value(values),
+            delta_digest=ContentAddress.for_value(body),
         )
 
-    def canonical_body(self) -> dict[str, object]:
+    @staticmethod
+    def _body(
+        *,
+        case_id: CaseId,
+        base_ledger_position: int,
+        base_state_digest: ContentAddress,
+        response_digest: ContentAddress,
+        classification_digest: ContentAddress,
+        assertions: tuple[DeltaAssertion, ...],
+        contradictions: tuple[str, ...],
+        deadline_changes: tuple[str, ...],
+        procedural_changes: tuple[str, ...],
+        lifecycle_candidates: tuple[str, ...],
+        validator_version: str,
+        schema_version: str,
+    ) -> dict[str, object]:
         return {
-            "schema": self.schema,
-            "schema_version": self.schema_version,
-            "case_id": self.case_id.value,
-            "base_ledger_position": self.base_ledger_position,
-            "base_state_digest": self.base_state_digest.canonical_dict(),
-            "response_digest": self.response_digest.canonical_dict(),
-            "classification_digest": self.classification_digest.canonical_dict(),
-            "assertions": [item.canonical_dict() for item in self.assertions],
-            "contradictions": list(self.contradictions),
-            "deadline_changes": list(self.deadline_changes),
-            "procedural_changes": list(self.procedural_changes),
-            "lifecycle_candidates": list(self.lifecycle_candidates),
-            "validator_version": self.validator_version,
+            "schema": RESPONSE_DELTA_SCHEMA_V1,
+            "schema_version": schema_version,
+            "case_id": case_id.value,
+            "base_ledger_position": base_ledger_position,
+            "base_state_digest": base_state_digest.canonical_dict(),
+            "response_digest": response_digest.canonical_dict(),
+            "classification_digest": classification_digest.canonical_dict(),
+            "assertions": [item.canonical_dict() for item in assertions],
+            "contradictions": list(contradictions),
+            "deadline_changes": list(deadline_changes),
+            "procedural_changes": list(procedural_changes),
+            "lifecycle_candidates": list(lifecycle_candidates),
+            "validator_version": validator_version,
         }
+
+    def canonical_body(self) -> dict[str, object]:
+        return self._body(
+            case_id=self.case_id,
+            base_ledger_position=self.base_ledger_position,
+            base_state_digest=self.base_state_digest,
+            response_digest=self.response_digest,
+            classification_digest=self.classification_digest,
+            assertions=self.assertions,
+            contradictions=self.contradictions,
+            deadline_changes=self.deadline_changes,
+            procedural_changes=self.procedural_changes,
+            lifecycle_candidates=self.lifecycle_candidates,
+            validator_version=self.validator_version,
+            schema_version=self.schema_version,
+        )
 
     def canonical_dict(self) -> dict[str, object]:
         return {**self.canonical_body(), "delta_digest": self.delta_digest.canonical_dict()}
@@ -867,6 +895,34 @@ class LegalEffectAssessment:
                 )
         self.verify()
 
+    @staticmethod
+    def _body(
+        *,
+        case_id: CaseId,
+        subject_ref: str,
+        lifecycle_ref: str,
+        rule_digest: ContentAddress | None,
+        effect_status: LegalEffectStatus,
+        prerequisites: Mapping[str, bool | None],
+        evidence_refs: tuple[str, ...],
+        contradictions: tuple[str, ...],
+        assessed_on: date,
+        effective_at: datetime | None,
+    ) -> dict[str, object]:
+        return {
+            "schema": LEGAL_EFFECT_SCHEMA_V1,
+            "case_id": case_id.value,
+            "subject_ref": subject_ref,
+            "lifecycle_ref": lifecycle_ref,
+            "rule_digest": rule_digest.canonical_dict() if rule_digest else None,
+            "effect_status": effect_status.value,
+            "prerequisites": dict(prerequisites),
+            "evidence_refs": list(evidence_refs),
+            "contradictions": list(contradictions),
+            "assessed_on": assessed_on.isoformat(),
+            "effective_at": _iso(effective_at),
+        }
+
     @classmethod
     def assess(
         cls,
@@ -881,12 +937,18 @@ class LegalEffectAssessment:
         contradictions: Sequence[str] = (),
         effective_at: datetime | None = None,
     ) -> LegalEffectAssessment:
-        values = tuple(prerequisites.values())
+        normalized_prerequisites = _json_mapping(
+            prerequisites,
+            field_name="legal effect prerequisites",
+        )
+        values = tuple(normalized_prerequisites.values())
         if contradictions:
             status = LegalEffectStatus.UNRESOLVED
         elif rule is None or not rule.verified or not rule.valid_on(assessed_on):
             status = LegalEffectStatus.UNKNOWN
-        elif not prerequisites or any(value is None for value in values) or not evidence_refs:
+        elif not normalized_prerequisites or any(value is None for value in values):
+            status = LegalEffectStatus.UNKNOWN
+        elif not evidence_refs:
             status = LegalEffectStatus.UNKNOWN
         elif any(value is False for value in values):
             status = LegalEffectStatus.VERIFIED_NOT_EFFECTIVE
@@ -895,37 +957,47 @@ class LegalEffectAssessment:
         if status is not LegalEffectStatus.VERIFIED_EFFECTIVE:
             effective_at = None
         rule_digest = ContentAddress.for_value(rule.canonical_dict()) if rule else None
-        provisional = cls(
+        evidence_tuple = tuple(evidence_refs)
+        contradiction_tuple = tuple(contradictions)
+        body = cls._body(
             case_id=case_id,
             subject_ref=subject_ref,
             lifecycle_ref=lifecycle_ref,
             rule_digest=rule_digest,
             effect_status=status,
-            prerequisites=dict(prerequisites),
-            evidence_refs=tuple(evidence_refs),
-            contradictions=tuple(contradictions),
+            prerequisites=normalized_prerequisites,
+            evidence_refs=evidence_tuple,
+            contradictions=contradiction_tuple,
             assessed_on=assessed_on,
             effective_at=effective_at,
-            assessment_digest=ContentAddress.for_value({"pending": True}),
         )
-        digest = ContentAddress.for_value(provisional.canonical_body())
-        object.__setattr__(provisional, "assessment_digest", digest)
-        return provisional
+        return cls(
+            case_id=case_id,
+            subject_ref=subject_ref,
+            lifecycle_ref=lifecycle_ref,
+            rule_digest=rule_digest,
+            effect_status=status,
+            prerequisites=normalized_prerequisites,
+            evidence_refs=evidence_tuple,
+            contradictions=contradiction_tuple,
+            assessed_on=assessed_on,
+            effective_at=effective_at,
+            assessment_digest=ContentAddress.for_value(body),
+        )
 
     def canonical_body(self) -> dict[str, object]:
-        return {
-            "schema": self.schema,
-            "case_id": self.case_id.value,
-            "subject_ref": self.subject_ref,
-            "lifecycle_ref": self.lifecycle_ref,
-            "rule_digest": self.rule_digest.canonical_dict() if self.rule_digest else None,
-            "effect_status": self.effect_status.value,
-            "prerequisites": dict(self.prerequisites),
-            "evidence_refs": list(self.evidence_refs),
-            "contradictions": list(self.contradictions),
-            "assessed_on": self.assessed_on.isoformat(),
-            "effective_at": _iso(self.effective_at),
-        }
+        return self._body(
+            case_id=self.case_id,
+            subject_ref=self.subject_ref,
+            lifecycle_ref=self.lifecycle_ref,
+            rule_digest=self.rule_digest,
+            effect_status=self.effect_status,
+            prerequisites=self.prerequisites,
+            evidence_refs=self.evidence_refs,
+            contradictions=self.contradictions,
+            assessed_on=self.assessed_on,
+            effective_at=self.effective_at,
+        )
 
     def canonical_dict(self) -> dict[str, object]:
         return {
@@ -934,9 +1006,6 @@ class LegalEffectAssessment:
         }
 
     def verify(self) -> None:
-        pending = ContentAddress.for_value({"pending": True})
-        if self.assessment_digest == pending:
-            return
         if self.assessment_digest != ContentAddress.for_value(self.canonical_body()):
             raise CaseProductHardeningError(
                 "legal effect assessment content-address mismatch"
@@ -1005,19 +1074,18 @@ class ClosureAssessment:
     ) -> ClosureAssessment:
         moment = assessed_at or datetime.now(UTC)
         normalized = tuple(sorted(set(blockers), key=lambda item: item.value))
-        values: dict[str, object] = {
-            "schema": CLOSURE_ASSESSMENT_SCHEMA_V1,
-            "case_id": case_id.value,
-            "state_digest": state_digest.canonical_dict(),
-            "ledger_position": ledger_position,
-            "blockers": [item.value for item in normalized],
-            "closure_reason": closure_reason,
-            "actor_ref": actor_ref,
-            "authority_ref": authority_ref,
-            "policy_version": policy_version,
-            "lifecycle_epoch": lifecycle_epoch,
-            "assessed_at": moment.isoformat(),
-        }
+        body = cls._body(
+            case_id=case_id,
+            state_digest=state_digest,
+            ledger_position=ledger_position,
+            blockers=normalized,
+            closure_reason=closure_reason,
+            actor_ref=actor_ref,
+            authority_ref=authority_ref,
+            policy_version=policy_version,
+            lifecycle_epoch=lifecycle_epoch,
+            assessed_at=moment,
+        )
         return cls(
             case_id=case_id,
             state_digest=state_digest,
@@ -1029,23 +1097,50 @@ class ClosureAssessment:
             policy_version=policy_version,
             lifecycle_epoch=lifecycle_epoch,
             assessed_at=moment,
-            assessment_digest=ContentAddress.for_value(values),
+            assessment_digest=ContentAddress.for_value(body),
         )
 
-    def canonical_body(self) -> dict[str, object]:
+    @staticmethod
+    def _body(
+        *,
+        case_id: CaseId,
+        state_digest: ContentAddress,
+        ledger_position: int,
+        blockers: tuple[ClosureBlocker, ...],
+        closure_reason: str,
+        actor_ref: str,
+        authority_ref: str,
+        policy_version: str,
+        lifecycle_epoch: int,
+        assessed_at: datetime,
+    ) -> dict[str, object]:
         return {
-            "schema": self.schema,
-            "case_id": self.case_id.value,
-            "state_digest": self.state_digest.canonical_dict(),
-            "ledger_position": self.ledger_position,
-            "blockers": [item.value for item in self.blockers],
-            "closure_reason": self.closure_reason,
-            "actor_ref": self.actor_ref,
-            "authority_ref": self.authority_ref,
-            "policy_version": self.policy_version,
-            "lifecycle_epoch": self.lifecycle_epoch,
-            "assessed_at": self.assessed_at.isoformat(),
+            "schema": CLOSURE_ASSESSMENT_SCHEMA_V1,
+            "case_id": case_id.value,
+            "state_digest": state_digest.canonical_dict(),
+            "ledger_position": ledger_position,
+            "blockers": [item.value for item in blockers],
+            "closure_reason": closure_reason,
+            "actor_ref": actor_ref,
+            "authority_ref": authority_ref,
+            "policy_version": policy_version,
+            "lifecycle_epoch": lifecycle_epoch,
+            "assessed_at": assessed_at.isoformat(),
         }
+
+    def canonical_body(self) -> dict[str, object]:
+        return self._body(
+            case_id=self.case_id,
+            state_digest=self.state_digest,
+            ledger_position=self.ledger_position,
+            blockers=self.blockers,
+            closure_reason=self.closure_reason,
+            actor_ref=self.actor_ref,
+            authority_ref=self.authority_ref,
+            policy_version=self.policy_version,
+            lifecycle_epoch=self.lifecycle_epoch,
+            assessed_at=self.assessed_at,
+        )
 
     def canonical_dict(self) -> dict[str, object]:
         return {
@@ -1106,16 +1201,15 @@ class ReopenDecision:
         if previous_epoch < 0:
             raise CaseProductHardeningError("previous lifecycle epoch cannot be negative")
         moment = decided_at or datetime.now(UTC)
-        values: dict[str, object] = {
-            "schema": REOPEN_DECISION_SCHEMA_V1,
-            "case_id": case_id.value,
-            "previous_epoch": previous_epoch,
-            "new_epoch": previous_epoch + 1,
-            "reason": reason,
-            "actor_ref": actor_ref,
-            "authority_ref": authority_ref,
-            "decided_at": moment.isoformat(),
-        }
+        body = cls._body(
+            case_id=case_id,
+            previous_epoch=previous_epoch,
+            new_epoch=previous_epoch + 1,
+            reason=reason,
+            actor_ref=actor_ref,
+            authority_ref=authority_ref,
+            decided_at=moment,
+        )
         return cls(
             case_id=case_id,
             previous_epoch=previous_epoch,
@@ -1124,20 +1218,41 @@ class ReopenDecision:
             actor_ref=actor_ref,
             authority_ref=authority_ref,
             decided_at=moment,
-            decision_digest=ContentAddress.for_value(values),
+            decision_digest=ContentAddress.for_value(body),
         )
 
-    def canonical_body(self) -> dict[str, object]:
+    @staticmethod
+    def _body(
+        *,
+        case_id: CaseId,
+        previous_epoch: int,
+        new_epoch: int,
+        reason: str,
+        actor_ref: str,
+        authority_ref: str,
+        decided_at: datetime,
+    ) -> dict[str, object]:
         return {
-            "schema": self.schema,
-            "case_id": self.case_id.value,
-            "previous_epoch": self.previous_epoch,
-            "new_epoch": self.new_epoch,
-            "reason": self.reason,
-            "actor_ref": self.actor_ref,
-            "authority_ref": self.authority_ref,
-            "decided_at": self.decided_at.isoformat(),
+            "schema": REOPEN_DECISION_SCHEMA_V1,
+            "case_id": case_id.value,
+            "previous_epoch": previous_epoch,
+            "new_epoch": new_epoch,
+            "reason": reason,
+            "actor_ref": actor_ref,
+            "authority_ref": authority_ref,
+            "decided_at": decided_at.isoformat(),
         }
+
+    def canonical_body(self) -> dict[str, object]:
+        return self._body(
+            case_id=self.case_id,
+            previous_epoch=self.previous_epoch,
+            new_epoch=self.new_epoch,
+            reason=self.reason,
+            actor_ref=self.actor_ref,
+            authority_ref=self.authority_ref,
+            decided_at=self.decided_at,
+        )
 
     def canonical_dict(self) -> dict[str, object]:
         return {
