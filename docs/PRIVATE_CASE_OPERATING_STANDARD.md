@@ -1,6 +1,6 @@
 # LUKART ROS — Private Case Operating Standard
 
-Version: **1.0.0**  
+Version: **1.0.1**  
 Status: **ACTIVE OPERATOR STANDARD**  
 Effective: **2026-09-13**  
 Scope: **all private real-world CASE work**
@@ -102,6 +102,8 @@ Use explicit categories:
 - `ABSTAIN` — safe conclusion cannot be produced.
 
 **No Evidence → No Fact.** A document proves that the document contains a statement; it does not automatically prove the underlying statement is true.
+
+A direct user, client, party or witness statement is evidence that the statement was made, but it does **not** by itself convert the underlying proposition into `FACT`. Unless independently corroborated or otherwise adequately established under the applicable evidence model, classify the underlying proposition as `CLAIM`. Example: `FACT: the user stated X`; `CLAIM: X occurred/is true`. The same rule applies during `CONTINUE` delta analysis: new user-supplied information enters as a new claim/source statement unless the new material independently supports the underlying proposition.
 
 ### G3 — Timeline / contradiction / deadline
 
