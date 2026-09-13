@@ -591,12 +591,14 @@ def advance_state(state: dict[str, object], step_number: int) -> None:
 
 def apply_current_step(root: Path, state_path: Path) -> GateDecision:
     state = load_state(state_path)
-    if state.get("status") == "COMPLETE":
-        return GateDecision(True, "PROGRAM_COMPLETE", "all 20 steps are complete")
     current = state.get("current_step")
     if not isinstance(current, int):
         raise ProductionValidationError("current_step must be an integer")
-    decision = evaluate_step(root, current)
+    was_complete = state.get("status") == "COMPLETE"
+    if was_complete:
+        decision = evaluate_release_candidate(root)
+    else:
+        decision = evaluate_step(root, current)
     if decision.passed:
         if current == 1:
             freeze_extraction_corpus(root)
@@ -609,6 +611,12 @@ def apply_current_step(root: Path, state_path: Path) -> GateDecision:
         state["block_code"] = decision.code
         state["block_reason"] = decision.reason
     write_state(state_path, state)
+    if was_complete and decision.passed:
+        return GateDecision(
+            True,
+            "PROGRAM_COMPLETE",
+            "all 20 steps are complete and the live evidence chain was revalidated",
+        )
     return decision
 
 
