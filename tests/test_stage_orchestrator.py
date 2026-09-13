@@ -45,7 +45,7 @@ def test_state_rejects_inconsistent_stage_order(tmp_path: Path) -> None:
         raise AssertionError("invalid lifecycle state was accepted")
 
 
-def test_orchestrator_check_runs_read_only_on_pr_and_main_while_main_keeps_write_authority() -> None:
+def test_orchestrator_readonly_check_runs_on_pr_and_main() -> None:
     workflow = Path(".github/workflows/stage-orchestrator.yml").read_text(encoding="utf-8")
 
     assert "pull_request:" in workflow
