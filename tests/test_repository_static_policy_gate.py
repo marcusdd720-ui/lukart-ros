@@ -139,6 +139,44 @@ def test_accepts_pull_request_write_for_closure_preparation() -> None:
     assert evidence["job_writes"] == ["prepare-closure-pr:pull-requests"]
 
 
+def test_accepts_orchestrator_actions_and_contents_write_for_same_job_consumer() -> None:
+    workflow = {
+        "permissions": {"contents": "read"},
+        "jobs": {
+            "orchestrate-main": {
+                "permissions": {"actions": "write", "contents": "write"},
+                "steps": [
+                    {
+                        "run": (
+                            "uv run --frozen --extra dev python -m "
+                            "factory.stage_orchestrator --stage \"${STAGE_INPUT}\""
+                        )
+                    }
+                ],
+            }
+        },
+    }
+    evidence = validate_workflow_permissions(".github/workflows/stage-orchestrator.yml", workflow)
+    assert evidence["job_writes"] == [
+        "orchestrate-main:actions",
+        "orchestrate-main:contents",
+    ]
+
+
+def test_rejects_actions_write_without_orchestrator_invocation() -> None:
+    workflow = {
+        "permissions": {"contents": "read"},
+        "jobs": {
+            "unsafe": {
+                "permissions": {"actions": "write", "contents": "read"},
+                "steps": [{"run": "echo factory.stage_orchestrator"}],
+            }
+        },
+    }
+    with pytest.raises(RuntimeError, match="same-job consumer"):
+        validate_workflow_permissions(".github/workflows/unsafe.yml", workflow)
+
+
 def test_codeowners_wildcard_covers_canonical_critical_surface() -> None:
     evidence = validate_codeowners_coverage(
         ["core/case_ledger.py", "config/**", ".github/workflows/**"],
