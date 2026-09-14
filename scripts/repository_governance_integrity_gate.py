@@ -114,6 +114,33 @@ def validate_bypass_governance(
     return snapshot_bypass
 
 
+def validate_signed_commit_enforcement_guard(
+    detail: Mapping[str, object],
+    candidate_commit: Mapping[str, object],
+) -> dict[str, object]:
+    rules = _list(detail.get("rules"), label="ruleset.rules")
+    signatures_enforced = any(
+        _mapping(item, label=f"rules[{index}]").get("type") == "required_signatures"
+        for index, item in enumerate(rules)
+    )
+    commit = _mapping(candidate_commit.get("commit"), label="candidate_commit.commit")
+    verification = _mapping(commit.get("verification"), label="candidate_commit.verification")
+    verified = verification.get("verified")
+    reason = verification.get("reason")
+    if not isinstance(verified, bool):
+        raise RuntimeError("governance visibility unknown: candidate commit verification missing")
+    if signatures_enforced and not verified:
+        raise RuntimeError(
+            "premature signing enforcement: required_signatures is active while the "
+            f"candidate commit is not verified (reason={reason!r})"
+        )
+    return {
+        "required_signatures_enforced": signatures_enforced,
+        "candidate_commit_verified": verified,
+        "candidate_commit_verification_reason": reason,
+    }
+
+
 def validate_review_governance(
     policy: Mapping[str, object],
     detail: Mapping[str, object],
@@ -250,6 +277,11 @@ def build_evidence(candidate_sha: str) -> dict[str, object]:
     if detail.get("enforcement") != "active":
         raise RuntimeError("governance drift: ruleset is not active")
     bypass = validate_bypass_governance(h2, detail, ruleset_id=ruleset_id)
+    candidate_commit = _mapping(
+        _github_json(f"{API_ROOT}/{repository}/commits/{candidate_sha}", token=token),
+        label="candidate commit",
+    )
+    signing_evidence = validate_signed_commit_enforcement_guard(detail, candidate_commit)
     review_evidence = validate_review_governance(policy, detail)
     repository_merge_evidence = validate_repository_merge_settings(policy, repository_detail)
     return {
@@ -257,6 +289,7 @@ def build_evidence(candidate_sha: str) -> dict[str, object]:
         "candidate_sha": candidate_sha,
         "ruleset_id": ruleset_id,
         "bypass_actors": bypass,
+        "signing_enforcement": signing_evidence,
         "review_rule": review_evidence,
         "repository_merge_settings": repository_merge_evidence,
         "state": "CONTROL_PASS",
