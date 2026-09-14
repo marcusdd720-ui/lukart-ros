@@ -250,7 +250,17 @@ def validate_exact_critical_paths(root: Path, critical_paths: list[str]) -> list
     verified: list[str] = []
     for raw in critical_paths:
         pattern = raw.lstrip("/")
-        if any(char in pattern for char in _GLOB_META):
+        if pattern.endswith("/**"):
+            base = root / pattern[:-3].rstrip("/")
+            if not base.is_dir():
+                raise RuntimeError(
+                    f"critical-path existence drift: subtree critical artifact {raw!r} is missing"
+                )
+            if not any(item.is_file() for item in base.rglob("*")):
+                raise RuntimeError(
+                    f"critical-path existence drift: subtree critical artifact {raw!r} has no files"
+                )
+        elif any(char in pattern for char in _GLOB_META):
             matches = [path for path in root.glob(pattern) if path.is_file()]
             if not matches:
                 raise RuntimeError(

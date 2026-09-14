@@ -221,7 +221,17 @@ def test_classifies_critical_and_ordinary_changes() -> None:
 
 def test_exact_critical_path_must_exist(tmp_path: Path) -> None:
     (tmp_path / "SECURITY.md").write_text("policy\n", encoding="utf-8")
-    assert validate_exact_critical_paths(tmp_path, ["SECURITY.md"]) == ["SECURITY.md"]
+    subtree = tmp_path / "core" / "case_ledger"
+    subtree.mkdir(parents=True)
+    (subtree / "entry.py").write_text("pass\n", encoding="utf-8")
+    assert validate_exact_critical_paths(
+        tmp_path,
+        ["SECURITY.md", "core/case_ledger/**"],
+    ) == ["SECURITY.md", "core/case_ledger/**"]
+    empty = tmp_path / "empty"
+    empty.mkdir()
+    with pytest.raises(RuntimeError, match="no files"):
+        validate_exact_critical_paths(tmp_path, ["empty/**"])
     with pytest.raises(RuntimeError, match="missing"):
         validate_exact_critical_paths(tmp_path, ["docs/REPOSITORY_GOVERNANCE.md"])
 
