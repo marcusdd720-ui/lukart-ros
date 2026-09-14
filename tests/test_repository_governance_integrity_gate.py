@@ -4,6 +4,7 @@ import pytest
 
 from scripts.repository_governance_integrity_gate import (
     validate_bypass_governance,
+    validate_repository_merge_settings,
     validate_review_governance,
 )
 
@@ -129,3 +130,23 @@ def test_rejects_stale_privileged_bypass_snapshot() -> None:
     detail = {"updated_at": "new"}
     with pytest.raises(RuntimeError, match="SNAPSHOT_STALE"):
         validate_bypass_governance(h2, detail, ruleset_id=22352216)
+
+
+def test_accepts_repository_merge_settings_from_canonical_policy() -> None:
+    repository = {
+        "allow_merge_commit": True,
+        "allow_squash_merge": False,
+        "allow_rebase_merge": False,
+    }
+    evidence = validate_repository_merge_settings(_policy(), repository)
+    assert evidence == repository
+
+
+def test_rejects_repository_merge_settings_broader_than_policy() -> None:
+    repository = {
+        "allow_merge_commit": True,
+        "allow_squash_merge": True,
+        "allow_rebase_merge": False,
+    }
+    with pytest.raises(RuntimeError, match="allow_squash_merge"):
+        validate_repository_merge_settings(_policy(), repository)

@@ -181,6 +181,43 @@ def validate_review_governance(
     }
 
 
+def validate_repository_merge_settings(
+    policy: Mapping[str, object],
+    repository_detail: Mapping[str, object],
+) -> dict[str, bool]:
+    h2 = _mapping(policy.get("h2_repository_policy"), label="h2_repository_policy")
+    expected = _mapping(h2.get("pull_request_rule"), label="h2.pull_request_rule")
+    allowed = expected.get("allowed_merge_methods")
+    if not isinstance(allowed, list) or not allowed or any(not isinstance(x, str) for x in allowed):
+        raise RuntimeError(
+            "governance policy conflict: allowed_merge_methods must be a non-empty string list"
+        )
+    supported = {
+        "merge": "allow_merge_commit",
+        "squash": "allow_squash_merge",
+        "rebase": "allow_rebase_merge",
+    }
+    unknown = sorted(set(cast(list[str], allowed)) - set(supported))
+    if unknown:
+        raise RuntimeError(
+            f"governance policy conflict: unsupported merge methods {unknown!r}"
+        )
+
+    evidence: dict[str, bool] = {}
+    for method, field in supported.items():
+        expected_enabled = method in allowed
+        actual = repository_detail.get(field)
+        if not isinstance(actual, bool):
+            raise RuntimeError(f"governance visibility unknown: repository setting {field} missing")
+        if actual is not expected_enabled:
+            raise RuntimeError(
+                "governance drift: repository merge setting "
+                f"{field} actual={actual!r} expected={expected_enabled!r}"
+            )
+        evidence[field] = actual
+    return evidence
+
+
 def build_evidence(candidate_sha: str) -> dict[str, object]:
     head = _git("rev-parse", "HEAD")
     if head != candidate_sha:
@@ -196,6 +233,10 @@ def build_evidence(candidate_sha: str) -> dict[str, object]:
     if not repository or not ruleset_name or not target:
         raise RuntimeError("governance policy identity is incomplete")
     token = os.environ.get("GITHUB_TOKEN") or os.environ.get("GH_TOKEN")
+    repository_detail = _mapping(
+        _github_json(f"{API_ROOT}/{repository}", token=token),
+        label="repository detail",
+    )
     inventory = _github_json(f"{API_ROOT}/{repository}/rulesets", token=token)
     rulesets = _list(inventory, label="rulesets")
     summary = _find_ruleset(rulesets, name=ruleset_name, target=target)
@@ -210,12 +251,14 @@ def build_evidence(candidate_sha: str) -> dict[str, object]:
         raise RuntimeError("governance drift: ruleset is not active")
     bypass = validate_bypass_governance(h2, detail, ruleset_id=ruleset_id)
     review_evidence = validate_review_governance(policy, detail)
+    repository_merge_evidence = validate_repository_merge_settings(policy, repository_detail)
     return {
         "schema": "lukart.repository-governance-integrity.v1",
         "candidate_sha": candidate_sha,
         "ruleset_id": ruleset_id,
         "bypass_actors": bypass,
         "review_rule": review_evidence,
+        "repository_merge_settings": repository_merge_evidence,
         "state": "CONTROL_PASS",
     }
 
