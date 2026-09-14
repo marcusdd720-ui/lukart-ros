@@ -7,7 +7,7 @@ import os
 import subprocess
 import urllib.error
 import urllib.request
-from collections.abc import Mapping
+from collections.abc import Mapping, Sequence
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import cast
@@ -247,8 +247,14 @@ def classify_change(
     return "ordinary"
 
 
+def _int_or_zero(value: object) -> int:
+    if isinstance(value, int) and not isinstance(value, bool):
+        return value
+    return 0
+
+
 def validate_technical_checks(
-    check_runs: list[object],
+    check_runs: Sequence[object],
     *,
     required_contexts: list[str],
     self_context: str,
@@ -265,11 +271,11 @@ def validate_technical_checks(
         previous = latest.get(name)
         current_key = (
             str(check.get("started_at") or ""),
-            int(check.get("id") or 0),
+            _int_or_zero(check.get("id")),
         )
         previous_key = (
             str(previous.get("started_at") or ""),
-            int(previous.get("id") or 0),
+            _int_or_zero(previous.get("id")),
         ) if previous is not None else ("", 0)
         if previous is None or current_key > previous_key:
             latest[name] = check

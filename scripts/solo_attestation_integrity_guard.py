@@ -7,10 +7,7 @@ from collections.abc import Mapping
 from pathlib import Path
 from typing import cast
 
-if __package__:
-    from . import solo_maintainer_governance_gate as solo
-else:
-    import solo_maintainer_governance_gate as solo
+import scripts.solo_maintainer_governance_gate as solo
 
 ROOT = Path(__file__).resolve().parents[1]
 POLICY_PATH = ROOT / "config" / "enterprise_v1.json"

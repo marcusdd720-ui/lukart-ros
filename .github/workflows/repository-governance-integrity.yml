@@ -122,4 +122,4 @@ jobs:
       - name: Live mode-aware repository governance gate
         env:
           GITHUB_TOKEN: ${{ github.token }}
-        run: python scripts/repository_governance_mode_gate.py --candidate-sha "${CANDIDATE_SHA}"
+        run: python -m scripts.repository_governance_mode_gate --candidate-sha "${CANDIDATE_SHA}"

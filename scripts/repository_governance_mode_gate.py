@@ -7,10 +7,7 @@ from collections.abc import Mapping
 from pathlib import Path
 from typing import cast
 
-if __package__:
-    from . import repository_governance_integrity_gate as legacy
-else:
-    import repository_governance_integrity_gate as legacy
+import scripts.repository_governance_integrity_gate as legacy
 
 ROOT = Path(__file__).resolve().parents[1]
 POLICY_PATH = ROOT / "config" / "enterprise_v1.json"
