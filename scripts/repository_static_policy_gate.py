@@ -11,6 +11,8 @@ from typing import cast
 
 import yaml
 
+from core.enterprise.supply_chain import audit_workflow_action_pins
+
 ROOT = Path(__file__).resolve().parents[1]
 POLICY_PATH = ROOT / "config" / "enterprise_v1.json"
 WORKFLOWS_DIR = ROOT / ".github" / "workflows"
@@ -170,6 +172,21 @@ def audit_workflow_permissions(root: Path = ROOT) -> dict[str, object]:
     return {"scanned": len(paths), "workflows": evidence}
 
 
+def validate_workflow_action_pins(root: Path = ROOT) -> dict[str, object]:
+    report = audit_workflow_action_pins(root)
+    if not report.passed:
+        rendered = [
+            f"{finding.path}: {finding.reference} — {finding.reason}"
+            for finding in report.findings
+        ]
+        raise RuntimeError("workflow action pin drift: " + "; ".join(rendered))
+    return {
+        "scanned_files": report.scanned_files,
+        "external_action_references": report.external_action_references,
+        "findings": [],
+    }
+
+
 def _codeowners_entries(text: str) -> list[tuple[str, tuple[str, ...]]]:
     entries: list[tuple[str, tuple[str, ...]]] = []
     for line_number, raw_line in enumerate(text.splitlines(), start=1):
@@ -284,6 +301,7 @@ def build_static_evidence(candidate_sha: str, *, root: Path = ROOT) -> dict[str,
     critical_paths = cast(list[str], raw_critical_paths)
 
     permission_evidence = audit_workflow_permissions(root)
+    action_pin_evidence = validate_workflow_action_pins(root)
     codeowners_evidence = validate_codeowners_coverage(
         critical_paths,
         (root / ".github" / "CODEOWNERS").read_text(encoding="utf-8"),
@@ -302,6 +320,7 @@ def build_static_evidence(candidate_sha: str, *, root: Path = ROOT) -> dict[str,
         "schema": "lukart.repository-static-governance.v1",
         "candidate_sha": candidate_sha,
         "workflow_permissions": permission_evidence,
+        "workflow_action_pins": action_pin_evidence,
         "codeowners": codeowners_evidence,
         "required_check_matrix": matrix_evidence,
         "periodic_drift_monitor": schedule_evidence,
