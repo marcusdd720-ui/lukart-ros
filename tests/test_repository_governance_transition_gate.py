@@ -170,7 +170,11 @@ def test_check_graph_accepts_technical_plus_solo_final_shape() -> None:
 
 def test_check_graph_rejects_solo_self_dependency() -> None:
     h2 = _h2("SOLO_ARMED")
-    h2["check_dependencies"]["solo-governance"].append("solo-governance")  # type: ignore[index]
+    dependencies = h2["check_dependencies"]
+    assert isinstance(dependencies, dict)
+    solo_dependencies = dependencies["solo-governance"]
+    assert isinstance(solo_dependencies, list)
+    solo_dependencies.append("solo-governance")
     with pytest.raises(RuntimeError, match="self dependency"):
         validate_check_dependency_graph(h2)
 
