@@ -1,0 +1,67 @@
+{
+  "schema": "lukart.solo-maintainer-cutover.v1",
+  "authoritative": false,
+  "state": "DORMANT_PRE_CUTOVER",
+  "repository": "marcusdd720-ui/lukart-ros",
+  "default_branch": "main",
+  "maintainer_id": "marcusdd720-ui",
+  "independent_external_review": "NOT_PERFORMED",
+  "attestation": {
+    "marker": "LUKART-SOLO-MAINTAINER-ATTESTATION-V1",
+    "decision": "ACCEPT",
+    "revocation_decision": "REVOKE",
+    "must_bind_current_head": true,
+    "must_follow_terminal_technical_success": true,
+    "author_association": "OWNER"
+  },
+  "cooldown_seconds": {
+    "ordinary": 0,
+    "critical": 7200,
+    "governance": 86400
+  },
+  "target_pull_request_rule": {
+    "minimum_approving_review_count": 0,
+    "dismiss_stale_reviews_on_push": true,
+    "require_code_owner_review": false,
+    "require_last_push_approval": false,
+    "required_review_thread_resolution": true,
+    "require_extra_approval_for_unattributed_changes": false,
+    "allowed_merge_methods": [
+      "merge"
+    ]
+  },
+  "required_solo_check": {
+    "context": "solo-governance",
+    "integration_id": 15368,
+    "workflow": ".github/workflows/solo-maintainer-governance.yml",
+    "job_id": "solo-governance"
+  },
+  "governance_paths": [
+    "config/**",
+    ".github/CODEOWNERS",
+    ".github/workflows/**",
+    "scripts/repository_governance_integrity_gate.py",
+    "scripts/repository_static_policy_gate.py",
+    "scripts/solo_maintainer_governance_gate.py",
+    "tests/test_repository_governance_integrity_gate.py",
+    "tests/test_repository_static_policy_gate.py",
+    "tests/test_solo_maintainer_governance_gate.py",
+    "docs/REPOSITORY_GOVERNANCE.md",
+    "docs/WORKING_PRINCIPLES.md"
+  ],
+  "governance_support_paths": [
+    "config/**",
+    ".github/CODEOWNERS",
+    ".github/workflows/**",
+    "scripts/repository_governance_integrity_gate.py",
+    "scripts/repository_static_policy_gate.py",
+    "scripts/solo_maintainer_governance_gate.py",
+    "tests/test_repository_governance_integrity_gate.py",
+    "tests/test_repository_static_policy_gate.py",
+    "tests/test_solo_maintainer_governance_gate.py",
+    "docs/REPOSITORY_GOVERNANCE.md",
+    "docs/WORKING_PRINCIPLES.md",
+    "SECURITY.md",
+    "MASTER_PLAN.md"
+  ]
+}
