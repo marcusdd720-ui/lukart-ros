@@ -6,7 +6,6 @@ import json
 import os
 import subprocess
 import urllib.error
-import urllib.parse
 import urllib.request
 from collections.abc import Mapping
 from datetime import datetime, timedelta, timezone
