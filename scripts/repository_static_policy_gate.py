@@ -6,7 +6,7 @@ import json
 import re
 import subprocess
 from collections.abc import Mapping
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 from typing import cast
 
 import yaml
@@ -36,12 +36,12 @@ def _git(*args: str) -> str:
     return completed.stdout.strip()
 
 
-def _workflow_document(path: Path) -> Mapping[str, object]:
+def _workflow_document(path: Path, *, root: Path = ROOT) -> Mapping[str, object]:
     try:
         payload = yaml.safe_load(path.read_text(encoding="utf-8"))
     except (OSError, yaml.YAMLError) as exc:
-        raise RuntimeError(f"workflow parse failed: {path.relative_to(ROOT)}: {exc}") from exc
-    return _mapping(payload, label=f"workflow {path.relative_to(ROOT)}")
+        raise RuntimeError(f"workflow parse failed: {path.relative_to(root)}: {exc}") from exc
+    return _mapping(payload, label=f"workflow {path.relative_to(root)}")
 
 
 def _step_uses(job: Mapping[str, object]) -> tuple[str, ...]:
@@ -168,7 +168,7 @@ def audit_workflow_permissions(root: Path = ROOT) -> dict[str, object]:
     evidence: list[dict[str, object]] = []
     for path in paths:
         relative = path.relative_to(root).as_posix()
-        evidence.append(validate_workflow_permissions(relative, _workflow_document(path)))
+        evidence.append(validate_workflow_permissions(relative, _workflow_document(path, root=root)))
     return {"scanned": len(paths), "workflows": evidence}
 
 
@@ -287,6 +287,70 @@ def validate_required_check_matrix(
     return {"python_versions": normalized_versions, "contexts": sorted(expected)}
 
 
+def validate_required_check_bindings(
+    policy: Mapping[str, object],
+    *,
+    root: Path = ROOT,
+) -> dict[str, object]:
+    h2 = _mapping(policy.get("h2_repository_policy"), label="h2_repository_policy")
+    raw_checks = h2.get("required_checks")
+    if not isinstance(raw_checks, list) or not raw_checks:
+        raise RuntimeError("h2.required_checks must be a non-empty list")
+
+    seen_contexts: set[str] = set()
+    bindings: list[dict[str, object]] = []
+    for index, raw_check in enumerate(raw_checks):
+        check = _mapping(raw_check, label=f"h2.required_checks[{index}]")
+        context = check.get("context")
+        workflow = check.get("workflow")
+        job_id = check.get("job_id")
+        integration_id = check.get("integration_id")
+        if not isinstance(context, str) or not context:
+            raise RuntimeError(f"required-check binding drift: context missing at index {index}")
+        if context in seen_contexts:
+            raise RuntimeError(f"required-check binding drift: duplicate context {context!r}")
+        seen_contexts.add(context)
+        if not isinstance(workflow, str) or not workflow or "\\" in workflow:
+            raise RuntimeError(f"required-check binding drift: invalid workflow for {context!r}")
+        workflow_path = PurePosixPath(workflow)
+        if (
+            workflow_path.is_absolute()
+            or ".." in workflow_path.parts
+            or tuple(workflow_path.parts[:2]) != (".github", "workflows")
+        ):
+            raise RuntimeError(
+                f"required-check binding drift: workflow path escapes policy surface: {workflow!r}"
+            )
+        if not isinstance(job_id, str) or not job_id:
+            raise RuntimeError(f"required-check binding drift: job_id missing for {context!r}")
+        if not isinstance(integration_id, int) or isinstance(integration_id, bool) or integration_id <= 0:
+            raise RuntimeError(f"required-check binding drift: invalid integration_id for {context!r}")
+
+        absolute = root.joinpath(*workflow_path.parts)
+        if not absolute.is_file():
+            raise RuntimeError(
+                f"required-check binding drift: workflow {workflow!r} for {context!r} is missing"
+            )
+        document = _workflow_document(absolute, root=root)
+        jobs = _mapping(document.get("jobs"), label=f"{workflow}.jobs")
+        if job_id not in jobs:
+            raise RuntimeError(
+                f"required-check binding drift: job {job_id!r} missing from {workflow!r} "
+                f"for context {context!r}"
+            )
+        _mapping(jobs.get(job_id), label=f"{workflow}.jobs.{job_id}")
+        bindings.append(
+            {
+                "context": context,
+                "workflow": workflow,
+                "job_id": job_id,
+                "integration_id": integration_id,
+            }
+        )
+
+    return {"count": len(bindings), "bindings": bindings}
+
+
 def validate_periodic_drift_schedule(workflow_text: str) -> dict[str, str]:
     if not re.search(r"(?m)^\s{2}schedule:\s*$", workflow_text):
         raise RuntimeError("governance drift monitor: scheduled trigger is missing")
@@ -323,9 +387,10 @@ def build_static_evidence(candidate_sha: str, *, root: Path = ROOT) -> dict[str,
         critical_paths,
         (root / ".github" / "CODEOWNERS").read_text(encoding="utf-8"),
     )
+    binding_evidence = validate_required_check_bindings(policy, root=root)
     matrix_evidence = validate_required_check_matrix(
         policy,
-        _workflow_document(root / ".github" / "workflows" / "ci.yml"),
+        _workflow_document(root / ".github" / "workflows" / "ci.yml", root=root),
     )
     schedule_evidence = validate_periodic_drift_schedule(
         (root / ".github" / "workflows" / "repository-governance-integrity.yml").read_text(
@@ -339,6 +404,7 @@ def build_static_evidence(candidate_sha: str, *, root: Path = ROOT) -> dict[str,
         "workflow_permissions": permission_evidence,
         "workflow_action_pins": action_pin_evidence,
         "codeowners": codeowners_evidence,
+        "required_check_bindings": binding_evidence,
         "required_check_matrix": matrix_evidence,
         "periodic_drift_monitor": schedule_evidence,
         "state": "CONTROL_PASS",

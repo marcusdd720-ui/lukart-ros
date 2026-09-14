@@ -8,6 +8,7 @@ import pytest
 from scripts.repository_static_policy_gate import (
     validate_codeowners_coverage,
     validate_periodic_drift_schedule,
+    validate_required_check_bindings,
     validate_required_check_matrix,
     validate_workflow_action_pins,
     validate_workflow_permissions,
@@ -254,6 +255,59 @@ def _ci(versions: list[str]) -> dict[str, object]:
             }
         }
     }
+
+
+def _binding_policy(checks: list[dict[str, object]]) -> dict[str, object]:
+    return {"h2_repository_policy": {"required_checks": checks}}
+
+
+def _binding(
+    *,
+    context: str = "gate",
+    workflow: str = ".github/workflows/test.yml",
+    job_id: str = "gate",
+) -> dict[str, object]:
+    return {
+        "context": context,
+        "integration_id": 15368,
+        "workflow": workflow,
+        "job_id": job_id,
+    }
+
+
+def test_required_check_binding_accepts_existing_workflow_and_job(tmp_path: Path) -> None:
+    _write_workflow(tmp_path, "jobs:\n  gate:\n    steps: []\n")
+    evidence = validate_required_check_bindings(
+        _binding_policy([_binding()]),
+        root=tmp_path,
+    )
+    assert evidence["count"] == 1
+
+
+def test_required_check_binding_rejects_missing_job(tmp_path: Path) -> None:
+    _write_workflow(tmp_path, "jobs:\n  other:\n    steps: []\n")
+    with pytest.raises(RuntimeError, match="job 'gate' missing"):
+        validate_required_check_bindings(
+            _binding_policy([_binding()]),
+            root=tmp_path,
+        )
+
+
+def test_required_check_binding_rejects_duplicate_context(tmp_path: Path) -> None:
+    _write_workflow(tmp_path, "jobs:\n  gate:\n    steps: []\n")
+    with pytest.raises(RuntimeError, match="duplicate context"):
+        validate_required_check_bindings(
+            _binding_policy([_binding(), _binding()]),
+            root=tmp_path,
+        )
+
+
+def test_required_check_binding_rejects_workflow_path_escape(tmp_path: Path) -> None:
+    with pytest.raises(RuntimeError, match="escapes policy surface"):
+        validate_required_check_bindings(
+            _binding_policy([_binding(workflow="../unsafe.yml")]),
+            root=tmp_path,
+        )
 
 
 def test_required_check_matrix_matches_ci_matrix() -> None:
