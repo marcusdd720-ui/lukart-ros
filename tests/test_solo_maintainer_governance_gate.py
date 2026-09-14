@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 import pytest
@@ -201,7 +201,7 @@ def test_technical_checks_require_latest_terminal_success() -> None:
         required_contexts=["gate", "codeql", "solo-governance"],
         self_context="solo-governance",
     )
-    assert ready_at == datetime(2026, 9, 14, 10, 16, tzinfo=timezone.utc)
+    assert ready_at == datetime(2026, 9, 14, 10, 16, tzinfo=UTC)
 
 
 def test_technical_checks_fail_closed_on_missing_context() -> None:
@@ -219,7 +219,7 @@ def test_attestation_binds_owner_head_risk_and_ready_time() -> None:
         candidate_sha=SHA,
         maintainer_id=OWNER,
         risk_class="ordinary",
-        technical_ready_at=datetime(2026, 9, 14, 10, 5, tzinfo=timezone.utc),
+        technical_ready_at=datetime(2026, 9, 14, 10, 5, tzinfo=UTC),
         cooldown_seconds=0,
     )
     assert result["comment_id"] == 1
@@ -238,7 +238,7 @@ def test_attestation_rejects_early_governance_acceptance() -> None:
             candidate_sha=SHA,
             maintainer_id=OWNER,
             risk_class="governance",
-            technical_ready_at=datetime(2026, 9, 14, 10, 0, tzinfo=timezone.utc),
+            technical_ready_at=datetime(2026, 9, 14, 10, 0, tzinfo=UTC),
             cooldown_seconds=86400,
         )
 
@@ -257,7 +257,7 @@ def test_latest_revocation_overrides_prior_acceptance() -> None:
             candidate_sha=SHA,
             maintainer_id=OWNER,
             risk_class="ordinary",
-            technical_ready_at=datetime(2026, 9, 14, 10, 5, tzinfo=timezone.utc),
+            technical_ready_at=datetime(2026, 9, 14, 10, 5, tzinfo=UTC),
             cooldown_seconds=0,
         )
 
@@ -269,6 +269,6 @@ def test_attestation_from_non_owner_is_ignored() -> None:
             candidate_sha=SHA,
             maintainer_id=OWNER,
             risk_class="ordinary",
-            technical_ready_at=datetime(2026, 9, 14, 10, 5, tzinfo=timezone.utc),
+            technical_ready_at=datetime(2026, 9, 14, 10, 5, tzinfo=UTC),
             cooldown_seconds=0,
         )

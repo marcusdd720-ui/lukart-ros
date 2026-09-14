@@ -7,7 +7,10 @@ from collections.abc import Mapping
 from pathlib import Path
 from typing import cast
 
-import scripts.repository_governance_integrity_gate as legacy
+if __package__:
+    from . import repository_governance_integrity_gate as legacy
+else:
+    import repository_governance_integrity_gate as legacy
 
 ROOT = Path(__file__).resolve().parents[1]
 POLICY_PATH = ROOT / "config" / "enterprise_v1.json"
@@ -174,9 +177,13 @@ def validate_solo_review_governance(
 
     review = _mapping(h2.get("review_integrity"), label="h2.review_integrity")
     if review.get("ordinary_minimum_independent_approvals") != 0:
-        raise RuntimeError("solo governance policy conflict: ordinary independent approvals must be 0")
+        raise RuntimeError(
+            "solo governance policy conflict: ordinary independent approvals must be 0"
+        )
     if review.get("critical_minimum_independent_approvals") != 0:
-        raise RuntimeError("solo governance policy conflict: critical independent approvals must be 0")
+        raise RuntimeError(
+            "solo governance policy conflict: critical independent approvals must be 0"
+        )
     if review.get("independent_external_review") != "NOT_PERFORMED":
         raise RuntimeError(
             "solo governance policy conflict: independent review must be NOT_PERFORMED"

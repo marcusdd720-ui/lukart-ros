@@ -8,7 +8,7 @@ import subprocess
 import urllib.error
 import urllib.request
 from collections.abc import Mapping
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import cast
 
@@ -67,7 +67,7 @@ def _parse_time(value: object, *, label: str) -> datetime:
         raise RuntimeError(f"{label} must be an ISO-8601 timestamp") from exc
     if parsed.tzinfo is None:
         raise RuntimeError(f"{label} must include a timezone")
-    return parsed.astimezone(timezone.utc)
+    return parsed.astimezone(UTC)
 
 
 def _github_json(url: str, *, token: str | None) -> object:
