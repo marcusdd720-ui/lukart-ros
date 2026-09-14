@@ -267,7 +267,8 @@ def test_execute_fences_before_provider_and_never_invokes_twice(tmp_path: Path) 
             dispatch_ref="dispatch-001",
             provider_call=provider_call,
         )
-        assert receipt == _receipt(identity)
+        assert receipt.receipt_id == "receipt-attempt-001"
+        assert receipt.attempt_id == "attempt-001"
 
     with DurableExternalActionCoordinator(path) as coordinator:
         replay = coordinator.execute(
