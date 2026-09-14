@@ -74,6 +74,46 @@ def _rule(rules: list[object], rule_type: str) -> Mapping[str, object]:
     raise RuntimeError(f"governance drift: rule {rule_type!r} is missing")
 
 
+def validate_bypass_governance(
+    h2: Mapping[str, object],
+    detail: Mapping[str, object],
+    *,
+    ruleset_id: int,
+) -> list[object]:
+    allowed = _list(h2.get("allowed_bypass_actors"), label="h2.allowed_bypass_actors")
+    live = detail.get("bypass_actors")
+    if live is not None:
+        if not isinstance(live, list):
+            raise RuntimeError("governance visibility unknown: malformed bypass_actors")
+        if live != allowed:
+            raise RuntimeError(
+                f"governance drift: bypass actors actual={live!r} expected={allowed!r}"
+            )
+        return live
+
+    snapshot = _mapping(
+        h2.get("privileged_ruleset_snapshot"),
+        label="h2.privileged_ruleset_snapshot",
+    )
+    snapshot_bypass = _list(
+        snapshot.get("bypass_actors"),
+        label="h2.privileged_ruleset_snapshot.bypass_actors",
+    )
+    if snapshot.get("ruleset_id") != ruleset_id:
+        raise RuntimeError("GOVERNANCE_SNAPSHOT_STALE: ruleset ID mismatch")
+    live_updated_at = detail.get("updated_at")
+    snapshot_updated_at = snapshot.get("ruleset_updated_at")
+    if not isinstance(live_updated_at, str) or not live_updated_at:
+        raise RuntimeError("GOVERNANCE_VISIBILITY_UNKNOWN: ruleset updated_at missing")
+    if snapshot_updated_at != live_updated_at:
+        raise RuntimeError(
+            "GOVERNANCE_SNAPSHOT_STALE: live ruleset changed after privileged snapshot"
+        )
+    if snapshot_bypass != allowed:
+        raise RuntimeError("governance policy conflict: snapshot bypass differs from policy")
+    return snapshot_bypass
+
+
 def validate_review_governance(
     policy: Mapping[str, object],
     detail: Mapping[str, object],
@@ -168,15 +208,13 @@ def build_evidence(candidate_sha: str) -> dict[str, object]:
     )
     if detail.get("enforcement") != "active":
         raise RuntimeError("governance drift: ruleset is not active")
-    if detail.get("bypass_actors") != []:
-        raise RuntimeError(
-            f"governance drift: bypass actors present: {detail.get('bypass_actors')!r}"
-        )
+    bypass = validate_bypass_governance(h2, detail, ruleset_id=ruleset_id)
     review_evidence = validate_review_governance(policy, detail)
     return {
         "schema": "lukart.repository-governance-integrity.v1",
         "candidate_sha": candidate_sha,
         "ruleset_id": ruleset_id,
+        "bypass_actors": bypass,
         "review_rule": review_evidence,
         "state": "CONTROL_PASS",
     }
