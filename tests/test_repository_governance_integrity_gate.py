@@ -86,13 +86,16 @@ def test_accepts_stronger_approval_floor() -> None:
 
 def test_rejects_extra_merge_methods() -> None:
     detail = _detail()
-    detail["rules"][0]["parameters"]["allowed_merge_methods"] = ["merge", "squash"]  # type: ignore[index]
+    params = detail["rules"][0]["parameters"]  # type: ignore[index]
+    params["allowed_merge_methods"] = ["merge", "squash"]  # type: ignore[index]
     with pytest.raises(RuntimeError, match="allowed_merge_methods"):
         validate_review_governance(_policy(), detail)
 
 
 def test_rejects_weak_canonical_minimum() -> None:
     policy = _policy()
-    policy["h2_repository_policy"]["pull_request_rule"]["minimum_approving_review_count"] = 1  # type: ignore[index]
+    h2 = policy["h2_repository_policy"]  # type: ignore[index]
+    pr_rule = h2["pull_request_rule"]  # type: ignore[index]
+    pr_rule["minimum_approving_review_count"] = 1  # type: ignore[index]
     with pytest.raises(RuntimeError, match="minimum approvals"):
         validate_review_governance(policy, _detail())
