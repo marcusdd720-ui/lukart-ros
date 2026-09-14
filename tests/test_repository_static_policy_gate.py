@@ -60,6 +60,28 @@ def test_rejects_job_write_without_same_job_consumer() -> None:
         validate_workflow_permissions(".github/workflows/unsafe.yml", workflow)
 
 
+def test_accepts_attestation_oidc_writes_with_same_job_consumer() -> None:
+    workflow = {
+        "permissions": {"contents": "read"},
+        "jobs": {
+            "attest": {
+                "permissions": {
+                    "contents": "read",
+                    "id-token": "write",
+                    "attestations": "write",
+                },
+                "steps": [
+                    {
+                        "uses": "actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6"
+                    }
+                ],
+            }
+        },
+    }
+    evidence = validate_workflow_permissions(".github/workflows/attest.yml", workflow)
+    assert evidence["job_writes"] == ["attest:attestations", "attest:id-token"]
+
+
 def test_codeowners_wildcard_covers_canonical_critical_surface() -> None:
     evidence = validate_codeowners_coverage(
         ["core/case_ledger.py", "config/**", ".github/workflows/**"],

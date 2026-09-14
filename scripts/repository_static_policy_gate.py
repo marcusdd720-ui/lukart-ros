@@ -58,8 +58,9 @@ def _step_uses(job: Mapping[str, object]) -> tuple[str, ...]:
 def _allows_write(scope: str, uses: tuple[str, ...]) -> bool:
     if scope == "security-events":
         return any(ref.startswith("github/codeql-action/") for ref in uses)
-    if scope == "id-token":
+    if scope in {"id-token", "attestations"}:
         oidc_consumers = (
+            "actions/attest@",
             "actions/attest-",
             "sigstore/",
             "google-github-actions/auth@",
