@@ -84,6 +84,8 @@ def _allows_write(scope: str, uses: tuple[str, ...], runs: tuple[str, ...]) -> b
     if scope == "contents":
         release_mutations = ("gh release create", "gh release upload", "gh release edit")
         return any(any(command in run for command in release_mutations) for run in runs)
+    if scope == "pull-requests":
+        return any("factory.closure_preparation" in run for run in runs)
     return False
 
 

@@ -16,7 +16,6 @@ on:
 
 permissions:
   contents: read
-  pull-requests: write
 
 jobs:
   prepare-closure-pr:
@@ -30,6 +29,9 @@ jobs:
       }}
     runs-on: ubuntu-latest
     timeout-minutes: 20
+    permissions:
+      contents: read
+      pull-requests: write
     env:
       SOURCE_SHA: ${{ inputs.source_sha || github.event.workflow_run.head_sha || github.sha }}
       LUKART_ROS_FACTORY_APP_ID: ${{ vars.LUKART_ROS_FACTORY_APP_ID }}

@@ -118,6 +118,27 @@ def test_rejects_contents_write_without_release_mutation() -> None:
         validate_workflow_permissions(".github/workflows/unsafe.yml", workflow)
 
 
+def test_accepts_pull_request_write_for_closure_preparation() -> None:
+    workflow = {
+        "permissions": {"contents": "read"},
+        "jobs": {
+            "prepare-closure-pr": {
+                "permissions": {"contents": "read", "pull-requests": "write"},
+                "steps": [
+                    {
+                        "run": (
+                            "uv run --frozen --extra dev python "
+                            "-m factory.closure_preparation --source-sha $SOURCE_SHA"
+                        )
+                    }
+                ],
+            }
+        },
+    }
+    evidence = validate_workflow_permissions(".github/workflows/closure.yml", workflow)
+    assert evidence["job_writes"] == ["prepare-closure-pr:pull-requests"]
+
+
 def test_codeowners_wildcard_covers_canonical_critical_surface() -> None:
     evidence = validate_codeowners_coverage(
         ["core/case_ledger.py", "config/**", ".github/workflows/**"],
