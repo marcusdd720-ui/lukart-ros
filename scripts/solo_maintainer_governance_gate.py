@@ -198,7 +198,10 @@ def validate_profile(profile: Mapping[str, object]) -> dict[str, object]:
     if dict(cooldowns) != {"ordinary": 0, "critical": 7200, "governance": 86400}:
         raise RuntimeError("solo cooldown contract differs from hardened contract")
 
-    target = _mapping(profile.get("target_pull_request_rule"), label="solo.target_pull_request_rule")
+    target = _mapping(
+        profile.get("target_pull_request_rule"),
+        label="solo.target_pull_request_rule",
+    )
     expected_target = {
         "minimum_approving_review_count": 0,
         "dismiss_stale_reviews_on_push": True,
@@ -330,7 +333,9 @@ def validate_technical_checks(
 ) -> datetime:
     candidate_sha = validate_candidate_sha(candidate_sha)
     if self_context in required_contexts:
-        raise RuntimeError("technical required checks must not contain solo-governance self context")
+        raise RuntimeError(
+            "technical required checks must not contain solo-governance self context"
+        )
     if not required_contexts:
         raise RuntimeError("solo governance requires technical checks")
     expected = list(required_contexts)
@@ -509,7 +514,10 @@ def build_evidence(candidate_sha: str, *, root: Path = ROOT) -> dict[str, object
     profile_raw = _mapping(h2.get("solo_maintainer_profile"), label="h2.solo_maintainer_profile")
     profile = validate_profile(profile_raw)
     review = _mapping(h2.get("review_integrity"), label="h2.review_integrity")
-    critical_paths = _string_list(review.get("critical_paths"), label="h2.review_integrity.critical_paths")
+    critical_paths = _string_list(
+        review.get("critical_paths"),
+        label="h2.review_integrity.critical_paths",
+    )
     verified_paths = validate_exact_critical_paths(root, critical_paths)
 
     if state == "INDEPENDENT_LOCKED":

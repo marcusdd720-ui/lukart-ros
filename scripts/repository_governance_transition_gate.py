@@ -163,7 +163,10 @@ def validate_state_contract(h2: Mapping[str, object]) -> dict[str, object]:
         return {"state": state, "review_mode": "INDEPENDENT_NATIVE", "approvals": minimum}
 
     profile = _mapping(h2.get("solo_maintainer_profile"), label="h2.solo_maintainer_profile")
-    target = _mapping(profile.get("target_pull_request_rule"), label="solo.target_pull_request_rule")
+    target = _mapping(
+        profile.get("target_pull_request_rule"),
+        label="solo.target_pull_request_rule",
+    )
     if dict(target) != _SOLO_TARGET:
         raise RuntimeError("SOLO_ACTIVE target pull-request rule differs from hardened contract")
     if dict(pull_rule) != _SOLO_TARGET:
@@ -221,7 +224,9 @@ def validate_check_dependency_graph(h2: Mapping[str, object]) -> dict[str, objec
     raw_dependencies = _mapping(h2.get("check_dependencies"), label="h2.check_dependencies")
     final_contexts = [spec[0] for spec in final]
     if set(raw_dependencies) != set(final_contexts):
-        raise RuntimeError("check dependency graph must define every final required context exactly once")
+        raise RuntimeError(
+            "check dependency graph must define every final required context exactly once"
+        )
     dependencies: dict[str, tuple[str, ...]] = {}
     for context in final_contexts:
         raw_items = _list(raw_dependencies.get(context), label=f"check_dependencies.{context}")
@@ -278,7 +283,10 @@ def validate_profile_truthfulness(h2: Mapping[str, object]) -> dict[str, object]
     cooldowns = _mapping(profile.get("cooldown_seconds"), label="solo.cooldown_seconds")
     if dict(cooldowns) != {"ordinary": 0, "critical": 7200, "governance": 86400}:
         raise RuntimeError("solo maintainer cooldown contract differs from hardened contract")
-    target = _mapping(profile.get("target_pull_request_rule"), label="solo.target_pull_request_rule")
+    target = _mapping(
+        profile.get("target_pull_request_rule"),
+        label="solo.target_pull_request_rule",
+    )
     if dict(target) != _SOLO_TARGET:
         raise RuntimeError("solo target pull-request rule differs from hardened contract")
     return {
@@ -289,7 +297,10 @@ def validate_profile_truthfulness(h2: Mapping[str, object]) -> dict[str, object]
     }
 
 
-def validate_transition(previous_h2: Mapping[str, object], current_h2: Mapping[str, object]) -> dict[str, str]:
+def validate_transition(
+    previous_h2: Mapping[str, object],
+    current_h2: Mapping[str, object],
+) -> dict[str, str]:
     previous = _state(previous_h2, legacy_default=True)
     current = _state(current_h2)
     if current not in EXPECTED_TRANSITIONS[previous]:
