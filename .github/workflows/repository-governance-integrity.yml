@@ -66,6 +66,7 @@ jobs:
           if not workflows:
               raise RuntimeError("required-check source collision audit: no workflows found")
 
+          expression_token = "$" + "{{"
           for workflow_path in workflows:
               document = yaml.safe_load(workflow_path.read_text(encoding="utf-8")) or {}
               if not isinstance(document, Mapping):
@@ -81,7 +82,7 @@ jobs:
                   declared_name = raw_job.get("name")
                   if declared_name is not None and not isinstance(declared_name, str):
                       raise RuntimeError(f"workflow job name must be a string: {relative}#{job_id}")
-                  if isinstance(declared_name, str) and "${{" in declared_name:
+                  if isinstance(declared_name, str) and expression_token in declared_name:
                       for base, source in canonical.items():
                           if source == (relative, job_id):
                               raise RuntimeError(
