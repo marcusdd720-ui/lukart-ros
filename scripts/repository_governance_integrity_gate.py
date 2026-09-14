@@ -49,7 +49,12 @@ def _github_json(url: str, *, token: str | None) -> object:
     try:
         with urllib.request.urlopen(request, timeout=20) as response:
             return json.loads(response.read().decode("utf-8"))
-    except (urllib.error.HTTPError, urllib.error.URLError, TimeoutError, json.JSONDecodeError) as exc:
+    except (
+        urllib.error.HTTPError,
+        urllib.error.URLError,
+        TimeoutError,
+        json.JSONDecodeError,
+    ) as exc:
         raise RuntimeError(f"GOVERNANCE_VISIBILITY_UNKNOWN: cannot read {url}: {exc}") from exc
 
 
@@ -69,12 +74,18 @@ def _rule(rules: list[object], rule_type: str) -> Mapping[str, object]:
     raise RuntimeError(f"governance drift: rule {rule_type!r} is missing")
 
 
-def validate_review_governance(policy: Mapping[str, object], detail: Mapping[str, object]) -> dict[str, object]:
+def validate_review_governance(
+    policy: Mapping[str, object],
+    detail: Mapping[str, object],
+) -> dict[str, object]:
     h2 = _mapping(policy.get("h2_repository_policy"), label="h2_repository_policy")
     expected = _mapping(h2.get("pull_request_rule"), label="h2.pull_request_rule")
     review = _mapping(h2.get("review_integrity"), label="h2.review_integrity")
     rules = _list(detail.get("rules"), label="ruleset.rules")
-    params = _mapping(_rule(rules, "pull_request").get("parameters"), label="pull_request.parameters")
+    params = _mapping(
+        _rule(rules, "pull_request").get("parameters"),
+        label="pull_request.parameters",
+    )
 
     minimum = expected.get("minimum_approving_review_count")
     actual = params.get("required_approving_review_count")
@@ -97,17 +108,22 @@ def validate_review_governance(policy: Mapping[str, object], detail: Mapping[str
 
     allowed = expected.get("allowed_merge_methods")
     if not isinstance(allowed, list) or not allowed or any(not isinstance(x, str) for x in allowed):
-        raise RuntimeError("governance policy conflict: allowed_merge_methods must be a non-empty string list")
+        raise RuntimeError(
+            "governance policy conflict: allowed_merge_methods must be a non-empty string list"
+        )
     actual_methods = params.get("allowed_merge_methods")
     if not isinstance(actual_methods, list) or set(actual_methods) != set(allowed):
         raise RuntimeError(
-            f"governance drift: allowed_merge_methods actual={actual_methods!r} expected={allowed!r}"
+            "governance drift: allowed_merge_methods "
+            f"actual={actual_methods!r} expected={allowed!r}"
         )
 
     ordinary = review.get("ordinary_minimum_independent_approvals")
     critical = review.get("critical_minimum_independent_approvals")
     if ordinary != minimum or critical != minimum:
-        raise RuntimeError("governance policy conflict: native approval floor must match review-integrity minima")
+        raise RuntimeError(
+            "governance policy conflict: native approval floor must match review-integrity minima"
+        )
     if review.get("approvals_must_bind_current_head") is not True:
         raise RuntimeError("governance policy conflict: approvals must bind current head")
     critical_paths = review.get("critical_paths")
@@ -129,7 +145,10 @@ def build_evidence(candidate_sha: str) -> dict[str, object]:
     head = _git("rev-parse", "HEAD")
     if head != candidate_sha:
         raise RuntimeError(f"exact-SHA mismatch: HEAD={head} candidate={candidate_sha}")
-    policy = _mapping(json.loads(POLICY_PATH.read_text(encoding="utf-8")), label="enterprise policy")
+    policy = _mapping(
+        json.loads(POLICY_PATH.read_text(encoding="utf-8")),
+        label="enterprise policy",
+    )
     h2 = _mapping(policy.get("h2_repository_policy"), label="h2_repository_policy")
     repository = str(h2.get("repository", ""))
     ruleset_name = str(h2.get("ruleset_name", ""))
@@ -150,7 +169,9 @@ def build_evidence(candidate_sha: str) -> dict[str, object]:
     if detail.get("enforcement") != "active":
         raise RuntimeError("governance drift: ruleset is not active")
     if detail.get("bypass_actors") != []:
-        raise RuntimeError(f"governance drift: bypass actors present: {detail.get('bypass_actors')!r}")
+        raise RuntimeError(
+            f"governance drift: bypass actors present: {detail.get('bypass_actors')!r}"
+        )
     review_evidence = validate_review_governance(policy, detail)
     return {
         "schema": "lukart.repository-governance-integrity.v1",
@@ -162,7 +183,9 @@ def build_evidence(candidate_sha: str) -> dict[str, object]:
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description="Fail-closed live repository review-governance gate")
+    parser = argparse.ArgumentParser(
+        description="Fail-closed live repository review-governance gate"
+    )
     parser.add_argument("--candidate-sha", required=True)
     parser.add_argument("--output", default="build/hardcore/repository-governance-integrity.json")
     args = parser.parse_args()
