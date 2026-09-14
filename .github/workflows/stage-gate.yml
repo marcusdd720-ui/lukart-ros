@@ -11,6 +11,9 @@ on:
         default: "5"
         type: string
 
+permissions:
+  contents: read
+
 jobs:
   gate:
     runs-on: ubuntu-latest
