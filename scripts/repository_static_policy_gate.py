@@ -55,7 +55,20 @@ def _step_uses(job: Mapping[str, object]) -> tuple[str, ...]:
     return tuple(references)
 
 
-def _allows_write(scope: str, uses: tuple[str, ...]) -> bool:
+def _step_runs(job: Mapping[str, object]) -> tuple[str, ...]:
+    steps = job.get("steps")
+    if not isinstance(steps, list):
+        return ()
+    commands: list[str] = []
+    for step in steps:
+        if isinstance(step, Mapping):
+            run = step.get("run")
+            if isinstance(run, str):
+                commands.append(run)
+    return tuple(commands)
+
+
+def _allows_write(scope: str, uses: tuple[str, ...], runs: tuple[str, ...]) -> bool:
     if scope == "security-events":
         return any(ref.startswith("github/codeql-action/") for ref in uses)
     if scope in {"id-token", "attestations"}:
@@ -68,6 +81,9 @@ def _allows_write(scope: str, uses: tuple[str, ...]) -> bool:
             "azure/login@",
         )
         return any(any(ref.startswith(prefix) for prefix in oidc_consumers) for ref in uses)
+    if scope == "contents":
+        release_mutations = ("gh release create", "gh release upload", "gh release edit")
+        return any(any(command in run for command in release_mutations) for run in runs)
     return False
 
 
@@ -106,6 +122,7 @@ def validate_workflow_permissions(
             label=f"{workflow_path}.jobs.{job_id}.permissions",
         )
         uses = _step_uses(job)
+        runs = _step_runs(job)
         for scope, level in job_permissions.items():
             if level not in {"read", "write", "none"}:
                 raise RuntimeError(
@@ -114,7 +131,7 @@ def validate_workflow_permissions(
                 )
             if level == "write":
                 scope_name = str(scope)
-                if not _allows_write(scope_name, uses):
+                if not _allows_write(scope_name, uses, runs):
                     raise RuntimeError(
                         "workflow permission drift: write permission lacks an approved "
                         f"same-job consumer: {workflow_path}#{job_id}:{scope_name}"

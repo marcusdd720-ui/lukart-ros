@@ -85,6 +85,39 @@ def test_accepts_attestation_oidc_writes_with_same_job_consumer() -> None:
     assert evidence["job_writes"] == ["attest:attestations", "attest:id-token"]
 
 
+def test_accepts_contents_write_for_same_job_release_mutation() -> None:
+    workflow = {
+        "permissions": {"contents": "read"},
+        "jobs": {
+            "release-publish": {
+                "permissions": {"actions": "read", "contents": "write"},
+                "steps": [
+                    {
+                        "name": "Create release",
+                        "run": 'gh release create "${TAG}" --target "${VALIDATED_SHA}" --draft',
+                    }
+                ],
+            }
+        },
+    }
+    evidence = validate_workflow_permissions(".github/workflows/release.yml", workflow)
+    assert evidence["job_writes"] == ["release-publish:contents"]
+
+
+def test_rejects_contents_write_without_release_mutation() -> None:
+    workflow = {
+        "permissions": {"contents": "read"},
+        "jobs": {
+            "unsafe": {
+                "permissions": {"contents": "write"},
+                "steps": [{"run": "echo no-release-mutation"}],
+            }
+        },
+    }
+    with pytest.raises(RuntimeError, match="same-job consumer"):
+        validate_workflow_permissions(".github/workflows/unsafe.yml", workflow)
+
+
 def test_codeowners_wildcard_covers_canonical_critical_surface() -> None:
     evidence = validate_codeowners_coverage(
         ["core/case_ledger.py", "config/**", ".github/workflows/**"],
