@@ -311,8 +311,12 @@ class AuthorityApproval:
         _aware(self.granted_at, field_name="granted_at")
         if self.expires_at is not None:
             _aware(self.expires_at, field_name="expires_at")
+            if self.expires_at < self.granted_at:
+                raise CaseProductHardeningError("expires_at cannot precede granted_at")
         if self.revoked_at is not None:
             _aware(self.revoked_at, field_name="revoked_at")
+            if self.revoked_at < self.granted_at:
+                raise CaseProductHardeningError("revoked_at cannot precede granted_at")
 
     def authorizes(
         self,
@@ -323,7 +327,8 @@ class AuthorityApproval:
         moment = at or datetime.now(UTC)
         _aware(moment, field_name="authorization check time")
         return (
-            self.revoked_at is None
+            self.granted_at <= moment
+            and (self.revoked_at is None or moment < self.revoked_at)
             and (self.expires_at is None or moment <= self.expires_at)
             and self.case_id == identity.case_id
             and self.artifact_id == identity.artifact_id
@@ -361,8 +366,12 @@ class CaseAuthorityGrant:
         _aware(self.granted_at, field_name="granted_at")
         if self.expires_at is not None:
             _aware(self.expires_at, field_name="expires_at")
+            if self.expires_at < self.granted_at:
+                raise CaseProductHardeningError("expires_at cannot precede granted_at")
         if self.revoked_at is not None:
             _aware(self.revoked_at, field_name="revoked_at")
+            if self.revoked_at < self.granted_at:
+                raise CaseProductHardeningError("revoked_at cannot precede granted_at")
 
     def authorizes(
         self,
@@ -376,7 +385,8 @@ class CaseAuthorityGrant:
         moment = at or datetime.now(UTC)
         _aware(moment, field_name="authorization check time")
         return (
-            self.revoked_at is None
+            self.granted_at <= moment
+            and (self.revoked_at is None or moment < self.revoked_at)
             and (self.expires_at is None or moment <= self.expires_at)
             and self.case_id == case_id
             and self.actor_ref == actor_ref
@@ -1333,9 +1343,10 @@ def record_receipt_and_file_case(
         raise CaseProductHardeningError(
             "CASE model and external action identity do not match"
         )
-    if not approval.authorizes(identity):
+    action_time = receipt.external_timestamp or receipt.recorded_at
+    if not approval.authorizes(identity, at=action_time):
         raise CaseProductHardeningError(
-            "external action is not covered by exact authority approval"
+            "external action is not covered by exact authority approval at action time"
         )
     verify_receipt_for_transition(receipt, identity)
     receipt_event = append_contract_event(
@@ -1354,7 +1365,7 @@ def record_receipt_and_file_case(
         authority_ref=approval.authority_basis,
         correlation_id=correlation_id,
         causation_id=causation_id,
-        occurred_at=receipt.external_timestamp or receipt.recorded_at,
+        occurred_at=action_time,
     )
     filed_event = append_contract_event(
         ledger,
@@ -1373,7 +1384,7 @@ def record_receipt_and_file_case(
         authority_ref=approval.authority_basis,
         correlation_id=correlation_id,
         causation_id=receipt_event.event_id.digest,
-        occurred_at=receipt.external_timestamp or receipt.recorded_at,
+        occurred_at=action_time,
     )
     case.status = CaseStatus.FILED
     case.metadata["last_filing_receipt_digest"] = receipt.receipt_digest.digest
