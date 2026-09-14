@@ -68,6 +68,13 @@ def _step_runs(job: Mapping[str, object]) -> tuple[str, ...]:
     return tuple(commands)
 
 
+def _runs_python_module(runs: tuple[str, ...], module: str) -> bool:
+    pattern = re.compile(
+        rf"(?:^|[;&|\n]\s*|\s)python(?:3)?\s+-m\s+{re.escape(module)}(?:\s|$)"
+    )
+    return any(pattern.search(run) is not None for run in runs)
+
+
 def _allows_write(scope: str, uses: tuple[str, ...], runs: tuple[str, ...]) -> bool:
     if scope == "security-events":
         return any(ref.startswith("github/codeql-action/") for ref in uses)
@@ -83,9 +90,13 @@ def _allows_write(scope: str, uses: tuple[str, ...], runs: tuple[str, ...]) -> b
         return any(any(ref.startswith(prefix) for prefix in oidc_consumers) for ref in uses)
     if scope == "contents":
         release_mutations = ("gh release create", "gh release upload", "gh release edit")
-        return any(any(command in run for command in release_mutations) for run in runs)
+        if any(any(command in run for command in release_mutations) for run in runs):
+            return True
+        return _runs_python_module(runs, "factory.stage_orchestrator")
+    if scope == "actions":
+        return _runs_python_module(runs, "factory.stage_orchestrator")
     if scope == "pull-requests":
-        return any("factory.closure_preparation" in run for run in runs)
+        return _runs_python_module(runs, "factory.closure_preparation")
     return False
 
 
