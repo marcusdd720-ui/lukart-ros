@@ -2,7 +2,10 @@ from __future__ import annotations
 
 import pytest
 
-from scripts.repository_governance_integrity_gate import validate_review_governance
+from scripts.repository_governance_integrity_gate import (
+    validate_bypass_governance,
+    validate_review_governance,
+)
 
 
 def _policy() -> dict[str, object]:
@@ -99,3 +102,30 @@ def test_rejects_weak_canonical_minimum() -> None:
     pr_rule["minimum_approving_review_count"] = 1  # type: ignore[index]
     with pytest.raises(RuntimeError, match="minimum approvals"):
         validate_review_governance(policy, _detail())
+
+
+def test_accepts_snapshot_bound_bypass_when_token_cannot_see_live_field() -> None:
+    h2 = {
+        "allowed_bypass_actors": [],
+        "privileged_ruleset_snapshot": {
+            "ruleset_id": 22352216,
+            "ruleset_updated_at": "2026-09-06T13:52:14.880Z",
+            "bypass_actors": [],
+        },
+    }
+    detail = {"updated_at": "2026-09-06T13:52:14.880Z"}
+    assert validate_bypass_governance(h2, detail, ruleset_id=22352216) == []
+
+
+def test_rejects_stale_privileged_bypass_snapshot() -> None:
+    h2 = {
+        "allowed_bypass_actors": [],
+        "privileged_ruleset_snapshot": {
+            "ruleset_id": 22352216,
+            "ruleset_updated_at": "old",
+            "bypass_actors": [],
+        },
+    }
+    detail = {"updated_at": "new"}
+    with pytest.raises(RuntimeError, match="SNAPSHOT_STALE"):
+        validate_bypass_governance(h2, detail, ruleset_id=22352216)
