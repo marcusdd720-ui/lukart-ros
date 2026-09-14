@@ -31,6 +31,89 @@ jobs:
         run: |
           python -m pip install "pytest==8.4.2" "PyYAML==6.0.2"
           pytest -q tests/test_repository_governance_integrity_gate.py tests/test_repository_static_policy_gate.py
+      - name: Required-check source collision audit
+        run: |
+          python - <<'PY'
+          from __future__ import annotations
+
+          import json
+          from collections.abc import Mapping
+          from pathlib import Path
+
+          import yaml
+
+          root = Path.cwd()
+          policy = json.loads((root / "config" / "enterprise_v1.json").read_text(encoding="utf-8"))
+          checks = policy["h2_repository_policy"]["required_checks"]
+
+          canonical: dict[str, tuple[str, str]] = {}
+          for check in checks:
+              context = check["context"]
+              workflow = check["workflow"]
+              job_id = check["job_id"]
+              base = context.split(" (", 1)[0] if context.startswith("quality-gate (") else context
+              source = (workflow, job_id)
+              previous = canonical.get(base)
+              if previous is not None and previous != source:
+                  raise RuntimeError(
+                      f"required-check source ambiguity: base={base!r} sources={previous!r},{source!r}"
+                  )
+              canonical[base] = source
+
+          producers: dict[str, list[tuple[str, str, str]]] = {base: [] for base in canonical}
+          workflows = sorted((root / ".github" / "workflows").glob("*.yml"))
+          workflows += sorted((root / ".github" / "workflows").glob("*.yaml"))
+          if not workflows:
+              raise RuntimeError("required-check source collision audit: no workflows found")
+
+          for workflow_path in workflows:
+              document = yaml.safe_load(workflow_path.read_text(encoding="utf-8")) or {}
+              if not isinstance(document, Mapping):
+                  raise RuntimeError(f"workflow must be an object: {workflow_path}")
+              jobs = document.get("jobs", {})
+              if not isinstance(jobs, Mapping):
+                  raise RuntimeError(f"workflow jobs must be an object: {workflow_path}")
+              relative = workflow_path.relative_to(root).as_posix()
+              for raw_job_id, raw_job in jobs.items():
+                  job_id = str(raw_job_id)
+                  if not isinstance(raw_job, Mapping):
+                      raise RuntimeError(f"workflow job must be an object: {relative}#{job_id}")
+                  declared_name = raw_job.get("name")
+                  if declared_name is not None and not isinstance(declared_name, str):
+                      raise RuntimeError(f"workflow job name must be a string: {relative}#{job_id}")
+                  if isinstance(declared_name, str) and "${{" in declared_name:
+                      for base, source in canonical.items():
+                          if source == (relative, job_id):
+                              raise RuntimeError(
+                                  "required-check source identity is dynamic and cannot be verified: "
+                                  f"{relative}#{job_id} name={declared_name!r}"
+                              )
+                      effective_name = job_id
+                  else:
+                      effective_name = declared_name or job_id
+
+                  for base in canonical:
+                      if job_id == base or effective_name == base:
+                          producers[base].append((relative, job_id, effective_name))
+
+          for base, expected in canonical.items():
+              matches = producers[base]
+              expected_matches = [item for item in matches if item[:2] == expected]
+              unexpected = [item for item in matches if item[:2] != expected]
+              if len(expected_matches) != 1:
+                  raise RuntimeError(
+                      "required-check source drift: canonical producer missing or ambiguous: "
+                      f"base={base!r} expected={expected!r} matches={matches!r}"
+                  )
+              if unexpected:
+                  raise RuntimeError(
+                      "required-check source collision: "
+                      f"base={base!r} canonical={expected!r} unexpected={unexpected!r}"
+                  )
+
+          print("REQUIRED_CHECK_SOURCE_COLLISION_AUDIT=PASS")
+          print(f"CANONICAL_REQUIRED_CHECK_BASES={len(canonical)}")
+          PY
       - name: Static repository governance gate
         run: python scripts/repository_static_policy_gate.py --candidate-sha "${CANDIDATE_SHA}"
       - name: Live ruleset review-integrity gate
