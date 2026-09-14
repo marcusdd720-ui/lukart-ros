@@ -36,7 +36,10 @@ def test_accepts_codeql_security_events_write_at_job_scope() -> None:
                 "permissions": {"contents": "read", "security-events": "write"},
                 "steps": [
                     {
-                        "uses": "github/codeql-action/analyze@cdf488f595d80d6e07e03d4674febd5ab45fa938"
+                        "uses": (
+                            "github/codeql-action/analyze@"
+                            "cdf488f595d80d6e07e03d4674febd5ab45fa938"
+                        )
                     }
                 ],
             }
