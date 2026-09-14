@@ -11,13 +11,13 @@ from typing import cast
 
 import yaml
 
-from core.enterprise.supply_chain import audit_workflow_action_pins
-
 ROOT = Path(__file__).resolve().parents[1]
 POLICY_PATH = ROOT / "config" / "enterprise_v1.json"
 WORKFLOWS_DIR = ROOT / ".github" / "workflows"
 CODEOWNERS_PATH = ROOT / ".github" / "CODEOWNERS"
 GOVERNANCE_WORKFLOW = WORKFLOWS_DIR / "repository-governance-integrity.yml"
+_ACTION_REF = re.compile(r"^\s*(?:-\s*)?uses:\s*([^\s#]+)", re.MULTILINE)
+_FULL_SHA = re.compile(r"^[0-9a-fA-F]{40}$")
 
 
 def _mapping(value: object, *, label: str) -> Mapping[str, object]:
@@ -173,16 +173,33 @@ def audit_workflow_permissions(root: Path = ROOT) -> dict[str, object]:
 
 
 def validate_workflow_action_pins(root: Path = ROOT) -> dict[str, object]:
-    report = audit_workflow_action_pins(root)
-    if not report.passed:
-        rendered = [
-            f"{finding.path}: {finding.reference} — {finding.reason}"
-            for finding in report.findings
-        ]
-        raise RuntimeError("workflow action pin drift: " + "; ".join(rendered))
+    workflows = root / ".github" / "workflows"
+    paths = sorted((*workflows.glob("*.yml"), *workflows.glob("*.yaml")))
+    if not paths:
+        raise RuntimeError("workflow action pin audit: no workflow files found")
+    findings: list[str] = []
+    external_action_references = 0
+    for path in paths:
+        text = path.read_text(encoding="utf-8")
+        for match in _ACTION_REF.finditer(text):
+            reference = match.group(1)
+            if reference.startswith("./"):
+                continue
+            external_action_references += 1
+            if "@" not in reference:
+                findings.append(f"{path}: {reference}: external action has no immutable ref")
+                continue
+            _, ref = reference.rsplit("@", 1)
+            if _FULL_SHA.fullmatch(ref) is None:
+                findings.append(
+                    f"{path}: {reference}: external action must be pinned to a full "
+                    "40-character commit SHA"
+                )
+    if findings:
+        raise RuntimeError("workflow action pin drift: " + "; ".join(findings))
     return {
-        "scanned_files": report.scanned_files,
-        "external_action_references": report.external_action_references,
+        "scanned_files": len(paths),
+        "external_action_references": external_action_references,
         "findings": [],
     }
 
