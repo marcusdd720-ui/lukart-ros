@@ -91,7 +91,7 @@
     "target": "branch",
     "enforcement": "active",
     "default_branch_condition": "~DEFAULT_BRANCH",
-    "governance_state": "INDEPENDENT_LOCKED",
+    "governance_state": "SOLO_ARMED",
     "governance_state_machine": {
       "INDEPENDENT_LOCKED": [
         "INDEPENDENT_LOCKED",
@@ -162,7 +162,8 @@
       {"context": "program-gate", "integration_id": 15368, "workflow": ".github/workflows/production-validation-program.yml", "job_id": "program-gate"},
       {"context": "enterprise-gate", "integration_id": 15368, "workflow": ".github/workflows/enterprise-hardening.yml", "job_id": "enterprise-gate"},
       {"context": "codeql", "integration_id": 15368, "workflow": ".github/workflows/codeql-enterprise.yml", "job_id": "codeql"},
-      {"context": "governance-integrity", "integration_id": 15368, "workflow": ".github/workflows/repository-governance-integrity.yml", "job_id": "governance-integrity"}
+      {"context": "governance-integrity", "integration_id": 15368, "workflow": ".github/workflows/repository-governance-integrity.yml", "job_id": "governance-integrity"},
+      {"context": "solo-governance", "integration_id": 15368, "workflow": ".github/workflows/solo-maintainer-governance.yml", "job_id": "solo-governance"}
     ],
     "check_dependencies": {
       "quality-gate (3.11)": [],
