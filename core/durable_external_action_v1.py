@@ -1,16 +1,20 @@
 """Durable exactly-once logical external-action coordination.
 
 This module persists operational reservation/reconciliation state across process
-restarts and competing workers.  It is deliberately *not* CASE-history authority:
-material CASE events still belong in CanonicalCaseLedger.  The existing
+restarts and competing workers. It is deliberately *not* CASE-history authority:
+material CASE events still belong in CanonicalCaseLedger. The existing
 SQLiteProvenanceStore is reused as an append-only operational compare-and-append
 backend so no competing CASE ledger is introduced.
+
+Provider invocation is fenced in the same logical-action stream. A caller must
+persist DISPATCHED before invoking the provider; from that point the action is
+OUTCOME_UNKNOWN until a receipt or confirmed no-effect reconciliation resolves it.
 """
 
 from __future__ import annotations
 
-from collections.abc import Mapping
-from datetime import datetime
+from collections.abc import Callable, Mapping
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import cast
 
@@ -34,6 +38,7 @@ from core.external_action_execution_v1 import (
 
 DURABLE_EXTERNAL_ACTION_SCHEMA_V1 = "lukart.durable-external-action.v1"
 _RESERVED = "external-action.reserved.v1"
+_DISPATCHED = "external-action.dispatched.v1"
 _PRE_EFFECT_FAILED = "external-action.pre-effect-failed.v1"
 _OUTCOME_UNKNOWN = "external-action.outcome-unknown.v1"
 _CONFIRMED_SUCCESS = "external-action.confirmed-success.v1"
@@ -239,6 +244,20 @@ class DurableExternalActionCoordinator:
                 )
                 attempt_count += 1
                 receipt = None
+            elif record.event_type == _DISPATCHED:
+                if state is not ExternalActionState.RESERVED:
+                    raise CaseProductHardeningError("invalid DISPATCHED transition")
+                dispatch_attempt = _text(
+                    payload.get("attempt_id"), field_name="dispatch attempt_id"
+                )
+                if dispatch_attempt != owner_attempt_id:
+                    raise CaseProductHardeningError("dispatch attempt owner mismatch")
+                _text(payload.get("dispatch_ref"), field_name="dispatch_ref")
+                _aware_datetime(
+                    payload.get("started_at"),
+                    field_name="dispatch started_at",
+                )
+                state = ExternalActionState.OUTCOME_UNKNOWN
             elif record.event_type == _PRE_EFFECT_FAILED:
                 if state is not ExternalActionState.RESERVED:
                     raise CaseProductHardeningError(
@@ -250,13 +269,15 @@ class DurableExternalActionCoordinator:
                     raise CaseProductHardeningError("invalid OUTCOME_UNKNOWN transition")
                 state = ExternalActionState.OUTCOME_UNKNOWN
             elif record.event_type == _CONFIRMED_SUCCESS:
-                if state is not ExternalActionState.RESERVED:
+                if state is not ExternalActionState.OUTCOME_UNKNOWN:
                     raise CaseProductHardeningError(
-                        "invalid CONFIRMED_EXTERNAL_SUCCESS transition"
+                        "confirmed success requires a dispatched/unknown outcome"
                     )
                 receipt = _receipt_from_dict(
                     _mapping(payload.get("receipt"), field_name="confirmed receipt")
                 )
+                if receipt.attempt_id != owner_attempt_id:
+                    raise CaseProductHardeningError("confirmed receipt attempt mismatch")
                 verify_receipt_for_transition(receipt, stored_identity)
                 state = ExternalActionState.CONFIRMED_EXTERNAL_SUCCESS
             elif record.event_type == _CONFIRMED_NO_EFFECT:
@@ -281,6 +302,8 @@ class DurableExternalActionCoordinator:
                 receipt = _receipt_from_dict(
                     _mapping(payload.get("receipt"), field_name="recovered receipt")
                 )
+                if receipt.attempt_id != owner_attempt_id:
+                    raise CaseProductHardeningError("recovered receipt attempt mismatch")
                 verify_receipt_for_transition(receipt, stored_identity)
                 state = ExternalActionState.RECEIPT_RECOVERED
             else:
@@ -396,6 +419,70 @@ class DurableExternalActionCoordinator:
             )
         return current, head
 
+    def begin_dispatch(
+        self,
+        identity: ExternalActionIdentity,
+        *,
+        attempt_id: str,
+        dispatch_ref: str,
+        started_at: datetime | None = None,
+    ) -> CoordinatedAction:
+        attempt = self._validate_attempt_id(attempt_id)
+        operation_ref = _text(dispatch_ref, field_name="dispatch_ref")
+        current, head = self._load(identity)
+        if current is None:
+            raise CaseProductHardeningError("external action has no reservation")
+        records = self._records(identity)
+        if current.state is ExternalActionState.OUTCOME_UNKNOWN and records:
+            last = records[-1]
+            if last.event_type == _DISPATCHED:
+                payload = _mapping(last.payload, field_name="dispatch payload")
+                if (
+                    payload.get("attempt_id") == attempt
+                    and payload.get("dispatch_ref") == operation_ref
+                ):
+                    return current
+            raise CaseProductHardeningError(
+                "external action outcome is already unknown and requires reconciliation"
+            )
+        self._owned(identity, attempt_id=attempt)
+        moment = started_at or datetime.now(UTC)
+        if moment.tzinfo is None or moment.utcoffset() is None:
+            raise CaseProductHardeningError("dispatch started_at must be timezone-aware")
+        try:
+            self._append(
+                identity,
+                event_type=_DISPATCHED,
+                payload={
+                    "attempt_id": attempt,
+                    "dispatch_ref": operation_ref,
+                    "started_at": moment.isoformat(),
+                },
+                expected_head=head,
+            )
+        except EnterpriseContractError as exc:
+            winner, _winner_head = self._load(identity)
+            winner_records = self._records(identity)
+            if winner is None or not winner_records:
+                raise CaseProductHardeningError(
+                    "external-action state changed during dispatch fencing"
+                ) from exc
+            last = winner_records[-1]
+            if last.event_type == _DISPATCHED:
+                payload = _mapping(last.payload, field_name="dispatch payload")
+                if (
+                    winner.owner_attempt_id == attempt
+                    and payload.get("dispatch_ref") == operation_ref
+                ):
+                    return winner
+            raise CaseProductHardeningError(
+                "external-action state changed during dispatch fencing"
+            ) from exc
+        dispatched, _new_head = self._load(identity)
+        if dispatched is None or dispatched.state is not ExternalActionState.OUTCOME_UNKNOWN:
+            raise CaseProductHardeningError("durable dispatch verification failed")
+        return dispatched
+
     def mark_pre_effect_failed(
         self,
         identity: ExternalActionIdentity,
@@ -485,6 +572,9 @@ class DurableExternalActionCoordinator:
                 expected_head=head,
             )
         except EnterpriseContractError as exc:
+            winner, _winner_head = self._load(identity)
+            if winner is not None and winner.state is ExternalActionState.CONFIRMED_NO_EFFECT:
+                return winner
             raise CaseProductHardeningError(
                 "external-action state changed during no-effect reconciliation"
             ) from exc
@@ -502,6 +592,8 @@ class DurableExternalActionCoordinator:
     ) -> CoordinatedAction:
         verify_receipt_for_transition(receipt, identity)
         attempt = self._validate_attempt_id(attempt_id)
+        if receipt.attempt_id != attempt:
+            raise CaseProductHardeningError("receipt attempt does not match active attempt")
         current, head = self._load(identity)
         if current is not None and current.state in {
             ExternalActionState.CONFIRMED_EXTERNAL_SUCCESS,
@@ -512,7 +604,14 @@ class DurableExternalActionCoordinator:
             raise CaseProductHardeningError(
                 "confirmed external action already has a different receipt"
             )
-        self._owned(identity, attempt_id=attempt)
+        if current is None:
+            raise CaseProductHardeningError("external action has no reservation")
+        if current.state is not ExternalActionState.OUTCOME_UNKNOWN:
+            raise CaseProductHardeningError(
+                "confirmed success requires dispatch before provider success"
+            )
+        if current.owner_attempt_id != attempt:
+            raise CaseProductHardeningError("attempt does not own active dispatch")
         try:
             self._append(
                 identity,
@@ -521,6 +620,17 @@ class DurableExternalActionCoordinator:
                 expected_head=head,
             )
         except EnterpriseContractError as exc:
+            winner, _winner_head = self._load(identity)
+            if (
+                winner is not None
+                and winner.state
+                in {
+                    ExternalActionState.CONFIRMED_EXTERNAL_SUCCESS,
+                    ExternalActionState.RECEIPT_RECOVERED,
+                }
+                and winner.receipt == receipt
+            ):
+                return winner
             raise CaseProductHardeningError(
                 "external-action state changed during success confirmation"
             ) from exc
@@ -557,6 +667,8 @@ class DurableExternalActionCoordinator:
             raise CaseProductHardeningError(
                 "receipt recovery requires OUTCOME_UNKNOWN"
             )
+        if receipt.attempt_id != current.owner_attempt_id:
+            raise CaseProductHardeningError("recovered receipt attempt mismatch")
         try:
             self._append(
                 identity,
@@ -568,6 +680,17 @@ class DurableExternalActionCoordinator:
                 expected_head=head,
             )
         except EnterpriseContractError as exc:
+            winner, _winner_head = self._load(identity)
+            if (
+                winner is not None
+                and winner.state
+                in {
+                    ExternalActionState.CONFIRMED_EXTERNAL_SUCCESS,
+                    ExternalActionState.RECEIPT_RECOVERED,
+                }
+                and winner.receipt == receipt
+            ):
+                return winner
             raise CaseProductHardeningError(
                 "external-action state changed during receipt recovery"
             ) from exc
@@ -575,6 +698,35 @@ class DurableExternalActionCoordinator:
         if updated is None:
             raise CaseProductHardeningError("external-action recovered receipt disappeared")
         return updated
+
+    def execute(
+        self,
+        identity: ExternalActionIdentity,
+        *,
+        attempt_id: str,
+        dispatch_ref: str,
+        provider_call: Callable[[], ExternalActionReceipt],
+    ) -> ExternalActionReceipt:
+        reservation = self.reserve(identity, attempt_id=attempt_id)
+        if reservation.disposition is ReservationDisposition.REPLAY_CONFIRMED:
+            if reservation.record.receipt is None:
+                raise CaseProductHardeningError("confirmed replay is missing receipt")
+            return reservation.record.receipt
+        if reservation.disposition is not ReservationDisposition.INVOKE_ALLOWED:
+            raise CaseProductHardeningError(
+                f"provider invocation forbidden: {reservation.disposition.value}"
+            )
+        self.begin_dispatch(
+            identity,
+            attempt_id=attempt_id,
+            dispatch_ref=dispatch_ref,
+        )
+        receipt = provider_call()
+        return self.confirm_success(
+            identity,
+            attempt_id=attempt_id,
+            receipt=receipt,
+        ).receipt or receipt
 
 
 __all__ = [
