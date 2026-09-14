@@ -1,12 +1,24 @@
 # Default ownership
 * @marcusdd720-ui
 
-# Trust, security, release and governance boundaries
+# CASE authority, ledger, lifecycle and external-action boundaries
+/core/case_ledger.py @marcusdd720-ui
+/core/case_product_hardening_v1.py @marcusdd720-ui
+/core/durable_external_action_v1.py @marcusdd720-ui
+/core/external_action_execution_v1.py @marcusdd720-ui
 /core/p3/ @marcusdd720-ui
 /core/enterprise/ @marcusdd720-ui
-/validation/ @marcusdd720-ui
+
+# Policy, validation, security and CI/governance boundaries
 /config/ @marcusdd720-ui
+/validation/ @marcusdd720-ui
+/.github/CODEOWNERS @marcusdd720-ui
 /.github/workflows/ @marcusdd720-ui
 /SECURITY.md @marcusdd720-ui
 /MASTER_PLAN.md @marcusdd720-ui
 /docs/ENTERPRISE_ROADMAP.md @marcusdd720-ui
+/docs/REPOSITORY_GOVERNANCE.md @marcusdd720-ui
+
+# Regression coverage for critical CASE invariants
+/tests/test_case_product_hardening_v1.py @marcusdd720-ui
+/tests/test_durable_external_action_v1.py @marcusdd720-ui
