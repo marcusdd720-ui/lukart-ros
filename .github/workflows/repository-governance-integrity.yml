@@ -1,0 +1,35 @@
+name: Repository Governance Integrity
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  governance-integrity:
+    runs-on: ubuntu-latest
+    env:
+      CANDIDATE_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+    steps:
+      - name: Checkout exact candidate SHA
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+      - name: Set up Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7
+        with:
+          python-version: "3.11"
+      - name: Focused governance regression
+        run: |
+          python -m pip install "pytest==8.4.2"
+          pytest -q tests/test_repository_governance_integrity_gate.py
+      - name: Live ruleset review-integrity gate
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: python scripts/repository_governance_integrity_gate.py --candidate-sha "${CANDIDATE_SHA}"
