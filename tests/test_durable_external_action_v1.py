@@ -102,9 +102,15 @@ def test_two_workers_share_one_atomic_reservation(tmp_path: Path) -> None:
     identity = _identity()
     barrier = Barrier(2)
 
+    # Initialize the durable backend before creating competing workers. The
+    # concurrency contract under test is atomic reservation, not concurrent
+    # SQLite schema/connection initialization.
+    with DurableExternalActionCoordinator(path):
+        pass
+
     def reserve(attempt_id: str) -> ReservationDisposition:
+        barrier.wait(timeout=10)
         with DurableExternalActionCoordinator(path) as coordinator:
-            barrier.wait(timeout=10)
             return coordinator.reserve(identity, attempt_id=attempt_id).disposition
 
     with ThreadPoolExecutor(max_workers=2) as executor:
