@@ -42,6 +42,130 @@ jobs:
         run: |
           python -m scripts.solo_attestation_integrity_guard \
             --candidate-sha "${CANDIDATE_SHA}"
+      - name: Wait for terminal technical readiness
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          python - <<'PY'
+          from __future__ import annotations
+
+          import json
+          import os
+          import time
+          import urllib.request
+          from pathlib import Path
+          from urllib.parse import urlencode
+
+          candidate = os.environ["CANDIDATE_SHA"]
+          repository = os.environ["GITHUB_REPOSITORY"]
+          token = os.environ["GITHUB_TOKEN"]
+          policy = json.loads(
+              Path("config/enterprise_v1.json").read_text(encoding="utf-8")
+          )
+          rows = policy["h2_repository_policy"]["technical_required_checks"]
+          expected: dict[str, int] = {}
+          for row in rows:
+              context = row["context"]
+              integration_id = row["integration_id"]
+              if context == "solo-governance":
+                  raise SystemExit("technical checks must not contain solo-governance")
+              if context in expected:
+                  raise SystemExit(f"duplicate technical check context: {context!r}")
+              expected[context] = integration_id
+
+          def fetch_runs() -> list[dict[str, object]]:
+              collected: list[dict[str, object]] = []
+              for page in range(1, 11):
+                  query = urlencode(
+                      {"filter": "latest", "per_page": 100, "page": page}
+                  )
+                  url = (
+                      f"https://api.github.com/repos/{repository}/commits/"
+                      f"{candidate}/check-runs?{query}"
+                  )
+                  request = urllib.request.Request(
+                      url,
+                      headers={
+                          "Accept": "application/vnd.github+json",
+                          "Authorization": f"Bearer {token}",
+                          "X-GitHub-Api-Version": "2022-11-28",
+                          "User-Agent": "lukart-ros-solo-readiness",
+                      },
+                  )
+                  with urllib.request.urlopen(request, timeout=20) as response:
+                      payload = json.loads(response.read().decode("utf-8"))
+                  page_runs = payload.get("check_runs")
+                  if not isinstance(page_runs, list):
+                      raise SystemExit("check-runs response is malformed")
+                  for run in page_runs:
+                      if not isinstance(run, dict):
+                          raise SystemExit("check-run row is malformed")
+                      if run.get("head_sha") != candidate:
+                          raise SystemExit("check-run is not bound to candidate SHA")
+                      collected.append(run)
+                  if len(page_runs) < 100:
+                      return collected
+              raise SystemExit("check-runs pagination limit exceeded")
+
+          deadline = time.monotonic() + 1200
+          while True:
+              latest: dict[str, dict[str, object]] = {}
+              for run in fetch_runs():
+                  name = run.get("name")
+                  if not isinstance(name, str) or name not in expected:
+                      continue
+                  app = run.get("app")
+                  app_id = app.get("id") if isinstance(app, dict) else None
+                  if app_id != expected[name]:
+                      raise SystemExit(
+                          f"technical check integration mismatch: {name!r} "
+                          f"actual={app_id!r} expected={expected[name]!r}"
+                      )
+                  previous = latest.get(name)
+                  current_key = (
+                      str(run.get("started_at") or ""),
+                      int(run.get("id") or 0),
+                  )
+                  previous_key = (
+                      str(previous.get("started_at") or ""),
+                      int(previous.get("id") or 0),
+                  ) if previous is not None else ("", 0)
+                  if previous is None or current_key > previous_key:
+                      latest[name] = run
+
+              missing = sorted(set(expected) - set(latest))
+              pending: list[str] = []
+              failed: list[str] = []
+              for context in expected:
+                  run = latest.get(context)
+                  if run is None:
+                      continue
+                  status = run.get("status")
+                  conclusion = run.get("conclusion")
+                  if status == "completed":
+                      if conclusion != "success":
+                          failed.append(f"{context}={conclusion!r}")
+                  else:
+                      pending.append(f"{context}={status!r}")
+
+              if failed:
+                  raise SystemExit(
+                      "technical readiness terminal failure: " + ", ".join(failed)
+                  )
+              if not missing and not pending:
+                  print("SOLO_TECHNICAL_READINESS=PASS")
+                  break
+              if time.monotonic() >= deadline:
+                  raise SystemExit(
+                      "technical readiness timeout: "
+                      f"missing={missing!r} pending={pending!r}"
+                  )
+              print(
+                  "SOLO_TECHNICAL_READINESS=WAIT "
+                  f"missing={missing!r} pending={pending!r}"
+              )
+              time.sleep(10)
+          PY
       - name: Solo-maintainer governance gate
         env:
           GITHUB_TOKEN: ${{ github.token }}
