@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from typing import cast
+
 import pytest
 
 from scripts.repository_governance_integrity_gate import (
@@ -53,6 +55,10 @@ def _detail() -> dict[str, object]:
 
 def _candidate_commit(*, verified: bool, reason: str) -> dict[str, object]:
     return {"commit": {"verification": {"verified": verified, "reason": reason}}}
+
+
+def _rules(detail: dict[str, object]) -> list[object]:
+    return cast(list[object], detail["rules"])
 
 
 def test_accepts_hardened_native_review_governance() -> None:
@@ -149,7 +155,7 @@ def test_allows_unsigned_candidate_before_signature_enforcement() -> None:
 
 def test_rejects_signature_enforcement_when_candidate_path_is_unsigned() -> None:
     detail = _detail()
-    detail["rules"].append({"type": "required_signatures"})  # type: ignore[index]
+    _rules(detail).append({"type": "required_signatures"})
     with pytest.raises(RuntimeError, match="premature signing enforcement"):
         validate_signed_commit_enforcement_guard(
             detail,
@@ -159,7 +165,7 @@ def test_rejects_signature_enforcement_when_candidate_path_is_unsigned() -> None
 
 def test_accepts_signature_enforcement_after_verified_candidate() -> None:
     detail = _detail()
-    detail["rules"].append({"type": "required_signatures"})  # type: ignore[index]
+    _rules(detail).append({"type": "required_signatures"})
     evidence = validate_signed_commit_enforcement_guard(
         detail,
         _candidate_commit(verified=True, reason="valid"),
