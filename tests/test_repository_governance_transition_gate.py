@@ -189,9 +189,9 @@ def test_check_graph_rejects_cycle() -> None:
 
 def test_check_graph_rejects_duplicate_context() -> None:
     h2 = _h2()
-    h2["technical_required_checks"].append(  # type: ignore[index]
-        _check("gate", ".github/workflows/other.yml", "other")
-    )
+    technical_checks = h2["technical_required_checks"]
+    assert isinstance(technical_checks, list)
+    technical_checks.append(_check("gate", ".github/workflows/other.yml", "other"))
     with pytest.raises(RuntimeError, match="duplicate context"):
         validate_check_dependency_graph(h2)
 
