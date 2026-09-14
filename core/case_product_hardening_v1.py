@@ -82,6 +82,23 @@ def _json_mapping(value: Mapping[str, object], *, field_name: str) -> dict[str, 
     return decoded
 
 
+def _prerequisite_mapping(
+    value: Mapping[str, bool | None],
+    *,
+    field_name: str,
+) -> dict[str, bool | None]:
+    normalized: dict[str, bool | None] = {}
+    for key, item in value.items():
+        _identifier(key, field_name=f"{field_name} key")
+        if item is not None and not isinstance(item, bool):
+            raise CaseProductHardeningError(
+                f"{field_name} values must be bool or None"
+            )
+        normalized[key] = item
+    _json_mapping(normalized, field_name=field_name)
+    return normalized
+
+
 def _iso(value: datetime | None) -> str | None:
     return value.isoformat() if value is not None else None
 
@@ -882,7 +899,7 @@ class LegalEffectAssessment:
             raise CaseProductHardeningError("unsupported legal effect schema")
         _identifier(self.subject_ref, field_name="subject_ref")
         _identifier(self.lifecycle_ref, field_name="lifecycle_ref")
-        copied = _json_mapping(
+        copied = _prerequisite_mapping(
             self.prerequisites,
             field_name="legal effect prerequisites",
         )
@@ -937,7 +954,7 @@ class LegalEffectAssessment:
         contradictions: Sequence[str] = (),
         effective_at: datetime | None = None,
     ) -> LegalEffectAssessment:
-        normalized_prerequisites = _json_mapping(
+        normalized_prerequisites = _prerequisite_mapping(
             prerequisites,
             field_name="legal effect prerequisites",
         )
