@@ -13,6 +13,7 @@ from typing import cast
 ROOT = Path(__file__).resolve().parents[1]
 POLICY_PATH = ROOT / "config" / "enterprise_v1.json"
 API_ROOT = "https://api.github.com/repos"
+GRAPHQL_API = "https://api.github.com/graphql"
 
 
 def _mapping(value: object, *, label: str) -> Mapping[str, object]:
@@ -58,6 +59,48 @@ def _github_json(url: str, *, token: str | None) -> object:
         raise RuntimeError(f"GOVERNANCE_VISIBILITY_UNKNOWN: cannot read {url}: {exc}") from exc
 
 
+def _github_graphql(
+    query: str,
+    variables: Mapping[str, object],
+    *,
+    token: str | None,
+) -> Mapping[str, object]:
+    if not token:
+        raise RuntimeError(
+            "GOVERNANCE_VISIBILITY_UNKNOWN: GitHub token required for GraphQL repository settings"
+        )
+    headers = {
+        "Accept": "application/vnd.github+json",
+        "Content-Type": "application/json",
+        "X-GitHub-Api-Version": "2022-11-28",
+        "User-Agent": "lukart-ros-governance-integrity",
+        "Authorization": f"Bearer {token}",
+    }
+    body = json.dumps({"query": query, "variables": dict(variables)}).encode("utf-8")
+    request = urllib.request.Request(GRAPHQL_API, data=body, headers=headers, method="POST")
+    try:
+        with urllib.request.urlopen(request, timeout=20) as response:
+            payload = _mapping(
+                json.loads(response.read().decode("utf-8")),
+                label="GitHub GraphQL response",
+            )
+    except (
+        urllib.error.HTTPError,
+        urllib.error.URLError,
+        TimeoutError,
+        json.JSONDecodeError,
+    ) as exc:
+        raise RuntimeError(
+            f"GOVERNANCE_VISIBILITY_UNKNOWN: cannot read {GRAPHQL_API}: {exc}"
+        ) from exc
+    errors = payload.get("errors")
+    if errors:
+        raise RuntimeError(
+            "GOVERNANCE_VISIBILITY_UNKNOWN: GitHub GraphQL repository settings query failed"
+        )
+    return _mapping(payload.get("data"), label="GitHub GraphQL data")
+
+
 def _find_ruleset(rulesets: list[object], *, name: str, target: str) -> Mapping[str, object]:
     for index, item in enumerate(rulesets):
         candidate = _mapping(item, label=f"rulesets[{index}]")
@@ -72,6 +115,54 @@ def _rule(rules: list[object], rule_type: str) -> Mapping[str, object]:
         if candidate.get("type") == rule_type:
             return candidate
     raise RuntimeError(f"governance drift: rule {rule_type!r} is missing")
+
+
+def _resolve_repository_merge_settings(
+    repository: str,
+    repository_detail: Mapping[str, object],
+    *,
+    token: str | None,
+) -> Mapping[str, object]:
+    rest_fields = (
+        "allow_merge_commit",
+        "allow_squash_merge",
+        "allow_rebase_merge",
+    )
+    if all(isinstance(repository_detail.get(field), bool) for field in rest_fields):
+        return repository_detail
+
+    if repository.count("/") != 1:
+        raise RuntimeError("governance policy identity is incomplete")
+    owner, name = repository.split("/", 1)
+    query = """
+    query RepositoryMergeSettings($owner: String!, $name: String!) {
+      repository(owner: $owner, name: $name) {
+        mergeCommitAllowed
+        squashMergeAllowed
+        rebaseMergeAllowed
+      }
+    }
+    """
+    data = _github_graphql(query, {"owner": owner, "name": name}, token=token)
+    graphql_repository = _mapping(
+        data.get("repository"),
+        label="GitHub GraphQL repository",
+    )
+    graphql_fields = {
+        "allow_merge_commit": "mergeCommitAllowed",
+        "allow_squash_merge": "squashMergeAllowed",
+        "allow_rebase_merge": "rebaseMergeAllowed",
+    }
+    resolved: dict[str, object] = {}
+    for rest_field, graphql_field in graphql_fields.items():
+        value = graphql_repository.get(graphql_field)
+        if not isinstance(value, bool):
+            raise RuntimeError(
+                "GOVERNANCE_VISIBILITY_UNKNOWN: repository merge setting "
+                f"{rest_field} unavailable via REST and GraphQL"
+            )
+        resolved[rest_field] = value
+    return resolved
 
 
 def validate_bypass_governance(
@@ -264,6 +355,11 @@ def build_evidence(candidate_sha: str) -> dict[str, object]:
         _github_json(f"{API_ROOT}/{repository}", token=token),
         label="repository detail",
     )
+    merge_settings_detail = _resolve_repository_merge_settings(
+        repository,
+        repository_detail,
+        token=token,
+    )
     inventory = _github_json(f"{API_ROOT}/{repository}/rulesets", token=token)
     rulesets = _list(inventory, label="rulesets")
     summary = _find_ruleset(rulesets, name=ruleset_name, target=target)
@@ -283,7 +379,7 @@ def build_evidence(candidate_sha: str) -> dict[str, object]:
     )
     signing_evidence = validate_signed_commit_enforcement_guard(detail, candidate_commit)
     review_evidence = validate_review_governance(policy, detail)
-    repository_merge_evidence = validate_repository_merge_settings(policy, repository_detail)
+    repository_merge_evidence = validate_repository_merge_settings(policy, merge_settings_detail)
     return {
         "schema": "lukart.repository-governance-integrity.v1",
         "candidate_sha": candidate_sha,

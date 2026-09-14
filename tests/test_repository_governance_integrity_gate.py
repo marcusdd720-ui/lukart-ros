@@ -4,6 +4,7 @@ from typing import cast
 
 import pytest
 
+import scripts.repository_governance_integrity_gate as governance_gate
 from scripts.repository_governance_integrity_gate import (
     validate_bypass_governance,
     validate_repository_merge_settings,
@@ -192,3 +193,80 @@ def test_rejects_repository_merge_settings_broader_than_policy() -> None:
     }
     with pytest.raises(RuntimeError, match="allow_squash_merge"):
         validate_repository_merge_settings(_policy(), repository)
+
+
+def test_prefers_rest_merge_settings_when_visible(monkeypatch: pytest.MonkeyPatch) -> None:
+    repository = {
+        "allow_merge_commit": True,
+        "allow_squash_merge": False,
+        "allow_rebase_merge": False,
+    }
+
+    def fail_graphql(*args: object, **kwargs: object) -> object:
+        raise AssertionError("GraphQL fallback must not run when REST fields are visible")
+
+    monkeypatch.setattr(governance_gate, "_github_graphql", fail_graphql)
+    resolved = governance_gate._resolve_repository_merge_settings(
+        "owner/repo",
+        repository,
+        token="token",
+    )
+    assert resolved == repository
+
+
+def test_falls_back_to_graphql_when_rest_merge_settings_are_hidden(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    def fake_graphql(
+        query: str,
+        variables: dict[str, object],
+        *,
+        token: str | None,
+    ) -> dict[str, object]:
+        assert "RepositoryMergeSettings" in query
+        assert variables == {"owner": "owner", "name": "repo"}
+        assert token == "token"
+        return {
+            "repository": {
+                "mergeCommitAllowed": True,
+                "squashMergeAllowed": False,
+                "rebaseMergeAllowed": False,
+            }
+        }
+
+    monkeypatch.setattr(governance_gate, "_github_graphql", fake_graphql)
+    resolved = governance_gate._resolve_repository_merge_settings(
+        "owner/repo",
+        {},
+        token="token",
+    )
+    assert resolved == {
+        "allow_merge_commit": True,
+        "allow_squash_merge": False,
+        "allow_rebase_merge": False,
+    }
+
+
+def test_graphql_fallback_fails_closed_when_merge_setting_is_missing(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    def fake_graphql(
+        query: str,
+        variables: dict[str, object],
+        *,
+        token: str | None,
+    ) -> dict[str, object]:
+        return {
+            "repository": {
+                "mergeCommitAllowed": True,
+                "squashMergeAllowed": False,
+            }
+        }
+
+    monkeypatch.setattr(governance_gate, "_github_graphql", fake_graphql)
+    with pytest.raises(RuntimeError, match="GOVERNANCE_VISIBILITY_UNKNOWN"):
+        governance_gate._resolve_repository_merge_settings(
+            "owner/repo",
+            {},
+            token="token",
+        )
