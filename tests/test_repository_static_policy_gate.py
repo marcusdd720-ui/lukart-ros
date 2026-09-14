@@ -1,11 +1,14 @@
 from __future__ import annotations
 
+from pathlib import Path
+
 import pytest
 
 from scripts.repository_static_policy_gate import (
     validate_codeowners_coverage,
     validate_periodic_drift_schedule,
     validate_required_check_matrix,
+    validate_workflow_action_pins,
     validate_workflow_permissions,
 )
 
@@ -175,6 +178,29 @@ def test_rejects_actions_write_without_orchestrator_invocation() -> None:
     }
     with pytest.raises(RuntimeError, match="same-job consumer"):
         validate_workflow_permissions(".github/workflows/unsafe.yml", workflow)
+
+
+def _write_workflow(root: Path, content: str) -> None:
+    workflows = root / ".github" / "workflows"
+    workflows.mkdir(parents=True, exist_ok=True)
+    (workflows / "test.yml").write_text(content, encoding="utf-8")
+
+
+def test_accepts_full_sha_pinned_external_actions(tmp_path: Path) -> None:
+    _write_workflow(
+        tmp_path,
+        "steps:\n  - uses: actions/checkout@" + "a" * 40 + "\n",
+    )
+    evidence = validate_workflow_action_pins(tmp_path)
+    assert evidence["scanned_files"] == 1
+    assert evidence["external_action_references"] == 1
+    assert evidence["findings"] == []
+
+
+def test_rejects_mutable_external_action_ref(tmp_path: Path) -> None:
+    _write_workflow(tmp_path, "steps:\n  - uses: actions/checkout@v4\n")
+    with pytest.raises(RuntimeError, match="workflow action pin drift"):
+        validate_workflow_action_pins(tmp_path)
 
 
 def test_codeowners_wildcard_covers_canonical_critical_surface() -> None:
