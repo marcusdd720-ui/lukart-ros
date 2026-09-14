@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from datetime import UTC, date, datetime, timedelta
+from typing import cast
 
 import pytest
 
@@ -392,6 +393,20 @@ def test_legal_effect_requires_verified_rule_and_prerequisites() -> None:
     )
     assert assessment.effect_status is LegalEffectStatus.VERIFIED_EFFECTIVE
     assert assessment.effective_at is not None
+
+
+def test_legal_effect_rejects_non_boolean_prerequisites() -> None:
+    unsafe_value = cast(bool | None, "yes")
+    with pytest.raises(CaseProductHardeningError):
+        LegalEffectAssessment.assess(
+            case_id=CaseId("CASE-TEST-EFFECT-BAD-PREREQ"),
+            subject_ref="artifact-001",
+            lifecycle_ref="RECEIVED/DELIVERED",
+            rule=_rule(),
+            assessed_on=date(2026, 9, 13),
+            prerequisites={"delivered": unsafe_value},
+            evidence_refs=("delivery-receipt",),
+        )
 
 
 def test_governed_filing_records_receipt_then_filed(tmp_path) -> None:
