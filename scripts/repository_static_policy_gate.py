@@ -168,7 +168,12 @@ def audit_workflow_permissions(root: Path = ROOT) -> dict[str, object]:
     evidence: list[dict[str, object]] = []
     for path in paths:
         relative = path.relative_to(root).as_posix()
-        evidence.append(validate_workflow_permissions(relative, _workflow_document(path, root=root)))
+        evidence.append(
+            validate_workflow_permissions(
+                relative,
+                _workflow_document(path, root=root),
+            )
+        )
     return {"scanned": len(paths), "workflows": evidence}
 
 
@@ -323,8 +328,14 @@ def validate_required_check_bindings(
             )
         if not isinstance(job_id, str) or not job_id:
             raise RuntimeError(f"required-check binding drift: job_id missing for {context!r}")
-        if not isinstance(integration_id, int) or isinstance(integration_id, bool) or integration_id <= 0:
-            raise RuntimeError(f"required-check binding drift: invalid integration_id for {context!r}")
+        if (
+            not isinstance(integration_id, int)
+            or isinstance(integration_id, bool)
+            or integration_id <= 0
+        ):
+            raise RuntimeError(
+                f"required-check binding drift: invalid integration_id for {context!r}"
+            )
 
         absolute = root.joinpath(*workflow_path.parts)
         if not absolute.is_file():
