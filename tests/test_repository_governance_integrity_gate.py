@@ -6,6 +6,7 @@ from scripts.repository_governance_integrity_gate import (
     validate_bypass_governance,
     validate_repository_merge_settings,
     validate_review_governance,
+    validate_signed_commit_enforcement_guard,
 )
 
 
@@ -48,6 +49,10 @@ def _detail() -> dict[str, object]:
             }
         ]
     }
+
+
+def _candidate_commit(*, verified: bool, reason: str) -> dict[str, object]:
+    return {"commit": {"verification": {"verified": verified, "reason": reason}}}
 
 
 def test_accepts_hardened_native_review_governance() -> None:
@@ -130,6 +135,37 @@ def test_rejects_stale_privileged_bypass_snapshot() -> None:
     detail = {"updated_at": "new"}
     with pytest.raises(RuntimeError, match="SNAPSHOT_STALE"):
         validate_bypass_governance(h2, detail, ruleset_id=22352216)
+
+
+def test_allows_unsigned_candidate_before_signature_enforcement() -> None:
+    evidence = validate_signed_commit_enforcement_guard(
+        _detail(),
+        _candidate_commit(verified=False, reason="unsigned"),
+    )
+    assert evidence["required_signatures_enforced"] is False
+    assert evidence["candidate_commit_verified"] is False
+    assert evidence["candidate_commit_verification_reason"] == "unsigned"
+
+
+def test_rejects_signature_enforcement_when_candidate_path_is_unsigned() -> None:
+    detail = _detail()
+    detail["rules"].append({"type": "required_signatures"})  # type: ignore[index]
+    with pytest.raises(RuntimeError, match="premature signing enforcement"):
+        validate_signed_commit_enforcement_guard(
+            detail,
+            _candidate_commit(verified=False, reason="unsigned"),
+        )
+
+
+def test_accepts_signature_enforcement_after_verified_candidate() -> None:
+    detail = _detail()
+    detail["rules"].append({"type": "required_signatures"})  # type: ignore[index]
+    evidence = validate_signed_commit_enforcement_guard(
+        detail,
+        _candidate_commit(verified=True, reason="valid"),
+    )
+    assert evidence["required_signatures_enforced"] is True
+    assert evidence["candidate_commit_verified"] is True
 
 
 def test_accepts_repository_merge_settings_from_canonical_policy() -> None:
