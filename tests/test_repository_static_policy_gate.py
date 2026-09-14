@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 from pathlib import Path
 
 import pytest
@@ -214,6 +215,19 @@ def test_codeowners_wildcard_covers_canonical_critical_surface() -> None:
 def test_codeowners_rejects_uncovered_critical_surface() -> None:
     with pytest.raises(RuntimeError, match="unowned"):
         validate_codeowners_coverage(["config/**"], "/core/** @owner\n")
+
+
+def test_canonical_policy_self_protects_governance_enforcers() -> None:
+    root = Path(__file__).resolve().parents[1]
+    policy = json.loads((root / "config" / "enterprise_v1.json").read_text(encoding="utf-8"))
+    critical_paths = set(policy["h2_repository_policy"]["review_integrity"]["critical_paths"])
+    required = {
+        "scripts/repository_governance_integrity_gate.py",
+        "scripts/repository_static_policy_gate.py",
+        "tests/test_repository_governance_integrity_gate.py",
+        "tests/test_repository_static_policy_gate.py",
+    }
+    assert required <= critical_paths
 
 
 def _policy(contexts: list[str]) -> dict[str, object]:
