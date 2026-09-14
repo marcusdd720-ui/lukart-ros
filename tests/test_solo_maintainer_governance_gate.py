@@ -142,9 +142,9 @@ def test_check_run_pagination_collects_all_pages(monkeypatch: pytest.MonkeyPatch
 
     def fake_json(url: str, *, token: str | None) -> object:
         seen.append(url)
-        if "page=1" in url:
+        if url.endswith("&page=1"):
             return {"check_runs": [_check(f"check-{index}") for index in range(100)]}
-        if "page=2" in url:
+        if url.endswith("&page=2"):
             return {"check_runs": [_check("last", check_id=101)]}
         raise AssertionError(url)
 
