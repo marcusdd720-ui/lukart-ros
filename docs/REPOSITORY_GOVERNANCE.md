@@ -44,6 +44,7 @@ The protected branch ruleset must require the concrete check contexts produced b
 - `quality-gate (3.11)`
 - `quality-gate (3.12)`
 - `quality-gate (3.13)`
+- `quality-gate (3.14)`
 - `gate`
 - `orchestrate`
 - `audit`
