@@ -15,6 +15,9 @@ on:
       - ".github/workflows/reasoning-certification.yml"
   workflow_dispatch:
 
+permissions:
+  contents: read
+
 jobs:
   step6-locked-certification:
     runs-on: ubuntu-latest
