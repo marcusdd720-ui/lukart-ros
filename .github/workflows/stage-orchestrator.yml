@@ -13,6 +13,9 @@ on:
         default: ""
         type: string
 
+permissions:
+  contents: read
+
 concurrency:
   group: lukart-ros-stage-orchestrator-${{ github.event_name }}-${{ github.ref }}
   cancel-in-progress: false
