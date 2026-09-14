@@ -1,0 +1,184 @@
+from __future__ import annotations
+
+import argparse
+import json
+import os
+import subprocess
+import urllib.error
+import urllib.request
+from collections.abc import Mapping
+from pathlib import Path
+from typing import cast
+
+ROOT = Path(__file__).resolve().parents[1]
+POLICY_PATH = ROOT / "config" / "enterprise_v1.json"
+API_ROOT = "https://api.github.com/repos"
+
+
+def _mapping(value: object, *, label: str) -> Mapping[str, object]:
+    if not isinstance(value, Mapping):
+        raise RuntimeError(f"{label} must be an object")
+    return cast(Mapping[str, object], value)
+
+
+def _list(value: object, *, label: str) -> list[object]:
+    if not isinstance(value, list):
+        raise RuntimeError(f"{label} must be a list")
+    return cast(list[object], value)
+
+
+def _git(*args: str) -> str:
+    completed = subprocess.run(
+        ("git", "-C", str(ROOT), *args),
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+    return completed.stdout.strip()
+
+
+def _github_json(url: str, *, token: str | None) -> object:
+    headers = {
+        "Accept": "application/vnd.github+json",
+        "X-GitHub-Api-Version": "2022-11-28",
+        "User-Agent": "lukart-ros-governance-integrity",
+    }
+    if token:
+        headers["Authorization"] = f"Bearer {token}"
+    request = urllib.request.Request(url, headers=headers)
+    try:
+        with urllib.request.urlopen(request, timeout=20) as response:
+            return json.loads(response.read().decode("utf-8"))
+    except (urllib.error.HTTPError, urllib.error.URLError, TimeoutError, json.JSONDecodeError) as exc:
+        raise RuntimeError(f"GOVERNANCE_VISIBILITY_UNKNOWN: cannot read {url}: {exc}") from exc
+
+
+def _find_ruleset(rulesets: list[object], *, name: str, target: str) -> Mapping[str, object]:
+    for index, item in enumerate(rulesets):
+        candidate = _mapping(item, label=f"rulesets[{index}]")
+        if candidate.get("name") == name and candidate.get("target") == target:
+            return candidate
+    raise RuntimeError(f"governance drift: ruleset {name!r} target={target!r} is missing")
+
+
+def _rule(rules: list[object], rule_type: str) -> Mapping[str, object]:
+    for index, item in enumerate(rules):
+        candidate = _mapping(item, label=f"rules[{index}]")
+        if candidate.get("type") == rule_type:
+            return candidate
+    raise RuntimeError(f"governance drift: rule {rule_type!r} is missing")
+
+
+def validate_review_governance(policy: Mapping[str, object], detail: Mapping[str, object]) -> dict[str, object]:
+    h2 = _mapping(policy.get("h2_repository_policy"), label="h2_repository_policy")
+    expected = _mapping(h2.get("pull_request_rule"), label="h2.pull_request_rule")
+    review = _mapping(h2.get("review_integrity"), label="h2.review_integrity")
+    rules = _list(detail.get("rules"), label="ruleset.rules")
+    params = _mapping(_rule(rules, "pull_request").get("parameters"), label="pull_request.parameters")
+
+    minimum = expected.get("minimum_approving_review_count")
+    actual = params.get("required_approving_review_count")
+    if not isinstance(minimum, int) or isinstance(minimum, bool) or minimum < 2:
+        raise RuntimeError("governance policy conflict: minimum approvals must be >= 2")
+    if not isinstance(actual, int) or isinstance(actual, bool) or actual < minimum:
+        raise RuntimeError(f"governance drift: approvals actual={actual!r} minimum={minimum}")
+
+    for field in (
+        "dismiss_stale_reviews_on_push",
+        "require_code_owner_review",
+        "require_last_push_approval",
+        "required_review_thread_resolution",
+        "require_extra_approval_for_unattributed_changes",
+    ):
+        if expected.get(field) is not True:
+            raise RuntimeError(f"governance policy conflict: {field} must be true")
+        if params.get(field) is not True:
+            raise RuntimeError(f"governance drift: {field} is not enabled")
+
+    allowed = expected.get("allowed_merge_methods")
+    if not isinstance(allowed, list) or not allowed or any(not isinstance(x, str) for x in allowed):
+        raise RuntimeError("governance policy conflict: allowed_merge_methods must be a non-empty string list")
+    actual_methods = params.get("allowed_merge_methods")
+    if not isinstance(actual_methods, list) or set(actual_methods) != set(allowed):
+        raise RuntimeError(
+            f"governance drift: allowed_merge_methods actual={actual_methods!r} expected={allowed!r}"
+        )
+
+    ordinary = review.get("ordinary_minimum_independent_approvals")
+    critical = review.get("critical_minimum_independent_approvals")
+    if ordinary != minimum or critical != minimum:
+        raise RuntimeError("governance policy conflict: native approval floor must match review-integrity minima")
+    if review.get("approvals_must_bind_current_head") is not True:
+        raise RuntimeError("governance policy conflict: approvals must bind current head")
+    critical_paths = review.get("critical_paths")
+    if not isinstance(critical_paths, list) or not critical_paths:
+        raise RuntimeError("governance policy conflict: critical_paths must not be empty")
+
+    return {
+        "required_approving_review_count": actual,
+        "dismiss_stale_reviews_on_push": True,
+        "require_code_owner_review": True,
+        "require_last_push_approval": True,
+        "required_review_thread_resolution": True,
+        "require_extra_approval_for_unattributed_changes": True,
+        "allowed_merge_methods": sorted(cast(list[str], actual_methods)),
+    }
+
+
+def build_evidence(candidate_sha: str) -> dict[str, object]:
+    head = _git("rev-parse", "HEAD")
+    if head != candidate_sha:
+        raise RuntimeError(f"exact-SHA mismatch: HEAD={head} candidate={candidate_sha}")
+    policy = _mapping(json.loads(POLICY_PATH.read_text(encoding="utf-8")), label="enterprise policy")
+    h2 = _mapping(policy.get("h2_repository_policy"), label="h2_repository_policy")
+    repository = str(h2.get("repository", ""))
+    ruleset_name = str(h2.get("ruleset_name", ""))
+    target = str(h2.get("target", ""))
+    if not repository or not ruleset_name or not target:
+        raise RuntimeError("governance policy identity is incomplete")
+    token = os.environ.get("GITHUB_TOKEN") or os.environ.get("GH_TOKEN")
+    inventory = _github_json(f"{API_ROOT}/{repository}/rulesets", token=token)
+    rulesets = _list(inventory, label="rulesets")
+    summary = _find_ruleset(rulesets, name=ruleset_name, target=target)
+    ruleset_id = summary.get("id")
+    if not isinstance(ruleset_id, int):
+        raise RuntimeError("governance visibility unknown: ruleset ID is missing")
+    detail = _mapping(
+        _github_json(f"{API_ROOT}/{repository}/rulesets/{ruleset_id}", token=token),
+        label="ruleset detail",
+    )
+    if detail.get("enforcement") != "active":
+        raise RuntimeError("governance drift: ruleset is not active")
+    if detail.get("bypass_actors") != []:
+        raise RuntimeError(f"governance drift: bypass actors present: {detail.get('bypass_actors')!r}")
+    review_evidence = validate_review_governance(policy, detail)
+    return {
+        "schema": "lukart.repository-governance-integrity.v1",
+        "candidate_sha": candidate_sha,
+        "ruleset_id": ruleset_id,
+        "review_rule": review_evidence,
+        "state": "CONTROL_PASS",
+    }
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser(description="Fail-closed live repository review-governance gate")
+    parser.add_argument("--candidate-sha", required=True)
+    parser.add_argument("--output", default="build/hardcore/repository-governance-integrity.json")
+    args = parser.parse_args()
+    try:
+        evidence = build_evidence(args.candidate_sha)
+    except RuntimeError as exc:
+        print(f"REPOSITORY_GOVERNANCE_INTEGRITY=FAIL: {exc}")
+        return 1
+    output = Path(args.output)
+    output.parent.mkdir(parents=True, exist_ok=True)
+    output.write_text(json.dumps(evidence, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    print("REPOSITORY_GOVERNANCE_INTEGRITY=PASS")
+    print(f"CANDIDATE_SHA={evidence['candidate_sha']}")
+    print(f"RULESET_ID={evidence['ruleset_id']}")
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
