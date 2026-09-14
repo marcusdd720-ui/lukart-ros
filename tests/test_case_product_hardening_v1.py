@@ -98,7 +98,7 @@ def _approval(identity: ExternalActionIdentity) -> AuthorityApproval:
         artifact_version=identity.artifact_version,
         artifact_digest=identity.artifact_digest,
         action_type=identity.action_type,
-        granted_at=datetime.now(UTC) - timedelta(minutes=1),
+        granted_at=datetime(2026, 9, 13, 11, 59, tzinfo=UTC),
     )
 
 
