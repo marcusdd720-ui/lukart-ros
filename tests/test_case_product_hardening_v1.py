@@ -195,6 +195,7 @@ def test_idempotency_exact_retry_never_allows_second_invoke() -> None:
     assert concurrent.disposition is ReservationDisposition.IN_PROGRESS
     assert not concurrent.invoke_allowed
 
+    coordinator.begin_dispatch(identity, attempt_id="attempt-001")
     coordinator.confirm_success(
         identity,
         attempt_id="attempt-001",
