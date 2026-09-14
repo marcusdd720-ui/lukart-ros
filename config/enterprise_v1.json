@@ -118,7 +118,8 @@
       {"context": "smoke-test", "integration_id": 15368, "workflow": ".github/workflows/github-app-smoke.yml", "job_id": "smoke-test"},
       {"context": "program-gate", "integration_id": 15368, "workflow": ".github/workflows/production-validation-program.yml", "job_id": "program-gate"},
       {"context": "enterprise-gate", "integration_id": 15368, "workflow": ".github/workflows/enterprise-hardening.yml", "job_id": "enterprise-gate"},
-      {"context": "codeql", "integration_id": 15368, "workflow": ".github/workflows/codeql-enterprise.yml", "job_id": "codeql"}
+      {"context": "codeql", "integration_id": 15368, "workflow": ".github/workflows/codeql-enterprise.yml", "job_id": "codeql"},
+      {"context": "governance-integrity", "integration_id": 15368, "workflow": ".github/workflows/repository-governance-integrity.yml", "job_id": "governance-integrity"}
     ],
     "pull_request_rule": {
       "minimum_approving_review_count": 2,
@@ -126,7 +127,8 @@
       "require_code_owner_review": true,
       "require_last_push_approval": true,
       "required_review_thread_resolution": true,
-      "require_extra_approval_for_unattributed_changes": true
+      "require_extra_approval_for_unattributed_changes": true,
+      "allowed_merge_methods": ["merge"]
     },
     "review_integrity": {
       "ordinary_minimum_independent_approvals": 2,
