@@ -14,9 +14,9 @@ from pathlib import Path
 from typing import cast
 from urllib.parse import urlencode
 
+import scripts.repository_governance_transition_gate as transition
+
 ROOT = Path(__file__).resolve().parents[1]
-ENTERPRISE_POLICY_PATH = ROOT / "config" / "enterprise_v1.json"
-CUTOVER_PLAN_PATH = ROOT / "config" / "solo_maintainer_cutover_v1.json"
 API_ROOT = "https://api.github.com/repos"
 ATTESTATION_MARKER = "LUKART-SOLO-MAINTAINER-ATTESTATION-V1"
 _GLOB_META = frozenset("*?[")
@@ -172,40 +172,33 @@ def _github_check_runs(
 
 def validate_profile(profile: Mapping[str, object]) -> dict[str, object]:
     maintainer = profile.get("maintainer_id")
+    default_branch = profile.get("default_branch")
     if not isinstance(maintainer, str) or not maintainer:
         raise RuntimeError("solo profile maintainer_id must be non-empty text")
+    if not isinstance(default_branch, str) or not default_branch:
+        raise RuntimeError("solo profile default_branch must be non-empty text")
     if profile.get("independent_external_review") != "NOT_PERFORMED":
-        raise RuntimeError(
-            "solo profile must record independent_external_review=NOT_PERFORMED"
-        )
+        raise RuntimeError("solo profile must record independent_external_review=NOT_PERFORMED")
+    if profile.get("reviewer_independent") is not False:
+        raise RuntimeError("solo profile must record reviewer_independent=false")
 
     attestation = _mapping(profile.get("attestation"), label="solo.attestation")
-    if attestation.get("marker") != ATTESTATION_MARKER:
-        raise RuntimeError("solo attestation marker mismatch")
-    if attestation.get("decision") != "ACCEPT":
-        raise RuntimeError("solo attestation ACCEPT decision is required")
-    if attestation.get("revocation_decision") != "REVOKE":
-        raise RuntimeError("solo attestation REVOKE decision is required")
-    if attestation.get("must_bind_current_head") is not True:
-        raise RuntimeError("solo attestation must bind current head")
-    if attestation.get("must_follow_terminal_technical_success") is not True:
-        raise RuntimeError("solo attestation must follow terminal technical success")
-    if attestation.get("author_association") != "OWNER":
-        raise RuntimeError("solo attestation must require OWNER association")
+    expected_attestation = {
+        "marker": ATTESTATION_MARKER,
+        "decision": "ACCEPT",
+        "revocation_decision": "REVOKE",
+        "must_bind_current_head": True,
+        "must_follow_terminal_technical_success": True,
+        "author_association": "OWNER",
+    }
+    if dict(attestation) != expected_attestation:
+        raise RuntimeError("solo attestation contract differs from hardened contract")
 
     cooldowns = _mapping(profile.get("cooldown_seconds"), label="solo.cooldown_seconds")
-    expected_cooldowns = {"ordinary": 0, "critical": 7200, "governance": 86400}
-    for risk_class, expected in expected_cooldowns.items():
-        value = cooldowns.get(risk_class)
-        if not isinstance(value, int) or isinstance(value, bool) or value != expected:
-            raise RuntimeError(
-                f"solo cooldown {risk_class} must equal {expected} seconds"
-            )
+    if dict(cooldowns) != {"ordinary": 0, "critical": 7200, "governance": 86400}:
+        raise RuntimeError("solo cooldown contract differs from hardened contract")
 
-    target = _mapping(
-        profile.get("target_pull_request_rule"),
-        label="solo.target_pull_request_rule",
-    )
+    target = _mapping(profile.get("target_pull_request_rule"), label="solo.target_pull_request_rule")
     expected_target = {
         "minimum_approving_review_count": 0,
         "dismiss_stale_reviews_on_push": True,
@@ -233,10 +226,7 @@ def validate_profile(profile: Mapping[str, object]) -> dict[str, object]:
     ):
         raise RuntimeError("solo required check integration_id must be positive")
 
-    governance_paths = _string_list(
-        profile.get("governance_paths"),
-        label="solo.governance_paths",
-    )
+    governance_paths = _string_list(profile.get("governance_paths"), label="solo.governance_paths")
     support_paths = _string_list(
         profile.get("governance_support_paths"),
         label="solo.governance_support_paths",
@@ -246,23 +236,32 @@ def validate_profile(profile: Mapping[str, object]) -> dict[str, object]:
 
     return {
         "maintainer_id": maintainer,
+        "default_branch": default_branch,
         "cooldown_seconds": dict(cooldowns),
         "governance_paths": governance_paths,
         "governance_support_paths": support_paths,
         "required_solo_check": dict(solo_check),
+        "independent_external_review": "NOT_PERFORMED",
+        "reviewer_independent": False,
     }
 
 
 def validate_exact_critical_paths(root: Path, critical_paths: list[str]) -> list[str]:
     verified: list[str] = []
     for raw in critical_paths:
-        if any(char in raw for char in _GLOB_META):
-            continue
-        path = root / raw.lstrip("/")
-        if not path.is_file():
-            raise RuntimeError(
-                f"critical-path existence drift: exact critical artifact {raw!r} is missing"
-            )
+        pattern = raw.lstrip("/")
+        if any(char in pattern for char in _GLOB_META):
+            matches = [path for path in root.glob(pattern) if path.is_file()]
+            if not matches:
+                raise RuntimeError(
+                    f"critical-path existence drift: glob critical artifact {raw!r} has no files"
+                )
+        else:
+            path = root / pattern
+            if not path.is_file():
+                raise RuntimeError(
+                    f"critical-path existence drift: exact critical artifact {raw!r} is missing"
+                )
         verified.append(raw)
     return sorted(verified)
 
@@ -289,14 +288,10 @@ def classify_change(
 ) -> str:
     if not changed_files:
         raise RuntimeError("solo governance cannot classify an empty PR")
-    governance_changed = any(
-        _matches_any(path, governance_paths) for path in changed_files
-    )
+    governance_changed = any(_matches_any(path, governance_paths) for path in changed_files)
     if governance_changed:
         outside = sorted(
-            path
-            for path in changed_files
-            if not _matches_any(path, governance_support_paths)
+            path for path in changed_files if not _matches_any(path, governance_support_paths)
         )
         if outside:
             raise RuntimeError(
@@ -321,26 +316,36 @@ def validate_technical_checks(
     required_contexts: list[str],
     self_context: str,
     candidate_sha: str,
+    required_integration_ids: Mapping[str, int] | None = None,
 ) -> datetime:
     candidate_sha = validate_candidate_sha(candidate_sha)
-    expected = [context for context in required_contexts if context != self_context]
-    if not expected:
-        raise RuntimeError("solo governance requires independent technical checks")
+    if self_context in required_contexts:
+        raise RuntimeError("technical required checks must not contain solo-governance self context")
+    if not required_contexts:
+        raise RuntimeError("solo governance requires technical checks")
+    expected = list(required_contexts)
+    if len(set(expected)) != len(expected):
+        raise RuntimeError("solo technical checks contain duplicate contexts")
     latest: dict[str, Mapping[str, object]] = {}
     for index, raw in enumerate(check_runs):
         check = _mapping(raw, label=f"check_runs[{index}]")
         if check.get("head_sha") != candidate_sha:
-            raise RuntimeError(
-                "solo technical check is not bound to the exact candidate SHA"
-            )
+            raise RuntimeError("solo technical check is not bound to the exact candidate SHA")
         name = check.get("name")
         if not isinstance(name, str) or name not in expected:
             continue
+        if required_integration_ids is not None:
+            expected_app_id = required_integration_ids.get(name)
+            if not isinstance(expected_app_id, int):
+                raise RuntimeError(f"missing canonical integration binding for {name!r}")
+            app = _mapping(check.get("app"), label=f"check_runs[{index}].app")
+            if app.get("id") != expected_app_id:
+                raise RuntimeError(
+                    f"solo technical check integration mismatch: {name!r} "
+                    f"actual={app.get('id')!r} expected={expected_app_id!r}"
+                )
         previous = latest.get(name)
-        current_key = (
-            str(check.get("started_at") or ""),
-            _int_or_zero(check.get("id")),
-        )
+        current_key = (str(check.get("started_at") or ""), _int_or_zero(check.get("id")))
         previous_key = (
             str(previous.get("started_at") or ""),
             _int_or_zero(previous.get("id")),
@@ -361,10 +366,7 @@ def validate_technical_checks(
                 f"status={check.get('status')!r} conclusion={check.get('conclusion')!r}"
             )
         completed.append(
-            _parse_time(
-                check.get("completed_at"),
-                label=f"check {context} completed_at",
-            )
+            _parse_time(check.get("completed_at"), label=f"check {context} completed_at")
         )
     return max(completed)
 
@@ -394,7 +396,7 @@ def validate_attestation(
     cooldown_seconds: int,
 ) -> dict[str, object]:
     candidate_sha = validate_candidate_sha(candidate_sha)
-    matching: list[tuple[datetime, int, Mapping[str, object], Mapping[str, str]]] = []
+    matching: list[tuple[datetime, int, Mapping[str, str]]] = []
     for index, raw in enumerate(comments):
         comment = _mapping(raw, label=f"comments[{index}]")
         fields = _attestation_fields(comment.get("body"))
@@ -404,21 +406,28 @@ def validate_attestation(
         if user.get("login") != maintainer_id:
             continue
         if comment.get("author_association") != "OWNER":
-            continue
-        created_at = _parse_time(
-            comment.get("created_at"),
-            label=f"comments[{index}].created_at",
-        )
+            raise RuntimeError("solo attestation author association must be OWNER")
+        if user.get("type") != "User":
+            raise RuntimeError("solo attestation actor must be a human GitHub User")
+        if comment.get("performed_via_github_app") is not None:
+            raise RuntimeError("solo attestation must not have GitHub App provenance")
+        created_at_raw = comment.get("created_at")
+        updated_at_raw = comment.get("updated_at")
+        if not isinstance(created_at_raw, str) or not isinstance(updated_at_raw, str):
+            raise RuntimeError("solo attestation timestamps are missing")
+        if created_at_raw != updated_at_raw:
+            raise RuntimeError("solo attestation comment was edited")
+        created_at = _parse_time(created_at_raw, label=f"comments[{index}].created_at")
         comment_id = comment.get("id")
-        if not isinstance(comment_id, int):
+        if not isinstance(comment_id, int) or isinstance(comment_id, bool):
             raise RuntimeError("solo attestation comment id must be an integer")
-        matching.append((created_at, comment_id, comment, fields))
+        matching.append((created_at, comment_id, fields))
 
     if not matching:
         raise RuntimeError("solo maintainer attestation for current head is missing")
 
     matching.sort(key=lambda item: (item[0], item[1]))
-    created_at, comment_id, _, fields = matching[-1]
+    created_at, comment_id, fields = matching[-1]
     if fields.get("decision") != "ACCEPT":
         raise RuntimeError("latest solo maintainer attestation is not ACCEPT")
     if fields.get("independent_external_review") != "NOT_PERFORMED":
@@ -430,6 +439,8 @@ def validate_attestation(
         )
 
     not_before = technical_ready_at + timedelta(seconds=cooldown_seconds)
+    if created_at < technical_ready_at:
+        raise RuntimeError("solo attestation predates terminal technical success")
     if created_at < not_before:
         raise RuntimeError(
             "solo cooldown not satisfied: attestation precedes "
@@ -441,16 +452,33 @@ def validate_attestation(
         "created_at": created_at.isoformat(),
         "risk_class": risk_class,
         "independent_external_review": "NOT_PERFORMED",
+        "reviewer_independent": False,
     }
 
 
-def _enterprise_solo_profile(
-    enterprise: Mapping[str, object],
-) -> Mapping[str, object] | None:
-    h2 = _mapping(enterprise.get("h2_repository_policy"), label="h2_repository_policy")
-    if h2.get("governance_mode") != "solo_maintainer":
-        return None
-    return _mapping(h2.get("solo_maintainer_profile"), label="h2.solo_maintainer_profile")
+def _technical_bindings(h2: Mapping[str, object]) -> dict[str, int]:
+    rows = _list(h2.get("technical_required_checks"), label="h2.technical_required_checks")
+    bindings: dict[str, int] = {}
+    for index, raw in enumerate(rows):
+        check = _mapping(raw, label=f"h2.technical_required_checks[{index}]")
+        context = check.get("context")
+        integration_id = check.get("integration_id")
+        if not isinstance(context, str) or not context:
+            raise RuntimeError("technical required check context must be non-empty text")
+        if context == "solo-governance":
+            raise RuntimeError("technical required checks must not contain solo-governance")
+        if (
+            not isinstance(integration_id, int)
+            or isinstance(integration_id, bool)
+            or integration_id <= 0
+        ):
+            raise RuntimeError(f"technical required check integration invalid for {context!r}")
+        if context in bindings:
+            raise RuntimeError("technical required checks contain duplicate context")
+        bindings[context] = integration_id
+    if not bindings:
+        raise RuntimeError("technical required checks must not be empty")
+    return bindings
 
 
 def build_evidence(candidate_sha: str, *, root: Path = ROOT) -> dict[str, object]:
@@ -459,47 +487,39 @@ def build_evidence(candidate_sha: str, *, root: Path = ROOT) -> dict[str, object
     if head != candidate_sha:
         raise RuntimeError(f"exact-SHA mismatch: HEAD={head} candidate={candidate_sha}")
 
-    enterprise = _load_json(
-        root / "config" / "enterprise_v1.json",
-        label="enterprise policy",
-    )
+    enterprise = _load_json(root / "config" / "enterprise_v1.json", label="enterprise policy")
     h2 = _mapping(enterprise.get("h2_repository_policy"), label="h2_repository_policy")
+    transition.validate_state_machine(h2)
+    transition.validate_state_contract(h2)
+    transition.validate_check_dependency_graph(h2)
+    transition.validate_profile_truthfulness(h2)
+    state = h2.get("governance_state")
+    if state not in transition.STATES:
+        raise RuntimeError(f"unsupported governance_state {state!r}")
+    profile_raw = _mapping(h2.get("solo_maintainer_profile"), label="h2.solo_maintainer_profile")
+    profile = validate_profile(profile_raw)
     review = _mapping(h2.get("review_integrity"), label="h2.review_integrity")
-    critical_paths = _string_list(
-        review.get("critical_paths"),
-        label="h2.review_integrity.critical_paths",
-    )
-    exact_paths = validate_exact_critical_paths(root, critical_paths)
+    critical_paths = _string_list(review.get("critical_paths"), label="h2.review_integrity.critical_paths")
+    verified_paths = validate_exact_critical_paths(root, critical_paths)
 
-    active_profile = _enterprise_solo_profile(enterprise)
-    if active_profile is None:
-        plan = _load_json(
-            root / "config" / "solo_maintainer_cutover_v1.json",
-            label="solo cutover plan",
-        )
-        if plan.get("authoritative") is not False:
-            raise RuntimeError("dormant solo cutover plan must remain non-authoritative")
-        if plan.get("state") != "DORMANT_PRE_CUTOVER":
-            raise RuntimeError("unexpected dormant solo cutover plan state")
-        profile = validate_profile(plan)
+    if state == "INDEPENDENT_LOCKED":
         return {
             "schema": "lukart.solo-maintainer-governance.v1",
             "candidate_sha": candidate_sha,
+            "governance_state": state,
             "mode": "DORMANT_PRE_CUTOVER",
             "profile": profile,
-            "exact_critical_paths": exact_paths,
+            "critical_paths": verified_paths,
             "independent_external_review": "NOT_PERFORMED",
+            "reviewer_independent": False,
             "state": "DORMANT_PASS",
         }
 
-    profile = validate_profile(active_profile)
     repository_raw = h2.get("repository")
     if not isinstance(repository_raw, str) or not repository_raw:
         raise RuntimeError("enterprise repository identity is missing")
     repository = validate_repository_name(repository_raw)
-    default_branch = active_profile.get("default_branch")
-    if not isinstance(default_branch, str) or not default_branch:
-        raise RuntimeError("solo profile default_branch is missing")
+    default_branch = cast(str, profile["default_branch"])
     maintainer_id = cast(str, profile["maintainer_id"])
     token = os.environ.get("GITHUB_TOKEN") or os.environ.get("GH_TOKEN")
     if not token:
@@ -525,10 +545,7 @@ def build_evidence(candidate_sha: str, *, root: Path = ROOT) -> dict[str, object
     if author.get("login") != maintainer_id:
         raise RuntimeError("solo governance PR author must be the repository maintainer")
 
-    file_rows = _github_list(
-        f"{API_ROOT}/{repository}/pulls/{pr_number}/files",
-        token=token,
-    )
+    file_rows = _github_list(f"{API_ROOT}/{repository}/pulls/{pr_number}/files", token=token)
     changed_files: list[str] = []
     for index, raw in enumerate(file_rows):
         row = _mapping(raw, label=f"pull_files[{index}]")
@@ -541,29 +558,36 @@ def build_evidence(candidate_sha: str, *, root: Path = ROOT) -> dict[str, object
         changed_files,
         critical_paths=critical_paths,
         governance_paths=cast(list[str], profile["governance_paths"]),
-        governance_support_paths=cast(
-            list[str],
-            profile["governance_support_paths"],
-        ),
+        governance_support_paths=cast(list[str], profile["governance_support_paths"]),
     )
-
-    raw_checks = _list(h2.get("required_checks"), label="h2.required_checks")
-    required_contexts: list[str] = []
-    for index, raw in enumerate(raw_checks):
-        check = _mapping(raw, label=f"h2.required_checks[{index}]")
-        context = check.get("context")
-        if not isinstance(context, str) or not context:
-            raise RuntimeError("required check context must be non-empty text")
-        required_contexts.append(context)
-    if "solo-governance" not in required_contexts:
-        raise RuntimeError("active solo governance requires solo-governance in canonical checks")
-
+    technical_bindings = _technical_bindings(h2)
     technical_ready_at = validate_technical_checks(
         _github_check_runs(repository, candidate_sha, token=token),
-        required_contexts=required_contexts,
+        required_contexts=list(technical_bindings),
         self_context="solo-governance",
         candidate_sha=candidate_sha,
+        required_integration_ids=technical_bindings,
     )
+
+    base_evidence: dict[str, object] = {
+        "schema": "lukart.solo-maintainer-governance.v1",
+        "candidate_sha": candidate_sha,
+        "governance_state": state,
+        "pr_number": pr_number,
+        "risk_class": risk_class,
+        "changed_files": sorted(changed_files),
+        "technical_ready_at": technical_ready_at.isoformat(),
+        "critical_paths": verified_paths,
+        "independent_external_review": "NOT_PERFORMED",
+        "reviewer_independent": False,
+    }
+    if state == "SOLO_ARMED":
+        return {
+            **base_evidence,
+            "mode": "ARMED_READINESS",
+            "attestation": "NOT_REQUIRED_UNTIL_SOLO_ACTIVE",
+            "state": "ARMED_PASS",
+        }
 
     comments = _github_list(
         f"{API_ROOT}/{repository}/issues/{pr_number}/comments",
@@ -581,18 +605,10 @@ def build_evidence(candidate_sha: str, *, root: Path = ROOT) -> dict[str, object
         technical_ready_at=technical_ready_at,
         cooldown_seconds=cooldown,
     )
-
     return {
-        "schema": "lukart.solo-maintainer-governance.v1",
-        "candidate_sha": candidate_sha,
-        "mode": "solo_maintainer",
-        "pr_number": pr_number,
-        "risk_class": risk_class,
-        "changed_files": sorted(changed_files),
-        "technical_ready_at": technical_ready_at.isoformat(),
+        **base_evidence,
+        "mode": "SOLO_ACTIVE",
         "attestation": attestation,
-        "exact_critical_paths": exact_paths,
-        "independent_external_review": "NOT_PERFORMED",
         "state": "CONTROL_PASS",
     }
 
@@ -614,11 +630,9 @@ def main() -> int:
         return 1
     output = Path(args.output)
     output.parent.mkdir(parents=True, exist_ok=True)
-    output.write_text(
-        json.dumps(evidence, indent=2, sort_keys=True) + "\n",
-        encoding="utf-8",
-    )
+    output.write_text(json.dumps(evidence, indent=2, sort_keys=True) + "\n", encoding="utf-8")
     print(f"SOLO_MAINTAINER_GOVERNANCE={evidence['state']}")
+    print(f"GOVERNANCE_STATE={evidence['governance_state']}")
     print(f"CANDIDATE_SHA={evidence['candidate_sha']}")
     return 0
 

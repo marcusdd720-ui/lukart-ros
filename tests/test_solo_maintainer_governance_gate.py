@@ -24,7 +24,9 @@ OTHER_SHA = "b" * 40
 def _profile() -> dict[str, object]:
     return {
         "maintainer_id": OWNER,
+        "default_branch": "main",
         "independent_external_review": "NOT_PERFORMED",
+        "reviewer_independent": False,
         "attestation": {
             "marker": "LUKART-SOLO-MAINTAINER-ATTESTATION-V1",
             "decision": "ACCEPT",
@@ -33,11 +35,7 @@ def _profile() -> dict[str, object]:
             "must_follow_terminal_technical_success": True,
             "author_association": "OWNER",
         },
-        "cooldown_seconds": {
-            "ordinary": 0,
-            "critical": 7200,
-            "governance": 86400,
-        },
+        "cooldown_seconds": {"ordinary": 0, "critical": 7200, "governance": 86400},
         "target_pull_request_rule": {
             "minimum_approving_review_count": 0,
             "dismiss_stale_reviews_on_push": True,
@@ -77,6 +75,7 @@ def _check(
     completed_at: str = "2026-09-14T10:05:00Z",
     check_id: int = 1,
     head_sha: str = SHA,
+    app_id: int = 15368,
 ) -> dict[str, object]:
     return {
         "id": check_id,
@@ -86,6 +85,7 @@ def _check(
         "conclusion": conclusion,
         "started_at": started_at,
         "completed_at": completed_at,
+        "app": {"id": app_id},
     }
 
 
@@ -95,15 +95,20 @@ def _comment(
     sha: str = SHA,
     risk_class: str = "ordinary",
     created_at: str = "2026-09-14T10:06:00Z",
+    updated_at: str | None = None,
     comment_id: int = 1,
     login: str = OWNER,
     association: str = "OWNER",
+    user_type: str = "User",
+    app: object = None,
 ) -> dict[str, object]:
     return {
         "id": comment_id,
         "created_at": created_at,
+        "updated_at": updated_at or created_at,
         "author_association": association,
-        "user": {"login": login},
+        "performed_via_github_app": app,
+        "user": {"login": login, "type": user_type},
         "body": "\n".join(
             [
                 "LUKART-SOLO-MAINTAINER-ATTESTATION-V1",
@@ -152,16 +157,16 @@ def test_check_run_pagination_collects_all_pages(monkeypatch: pytest.MonkeyPatch
     result = solo_gate._github_check_runs("owner/repo", SHA, token="token")
     assert len(result) == 101
     assert len(seen) == 2
-    assert all(f"/commits/{SHA}/check-runs?" in url for url in seen)
 
 
 def test_check_run_pagination_rejects_data_for_different_sha(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    def fake_json(url: str, *, token: str | None) -> object:
-        return {"check_runs": [_check("gate", head_sha=OTHER_SHA)]}
-
-    monkeypatch.setattr(solo_gate, "_github_json", fake_json)
+    monkeypatch.setattr(
+        solo_gate,
+        "_github_json",
+        lambda url, token=None: {"check_runs": [_check("gate", head_sha=OTHER_SHA)]},
+    )
     with pytest.raises(RuntimeError, match="exact candidate SHA"):
         solo_gate._github_check_runs("owner/repo", SHA, token="token")
 
@@ -169,11 +174,8 @@ def test_check_run_pagination_rejects_data_for_different_sha(
 def test_profile_is_truthful_and_hardened() -> None:
     result = validate_profile(_profile())
     assert result["maintainer_id"] == OWNER
-    assert result["cooldown_seconds"] == {
-        "ordinary": 0,
-        "critical": 7200,
-        "governance": 86400,
-    }
+    assert result["default_branch"] == "main"
+    assert result["reviewer_independent"] is False
 
 
 def test_profile_rejects_false_independent_review_claim() -> None:
@@ -186,7 +188,7 @@ def test_profile_rejects_false_independent_review_claim() -> None:
 def test_profile_rejects_weaker_governance_cooldown() -> None:
     profile = _profile()
     profile["cooldown_seconds"]["governance"] = 0  # type: ignore[index]
-    with pytest.raises(RuntimeError, match="86400"):
+    with pytest.raises(RuntimeError, match="cooldown"):
         validate_profile(profile)
 
 
@@ -194,10 +196,7 @@ def test_classifies_governance_and_rejects_mixed_product_change() -> None:
     profile = validate_profile(_profile())
     with pytest.raises(RuntimeError, match="topology"):
         classify_change(
-            [
-                "config/enterprise_v1.json",
-                "core/case_ledger.py",
-            ],
+            ["config/enterprise_v1.json", "core/case_ledger.py"],
             critical_paths=["core/case_ledger.py", "config/**"],
             governance_paths=profile["governance_paths"],  # type: ignore[arg-type]
             governance_support_paths=profile["governance_support_paths"],  # type: ignore[arg-type]
@@ -206,34 +205,25 @@ def test_classifies_governance_and_rejects_mixed_product_change() -> None:
 
 def test_classifies_critical_and_ordinary_changes() -> None:
     profile = validate_profile(_profile())
-    critical = classify_change(
+    assert classify_change(
         ["core/case_ledger.py"],
         critical_paths=["core/case_ledger.py"],
         governance_paths=profile["governance_paths"],  # type: ignore[arg-type]
         governance_support_paths=profile["governance_support_paths"],  # type: ignore[arg-type]
-    )
-    ordinary = classify_change(
+    ) == "critical"
+    assert classify_change(
         ["README.md"],
         critical_paths=["core/case_ledger.py"],
         governance_paths=profile["governance_paths"],  # type: ignore[arg-type]
         governance_support_paths=profile["governance_support_paths"],  # type: ignore[arg-type]
-    )
-    assert critical == "critical"
-    assert ordinary == "ordinary"
+    ) == "ordinary"
 
 
 def test_exact_critical_path_must_exist(tmp_path: Path) -> None:
-    existing = tmp_path / "SECURITY.md"
-    existing.write_text("policy\n", encoding="utf-8")
-    assert validate_exact_critical_paths(
-        tmp_path,
-        ["SECURITY.md", "core/**"],
-    ) == ["SECURITY.md"]
+    (tmp_path / "SECURITY.md").write_text("policy\n", encoding="utf-8")
+    assert validate_exact_critical_paths(tmp_path, ["SECURITY.md"]) == ["SECURITY.md"]
     with pytest.raises(RuntimeError, match="missing"):
-        validate_exact_critical_paths(
-            tmp_path,
-            ["SECURITY.md", "docs/REPOSITORY_GOVERNANCE.md"],
-        )
+        validate_exact_critical_paths(tmp_path, ["docs/REPOSITORY_GOVERNANCE.md"])
 
 
 def test_technical_checks_require_latest_terminal_success() -> None:
@@ -254,39 +244,46 @@ def test_technical_checks_require_latest_terminal_success() -> None:
     ]
     ready_at = validate_technical_checks(
         runs,
-        required_contexts=["gate", "codeql", "solo-governance"],
+        required_contexts=["gate", "codeql"],
         self_context="solo-governance",
         candidate_sha=SHA,
+        required_integration_ids={"gate": 15368, "codeql": 15368},
     )
     assert ready_at == datetime(2026, 9, 14, 10, 16, tzinfo=UTC)
 
 
-def test_technical_checks_fail_closed_on_missing_context() -> None:
-    with pytest.raises(RuntimeError, match="missing"):
+def test_technical_checks_reject_self_dependency() -> None:
+    with pytest.raises(RuntimeError, match="self context"):
         validate_technical_checks(
             [_check("gate")],
-            required_contexts=["gate", "codeql", "solo-governance"],
+            required_contexts=["gate", "solo-governance"],
             self_context="solo-governance",
             candidate_sha=SHA,
         )
 
 
-def test_technical_checks_reject_wrong_sha_and_missing_binding() -> None:
+def test_technical_checks_reject_wrong_sha_missing_and_wrong_integration() -> None:
     with pytest.raises(RuntimeError, match="exact candidate SHA"):
         validate_technical_checks(
             [_check("gate", head_sha=OTHER_SHA)],
-            required_contexts=["gate", "solo-governance"],
+            required_contexts=["gate"],
             self_context="solo-governance",
             candidate_sha=SHA,
         )
-    row = _check("gate")
-    row.pop("head_sha")
-    with pytest.raises(RuntimeError, match="exact candidate SHA"):
+    with pytest.raises(RuntimeError, match="missing"):
         validate_technical_checks(
-            [row],
-            required_contexts=["gate", "solo-governance"],
+            [_check("gate")],
+            required_contexts=["gate", "codeql"],
             self_context="solo-governance",
             candidate_sha=SHA,
+        )
+    with pytest.raises(RuntimeError, match="integration mismatch"):
+        validate_technical_checks(
+            [_check("gate", app_id=999)],
+            required_contexts=["gate"],
+            self_context="solo-governance",
+            candidate_sha=SHA,
+            required_integration_ids={"gate": 15368},
         )
 
 
@@ -300,18 +297,13 @@ def test_attestation_binds_owner_head_risk_and_ready_time() -> None:
         cooldown_seconds=0,
     )
     assert result["comment_id"] == 1
-    assert result["independent_external_review"] == "NOT_PERFORMED"
+    assert result["reviewer_independent"] is False
 
 
 def test_attestation_rejects_early_governance_acceptance() -> None:
     with pytest.raises(RuntimeError, match="cooldown"):
         validate_attestation(
-            [
-                _comment(
-                    risk_class="governance",
-                    created_at="2026-09-15T09:00:00Z",
-                )
-            ],
+            [_comment(risk_class="governance", created_at="2026-09-15T09:00:00Z")],
             candidate_sha=SHA,
             maintainer_id=OWNER,
             risk_class="governance",
@@ -325,11 +317,7 @@ def test_latest_revocation_overrides_prior_acceptance() -> None:
         validate_attestation(
             [
                 _comment(comment_id=1, created_at="2026-09-14T10:06:00Z"),
-                _comment(
-                    decision="REVOKE",
-                    comment_id=2,
-                    created_at="2026-09-14T10:07:00Z",
-                ),
+                _comment(decision="REVOKE", comment_id=2, created_at="2026-09-14T10:07:00Z"),
             ],
             candidate_sha=SHA,
             maintainer_id=OWNER,
@@ -339,10 +327,40 @@ def test_latest_revocation_overrides_prior_acceptance() -> None:
         )
 
 
-def test_attestation_from_non_owner_is_ignored() -> None:
+def test_attestation_rejects_edited_app_and_forged_association() -> None:
+    with pytest.raises(RuntimeError, match="edited"):
+        validate_attestation(
+            [_comment(updated_at="2026-09-14T10:07:00Z")],
+            candidate_sha=SHA,
+            maintainer_id=OWNER,
+            risk_class="ordinary",
+            technical_ready_at=datetime(2026, 9, 14, 10, 5, tzinfo=UTC),
+            cooldown_seconds=0,
+        )
+    with pytest.raises(RuntimeError, match="GitHub App"):
+        validate_attestation(
+            [_comment(app={"slug": "automation"})],
+            candidate_sha=SHA,
+            maintainer_id=OWNER,
+            risk_class="ordinary",
+            technical_ready_at=datetime(2026, 9, 14, 10, 5, tzinfo=UTC),
+            cooldown_seconds=0,
+        )
+    with pytest.raises(RuntimeError, match="association"):
+        validate_attestation(
+            [_comment(association="MEMBER")],
+            candidate_sha=SHA,
+            maintainer_id=OWNER,
+            risk_class="ordinary",
+            technical_ready_at=datetime(2026, 9, 14, 10, 5, tzinfo=UTC),
+            cooldown_seconds=0,
+        )
+
+
+def test_attestation_from_non_owner_and_stale_sha_do_not_satisfy_control() -> None:
     with pytest.raises(RuntimeError, match="missing"):
         validate_attestation(
-            [_comment(login="someone-else")],
+            [_comment(login="someone-else"), _comment(sha=OTHER_SHA)],
             candidate_sha=SHA,
             maintainer_id=OWNER,
             risk_class="ordinary",

@@ -30,9 +30,21 @@ jobs:
       - name: Focused governance regression
         run: |
           python -m pip install "pytest==8.4.2" "PyYAML==6.0.2"
-          pytest -q tests/test_repository_governance_integrity_gate.py tests/test_repository_static_policy_gate.py tests/test_repository_critical_path_gate.py tests/test_repository_governance_mode_gate.py
+          pytest -q tests/test_repository_governance_integrity_gate.py tests/test_repository_static_policy_gate.py tests/test_repository_critical_path_gate.py tests/test_repository_governance_transition_gate.py tests/test_repository_governance_mode_gate.py
       - name: Canonical critical-path integrity gate
         run: python scripts/repository_critical_path_gate.py --candidate-sha "${CANDIDATE_SHA}"
+      - name: Canonical governance transition gate
+        run: |
+          PARENT_LINE="$(git rev-list --parents -n 1 "${CANDIDATE_SHA}")"
+          set -- ${PARENT_LINE}
+          if [ "$#" -ge 3 ]; then
+            BASE_SHA="$3"
+          else
+            BASE_SHA="$2"
+          fi
+          python -m scripts.repository_governance_transition_gate \
+            --candidate-sha "${CANDIDATE_SHA}" \
+            --base-sha "${BASE_SHA}"
       - name: Required-check source collision audit
         run: |
           python - <<'PY'
@@ -46,7 +58,8 @@ jobs:
 
           root = Path.cwd()
           policy = json.loads((root / "config" / "enterprise_v1.json").read_text(encoding="utf-8"))
-          checks = policy["h2_repository_policy"]["required_checks"]
+          h2 = policy["h2_repository_policy"]
+          checks = h2.get("final_required_checks", h2["required_checks"])
 
           canonical: dict[str, tuple[str, str]] = {}
           for check in checks:
@@ -119,7 +132,7 @@ jobs:
           PY
       - name: Static repository governance gate
         run: python scripts/repository_static_policy_gate.py --candidate-sha "${CANDIDATE_SHA}"
-      - name: Live mode-aware repository governance gate
+      - name: Live state-aware repository governance gate
         env:
           GITHUB_TOKEN: ${{ github.token }}
         run: python -m scripts.repository_governance_mode_gate --candidate-sha "${CANDIDATE_SHA}"

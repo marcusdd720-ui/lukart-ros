@@ -24,6 +24,9 @@ def _h2() -> dict[str, object]:
             {"context": "solo-governance", "integration_id": 15368},
         ],
         "solo_maintainer_profile": {
+            "independent_external_review": "NOT_PERFORMED",
+            "reviewer_independent": False,
+            "attestation": {"must_bind_current_head": True},
             "target_pull_request_rule": {
                 "minimum_approving_review_count": 0,
                 "dismiss_stale_reviews_on_push": True,
@@ -32,13 +35,7 @@ def _h2() -> dict[str, object]:
                 "required_review_thread_resolution": True,
                 "require_extra_approval_for_unattributed_changes": False,
                 "allowed_merge_methods": ["merge"],
-            }
-        },
-        "review_integrity": {
-            "ordinary_minimum_independent_approvals": 0,
-            "critical_minimum_independent_approvals": 0,
-            "independent_external_review": "NOT_PERFORMED",
-            "maintainer_attestation_must_bind_current_head": True,
+            },
         },
     }
 
@@ -139,13 +136,20 @@ def test_solo_review_rejects_codeowner_requirement() -> None:
 
 def test_solo_review_rejects_false_independent_review_state() -> None:
     h2 = _h2()
-    h2["review_integrity"]["independent_external_review"] = "PASS"  # type: ignore[index]
+    h2["solo_maintainer_profile"]["independent_external_review"] = "PASS"  # type: ignore[index]
     with pytest.raises(RuntimeError, match="NOT_PERFORMED"):
+        validate_solo_review_governance(h2, _detail())
+
+
+def test_solo_review_rejects_false_independent_reviewer_claim() -> None:
+    h2 = _h2()
+    h2["solo_maintainer_profile"]["reviewer_independent"] = True  # type: ignore[index]
+    with pytest.raises(RuntimeError, match="reviewer_independent"):
         validate_solo_review_governance(h2, _detail())
 
 
 def test_solo_review_requires_head_bound_attestation_contract() -> None:
     h2 = _h2()
-    h2["review_integrity"]["maintainer_attestation_must_bind_current_head"] = False  # type: ignore[index]
+    h2["solo_maintainer_profile"]["attestation"]["must_bind_current_head"] = False  # type: ignore[index]
     with pytest.raises(RuntimeError, match="head-bound"):
         validate_solo_review_governance(h2, _detail())

@@ -8,6 +8,7 @@ from pathlib import Path
 from typing import cast
 
 import scripts.repository_governance_integrity_gate as legacy
+import scripts.repository_governance_transition_gate as transition
 
 ROOT = Path(__file__).resolve().parents[1]
 POLICY_PATH = ROOT / "config" / "enterprise_v1.json"
@@ -66,10 +67,10 @@ def validate_required_status_checks(
         _rule(rules, "required_status_checks").get("parameters"),
         label="required_status_checks.parameters",
     )
-    strict = h2.get("strict_required_status_checks")
-    do_not_enforce = h2.get("do_not_enforce_on_create")
-    if strict is not True or do_not_enforce is not False:
+    if h2.get("strict_required_status_checks") is not True:
         raise RuntimeError("governance policy conflict: status-check policy must remain strict")
+    if h2.get("do_not_enforce_on_create") is not False:
+        raise RuntimeError("governance policy conflict: status checks must apply on creation")
     if params.get("strict_required_status_checks_policy") is not True:
         raise RuntimeError("governance drift: strict required status checks are disabled")
     if params.get("do_not_enforce_on_create") is not False:
@@ -172,20 +173,14 @@ def validate_solo_review_governance(
             )
         evidence[field] = actual_value
 
-    review = _mapping(h2.get("review_integrity"), label="h2.review_integrity")
-    if review.get("ordinary_minimum_independent_approvals") != 0:
-        raise RuntimeError(
-            "solo governance policy conflict: ordinary independent approvals must be 0"
-        )
-    if review.get("critical_minimum_independent_approvals") != 0:
-        raise RuntimeError(
-            "solo governance policy conflict: critical independent approvals must be 0"
-        )
-    if review.get("independent_external_review") != "NOT_PERFORMED":
+    if profile.get("independent_external_review") != "NOT_PERFORMED":
         raise RuntimeError(
             "solo governance policy conflict: independent review must be NOT_PERFORMED"
         )
-    if review.get("maintainer_attestation_must_bind_current_head") is not True:
+    if profile.get("reviewer_independent") is not False:
+        raise RuntimeError("solo governance policy conflict: reviewer_independent must be false")
+    attestation = _mapping(profile.get("attestation"), label="solo.attestation")
+    if attestation.get("must_bind_current_head") is not True:
         raise RuntimeError("solo governance policy conflict: head-bound attestation is required")
     return evidence
 
@@ -202,9 +197,13 @@ def build_evidence(candidate_sha: str) -> dict[str, object]:
     except (OSError, json.JSONDecodeError) as exc:
         raise RuntimeError("enterprise policy must be valid UTF-8 JSON") from exc
     h2 = _mapping(policy.get("h2_repository_policy"), label="h2_repository_policy")
-    mode = h2.get("governance_mode", "independent")
-    if mode not in {"independent", "solo_maintainer"}:
-        raise RuntimeError(f"governance policy conflict: unsupported governance_mode {mode!r}")
+    transition.validate_state_machine(h2)
+    transition.validate_state_contract(h2)
+    transition.validate_check_dependency_graph(h2)
+    transition.validate_profile_truthfulness(h2)
+    state = h2.get("governance_state")
+    if state not in transition.STATES:
+        raise RuntimeError(f"governance policy conflict: unsupported governance_state {state!r}")
 
     repository = h2.get("repository")
     ruleset_name = h2.get("ruleset_name")
@@ -253,10 +252,12 @@ def build_evidence(candidate_sha: str) -> dict[str, object]:
         )
     signing = legacy.validate_signed_commit_enforcement_guard(detail, candidate_commit)
     status_checks = validate_required_status_checks(h2, detail)
-    if mode == "independent":
+    if state in {"INDEPENDENT_LOCKED", "SOLO_ARMED"}:
         review = legacy.validate_review_governance(policy, detail)
+        review_mode = "INDEPENDENT_NATIVE"
     else:
         review = validate_solo_review_governance(h2, detail)
+        review_mode = "SOLO_COMPENSATING_CONTROLS"
     repository_merge = legacy.validate_repository_merge_settings(
         policy,
         merge_settings_detail,
@@ -264,7 +265,8 @@ def build_evidence(candidate_sha: str) -> dict[str, object]:
     return {
         "schema": "lukart.repository-governance-mode-integrity.v1",
         "candidate_sha": candidate_sha,
-        "governance_mode": mode,
+        "governance_state": state,
+        "review_mode": review_mode,
         "ruleset_id": ruleset_id,
         "bypass_actors": bypass,
         "signing_enforcement": signing,
@@ -277,7 +279,7 @@ def build_evidence(candidate_sha: str) -> dict[str, object]:
 
 def main() -> int:
     parser = argparse.ArgumentParser(
-        description="Fail-closed mode-aware live repository governance gate"
+        description="Fail-closed state-aware live repository governance gate"
     )
     parser.add_argument("--candidate-sha", required=True)
     parser.add_argument(
@@ -297,7 +299,7 @@ def main() -> int:
         encoding="utf-8",
     )
     print("REPOSITORY_GOVERNANCE_MODE_INTEGRITY=PASS")
-    print(f"GOVERNANCE_MODE={evidence['governance_mode']}")
+    print(f"GOVERNANCE_STATE={evidence['governance_state']}")
     print(f"CANDIDATE_SHA={evidence['candidate_sha']}")
     return 0
 

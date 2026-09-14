@@ -7,6 +7,7 @@ from collections.abc import Mapping
 from pathlib import Path
 from typing import cast
 
+import scripts.repository_governance_transition_gate as transition
 import scripts.solo_maintainer_governance_gate as solo
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -25,6 +26,7 @@ def validate_direct_human_attestations(
     candidate_sha: str,
     maintainer_id: str,
 ) -> dict[str, object]:
+    candidate_sha = solo.validate_candidate_sha(candidate_sha)
     matches: list[int] = []
     for index, raw in enumerate(comments):
         comment = _mapping(raw, label=f"comments[{index}]")
@@ -35,7 +37,7 @@ def validate_direct_human_attestations(
         if user.get("login") != maintainer_id:
             continue
         if comment.get("author_association") != "OWNER":
-            continue
+            raise RuntimeError("solo attestation author association must be OWNER")
         if user.get("type") != "User":
             raise RuntimeError("solo attestation actor must be a human GitHub User")
         if comment.get("performed_via_github_app") is not None:
@@ -51,7 +53,7 @@ def validate_direct_human_attestations(
                 "solo attestation comment was edited; post a new unedited attestation instead"
             )
         comment_id = comment.get("id")
-        if not isinstance(comment_id, int):
+        if not isinstance(comment_id, int) or isinstance(comment_id, bool):
             raise RuntimeError("solo attestation comment id must be an integer")
         matches.append(comment_id)
     if not matches:
@@ -60,6 +62,7 @@ def validate_direct_human_attestations(
 
 
 def build_evidence(candidate_sha: str) -> dict[str, object]:
+    candidate_sha = solo.validate_candidate_sha(candidate_sha)
     try:
         policy = _mapping(
             json.loads(POLICY_PATH.read_text(encoding="utf-8")),
@@ -68,12 +71,19 @@ def build_evidence(candidate_sha: str) -> dict[str, object]:
     except (OSError, json.JSONDecodeError) as exc:
         raise RuntimeError("enterprise policy must be valid UTF-8 JSON") from exc
     h2 = _mapping(policy.get("h2_repository_policy"), label="h2_repository_policy")
-    if h2.get("governance_mode") != "solo_maintainer":
+    transition.validate_state_machine(h2)
+    transition.validate_state_contract(h2)
+    transition.validate_profile_truthfulness(h2)
+    state = h2.get("governance_state")
+    if state not in transition.STATES:
+        raise RuntimeError(f"unsupported governance_state {state!r}")
+    if state != "SOLO_ACTIVE":
         return {
             "schema": "lukart.solo-attestation-integrity.v1",
             "candidate_sha": candidate_sha,
-            "mode": "DORMANT_PRE_CUTOVER",
-            "state": "DORMANT_PASS",
+            "governance_state": state,
+            "mode": "NOT_REQUIRED_UNTIL_SOLO_ACTIVE",
+            "state": "DORMANT_PASS" if state == "INDEPENDENT_LOCKED" else "ARMED_PASS",
         }
 
     profile = _mapping(h2.get("solo_maintainer_profile"), label="h2.solo_maintainer_profile")
@@ -101,7 +111,8 @@ def build_evidence(candidate_sha: str) -> dict[str, object]:
     return {
         "schema": "lukart.solo-attestation-integrity.v1",
         "candidate_sha": candidate_sha,
-        "mode": "solo_maintainer",
+        "governance_state": state,
+        "mode": "SOLO_ACTIVE",
         **evidence,
         "state": "CONTROL_PASS",
     }
