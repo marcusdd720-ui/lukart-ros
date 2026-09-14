@@ -135,7 +135,7 @@
       "critical_minimum_independent_approvals": 2,
       "approvals_must_bind_current_head": true,
       "critical_paths": [
-        "core/case_ledger.py",
+        "core/case_ledger/**",
         "core/case_product_hardening_v1.py",
         "core/durable_external_action_v1.py",
         "core/external_action_execution_v1.py",
@@ -145,12 +145,17 @@
         "validation/**",
         "scripts/repository_governance_integrity_gate.py",
         "scripts/repository_static_policy_gate.py",
+        "scripts/repository_critical_path_gate.py",
+        "scripts/solo_maintainer_governance_gate.py",
         "tests/test_repository_governance_integrity_gate.py",
         "tests/test_repository_static_policy_gate.py",
+        "tests/test_repository_critical_path_gate.py",
+        "tests/test_solo_maintainer_governance_gate.py",
         ".github/CODEOWNERS",
         ".github/workflows/**",
         "SECURITY.md",
         "MASTER_PLAN.md",
+        "docs/WORKING_PRINCIPLES.md",
         "docs/REPOSITORY_GOVERNANCE.md"
       ]
     }
