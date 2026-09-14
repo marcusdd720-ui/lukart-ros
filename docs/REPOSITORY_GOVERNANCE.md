@@ -2,6 +2,8 @@
 
 This document defines the repository-level governance target for `main`. It complements the engineering and CASE operating standards; it does not replace product or CASE semantics.
 
+The canonical machine-enforced repository policy is `config/enterprise_v1.json` under `h2_repository_policy`. This document explains that policy; when prose and the canonical H2 policy differ, the discrepancy is governance drift and must be corrected rather than silently choosing the weaker rule.
+
 ## Fail-closed rule
 
 A pull request may merge only when the exact current head SHA satisfies every required check and every enforced review rule. A PASS for an older SHA is historical evidence only. `PR merged` does not imply `main post-merge validated`.
@@ -17,9 +19,9 @@ A pull request may merge only when the exact current head SHA satisfies every re
 - requires all review threads to be resolved;
 - dismisses stale approvals after a new push;
 - requires approval of the last push;
-- requires at least one independent approving review for ordinary changes;
+- requires at least two independent approving reviews;
 - requires CODEOWNER review for critical boundaries;
-- requires two independent approvals for critical changes when the GitHub ruleset architecture can enforce this without ambiguous or path-unsafe behavior.
+- allows only the canonical merge method declared by H2 policy.
 
 Self-approval alone is not sufficient independent review. Any break-glass bypass must be explicit, narrowly scoped, auditable, and documented before use.
 
@@ -35,11 +37,11 @@ CODEOWNERS must explicitly cover at least:
 - GitHub Actions workflows and repository governance files;
 - regression tests for the critical invariants above.
 
-A real, confirmed repository owner or team must be used. Never invent a CODEOWNER identity.
+A real, confirmed repository owner or team must be used. Never invent a CODEOWNER identity. The author of a change cannot satisfy the independent-review requirement merely by also being listed as a CODEOWNER.
 
 ## Required validation contexts
 
-The protected branch ruleset must require the concrete check contexts produced by the critical workflows, not merely workflow display names. At minimum the repository currently treats the following contexts as critical:
+The protected branch ruleset must require the concrete check contexts produced by the critical workflows, not merely workflow display names. The canonical list is maintained in H2 policy. At minimum the repository currently treats the following contexts as critical:
 
 - `quality-gate (3.11)`
 - `quality-gate (3.12)`
@@ -52,12 +54,15 @@ The protected branch ruleset must require the concrete check contexts produced b
 - `program-gate`
 - `enterprise-gate`
 - `codeql`
+- `governance-integrity`
 
 Supported runtime versions and required contexts must be re-audited whenever the CI matrix changes. A new supported runtime must not silently remain optional.
 
 ## Supply chain and workflow permissions
 
 Critical workflows must use pinned third-party GitHub Actions, frozen or locked dependencies where supported, least-privilege permissions, secret scanning, dependency-boundary checks, CodeQL, and provenance/SBOM controls when available. Untrusted pull-request code must not receive write-capable credentials or secrets.
+
+Signed-commit enforcement may be enabled only after every authorized automation path can create verifiable commits. Do not enable a signature rule that would force legitimate governance automation to bypass branch policy.
 
 ## Post-merge validation
 
@@ -67,4 +72,4 @@ A failed post-merge gate is a production defect. Remediation must use a new bran
 
 ## Governance drift
 
-Repository settings, CODEOWNERS and required contexts must be periodically compared with this policy. Any mismatch is a governance defect and must remain visible until remediated. Policy text is not a substitute for actual GitHub ruleset enforcement.
+Repository settings, CODEOWNERS and required contexts must be continuously compared with canonical H2 policy. The read-only `governance-integrity` check must fail closed when the live repository is weaker than the declared policy. Any mismatch is a governance defect and must remain visible until remediated. Policy text is not a substitute for actual GitHub ruleset enforcement.
