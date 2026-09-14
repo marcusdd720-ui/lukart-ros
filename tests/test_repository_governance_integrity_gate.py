@@ -6,6 +6,7 @@ import pytest
 
 import scripts.repository_governance_integrity_gate as governance_gate
 from scripts.repository_governance_integrity_gate import (
+    required_signatures_enforced,
     validate_bypass_governance,
     validate_repository_merge_settings,
     validate_review_governance,
@@ -144,14 +145,22 @@ def test_rejects_stale_privileged_bypass_snapshot() -> None:
         validate_bypass_governance(h2, detail, ruleset_id=22352216)
 
 
-def test_allows_unsigned_candidate_before_signature_enforcement() -> None:
-    evidence = validate_signed_commit_enforcement_guard(
-        _detail(),
-        _candidate_commit(verified=False, reason="unsigned"),
-    )
-    assert evidence["required_signatures_enforced"] is False
-    assert evidence["candidate_commit_verified"] is False
-    assert evidence["candidate_commit_verification_reason"] == "unsigned"
+def test_signature_is_not_evaluated_when_enforcement_is_inactive() -> None:
+    detail = _detail()
+    assert required_signatures_enforced(detail) is False
+    evidence = validate_signed_commit_enforcement_guard(detail, None)
+    assert evidence == {
+        "required_signatures_enforced": False,
+        "candidate_signature_state": "NOT_EVALUATED",
+    }
+
+
+def test_required_signature_evidence_missing_fails_closed() -> None:
+    detail = _detail()
+    _rules(detail).append({"type": "required_signatures"})
+    assert required_signatures_enforced(detail) is True
+    with pytest.raises(RuntimeError, match="VISIBILITY_UNKNOWN"):
+        validate_signed_commit_enforcement_guard(detail, None)
 
 
 def test_rejects_signature_enforcement_when_candidate_path_is_unsigned() -> None:
@@ -172,6 +181,7 @@ def test_accepts_signature_enforcement_after_verified_candidate() -> None:
         _candidate_commit(verified=True, reason="valid"),
     )
     assert evidence["required_signatures_enforced"] is True
+    assert evidence["candidate_signature_state"] == "VERIFIED"
     assert evidence["candidate_commit_verified"] is True
 
 

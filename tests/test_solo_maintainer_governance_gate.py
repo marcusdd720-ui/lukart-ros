@@ -5,9 +5,12 @@ from pathlib import Path
 
 import pytest
 
+import scripts.solo_maintainer_governance_gate as solo_gate
 from scripts.solo_maintainer_governance_gate import (
+    build_candidate_check_runs_url,
     classify_change,
     validate_attestation,
+    validate_candidate_sha,
     validate_exact_critical_paths,
     validate_profile,
     validate_technical_checks,
@@ -15,6 +18,7 @@ from scripts.solo_maintainer_governance_gate import (
 
 OWNER = "marcusdd720-ui"
 SHA = "a" * 40
+OTHER_SHA = "b" * 40
 
 
 def _profile() -> dict[str, object]:
@@ -72,10 +76,12 @@ def _check(
     started_at: str = "2026-09-14T10:00:00Z",
     completed_at: str = "2026-09-14T10:05:00Z",
     check_id: int = 1,
+    head_sha: str = SHA,
 ) -> dict[str, object]:
     return {
         "id": check_id,
         "name": name,
+        "head_sha": head_sha,
         "status": status,
         "conclusion": conclusion,
         "started_at": started_at,
@@ -108,6 +114,56 @@ def _comment(
             ]
         ),
     }
+
+
+def test_candidate_sha_requires_exact_40_hex() -> None:
+    assert validate_candidate_sha("A" * 40) == "a" * 40
+    for value in ("a" * 39, "a" * 41, "g" * 40, "a" * 39 + "?", "{sha}"):
+        with pytest.raises(RuntimeError, match="40 hexadecimal"):
+            validate_candidate_sha(value)
+
+
+def test_exact_check_runs_url_rejects_path_query_and_placeholder_injection() -> None:
+    expected = (
+        "https://api.github.com/repos/owner/repo/commits/"
+        + SHA
+        + "/check-runs?filter=latest&per_page=100&page=2"
+    )
+    assert build_candidate_check_runs_url("owner/repo", SHA, page=2) == expected
+    for candidate in (SHA[:-1] + "/", SHA[:-1] + "?", "{sha}" + "a" * 35):
+        with pytest.raises(RuntimeError):
+            build_candidate_check_runs_url("owner/repo", candidate, page=1)
+    with pytest.raises(RuntimeError, match="owner/name"):
+        build_candidate_check_runs_url("owner/repo?x=1", SHA, page=1)
+
+
+def test_check_run_pagination_collects_all_pages(monkeypatch: pytest.MonkeyPatch) -> None:
+    seen: list[str] = []
+
+    def fake_json(url: str, *, token: str | None) -> object:
+        seen.append(url)
+        if "page=1" in url:
+            return {"check_runs": [_check(f"check-{index}") for index in range(100)]}
+        if "page=2" in url:
+            return {"check_runs": [_check("last", check_id=101)]}
+        raise AssertionError(url)
+
+    monkeypatch.setattr(solo_gate, "_github_json", fake_json)
+    result = solo_gate._github_check_runs("owner/repo", SHA, token="token")
+    assert len(result) == 101
+    assert len(seen) == 2
+    assert all(f"/commits/{SHA}/check-runs?" in url for url in seen)
+
+
+def test_check_run_pagination_rejects_data_for_different_sha(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    def fake_json(url: str, *, token: str | None) -> object:
+        return {"check_runs": [_check("gate", head_sha=OTHER_SHA)]}
+
+    monkeypatch.setattr(solo_gate, "_github_json", fake_json)
+    with pytest.raises(RuntimeError, match="exact candidate SHA"):
+        solo_gate._github_check_runs("owner/repo", SHA, token="token")
 
 
 def test_profile_is_truthful_and_hardened() -> None:
@@ -200,6 +256,7 @@ def test_technical_checks_require_latest_terminal_success() -> None:
         runs,
         required_contexts=["gate", "codeql", "solo-governance"],
         self_context="solo-governance",
+        candidate_sha=SHA,
     )
     assert ready_at == datetime(2026, 9, 14, 10, 16, tzinfo=UTC)
 
@@ -210,6 +267,26 @@ def test_technical_checks_fail_closed_on_missing_context() -> None:
             [_check("gate")],
             required_contexts=["gate", "codeql", "solo-governance"],
             self_context="solo-governance",
+            candidate_sha=SHA,
+        )
+
+
+def test_technical_checks_reject_wrong_sha_and_missing_binding() -> None:
+    with pytest.raises(RuntimeError, match="exact candidate SHA"):
+        validate_technical_checks(
+            [_check("gate", head_sha=OTHER_SHA)],
+            required_contexts=["gate", "solo-governance"],
+            self_context="solo-governance",
+            candidate_sha=SHA,
+        )
+    row = _check("gate")
+    row.pop("head_sha")
+    with pytest.raises(RuntimeError, match="exact candidate SHA"):
+        validate_technical_checks(
+            [row],
+            required_contexts=["gate", "solo-governance"],
+            self_context="solo-governance",
+            candidate_sha=SHA,
         )
 
 

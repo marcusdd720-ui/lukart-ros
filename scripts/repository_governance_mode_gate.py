@@ -242,13 +242,15 @@ def build_evidence(candidate_sha: str) -> dict[str, object]:
         raise RuntimeError("governance drift: ruleset is not active")
 
     bypass = legacy.validate_bypass_governance(h2, detail, ruleset_id=ruleset_id)
-    candidate_commit = _mapping(
-        legacy._github_json(
-            f"{legacy.API_ROOT}/{repository}/commits/{candidate_sha}",
-            token=token,
-        ),
-        label="candidate commit",
-    )
+    candidate_commit: Mapping[str, object] | None = None
+    if legacy.required_signatures_enforced(detail):
+        candidate_commit = _mapping(
+            legacy._github_json(
+                f"{legacy.API_ROOT}/{repository}/commits/{candidate_sha}",
+                token=token,
+            ),
+            label="candidate commit",
+        )
     signing = legacy.validate_signed_commit_enforcement_guard(detail, candidate_commit)
     status_checks = validate_required_status_checks(h2, detail)
     if mode == "independent":

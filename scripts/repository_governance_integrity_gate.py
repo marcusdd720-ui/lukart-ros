@@ -205,29 +205,44 @@ def validate_bypass_governance(
     return snapshot_bypass
 
 
-def validate_signed_commit_enforcement_guard(
-    detail: Mapping[str, object],
-    candidate_commit: Mapping[str, object],
-) -> dict[str, object]:
+def required_signatures_enforced(detail: Mapping[str, object]) -> bool:
     rules = _list(detail.get("rules"), label="ruleset.rules")
-    signatures_enforced = any(
+    return any(
         _mapping(item, label=f"rules[{index}]").get("type") == "required_signatures"
         for index, item in enumerate(rules)
     )
+
+
+def validate_signed_commit_enforcement_guard(
+    detail: Mapping[str, object],
+    candidate_commit: Mapping[str, object] | None,
+) -> dict[str, object]:
+    signatures_enforced = required_signatures_enforced(detail)
+    if not signatures_enforced:
+        return {
+            "required_signatures_enforced": False,
+            "candidate_signature_state": "NOT_EVALUATED",
+        }
+    if candidate_commit is None:
+        raise RuntimeError(
+            "GOVERNANCE_VISIBILITY_UNKNOWN: candidate signature evidence is required "
+            "while required_signatures is active"
+        )
     commit = _mapping(candidate_commit.get("commit"), label="candidate_commit.commit")
     verification = _mapping(commit.get("verification"), label="candidate_commit.verification")
     verified = verification.get("verified")
     reason = verification.get("reason")
     if not isinstance(verified, bool):
-        raise RuntimeError("governance visibility unknown: candidate commit verification missing")
-    if signatures_enforced and not verified:
+        raise RuntimeError("GOVERNANCE_VISIBILITY_UNKNOWN: candidate commit verification missing")
+    if not verified:
         raise RuntimeError(
             "premature signing enforcement: required_signatures is active while the "
             f"candidate commit is not verified (reason={reason!r})"
         )
     return {
-        "required_signatures_enforced": signatures_enforced,
-        "candidate_commit_verified": verified,
+        "required_signatures_enforced": True,
+        "candidate_signature_state": "VERIFIED",
+        "candidate_commit_verified": True,
         "candidate_commit_verification_reason": reason,
     }
 
@@ -373,10 +388,12 @@ def build_evidence(candidate_sha: str) -> dict[str, object]:
     if detail.get("enforcement") != "active":
         raise RuntimeError("governance drift: ruleset is not active")
     bypass = validate_bypass_governance(h2, detail, ruleset_id=ruleset_id)
-    candidate_commit = _mapping(
-        _github_json(f"{API_ROOT}/{repository}/commits/{candidate_sha}", token=token),
-        label="candidate commit",
-    )
+    candidate_commit: Mapping[str, object] | None = None
+    if required_signatures_enforced(detail):
+        candidate_commit = _mapping(
+            _github_json(f"{API_ROOT}/{repository}/commits/{candidate_sha}", token=token),
+            label="candidate commit",
+        )
     signing_evidence = validate_signed_commit_enforcement_guard(detail, candidate_commit)
     review_evidence = validate_review_governance(policy, detail)
     repository_merge_evidence = validate_repository_merge_settings(policy, merge_settings_detail)

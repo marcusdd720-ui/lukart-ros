@@ -4,6 +4,7 @@ import argparse
 import fnmatch
 import json
 import os
+import re
 import subprocess
 import urllib.error
 import urllib.request
@@ -11,6 +12,7 @@ from collections.abc import Mapping, Sequence
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import cast
+from urllib.parse import urlencode
 
 ROOT = Path(__file__).resolve().parents[1]
 ENTERPRISE_POLICY_PATH = ROOT / "config" / "enterprise_v1.json"
@@ -18,6 +20,8 @@ CUTOVER_PLAN_PATH = ROOT / "config" / "solo_maintainer_cutover_v1.json"
 API_ROOT = "https://api.github.com/repos"
 ATTESTATION_MARKER = "LUKART-SOLO-MAINTAINER-ATTESTATION-V1"
 _GLOB_META = frozenset("*?[")
+_FULL_SHA_RE = re.compile(r"^[0-9a-fA-F]{40}$")
+_REPOSITORY_RE = re.compile(r"^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$")
 
 
 def _mapping(value: object, *, label: str) -> Mapping[str, object]:
@@ -70,6 +74,32 @@ def _parse_time(value: object, *, label: str) -> datetime:
     return parsed.astimezone(UTC)
 
 
+def validate_candidate_sha(candidate_sha: str) -> str:
+    if not isinstance(candidate_sha, str) or _FULL_SHA_RE.fullmatch(candidate_sha) is None:
+        raise RuntimeError("candidate SHA must be exactly 40 hexadecimal characters")
+    return candidate_sha.lower()
+
+
+def validate_repository_name(repository: str) -> str:
+    if not isinstance(repository, str) or _REPOSITORY_RE.fullmatch(repository) is None:
+        raise RuntimeError("repository identity must be exactly owner/name")
+    return repository
+
+
+def build_candidate_check_runs_url(
+    repository: str,
+    candidate_sha: str,
+    *,
+    page: int,
+) -> str:
+    repository = validate_repository_name(repository)
+    candidate_sha = validate_candidate_sha(candidate_sha)
+    if not isinstance(page, int) or isinstance(page, bool) or page <= 0:
+        raise RuntimeError("check-runs page must be a positive integer")
+    query = urlencode({"filter": "latest", "per_page": 100, "page": page})
+    return f"{API_ROOT}/{repository}/commits/{candidate_sha}/check-runs?{query}"
+
+
 def _github_json(url: str, *, token: str | None) -> object:
     headers = {
         "Accept": "application/vnd.github+json",
@@ -106,6 +136,38 @@ def _github_list(url: str, *, token: str | None, max_pages: int = 10) -> list[ob
         if len(items) < 100:
             return collected
     raise RuntimeError("SOLO_GOVERNANCE_VISIBILITY_UNKNOWN: pagination limit exceeded")
+
+
+def _github_check_runs(
+    repository: str,
+    candidate_sha: str,
+    *,
+    token: str | None,
+    max_pages: int = 10,
+) -> list[object]:
+    candidate_sha = validate_candidate_sha(candidate_sha)
+    repository = validate_repository_name(repository)
+    collected: list[object] = []
+    for page in range(1, max_pages + 1):
+        payload = _mapping(
+            _github_json(
+                build_candidate_check_runs_url(repository, candidate_sha, page=page),
+                token=token,
+            ),
+            label=f"check-runs response page {page}",
+        )
+        runs = _list(payload.get("check_runs"), label=f"check-runs page {page}")
+        for index, raw in enumerate(runs):
+            check = _mapping(raw, label=f"check-runs page {page}[{index}]")
+            if check.get("head_sha") != candidate_sha:
+                raise RuntimeError(
+                    "SOLO_GOVERNANCE_VISIBILITY_UNKNOWN: check-run data is not bound "
+                    "to the exact candidate SHA"
+                )
+        collected.extend(runs)
+        if len(runs) < 100:
+            return collected
+    raise RuntimeError("SOLO_GOVERNANCE_VISIBILITY_UNKNOWN: check-runs pagination limit exceeded")
 
 
 def validate_profile(profile: Mapping[str, object]) -> dict[str, object]:
@@ -258,13 +320,19 @@ def validate_technical_checks(
     *,
     required_contexts: list[str],
     self_context: str,
+    candidate_sha: str,
 ) -> datetime:
+    candidate_sha = validate_candidate_sha(candidate_sha)
     expected = [context for context in required_contexts if context != self_context]
     if not expected:
         raise RuntimeError("solo governance requires independent technical checks")
     latest: dict[str, Mapping[str, object]] = {}
     for index, raw in enumerate(check_runs):
         check = _mapping(raw, label=f"check_runs[{index}]")
+        if check.get("head_sha") != candidate_sha:
+            raise RuntimeError(
+                "solo technical check is not bound to the exact candidate SHA"
+            )
         name = check.get("name")
         if not isinstance(name, str) or name not in expected:
             continue
@@ -325,6 +393,7 @@ def validate_attestation(
     technical_ready_at: datetime,
     cooldown_seconds: int,
 ) -> dict[str, object]:
+    candidate_sha = validate_candidate_sha(candidate_sha)
     matching: list[tuple[datetime, int, Mapping[str, object], Mapping[str, str]]] = []
     for index, raw in enumerate(comments):
         comment = _mapping(raw, label=f"comments[{index}]")
@@ -385,6 +454,7 @@ def _enterprise_solo_profile(
 
 
 def build_evidence(candidate_sha: str, *, root: Path = ROOT) -> dict[str, object]:
+    candidate_sha = validate_candidate_sha(candidate_sha)
     head = _git("rev-parse", "HEAD") if root == ROOT else candidate_sha
     if head != candidate_sha:
         raise RuntimeError(f"exact-SHA mismatch: HEAD={head} candidate={candidate_sha}")
@@ -423,9 +493,10 @@ def build_evidence(candidate_sha: str, *, root: Path = ROOT) -> dict[str, object
         }
 
     profile = validate_profile(active_profile)
-    repository = h2.get("repository")
-    if not isinstance(repository, str) or not repository:
+    repository_raw = h2.get("repository")
+    if not isinstance(repository_raw, str) or not repository_raw:
         raise RuntimeError("enterprise repository identity is missing")
+    repository = validate_repository_name(repository_raw)
     default_branch = active_profile.get("default_branch")
     if not isinstance(default_branch, str) or not default_branch:
         raise RuntimeError("solo profile default_branch is missing")
@@ -487,18 +558,11 @@ def build_evidence(candidate_sha: str, *, root: Path = ROOT) -> dict[str, object
     if "solo-governance" not in required_contexts:
         raise RuntimeError("active solo governance requires solo-governance in canonical checks")
 
-    check_payload = _mapping(
-        _github_json(
-            f"{API_ROOT}/{repository}/commits/{candidate_sha}/check-runs"
-            "?filter=latest&per_page=100",
-            token=token,
-        ),
-        label="check-runs response",
-    )
     technical_ready_at = validate_technical_checks(
-        _list(check_payload.get("check_runs"), label="check-runs"),
+        _github_check_runs(repository, candidate_sha, token=token),
         required_contexts=required_contexts,
         self_context="solo-governance",
+        candidate_sha=candidate_sha,
     )
 
     comments = _github_list(
