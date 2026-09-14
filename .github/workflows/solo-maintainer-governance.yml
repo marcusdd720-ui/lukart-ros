@@ -35,7 +35,13 @@ jobs:
       - name: Focused solo-governance regression
         run: |
           python -m pip install "pytest==8.4.2"
-          pytest -q tests/test_solo_maintainer_governance_gate.py
+          pytest -q tests/test_solo_maintainer_governance_gate.py tests/test_solo_attestation_integrity_guard.py
+      - name: Direct human attestation integrity guard
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          python scripts/solo_attestation_integrity_guard.py \
+            --candidate-sha "${CANDIDATE_SHA}"
       - name: Solo-maintainer governance gate
         env:
           GITHUB_TOKEN: ${{ github.token }}
