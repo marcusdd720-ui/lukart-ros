@@ -2,7 +2,10 @@
 
 The coordinator is deliberately operational state, not CASE-history authority.
 Every material reservation/outcome still has to be written to CanonicalCaseLedger
-by the caller.  Its purpose is to make duplicate/concurrent invocations fail safe.
+by the caller. Its purpose is to make duplicate/concurrent invocations fail safe.
+The in-process reference semantics intentionally mirror the durable coordinator:
+provider success is valid only after an explicit dispatch boundary has moved the
+logical action into OUTCOME_UNKNOWN.
 """
 
 from __future__ import annotations
@@ -102,6 +105,18 @@ class SafeExternalActionCoordinator:
                 return ReservationResult(ReservationDisposition.INVOKE_ALLOWED, existing)
             raise CaseProductHardeningError("unsupported external action state")
 
+    def begin_dispatch(
+        self,
+        identity: ExternalActionIdentity,
+        *,
+        attempt_id: str,
+    ) -> CoordinatedAction:
+        """Cross the provider-invocation fence before any external side effect."""
+        with self._lock:
+            record = self._owned(identity, attempt_id=attempt_id)
+            record.state = ExternalActionState.OUTCOME_UNKNOWN
+            return record
+
     def mark_pre_effect_failed(
         self,
         identity: ExternalActionIdentity,
@@ -119,10 +134,7 @@ class SafeExternalActionCoordinator:
         *,
         attempt_id: str,
     ) -> CoordinatedAction:
-        with self._lock:
-            record = self._owned(identity, attempt_id=attempt_id)
-            record.state = ExternalActionState.OUTCOME_UNKNOWN
-            return record
+        return self.begin_dispatch(identity, attempt_id=attempt_id)
 
     def confirm_no_effect(
         self,
@@ -149,8 +161,16 @@ class SafeExternalActionCoordinator:
         receipt: ExternalActionReceipt,
     ) -> CoordinatedAction:
         verify_receipt_for_transition(receipt, identity)
+        if receipt.attempt_id != attempt_id:
+            raise CaseProductHardeningError("receipt attempt does not match active attempt")
         with self._lock:
-            record = self._owned(identity, attempt_id=attempt_id)
+            record = self._require(identity)
+            if record.state is not ExternalActionState.OUTCOME_UNKNOWN:
+                raise CaseProductHardeningError(
+                    "confirmed success requires dispatch before provider success"
+                )
+            if record.owner_attempt_id != attempt_id:
+                raise CaseProductHardeningError("attempt does not own active dispatch")
             record.state = ExternalActionState.CONFIRMED_EXTERNAL_SUCCESS
             record.receipt = receipt
             return record
@@ -169,6 +189,8 @@ class SafeExternalActionCoordinator:
             record = self._require(identity)
             if record.state is not ExternalActionState.OUTCOME_UNKNOWN:
                 raise CaseProductHardeningError("receipt recovery requires OUTCOME_UNKNOWN")
+            if receipt.attempt_id != record.owner_attempt_id:
+                raise CaseProductHardeningError("recovered receipt attempt mismatch")
             record.state = ExternalActionState.RECEIPT_RECOVERED
             record.receipt = receipt
             return record
