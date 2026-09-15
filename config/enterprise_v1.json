@@ -178,7 +178,7 @@
     "legacy_trust_promotion": "DENY"
   },
   "h7_recovery_rollback": {
-    "schema": "lukart.hardcore.h7-recovery-identity.v1",
+    "schema": "lukart.hardcore.h7-recovery-rollback.v1",
     "recovery_identity_schema": "lukart.recovery-identity.v1",
     "atomic_batch_persistence": true,
     "staged_restore_before_replace": true,
