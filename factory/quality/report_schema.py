@@ -39,6 +39,33 @@ class ReportSchemaError(RuntimeError):
     """Raised when the canonical schema or a report violates the contract."""
 
 
+class StrictJsonError(ValueError):
+    """Raised when JSON text uses ambiguous or non-standard syntax."""
+
+
+def _strict_object_pairs(pairs: list[tuple[str, object]]) -> dict[str, object]:
+    result: dict[str, object] = {}
+    for key, value in pairs:
+        if key in result:
+            raise StrictJsonError(f"duplicate object key: {key}")
+        result[key] = value
+    return result
+
+
+def _reject_non_json_constant(value: str) -> object:
+    raise StrictJsonError(f"non-JSON numeric constant: {value}")
+
+
+def strict_json_loads(text: str) -> object:
+    """Parse standards-compliant JSON without silently collapsing duplicate keys."""
+
+    return json.loads(
+        text,
+        object_pairs_hook=_strict_object_pairs,
+        parse_constant=_reject_non_json_constant,
+    )
+
+
 def _schema_error(path: str, message: str) -> ReportSchemaError:
     return ReportSchemaError(f"invalid canonical report schema at {path}: {message}")
 
@@ -127,8 +154,8 @@ def load_report_schema(path: Path | None = None) -> dict[str, object]:
 
     schema_path = REPORT_SCHEMA_PATH if path is None else path
     try:
-        raw = json.loads(schema_path.read_text(encoding="utf-8"))
-    except (OSError, json.JSONDecodeError) as exc:
+        raw = strict_json_loads(schema_path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError, StrictJsonError) as exc:
         raise ReportSchemaError(
             f"cannot load canonical report schema {schema_path}: {type(exc).__name__}: {exc}"
         ) from exc
