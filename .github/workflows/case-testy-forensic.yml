@@ -29,22 +29,37 @@ jobs:
         run: uv sync --frozen --extra dev
       - name: Verify exact checkout SHA
         run: test "$(git rev-parse HEAD)" = "$HEAD_SHA"
+      - name: Validate canonical CASE regression SOT
+        continue-on-error: true
+        run: |
+          uv run --frozen --extra dev python -m factory.quality.case_regression_suite \
+            --validate-only
       - name: Run FORENSIC profile
         continue-on-error: true
         run: |
           mkdir -p case-testy-reports
           uv run --frozen --extra dev python -m factory.quality.test_profiles FORENSIC \
             --sha "$HEAD_SHA" --verify-head --output case-testy-reports/forensic.json
+      - name: Run canonical CASE regression batch
+        continue-on-error: true
+        run: |
+          uv run --frozen --extra dev python -m factory.quality.case_regression_suite \
+            --output case-testy-reports/canonical-batch.json
       - name: Validate FORENSIC report
         if: always()
         run: |
           uv run --frozen --extra dev python -m factory.quality.test_report \
             case-testy-reports/forensic.json --profile FORENSIC --sha "$HEAD_SHA"
+      - name: Validate canonical batch completeness
+        if: always()
+        run: |
+          uv run --frozen --extra dev python -m factory.quality.case_regression_suite \
+            --verify-report case-testy-reports/canonical-batch.json
       - name: Upload CASE-TESTY forensic evidence
         if: always()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
         with:
           name: case-testy-forensic-${{ github.sha }}
-          path: case-testy-reports/forensic.json
+          path: case-testy-reports/*.json
           if-no-files-found: error
           retention-days: 30
