@@ -1,6 +1,6 @@
-from types import SimpleNamespace
-
 from core.cirp.contracts import (
+    FilingPlan,
+    FilingTopologyStatus,
     PreflightFinalStatus,
     PreflightSeverity,
     PreflightStatus,
@@ -54,7 +54,25 @@ class _PreflightHarness(HardcorePreflight):
 
 
 def _evaluate(status: PreflightStatus):
-    plan = SimpleNamespace(filing_id="FILING-TEST-1", filing_type="APPEAL", remedy_ids=())
+    plan = FilingPlan(
+        filing_id="FILING-TEST-1",
+        filing_type="APPEAL",
+        target_authority="AUTHORITY-B",
+        filing_authority="AUTHORITY-A",
+        filing_via=None,
+        objective="Exercise synthetic remedy",
+        requests=("Synthetic request",),
+        allegations_or_grounds=("Synthetic ground",),
+        remedy_ids=("REMEDY-TEST-1",),
+        rule_refs=("RULE-TEST-1",),
+        evidence_refs=(),
+        attachment_requirements=(),
+        signature_requirements=(),
+        copy_requirements=(),
+        deadline_id=None,
+        delivery_method="SYNTHETIC-CHANNEL",
+        topology_status=FilingTopologyStatus.SINGLE_FILING_SAFE,
+    )
     execution = FilingExecutionState(filing_id="FILING-TEST-1")
     return _PreflightHarness(status).evaluate(
         plan=plan,
