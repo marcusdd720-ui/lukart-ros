@@ -23,5 +23,9 @@ def test_case_testy_fixtures_do_not_contain_obvious_personal_identifiers() -> No
         if not path.is_file():
             continue
         text = path.read_text(encoding="utf-8")
-        assert PESEL_LIKE.search(text) is None, f"PESEL-like identifier in synthetic fixture: {path}"
-        assert EMAIL_LIKE.search(text) is None, f"email-like identifier in synthetic fixture: {path}"
+        assert PESEL_LIKE.search(text) is None, (
+            f"PESEL-like identifier in synthetic fixture: {path}"
+        )
+        assert EMAIL_LIKE.search(text) is None, (
+            f"email-like identifier in synthetic fixture: {path}"
+        )
