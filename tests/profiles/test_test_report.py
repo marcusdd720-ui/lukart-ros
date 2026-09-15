@@ -4,7 +4,8 @@ from pathlib import Path
 import pytest
 
 from factory.quality import report_schema
-from factory.quality.test_report import REPORT_SCHEMA, ReportValidationError, validate_report
+from factory.quality.report_schema import REPORT_SCHEMA
+from factory.quality.test_report import ReportValidationError, validate_report
 
 SHA = "69f4843be7fc94c446f72b891a8fb44fbf9d9ed3"
 
@@ -109,7 +110,9 @@ def test_unknown_enum_value_fails_canonical_schema(
         validate_report(path, expected_profile=expected_profile, expected_sha=SHA)
 
 
-def test_schema_drift_is_enforced_by_runtime(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+def test_schema_drift_is_enforced_by_runtime(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
     schema = json.loads(report_schema.REPORT_SCHEMA_PATH.read_text(encoding="utf-8"))
     schema["required"].append("p2_required_marker")
     schema["properties"]["p2_required_marker"] = {"type": "string"}
