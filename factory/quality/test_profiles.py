@@ -9,10 +9,12 @@ import re
 import subprocess
 from collections.abc import Callable
 from dataclasses import dataclass
+from datetime import UTC, datetime
 from enum import StrEnum
 from pathlib import Path
 
 _FULL_SHA = re.compile(r"^[0-9a-fA-F]{40}$")
+_REPORT_SCHEMA = "lukart.case-test-profile-report.v1"
 
 
 class ProfileName(StrEnum):
@@ -75,14 +77,28 @@ class ProfileResult:
     status: ProfileStatus
     steps: tuple[StepResult, ...]
     reason: str
+    required_steps: tuple[str, ...]
+    started_at: str
+    ended_at: str
+    repository: str
+    ref: str
+    checkout_sha: str
+    schema_version: str = _REPORT_SCHEMA
 
     def to_dict(self) -> dict[str, object]:
         return {
-            "profile": self.profile.value,
+            "schema_version": self.schema_version,
+            "repository": self.repository,
+            "ref": self.ref,
             "git_sha": self.git_sha,
+            "checkout_sha": self.checkout_sha,
+            "profile": self.profile.value,
+            "started_at": self.started_at,
+            "ended_at": self.ended_at,
+            "required_steps": list(self.required_steps),
+            "steps": [step.to_dict() for step in self.steps],
             "status": self.status.value,
             "reason": self.reason,
-            "steps": [step.to_dict() for step in self.steps],
         }
 
     def to_json(self) -> str:
@@ -91,114 +107,109 @@ class ProfileResult:
 
 StepExecutor = Callable[[TestStep], StepResult]
 
+_P0_REGRESSION_COMMAND = (
+    "python",
+    "-m",
+    "pytest",
+    "tests/case/test_case_ledger_isolation.py",
+    "tests/security/test_tenant_case_isolation.py",
+    "tests/case/test_cirp_preflight_lifecycle.py",
+    "tests/case/test_external_action_lifecycle.py",
+    "tests/case/test_cirp_evidence_semantics.py",
+    "tests/test_stage_gate_fail_closed.py",
+    "tests/case/test_case_ledger_integrity.py",
+    "-q",
+)
+_RUNNER_TEST_COMMAND = (
+    "python",
+    "-m",
+    "pytest",
+    "tests/profiles/test_test_profiles.py",
+    "tests/profiles/test_test_report.py",
+    "-q",
+)
+
+
+def _step(name: str, *command: str) -> TestStep:
+    return TestStep(name=name, command=tuple(command))
+
+
+def _profile(name: ProfileName, steps: tuple[TestStep, ...]) -> TestProfile:
+    return TestProfile(
+        name=name,
+        steps=steps,
+        required_step_names=tuple(step.name for step in steps if step.required),
+    )
+
 
 PROFILE_DEFINITIONS: dict[ProfileName, TestProfile] = {
-    ProfileName.FAST: TestProfile(
-        name=ProfileName.FAST,
-        steps=(
-            TestStep(
-                name="runner-self-tests",
-                command=("python", "-m", "pytest", "tests/profiles/test_test_profiles.py", "-q"),
-            ),
-        ),
-        required_step_names=("runner-self-tests",),
-    ),
-    ProfileName.PR: TestProfile(
-        name=ProfileName.PR,
-        steps=(
-            TestStep(
-                name="runner-self-tests",
-                command=("python", "-m", "pytest", "tests/profiles/test_test_profiles.py", "-q"),
-            ),
-            TestStep(
-                name="stage-0",
-                command=("python", "-m", "factory.stage_gate", "--stage", "0"),
-            ),
-        ),
-        required_step_names=("runner-self-tests", "stage-0"),
-    ),
-    ProfileName.FULL: TestProfile(
-        name=ProfileName.FULL,
-        steps=(
-            TestStep(
-                name="runner-self-tests",
-                command=("python", "-m", "pytest", "tests/profiles/test_test_profiles.py", "-q"),
-            ),
-            TestStep(
-                name="stage-0",
-                command=("python", "-m", "factory.stage_gate", "--stage", "0"),
-            ),
-            TestStep(
-                name="stage-16",
-                command=("python", "-m", "factory.stage_gate", "--stage", "16"),
-            ),
-            TestStep(
-                name="certification-tests",
-                command=("python", "-m", "pytest", "certification_tests", "-q"),
-            ),
-        ),
-        required_step_names=(
-            "runner-self-tests",
-            "stage-0",
-            "stage-16",
-            "certification-tests",
+    ProfileName.FAST: _profile(
+        ProfileName.FAST,
+        (
+            TestStep("runner-self-tests", _RUNNER_TEST_COMMAND),
+            TestStep("p0-regressions", _P0_REGRESSION_COMMAND),
         ),
     ),
-    ProfileName.FORENSIC: TestProfile(
-        name=ProfileName.FORENSIC,
-        steps=(
-            TestStep(
-                name="runner-self-tests",
-                command=("python", "-m", "pytest", "tests/profiles/test_test_profiles.py", "-q"),
-            ),
-            TestStep(
-                name="stage-0",
-                command=("python", "-m", "factory.stage_gate", "--stage", "0"),
-            ),
-            TestStep(
-                name="stage-16",
-                command=("python", "-m", "factory.stage_gate", "--stage", "16"),
-            ),
-            TestStep(
-                name="certification-tests",
-                command=("python", "-m", "pytest", "certification_tests", "-q"),
-            ),
-        ),
-        required_step_names=(
-            "runner-self-tests",
-            "stage-0",
-            "stage-16",
-            "certification-tests",
+    ProfileName.PR: _profile(
+        ProfileName.PR,
+        (
+            TestStep("p0-regressions", _P0_REGRESSION_COMMAND),
+            _step("ruff", "python", "-m", "ruff", "check", "."),
+            _step("mypy", "python", "-m", "mypy", "."),
+            _step("stage-0", "python", "-m", "factory.stage_gate", "--stage", "0"),
         ),
     ),
-    ProfileName.POST_MERGE: TestProfile(
-        name=ProfileName.POST_MERGE,
-        steps=(
-            TestStep(
-                name="runner-self-tests",
-                command=("python", "-m", "pytest", "tests/profiles/test_test_profiles.py", "-q"),
-            ),
-            TestStep(
-                name="stage-0",
-                command=("python", "-m", "factory.stage_gate", "--stage", "0"),
-            ),
-            TestStep(
-                name="stage-16",
-                command=("python", "-m", "factory.stage_gate", "--stage", "16"),
-            ),
-            TestStep(
-                name="certification-tests",
-                command=("python", "-m", "pytest", "certification_tests", "-q"),
-            ),
+    ProfileName.FULL: _profile(
+        ProfileName.FULL,
+        (
+            _step("pytest", "python", "-m", "pytest"),
+            _step("ruff", "python", "-m", "ruff", "check", "."),
+            _step("mypy", "python", "-m", "mypy", "."),
+            _step("stage-0", "python", "-m", "factory.stage_gate", "--stage", "0"),
+            _step("stage-16", "python", "-m", "factory.stage_gate", "--stage", "16"),
+            _step("certification-tests", "python", "-m", "pytest", "certification_tests", "-q"),
         ),
-        required_step_names=(
-            "runner-self-tests",
-            "stage-0",
-            "stage-16",
-            "certification-tests",
+    ),
+    ProfileName.FORENSIC: _profile(
+        ProfileName.FORENSIC,
+        (
+            _step("full-regression", "python", "-m", "pytest"),
+            _step(
+                "adversarial-gold",
+                "python",
+                "-m",
+                "pytest",
+                "tests/test_adversarial_gold.py",
+                "-q",
+            ),
+            _step("security", "python", "-m", "pytest", "tests/security", "-q"),
+            TestStep("p0-regressions", _P0_REGRESSION_COMMAND),
+            _step("certification-tests", "python", "-m", "pytest", "certification_tests", "-q"),
+            _step("stage-16", "python", "-m", "factory.stage_gate", "--stage", "16"),
+        ),
+    ),
+    ProfileName.POST_MERGE: _profile(
+        ProfileName.POST_MERGE,
+        (
+            _step("pytest", "python", "-m", "pytest"),
+            _step("ruff", "python", "-m", "ruff", "check", "."),
+            _step("mypy", "python", "-m", "mypy", "."),
+            _step("stage-0", "python", "-m", "factory.stage_gate", "--stage", "0"),
+            _step("stage-16", "python", "-m", "factory.stage_gate", "--stage", "16"),
+            _step("certification-tests", "python", "-m", "pytest", "certification_tests", "-q"),
         ),
     ),
 }
+
+
+def _now() -> str:
+    return datetime.now(UTC).isoformat().replace("+00:00", "Z")
+
+
+def _metadata() -> tuple[str, str]:
+    repository = os.environ.get("GITHUB_REPOSITORY", "local")
+    ref = os.environ.get("GITHUB_HEAD_REF") or os.environ.get("GITHUB_REF_NAME") or "local"
+    return repository, ref
 
 
 def execute_step(step: TestStep, *, cwd: Path | None = None) -> StepResult:
@@ -211,7 +222,6 @@ def execute_step(step: TestStep, *, cwd: Path | None = None) -> StepResult:
             exit_code=None,
             reason="missing command: command list is empty",
         )
-
     try:
         completed = subprocess.run(
             step.command,
@@ -239,7 +249,6 @@ def execute_step(step: TestStep, *, cwd: Path | None = None) -> StepResult:
             exit_code=None,
             reason=f"executor exception: {type(exc).__name__}: {exc}",
         )
-
     if completed.returncode == 0:
         return StepResult(
             name=step.name,
@@ -249,7 +258,6 @@ def execute_step(step: TestStep, *, cwd: Path | None = None) -> StepResult:
             exit_code=0,
             reason="exit code 0",
         )
-
     return StepResult(
         name=step.name,
         command=step.command,
@@ -263,7 +271,7 @@ def execute_step(step: TestStep, *, cwd: Path | None = None) -> StepResult:
 def _profile_contract_failures(profile: TestProfile) -> tuple[StepResult, ...]:
     failures: list[StepResult] = []
     if not profile.required_step_names:
-        failures.append(
+        return (
             StepResult(
                 name="__profile_contract__",
                 command=(),
@@ -271,10 +279,8 @@ def _profile_contract_failures(profile: TestProfile) -> tuple[StepResult, ...]:
                 status=StepStatus.FAIL,
                 exit_code=None,
                 reason="profile has no required steps",
-            )
+            ),
         )
-        return tuple(failures)
-
     names = [step.name for step in profile.steps]
     duplicate_names = sorted({name for name in names if names.count(name) > 1})
     if duplicate_names:
@@ -288,7 +294,6 @@ def _profile_contract_failures(profile: TestProfile) -> tuple[StepResult, ...]:
                 reason=f"duplicate step names: {', '.join(duplicate_names)}",
             )
         )
-
     by_name = {step.name: step for step in profile.steps}
     for required_name in profile.required_step_names:
         step = by_name.get(required_name)
@@ -314,7 +319,6 @@ def _profile_contract_failures(profile: TestProfile) -> tuple[StepResult, ...]:
                     reason="required step is marked optional",
                 )
             )
-
     required_manifest = set(profile.required_step_names)
     for step in profile.steps:
         if step.required and step.name not in required_manifest:
@@ -328,21 +332,18 @@ def _profile_contract_failures(profile: TestProfile) -> tuple[StepResult, ...]:
                     reason="required step omitted from required-step manifest",
                 )
             )
-
     return tuple(failures)
 
 
 def _normalize_result(step: TestStep, result: StepResult) -> StepResult:
     status = result.status
     reason = result.reason
-
     if status is StepStatus.PASS and result.exit_code != 0:
         status = StepStatus.FAIL
         reason = f"invalid PASS: exit code must be 0, got {result.exit_code}"
     elif status is StepStatus.UNKNOWN and step.required:
         status = StepStatus.FAIL
         reason = f"required step returned UNKNOWN: {result.reason}"
-
     return StepResult(
         name=step.name,
         command=step.command,
@@ -353,37 +354,88 @@ def _normalize_result(step: TestStep, result: StepResult) -> StepResult:
     )
 
 
+def _result(
+    *,
+    profile: TestProfile,
+    git_sha: str,
+    checkout_sha: str,
+    status: ProfileStatus,
+    steps: tuple[StepResult, ...],
+    reason: str,
+    started_at: str,
+) -> ProfileResult:
+    repository, ref = _metadata()
+    return ProfileResult(
+        profile=profile.name,
+        git_sha=git_sha.lower(),
+        checkout_sha=checkout_sha.lower(),
+        status=status,
+        steps=steps,
+        reason=reason,
+        required_steps=profile.required_step_names,
+        started_at=started_at,
+        ended_at=_now(),
+        repository=repository,
+        ref=ref,
+    )
+
+
 def run_profile(
     profile: TestProfile,
     git_sha: str,
     *,
     executor: StepExecutor | None = None,
     cwd: Path | None = None,
+    checkout_sha: str | None = None,
 ) -> ProfileResult:
+    started_at = _now()
+    actual_checkout_sha = checkout_sha or git_sha
     if _FULL_SHA.fullmatch(git_sha) is None:
-        return ProfileResult(
-            profile=profile.name,
+        return _result(
+            profile=profile,
             git_sha=git_sha,
+            checkout_sha=actual_checkout_sha,
             status=ProfileStatus.FAIL,
             steps=(),
             reason="git SHA must be an exact 40-character hexadecimal commit SHA",
+            started_at=started_at,
         )
-
+    if _FULL_SHA.fullmatch(actual_checkout_sha) is None:
+        return _result(
+            profile=profile,
+            git_sha=git_sha,
+            checkout_sha=actual_checkout_sha,
+            status=ProfileStatus.FAIL,
+            steps=(),
+            reason="checkout SHA must be an exact 40-character hexadecimal commit SHA",
+            started_at=started_at,
+        )
+    if actual_checkout_sha.lower() != git_sha.lower():
+        return _result(
+            profile=profile,
+            git_sha=git_sha,
+            checkout_sha=actual_checkout_sha,
+            status=ProfileStatus.FAIL,
+            steps=(),
+            reason="checkout SHA does not match expected exact SHA",
+            started_at=started_at,
+        )
     contract_failures = _profile_contract_failures(profile)
     if contract_failures:
-        return ProfileResult(
-            profile=profile.name,
-            git_sha=git_sha.lower(),
+        return _result(
+            profile=profile,
+            git_sha=git_sha,
+            checkout_sha=actual_checkout_sha,
             status=ProfileStatus.FAIL,
             steps=contract_failures,
             reason="profile contract is invalid",
+            started_at=started_at,
         )
 
     def execute_with_cwd(step: TestStep) -> StepResult:
         return execute_step(step, cwd=cwd)
 
-    selected_executor: StepExecutor = executor if executor is not None else execute_with_cwd
-
+    selected_executor = executor if executor is not None else execute_with_cwd
     results: list[StepResult] = []
     for step in profile.steps:
         try:
@@ -398,29 +450,23 @@ def run_profile(
                 reason=f"executor exception: {type(exc).__name__}: {exc}",
             )
         results.append(_normalize_result(step, raw_result))
-
     required_failed = any(
         result.required and result.status is not StepStatus.PASS for result in results
     )
     status = ProfileStatus.FAIL if required_failed else ProfileStatus.PASS
     reason = "one or more required steps failed" if required_failed else "all required steps passed"
-    return ProfileResult(
-        profile=profile.name,
-        git_sha=git_sha.lower(),
+    return _result(
+        profile=profile,
+        git_sha=git_sha,
+        checkout_sha=actual_checkout_sha,
         status=status,
         steps=tuple(results),
         reason=reason,
+        started_at=started_at,
     )
 
 
-def _resolve_git_sha(explicit_sha: str | None) -> tuple[str, str | None]:
-    if explicit_sha is not None:
-        return explicit_sha, None
-
-    github_sha = os.environ.get("GITHUB_SHA")
-    if github_sha:
-        return github_sha, None
-
+def _git_head() -> tuple[str, str | None]:
     try:
         completed = subprocess.run(
             ("git", "rev-parse", "HEAD"),
@@ -429,32 +475,60 @@ def _resolve_git_sha(explicit_sha: str | None) -> tuple[str, str | None]:
             check=False,
         )
     except Exception as exc:
-        return "", f"cannot resolve git SHA: {type(exc).__name__}: {exc}"
-
+        return "", f"cannot resolve checkout SHA: {type(exc).__name__}: {exc}"
     if completed.returncode != 0:
-        return "", f"cannot resolve git SHA: git rev-parse exited {completed.returncode}"
+        return "", f"cannot resolve checkout SHA: git rev-parse exited {completed.returncode}"
     return completed.stdout.strip(), None
+
+
+def _resolve_git_sha(explicit_sha: str | None) -> tuple[str, str | None]:
+    if explicit_sha is not None:
+        return explicit_sha, None
+    github_sha = os.environ.get("GITHUB_SHA")
+    if github_sha:
+        return github_sha, None
+    return _git_head()
+
+
+def _write_report(path: str | None, result: ProfileResult) -> str | None:
+    if path is None:
+        return None
+    target = Path(path)
+    target.parent.mkdir(parents=True, exist_ok=True)
+    target.write_text(result.to_json() + "\n", encoding="utf-8")
+    return str(target)
 
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("profile", choices=[profile.value for profile in ProfileName])
     parser.add_argument("--sha", dest="git_sha")
+    parser.add_argument("--output")
+    parser.add_argument("--verify-head", action="store_true")
     args = parser.parse_args()
 
     profile_name = ProfileName(args.profile)
+    profile = PROFILE_DEFINITIONS[profile_name]
     git_sha, resolution_error = _resolve_git_sha(args.git_sha)
+    checkout_sha = git_sha
+    must_verify_head = args.verify_head or profile_name is ProfileName.POST_MERGE
+    if must_verify_head:
+        checkout_sha, head_error = _git_head()
+        resolution_error = resolution_error or head_error
     if resolution_error is not None:
-        result = ProfileResult(
-            profile=profile_name,
+        started_at = _now()
+        result = _result(
+            profile=profile,
             git_sha=git_sha,
+            checkout_sha=checkout_sha,
             status=ProfileStatus.FAIL,
             steps=(),
             reason=resolution_error,
+            started_at=started_at,
         )
     else:
-        result = run_profile(PROFILE_DEFINITIONS[profile_name], git_sha)
-
+        result = run_profile(profile, git_sha, checkout_sha=checkout_sha)
+    _write_report(args.output, result)
     print(result.to_json())
     return 0 if result.status is ProfileStatus.PASS else 1
 
