@@ -7,11 +7,7 @@ import json
 from pathlib import Path
 from typing import cast
 
-from factory.quality.report_schema import (
-    REPORT_SCHEMA,
-    ReportSchemaError,
-    validate_report_payload,
-)
+from factory.quality.report_schema import ReportSchemaError, validate_report_payload
 
 
 class ReportValidationError(RuntimeError):
