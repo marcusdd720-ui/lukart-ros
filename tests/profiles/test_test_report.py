@@ -3,7 +3,9 @@ from pathlib import Path
 
 import pytest
 
-from factory.quality.test_report import REPORT_SCHEMA, ReportValidationError, validate_report
+from factory.quality import report_schema
+from factory.quality.report_schema import REPORT_SCHEMA
+from factory.quality.test_report import ReportValidationError, validate_report
 
 SHA = "69f4843be7fc94c446f72b891a8fb44fbf9d9ed3"
 
@@ -53,6 +55,89 @@ def test_malformed_report_fails_closed(tmp_path: Path) -> None:
     path = tmp_path / "report.json"
     path.write_text("{not-json", encoding="utf-8")
     with pytest.raises(ReportValidationError, match="malformed report"):
+        validate_report(path, expected_profile="FAST", expected_sha=SHA)
+
+
+def test_non_object_report_fails_canonical_schema(tmp_path: Path) -> None:
+    path = tmp_path / "report.json"
+    _write(path, [])
+    with pytest.raises(ReportValidationError, match="schema validation failed"):
+        validate_report(path, expected_profile="FAST", expected_sha=SHA)
+
+
+def test_missing_required_field_fails_canonical_schema(tmp_path: Path) -> None:
+    path = tmp_path / "report.json"
+    payload = _payload()
+    del payload["repository"]
+    _write(path, payload)
+    with pytest.raises(ReportValidationError, match="missing required property"):
+        validate_report(path, expected_profile="FAST", expected_sha=SHA)
+
+
+def test_wrong_primitive_type_fails_canonical_schema(tmp_path: Path) -> None:
+    path = tmp_path / "report.json"
+    payload = _payload()
+    payload["repository"] = 7
+    _write(path, payload)
+    with pytest.raises(ReportValidationError, match="schema validation failed"):
+        validate_report(path, expected_profile="FAST", expected_sha=SHA)
+
+
+def test_additional_property_fails_canonical_schema(tmp_path: Path) -> None:
+    path = tmp_path / "report.json"
+    payload = _payload()
+    payload["unexpected"] = "must fail closed"
+    _write(path, payload)
+    with pytest.raises(ReportValidationError, match="additional property"):
+        validate_report(path, expected_profile="FAST", expected_sha=SHA)
+
+
+@pytest.mark.parametrize(
+    ("field", "value", "expected_profile"),
+    [
+        ("profile", "NOPE", "NOPE"),
+        ("status", "UNKNOWN", "FAST"),
+    ],
+)
+def test_unknown_enum_value_fails_canonical_schema(
+    tmp_path: Path, field: str, value: str, expected_profile: str
+) -> None:
+    path = tmp_path / "report.json"
+    payload = _payload()
+    payload[field] = value
+    _write(path, payload)
+    with pytest.raises(ReportValidationError, match="value is not in enum"):
+        validate_report(path, expected_profile=expected_profile, expected_sha=SHA)
+
+
+def test_schema_drift_is_enforced_by_runtime(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    schema = json.loads(report_schema.REPORT_SCHEMA_PATH.read_text(encoding="utf-8"))
+    schema["required"].append("p2_required_marker")
+    schema["properties"]["p2_required_marker"] = {"type": "string"}
+    drifted_schema = tmp_path / "case_test_report.schema.json"
+    _write(drifted_schema, schema)
+    monkeypatch.setattr(report_schema, "REPORT_SCHEMA_PATH", drifted_schema)
+
+    path = tmp_path / "report.json"
+    _write(path, _payload())
+    with pytest.raises(ReportValidationError, match="p2_required_marker"):
+        validate_report(path, expected_profile="FAST", expected_sha=SHA)
+
+
+def test_unsupported_schema_keyword_fails_closed(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    schema = json.loads(report_schema.REPORT_SCHEMA_PATH.read_text(encoding="utf-8"))
+    schema["allOf"] = []
+    unsupported_schema = tmp_path / "case_test_report.schema.json"
+    _write(unsupported_schema, schema)
+    monkeypatch.setattr(report_schema, "REPORT_SCHEMA_PATH", unsupported_schema)
+
+    path = tmp_path / "report.json"
+    _write(path, _payload())
+    with pytest.raises(ReportValidationError, match="unsupported keyword"):
         validate_report(path, expected_profile="FAST", expected_sha=SHA)
 
 
