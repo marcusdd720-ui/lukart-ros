@@ -11,7 +11,6 @@ from __future__ import annotations
 import json
 import re
 from pathlib import Path
-from typing import Any
 
 REPORT_SCHEMA_PATH = (
     Path(__file__).resolve().parents[2] / "schemas" / "case_test_report.schema.json"
@@ -217,7 +216,9 @@ def _validate_instance(value: object, schema: dict[str, object], *, path: str = 
         if isinstance(min_items, int) and len(value) < min_items:
             raise _instance_error(path, f"array length is below minItems {min_items}")
         if schema.get("uniqueItems") is True:
-            canonical_items = [json.dumps(item, sort_keys=True, separators=(",", ":")) for item in value]
+            canonical_items = [
+                json.dumps(item, sort_keys=True, separators=(",", ":")) for item in value
+            ]
             if len(canonical_items) != len(set(canonical_items)):
                 raise _instance_error(path, "array items are not unique")
         items = schema.get("items")
