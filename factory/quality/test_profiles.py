@@ -13,8 +13,9 @@ from datetime import UTC, datetime
 from enum import StrEnum
 from pathlib import Path
 
+from factory.quality.report_schema import REPORT_SCHEMA
+
 _FULL_SHA = re.compile(r"^[0-9a-fA-F]{40}$")
-_REPORT_SCHEMA = "lukart.case-test-profile-report.v1"
 
 
 class ProfileName(StrEnum):
@@ -83,7 +84,7 @@ class ProfileResult:
     repository: str
     ref: str
     checkout_sha: str
-    schema_version: str = _REPORT_SCHEMA
+    schema_version: str = REPORT_SCHEMA
 
     def to_dict(self) -> dict[str, object]:
         return {
