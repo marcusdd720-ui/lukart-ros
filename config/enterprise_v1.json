@@ -102,7 +102,7 @@
     "allowed_bypass_actors": [],
     "privileged_ruleset_snapshot": {
       "ruleset_id": 22352216,
-      "ruleset_updated_at": "2026-09-15T12:02:19.605Z",
+      "ruleset_updated_at": "2026-09-15T14:11:42.877Z",
       "bypass_actors": [],
       "observer_class": "ruleset-write-visible-api",
       "refresh_on_ruleset_update": true
@@ -178,7 +178,7 @@
     "legacy_trust_promotion": "DENY"
   },
   "h7_recovery_rollback": {
-    "schema": "lukart.hardcore.h7-recovery-rollback.v1",
+    "schema": "lukart.hardcore.h7-recovery-identity.v1",
     "recovery_identity_schema": "lukart.recovery-identity.v1",
     "atomic_batch_persistence": true,
     "staged_restore_before_replace": true,
