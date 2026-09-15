@@ -15,6 +15,7 @@ from pathlib import Path
 REPORT_SCHEMA_PATH = (
     Path(__file__).resolve().parents[2] / "schemas" / "case_test_report.schema.json"
 )
+_SUPPORTED_SCHEMA_DIALECT = "https://json-schema.org/draft/2020-12/schema"
 
 _SUPPORTED_KEYWORDS = {
     "$schema",
@@ -159,7 +160,10 @@ def load_report_schema(path: Path | None = None) -> dict[str, object]:
         raise ReportSchemaError(
             f"cannot load canonical report schema {schema_path}: {type(exc).__name__}: {exc}"
         ) from exc
-    return _validate_schema_definition(raw)
+    schema = _validate_schema_definition(raw)
+    if schema.get("$schema") != _SUPPORTED_SCHEMA_DIALECT:
+        raise _schema_error("$", f"$schema must be {_SUPPORTED_SCHEMA_DIALECT}")
+    return schema
 
 
 def _matches_type(value: object, expected: str) -> bool:
