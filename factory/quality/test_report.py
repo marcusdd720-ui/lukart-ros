@@ -13,10 +13,44 @@ from factory.quality.report_schema import (
     strict_json_loads,
     validate_report_payload,
 )
+from factory.quality.test_profiles import PROFILE_DEFINITIONS, ProfileName
 
 
 class ReportValidationError(RuntimeError):
     pass
+
+
+def _validate_profile_binding(
+    *,
+    profile_name: ProfileName,
+    required_steps: list[str],
+    steps: list[dict[str, object]],
+) -> None:
+    """Bind report step identity to the canonical runtime profile definition."""
+
+    canonical = PROFILE_DEFINITIONS[profile_name]
+    if tuple(required_steps) != canonical.required_step_names:
+        raise ReportValidationError(
+            "profile definition mismatch: required-step manifest does not match canonical profile"
+        )
+    if len(steps) != len(canonical.steps):
+        raise ReportValidationError(
+            "profile definition mismatch: step count does not match canonical profile"
+        )
+
+    for index, (reported, expected) in enumerate(zip(steps, canonical.steps, strict=True)):
+        if reported["name"] != expected.name:
+            raise ReportValidationError(
+                f"profile definition mismatch at step {index}: expected name {expected.name}"
+            )
+        if reported["command"] != list(expected.command):
+            raise ReportValidationError(
+                f"profile definition mismatch at step {expected.name}: command differs"
+            )
+        if reported["required"] is not expected.required:
+            raise ReportValidationError(
+                f"profile definition mismatch at step {expected.name}: required flag differs"
+            )
 
 
 def validate_report(path: Path, *, expected_profile: str, expected_sha: str) -> dict[str, object]:
@@ -69,6 +103,13 @@ def validate_report(path: Path, *, expected_profile: str, expected_sha: str) -> 
         if unexpected:
             details.append(f"manifest marks non-required step(s): {', '.join(unexpected)}")
         raise ReportValidationError(f"required-step manifest mismatch: {'; '.join(details)}")
+
+    profile_name = ProfileName(cast(str, report["profile"]))
+    _validate_profile_binding(
+        profile_name=profile_name,
+        required_steps=required_steps,
+        steps=steps,
+    )
 
     for required_name in required_steps:
         step = by_name[required_name]

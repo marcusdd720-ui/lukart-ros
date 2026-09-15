@@ -5,31 +5,34 @@ import pytest
 
 from factory.quality import report_schema
 from factory.quality.report_schema import REPORT_SCHEMA
+from factory.quality.test_profiles import PROFILE_DEFINITIONS, ProfileName
 from factory.quality.test_report import ReportValidationError, validate_report
 
 SHA = "69f4843be7fc94c446f72b891a8fb44fbf9d9ed3"
 
 
 def _payload() -> dict[str, object]:
+    profile = PROFILE_DEFINITIONS[ProfileName.FAST]
     return {
         "schema_version": REPORT_SCHEMA,
         "repository": "marcusdd720-ui/lukart-ros",
         "ref": "case-testy/automation-p0",
         "git_sha": SHA,
         "checkout_sha": SHA,
-        "profile": "FAST",
+        "profile": profile.name.value,
         "started_at": "2026-09-15T10:00:00Z",
         "ended_at": "2026-09-15T10:01:00Z",
-        "required_steps": ["one"],
+        "required_steps": list(profile.required_step_names),
         "steps": [
             {
-                "name": "one",
-                "command": ["python", "-V"],
-                "required": True,
+                "name": step.name,
+                "command": list(step.command),
+                "required": step.required,
                 "status": "PASS",
                 "exit_code": 0,
                 "reason": "exit code 0",
             }
+            for step in profile.steps
         ],
         "status": "PASS",
         "reason": "all required steps passed",
@@ -267,4 +270,66 @@ def test_required_unknown_cannot_validate_as_pass(tmp_path: Path) -> None:
     steps[0]["exit_code"] = None
     _write(path, payload)
     with pytest.raises(ReportValidationError, match="required step not PASS"):
+        validate_report(path, expected_profile="FAST", expected_sha=SHA)
+
+
+def test_self_consistent_fictional_step_fails_profile_binding(tmp_path: Path) -> None:
+    path = tmp_path / "report.json"
+    payload = _payload()
+    required_steps = payload["required_steps"]
+    steps = payload["steps"]
+    assert isinstance(required_steps, list)
+    assert isinstance(steps, list)
+    assert isinstance(steps[0], dict)
+    required_steps[0] = "fictional-step"
+    steps[0]["name"] = "fictional-step"
+    _write(path, payload)
+
+    with pytest.raises(ReportValidationError, match="profile definition mismatch"):
+        validate_report(path, expected_profile="FAST", expected_sha=SHA)
+
+
+def test_modified_command_fails_profile_binding(tmp_path: Path) -> None:
+    path = tmp_path / "report.json"
+    payload = _payload()
+    steps = payload["steps"]
+    assert isinstance(steps, list)
+    assert isinstance(steps[0], dict)
+    steps[0]["command"] = ["python", "-c", "print('fake pass')"]
+    _write(path, payload)
+
+    with pytest.raises(ReportValidationError, match="profile definition mismatch"):
+        validate_report(path, expected_profile="FAST", expected_sha=SHA)
+
+
+def test_reordered_steps_fail_profile_binding(tmp_path: Path) -> None:
+    path = tmp_path / "report.json"
+    payload = _payload()
+    required_steps = payload["required_steps"]
+    steps = payload["steps"]
+    assert isinstance(required_steps, list)
+    assert isinstance(steps, list)
+    required_steps.reverse()
+    steps.reverse()
+    _write(path, payload)
+
+    with pytest.raises(ReportValidationError, match="profile definition mismatch"):
+        validate_report(path, expected_profile="FAST", expected_sha=SHA)
+
+
+def test_required_flag_drift_fails_profile_binding(tmp_path: Path) -> None:
+    path = tmp_path / "report.json"
+    payload = _payload()
+    required_steps = payload["required_steps"]
+    steps = payload["steps"]
+    assert isinstance(required_steps, list)
+    assert isinstance(steps, list)
+    assert isinstance(steps[0], dict)
+    step_name = steps[0]["name"]
+    assert isinstance(step_name, str)
+    steps[0]["required"] = False
+    required_steps.remove(step_name)
+    _write(path, payload)
+
+    with pytest.raises(ReportValidationError, match="profile definition mismatch"):
         validate_report(path, expected_profile="FAST", expected_sha=SHA)
