@@ -72,6 +72,11 @@ def test_external_report_schema_tracks_fail_closed_report_contract() -> None:
     }
     assert schema["properties"]["git_sha"]["pattern"] == "^[0-9a-fA-F]{40}$"
     assert schema["properties"]["checkout_sha"]["pattern"] == "^[0-9a-fA-F]{40}$"
+    assert set(schema["properties"]["profile"]["enum"]) == {item.value for item in ProfileName}
+    assert set(schema["properties"]["status"]["enum"]) == {item.value for item in ProfileStatus}
+    assert set(schema["properties"]["steps"]["items"]["properties"]["status"]["enum"]) == {
+        item.value for item in StepStatus
+    }
 
 
 def test_pr_workflow_preserves_failure_evidence_fail_closed() -> None:
