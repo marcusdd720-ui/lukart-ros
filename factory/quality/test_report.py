@@ -43,6 +43,14 @@ def validate_report(path: Path, *, expected_profile: str, expected_sha: str) -> 
         raise ReportValidationError(f"duplicate step name(s): {', '.join(duplicate_names)}")
 
     by_name = {cast(str, item["name"]): item for item in steps}
+    for required_name in required_steps:
+        if required_name not in by_name:
+            raise ReportValidationError(f"skipped required validation: {required_name}")
+        if by_name[required_name]["required"] is not True:
+            raise ReportValidationError(
+                f"skipped required validation: {required_name} not required"
+            )
+
     required_manifest = set(required_steps)
     required_from_steps = {
         name for name, item in by_name.items() if item["required"] is True
