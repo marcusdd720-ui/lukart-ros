@@ -1,0 +1,10 @@
+{
+  "fixture_schema": "lukart.case-testy.synthetic-case.v1",
+  "synthetic": true,
+  "case_id": "synthetic-case-golden-001",
+  "statement": "obiekt kontrolny został oznaczony jako aktywny",
+  "expected": {
+    "statement_recorded": true,
+    "content_classification": "CLAIM"
+  }
+}

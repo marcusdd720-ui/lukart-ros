@@ -1,0 +1,55 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://lukart.invalid/schemas/case_test_report.schema.json",
+  "title": "LUKART CASE-TESTY profile report",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "repository",
+    "ref",
+    "git_sha",
+    "checkout_sha",
+    "profile",
+    "started_at",
+    "ended_at",
+    "required_steps",
+    "steps",
+    "status",
+    "reason"
+  ],
+  "properties": {
+    "schema_version": {"const": "lukart.case-test-profile-report.v1"},
+    "repository": {"type": "string", "minLength": 1},
+    "ref": {"type": "string", "minLength": 1},
+    "git_sha": {"type": "string", "pattern": "^[0-9a-fA-F]{40}$"},
+    "checkout_sha": {"type": "string", "pattern": "^[0-9a-fA-F]{40}$"},
+    "profile": {"enum": ["FAST", "PR", "FULL", "FORENSIC", "POST-MERGE"]},
+    "started_at": {"type": "string", "minLength": 1},
+    "ended_at": {"type": "string", "minLength": 1},
+    "required_steps": {
+      "type": "array",
+      "minItems": 1,
+      "items": {"type": "string", "minLength": 1},
+      "uniqueItems": true
+    },
+    "steps": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["name", "command", "required", "status", "exit_code", "reason"],
+        "properties": {
+          "name": {"type": "string", "minLength": 1},
+          "command": {"type": "array", "items": {"type": "string"}},
+          "required": {"type": "boolean"},
+          "status": {"enum": ["PASS", "FAIL", "UNKNOWN"]},
+          "exit_code": {"type": ["integer", "null"]},
+          "reason": {"type": "string"}
+        }
+      }
+    },
+    "status": {"enum": ["PASS", "FAIL"]},
+    "reason": {"type": "string"}
+  }
+}
