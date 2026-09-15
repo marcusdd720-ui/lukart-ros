@@ -157,6 +157,44 @@ def test_profile_mismatch_fails_closed(tmp_path: Path) -> None:
         validate_report(path, expected_profile="FULL", expected_sha=SHA)
 
 
+def test_duplicate_step_names_fail_closed(tmp_path: Path) -> None:
+    path = tmp_path / "report.json"
+    payload = _payload()
+    steps = payload["steps"]
+    assert isinstance(steps, list)
+    assert isinstance(steps[0], dict)
+    duplicate = dict(steps[0])
+    duplicate["status"] = "FAIL"
+    duplicate["exit_code"] = 1
+    duplicate["reason"] = "exit code 1"
+    steps.insert(0, duplicate)
+    _write(path, payload)
+
+    with pytest.raises(ReportValidationError, match="duplicate step name"):
+        validate_report(path, expected_profile="FAST", expected_sha=SHA)
+
+
+def test_required_step_omitted_from_manifest_fails_closed(tmp_path: Path) -> None:
+    path = tmp_path / "report.json"
+    payload = _payload()
+    steps = payload["steps"]
+    assert isinstance(steps, list)
+    steps.append(
+        {
+            "name": "hidden-required",
+            "command": ["python", "-c", "raise SystemExit(1)"],
+            "required": True,
+            "status": "FAIL",
+            "exit_code": 1,
+            "reason": "exit code 1",
+        }
+    )
+    _write(path, payload)
+
+    with pytest.raises(ReportValidationError, match="required-step manifest mismatch"):
+        validate_report(path, expected_profile="FAST", expected_sha=SHA)
+
+
 def test_skipped_required_validation_fails_closed(tmp_path: Path) -> None:
     path = tmp_path / "report.json"
     payload = _payload()
