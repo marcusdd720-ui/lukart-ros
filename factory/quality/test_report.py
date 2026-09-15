@@ -63,7 +63,9 @@ def validate_report(path: Path, *, expected_profile: str, expected_sha: str) -> 
             raise ReportValidationError(f"skipped required validation: {required_name}")
         step = by_name[required_name]
         if step.get("required") is not True:
-            raise ReportValidationError(f"skipped required validation: {required_name} not required")
+            raise ReportValidationError(
+                f"skipped required validation: {required_name} not required"
+            )
         if step.get("status") != "PASS" or step.get("exit_code") != 0:
             raise ReportValidationError(f"required step not PASS: {required_name}")
     if payload["status"] != "PASS":

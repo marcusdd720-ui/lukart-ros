@@ -7,9 +7,13 @@ from factory.quality.test_profiles import (
     ProfileStatus,
     StepResult,
     StepStatus,
-    TestProfile as ProfileDefinition,
-    TestStep as ProfileStep,
     run_profile,
+)
+from factory.quality.test_profiles import (
+    TestProfile as ProfileDefinition,
+)
+from factory.quality.test_profiles import (
+    TestStep as ProfileStep,
 )
 
 SHA = "69f4843be7fc94c446f72b891a8fb44fbf9d9ed3"
