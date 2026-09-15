@@ -37,15 +37,28 @@ def validate_report(path: Path, *, expected_profile: str, expected_sha: str) -> 
 
     required_steps = cast(list[str], report["required_steps"])
     steps = cast(list[dict[str, object]], report["steps"])
+    step_names = [cast(str, item["name"]) for item in steps]
+    if len(step_names) != len(set(step_names)):
+        duplicate_names = sorted({name for name in step_names if step_names.count(name) > 1})
+        raise ReportValidationError(f"duplicate step name(s): {', '.join(duplicate_names)}")
+
     by_name = {cast(str, item["name"]): item for item in steps}
+    required_manifest = set(required_steps)
+    required_from_steps = {
+        name for name, item in by_name.items() if item["required"] is True
+    }
+    if required_manifest != required_from_steps:
+        missing = sorted(required_from_steps - required_manifest)
+        unexpected = sorted(required_manifest - required_from_steps)
+        details: list[str] = []
+        if missing:
+            details.append(f"missing from manifest: {', '.join(missing)}")
+        if unexpected:
+            details.append(f"manifest marks non-required step(s): {', '.join(unexpected)}")
+        raise ReportValidationError(f"required-step manifest mismatch: {'; '.join(details)}")
+
     for required_name in required_steps:
-        if required_name not in by_name:
-            raise ReportValidationError(f"skipped required validation: {required_name}")
         step = by_name[required_name]
-        if step["required"] is not True:
-            raise ReportValidationError(
-                f"skipped required validation: {required_name} not required"
-            )
         if step["status"] != "PASS" or step["exit_code"] != 0:
             raise ReportValidationError(f"required step not PASS: {required_name}")
     if report["status"] != "PASS":
