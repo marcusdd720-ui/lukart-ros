@@ -2,7 +2,7 @@
   "schema": "lukart.github-actions-runtime-policy.v1",
   "minimum_node_runtime": 24,
   "verification_state": "ENGINEERING_VERIFIED",
-  "verified_at": "2026-09-07",
+  "verified_at": "2026-09-15",
   "approved_actions": {
     "actions/attest": {
       "sha": "1e69f48acb82d1966a394da916b4c1698aa569d6",
@@ -30,13 +30,13 @@
       "runtime": "node24"
     },
     "github/codeql-action/init": {
-      "sha": "cdf488f595d80d6e07e03d4674febd5ab45fa938",
-      "version": "v4",
+      "sha": "b96794f015dfd88f77b49b1c93e0fa7110f94c63",
+      "version": "v4.38.0",
       "runtime": "node24"
     },
     "github/codeql-action/analyze": {
-      "sha": "cdf488f595d80d6e07e03d4674febd5ab45fa938",
-      "version": "v4",
+      "sha": "b96794f015dfd88f77b49b1c93e0fa7110f94c63",
+      "version": "v4.38.0",
       "runtime": "node24"
     }
   }
