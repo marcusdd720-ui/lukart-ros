@@ -58,6 +58,59 @@ def test_malformed_report_fails_closed(tmp_path: Path) -> None:
         validate_report(path, expected_profile="FAST", expected_sha=SHA)
 
 
+def test_duplicate_root_key_fails_closed(tmp_path: Path) -> None:
+    path = tmp_path / "report.json"
+    payload = _payload()
+    payload["status"] = "FAIL"
+    raw = json.dumps(payload)
+    path.write_text(raw[:-1] + ', "status": "PASS"}', encoding="utf-8")
+
+    with pytest.raises(ReportValidationError, match="duplicate object key: status"):
+        validate_report(path, expected_profile="FAST", expected_sha=SHA)
+
+
+def test_duplicate_nested_key_fails_closed(tmp_path: Path) -> None:
+    path = tmp_path / "report.json"
+    raw = json.dumps(_payload()).replace(
+        '"status": "PASS"', '"status": "FAIL", "status": "PASS"', 1
+    )
+    path.write_text(raw, encoding="utf-8")
+
+    with pytest.raises(ReportValidationError, match="duplicate object key: status"):
+        validate_report(path, expected_profile="FAST", expected_sha=SHA)
+
+
+def test_non_json_numeric_constant_fails_closed(tmp_path: Path) -> None:
+    path = tmp_path / "report.json"
+    raw = json.dumps(_payload()).replace(
+        '"reason": "all required steps passed"', '"reason": NaN'
+    )
+    path.write_text(raw, encoding="utf-8")
+
+    with pytest.raises(ReportValidationError, match="non-JSON numeric constant: NaN"):
+        validate_report(path, expected_profile="FAST", expected_sha=SHA)
+
+
+def test_duplicate_key_in_canonical_schema_fails_closed(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    schema_text = report_schema.REPORT_SCHEMA_PATH.read_text(encoding="utf-8")
+    schema_text = schema_text.replace(
+        '"$schema": "https://json-schema.org/draft/2020-12/schema",',
+        '"$schema": "https://json-schema.org/draft/2020-12/schema",\n'
+        '  "$schema": "https://json-schema.org/draft/2020-12/schema",',
+        1,
+    )
+    drifted_schema = tmp_path / "case_test_report.schema.json"
+    drifted_schema.write_text(schema_text, encoding="utf-8")
+    monkeypatch.setattr(report_schema, "REPORT_SCHEMA_PATH", drifted_schema)
+
+    path = tmp_path / "report.json"
+    _write(path, _payload())
+    with pytest.raises(ReportValidationError, match="duplicate object key: \\$schema"):
+        validate_report(path, expected_profile="FAST", expected_sha=SHA)
+
+
 def test_non_object_report_fails_canonical_schema(tmp_path: Path) -> None:
     path = tmp_path / "report.json"
     _write(path, [])

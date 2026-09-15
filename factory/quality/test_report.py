@@ -3,11 +3,16 @@
 from __future__ import annotations
 
 import argparse
-import json
+from json import JSONDecodeError
 from pathlib import Path
 from typing import cast
 
-from factory.quality.report_schema import ReportSchemaError, validate_report_payload
+from factory.quality.report_schema import (
+    ReportSchemaError,
+    StrictJsonError,
+    strict_json_loads,
+    validate_report_payload,
+)
 
 
 class ReportValidationError(RuntimeError):
@@ -18,8 +23,8 @@ def validate_report(path: Path, *, expected_profile: str, expected_sha: str) -> 
     if not path.is_file():
         raise ReportValidationError(f"report artifact missing: {path}")
     try:
-        payload = json.loads(path.read_text(encoding="utf-8"))
-    except (OSError, json.JSONDecodeError) as exc:
+        payload = strict_json_loads(path.read_text(encoding="utf-8"))
+    except (OSError, JSONDecodeError, StrictJsonError) as exc:
         raise ReportValidationError(f"malformed report: {type(exc).__name__}: {exc}") from exc
 
     try:
