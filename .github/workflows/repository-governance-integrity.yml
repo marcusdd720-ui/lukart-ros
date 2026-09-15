@@ -30,4 +30,4 @@ jobs:
       - name: Validate live ruleset and required-check integrity
         env:
           GITHUB_TOKEN: ${{ github.token }}
-        run: python scripts/hardcore_h2_policy.py --candidate-sha "$CANDIDATE_SHA"
+        run: python -m scripts.hardcore_h2_policy --candidate-sha "$CANDIDATE_SHA"
