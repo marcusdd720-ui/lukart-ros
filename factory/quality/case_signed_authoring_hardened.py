@@ -147,10 +147,10 @@ class AuthoringManifest:
 
         files_raw = payload.get("files")
 
-        require(
-            isinstance(files_raw, list),
-            "manifest files must be a list",
-        )
+        if not isinstance(files_raw, list):
+            raise SignedAuthoringHardeningError(
+                "manifest files must be a list"
+            )
 
         files: list[tuple[str, str]] = []
 
