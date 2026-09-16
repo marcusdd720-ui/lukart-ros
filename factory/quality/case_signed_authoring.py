@@ -13,7 +13,10 @@ import subprocess
 import urllib.parse
 from pathlib import Path
 
-from factory.github_actions_client import GitHubActionsClient, GitHubActionsError
+from factory.github_actions_client import (
+    GitHubActionsClient,
+    GitHubActionsError,
+)
 
 
 MAIN_BRANCH = "main"
