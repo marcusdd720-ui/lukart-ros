@@ -19,11 +19,6 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
 
-    env:
-      LUKART_ROS_FACTORY_APP_ID: ${{ vars.LUKART_ROS_FACTORY_APP_ID }}
-      LUKART_ROS_FACTORY_CLIENT_ID: ${{ vars.LUKART_ROS_FACTORY_CLIENT_ID }}
-      LUKART_ROS_FACTORY_PRIVATE_KEY: ${{ secrets.LUKART_ROS_FACTORY_PRIVATE_KEY }}
-
     steps:
       - name: Checkout main
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -40,8 +35,20 @@ jobs:
           python -m pip install "uv==0.12.10"
           uv sync --frozen --extra dev
 
-      - name: Run bounded CASE-TESTY authoring operation
+      - name: Prepare and validate without write credentials
         run: |
           uv run --frozen --extra dev python \
-            -m factory.quality.case_signed_authoring \
-            harden_manual_smoke_inventory
+            -m factory.quality.case_signed_authoring_hardened \
+            prepare \
+            --manifest "${RUNNER_TEMP}/case-authoring-manifest.json"
+
+      - name: Publish immutable validated bytes
+        env:
+          LUKART_ROS_FACTORY_APP_ID: ${{ vars.LUKART_ROS_FACTORY_APP_ID }}
+          LUKART_ROS_FACTORY_CLIENT_ID: ${{ vars.LUKART_ROS_FACTORY_CLIENT_ID }}
+          LUKART_ROS_FACTORY_PRIVATE_KEY: ${{ secrets.LUKART_ROS_FACTORY_PRIVATE_KEY }}
+        run: |
+          uv run --frozen --extra dev python \
+            -m factory.quality.case_signed_authoring_hardened \
+            publish \
+            --manifest "${RUNNER_TEMP}/case-authoring-manifest.json"

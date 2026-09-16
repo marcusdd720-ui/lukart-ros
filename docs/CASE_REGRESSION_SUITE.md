@@ -35,6 +35,7 @@ Rules:
 | CASE-BATCH-006 | tests/test_stage_gate_fail_closed.py | Fail-closed stage-gate behavior |
 | CASE-BATCH-007 | tests/case/test_case_ledger_integrity.py | Canonical Case Ledger integrity and authoritative-history invariants |
 | CASE-BATCH-008 | tests/case/test_p4_enterprise_regression_hardening.py | P4 lifecycle, deadline, authority, topology, renderer, privacy-canary and Red Team operational invariants |
+| CASE-BATCH-009 | tests/case/test_case_signed_authoring_hardening.py | Signed-authoring fail-closed API semantics, immutable validated bytes, SHA-drift rejection, atomic publication and idempotent reconcile |
 
 ## TESTY RĘCZNE / PRODUCT SMOKE
 
