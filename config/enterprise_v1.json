@@ -95,14 +95,15 @@
       "deletion",
       "non_fast_forward",
       "pull_request",
-      "required_status_checks"
+      "required_status_checks",
+      "required_signatures"
     ],
     "strict_required_status_checks": true,
     "do_not_enforce_on_create": false,
     "allowed_bypass_actors": [],
     "privileged_ruleset_snapshot": {
       "ruleset_id": 22352216,
-      "ruleset_updated_at": "2026-09-15T14:11:42.877Z",
+      "ruleset_updated_at": "2026-09-16T06:07:01.791Z",
       "bypass_actors": [],
       "observer_class": "ruleset-write-visible-api",
       "refresh_on_ruleset_update": true
