@@ -1068,16 +1068,10 @@ def verify_published_commit(
         "commit"
     )
 
-    require(
-        isinstance(
-            commit_body,
-            dict,
-        ),
-        (
-            "published commit "
-            "payload is invalid"
-        ),
-    )
+    if not isinstance(commit_body, dict):
+        raise SignedAuthoringHardeningError(
+            "published commit payload is invalid"
+        )
 
     verification = commit_body.get(
         "verification"
