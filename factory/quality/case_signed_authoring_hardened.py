@@ -1153,23 +1153,18 @@ def verify_published_commit(
         "files"
     )
 
-    require(
-        isinstance(files, list),
-        (
-            "GitHub compare returned "
-            "invalid files"
-        ),
-    )
-
-    remote_paths = {
-        item.get("filename")
-        for item in files
-        if isinstance(item, dict)
-        and isinstance(
-            item.get("filename"),
-            str,
+    if not isinstance(files, list):
+        raise SignedAuthoringHardeningError(
+            "GitHub compare returned invalid files"
         )
-    }
+
+    remote_paths: set[str] = set()
+    for item in files:
+        if not isinstance(item, dict):
+            continue
+        filename = item.get("filename")
+        if isinstance(filename, str):
+            remote_paths.add(filename)
 
     require(
         remote_paths == ALLOWED_PATHS,
