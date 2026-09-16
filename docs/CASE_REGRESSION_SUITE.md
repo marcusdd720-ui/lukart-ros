@@ -34,6 +34,7 @@ Rules:
 | CASE-BATCH-005 | tests/case/test_cirp_evidence_semantics.py | FACT/CLAIM/UNKNOWN evidence semantics and no-evidence-no-fact rule |
 | CASE-BATCH-006 | tests/test_stage_gate_fail_closed.py | Fail-closed stage-gate behavior |
 | CASE-BATCH-007 | tests/case/test_case_ledger_integrity.py | Canonical Case Ledger integrity and authoritative-history invariants |
+| CASE-BATCH-008 | tests/case/test_p4_enterprise_regression_hardening.py | P4 lifecycle, deadline, authority, topology, renderer, privacy-canary and Red Team operational invariants |
 
 ## TESTY RĘCZNE / PRODUCT SMOKE
 
