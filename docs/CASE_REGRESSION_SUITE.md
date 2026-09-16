@@ -38,7 +38,9 @@ Rules:
 
 ## TESTY RĘCZNE / PRODUCT SMOKE
 
-This section is intentionally non-executable in CI. No manual/product-smoke scenario is declared in
-this bootstrap version because no authoritative repository-backed manual catalog was available at the
-bootstrap evidence ceiling. Manual scenarios may be added later only as explicit synthetic fixtures
-with stable IDs and acceptance criteria; doing so MUST NOT change automated batch completeness.
+This section is intentionally non-executable in CI. Manual/product-smoke scenarios are repository-backed synthetic product checks and MUST NOT change automated batch completeness.
+
+| ID | Authority | Synthetic stimulus | Acceptance criteria |
+|---|---|---|---|
+| CASE-MANUAL-001 | `docs/PRIVATE_CASE_OPERATING_STANDARD.md` §3.1, §13 | `LUKART ROS — NEW CASE: SYNTHETIC-MANUAL-001. CIRP REAL CASE RUN.` | Short trigger is accepted without requiring the full standard; scope and decision need are established first; privacy boundary is preserved; execution continues only to the current evidence ceiling. |
+| CASE-MANUAL-002 | `docs/PRIVATE_CASE_OPERATING_STANDARD.md` §3.2, §13 | Existing synthetic CASE plus `LUKART ROS — CASE SYNTHETIC-MANUAL-002 — CONTINUE.` and one new synthetic event | Authorized current CASE state is reconstructed; only delta analysis is performed for the new event; analysis is not restarted from zero; no facts are imported from another CASE; `UNKNOWN` / `UNRESOLVED` state remains visible. |
