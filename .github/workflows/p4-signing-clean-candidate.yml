@@ -1,0 +1,100 @@
+name: P4 Signing Clean Candidate
+
+on:
+  push:
+    branches:
+      - case-testy/p4-signing-trigger-20260916
+
+permissions:
+  contents: write
+
+jobs:
+  build-clean-signed-candidate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Rebuild exact P4 content on clean signed history
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          EXPECTED_MAIN: 36aec3be7e4078045295853a676adb404ec88715
+          SOURCE_SHA: 0a80bc8e0e741972e291126e4e8a49d339a91e15
+          TARGET_BRANCH: case-testy/p4-signing-clean-20260916
+        run: |
+          set -euo pipefail
+
+          api_get() {
+            curl --fail-with-body --silent --show-error \
+              -H 'Accept: application/vnd.github+json' \
+              -H "Authorization: Bearer $GH_TOKEN" \
+              -H 'X-GitHub-Api-Version: 2022-11-28' \
+              "$1"
+          }
+
+          ACTUAL_MAIN="$(api_get "https://api.github.com/repos/$REPO/branches/main" | jq -r '.commit.sha')"
+          if [ "$ACTUAL_MAIN" != "$EXPECTED_MAIN" ]; then
+            echo "main moved: expected=$EXPECTED_MAIN actual=$ACTUAL_MAIN" >&2
+            exit 1
+          fi
+
+          TARGET_HEAD="$(api_get "https://api.github.com/repos/$REPO/git/ref/heads/$TARGET_BRANCH" | jq -r '.object.sha')"
+          if [ "$TARGET_HEAD" != "$EXPECTED_MAIN" ]; then
+            echo "clean target is not anchored at exact main: expected=$EXPECTED_MAIN actual=$TARGET_HEAD" >&2
+            exit 1
+          fi
+
+          paths=(
+            'core/cirp/operational_guards.py'
+            'tests/case/test_p4_enterprise_regression_hardening.py'
+            'docs/CASE_REGRESSION_SUITE.md'
+            'config/enterprise_v1.json'
+          )
+
+          for path in "${paths[@]}"; do
+            SOURCE_JSON="$(api_get "https://api.github.com/repos/$REPO/contents/$path?ref=$SOURCE_SHA")"
+            CONTENT="$(printf '%s' "$SOURCE_JSON" | jq -r '.content' | tr -d '\n')"
+            if [ -z "$CONTENT" ] || [ "$CONTENT" = "null" ]; then
+              echo "missing source content for $path" >&2
+              exit 1
+            fi
+
+            HTTP_CODE="$(curl --silent --show-error \
+              -o /tmp/target-content.json \
+              -w '%{http_code}' \
+              -H 'Accept: application/vnd.github+json' \
+              -H "Authorization: Bearer $GH_TOKEN" \
+              -H 'X-GitHub-Api-Version: 2022-11-28' \
+              "https://api.github.com/repos/$REPO/contents/$path?ref=$TARGET_BRANCH")"
+
+            MESSAGE="case-testy: signed P4 $(basename "$path")"
+            if [ "$HTTP_CODE" = "200" ]; then
+              CURRENT_SHA="$(jq -r '.sha' /tmp/target-content.json)"
+              BODY="$(jq -nc \
+                --arg message "$MESSAGE" \
+                --arg content "$CONTENT" \
+                --arg branch "$TARGET_BRANCH" \
+                --arg sha "$CURRENT_SHA" \
+                '{message:$message,content:$content,branch:$branch,sha:$sha}')"
+            elif [ "$HTTP_CODE" = "404" ]; then
+              BODY="$(jq -nc \
+                --arg message "$MESSAGE" \
+                --arg content "$CONTENT" \
+                --arg branch "$TARGET_BRANCH" \
+                '{message:$message,content:$content,branch:$branch}')"
+            else
+              cat /tmp/target-content.json >&2 || true
+              echo "unexpected target lookup HTTP status $HTTP_CODE for $path" >&2
+              exit 1
+            fi
+
+            curl --fail-with-body --silent --show-error \
+              -X PUT \
+              -H 'Accept: application/vnd.github+json' \
+              -H "Authorization: Bearer $GH_TOKEN" \
+              -H 'X-GitHub-Api-Version: 2022-11-28' \
+              -d "$BODY" \
+              "https://api.github.com/repos/$REPO/contents/$path" >/tmp/write-result.json
+            jq -r '.commit.sha' /tmp/write-result.json
+          done
+
+          FINAL_HEAD="$(api_get "https://api.github.com/repos/$REPO/git/ref/heads/$TARGET_BRANCH" | jq -r '.object.sha')"
+          echo "FINAL_SIGNED_HEAD=$FINAL_HEAD"
