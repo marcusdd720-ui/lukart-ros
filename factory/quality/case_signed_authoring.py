@@ -18,7 +18,6 @@ from factory.github_actions_client import (
     GitHubActionsError,
 )
 
-
 MAIN_BRANCH = "main"
 OPERATION = "harden_manual_smoke_inventory"
 TARGET_BRANCH = "case-testy/manual-inventory-validation-295-auto"
@@ -573,18 +572,17 @@ def put_file(
 
     commit = result.get("commit")
 
-    require(
-        isinstance(commit, dict),
-        f"GitHub returned no commit for {path}",
-    )
+    if not isinstance(commit, dict):
+        raise SignedAuthoringError(
+            f"GitHub returned no commit for {path}"
+        )
 
     sha = commit.get("sha")
 
-    require(
-        isinstance(sha, str)
-        and len(sha) == 40,
-        f"invalid commit SHA for {path}",
-    )
+    if not isinstance(sha, str) or len(sha) != 40:
+        raise SignedAuthoringError(
+            f"invalid commit SHA for {path}"
+        )
 
     verify_commit(client, sha)
 
@@ -885,20 +883,21 @@ def harden_manual_smoke_inventory(
 
         files = compare.get("files")
 
-        require(
-            isinstance(files, list),
-            "GitHub compare returned invalid files",
-        )
-
-        remote_paths = {
-            item.get("filename")
-            for item in files
-            if isinstance(item, dict)
-            and isinstance(
-                item.get("filename"),
-                str,
+        if not isinstance(files, list):
+            raise SignedAuthoringError(
+                "GitHub compare returned invalid files"
             )
-        }
+
+        remote_paths: set[str] = set()
+
+        for item in files:
+            if not isinstance(item, dict):
+                continue
+
+            filename = item.get("filename")
+
+            if isinstance(filename, str):
+                remote_paths.add(filename)
 
         require(
             remote_paths == ALLOWED_PATHS,
