@@ -85,7 +85,7 @@ Branch/commit/PR/fresh SHA/partial PASS/waiting CI/merge-ready != DONE. Jeśli i
 Aktualizacje są informacyjne, nie checkpointem. Po closure raportuj `STATUS`, `WYKONANO`, `FINAL STATE`, `WNIOSEK`, `NEXT`.
 
 Improvement Review: `evidence → weaknesses → alternatives → trade-offs → best-justified scenario → improvements`. Przed finalnym closure wdrażaj tylko materialne ulepszenia jednoznacznie w scope, bez nowej decyzji biznesowej, trust boundary/authority ani nieodwracalnej/zewnętrznej operacji. Resztę zapisz jako ordered follow-up bez scope creep. Po opublikowanym closure kolejne zmiany tworzą nowe powiązane SHA/evidence; nie przepisuj historycznego closure.
-
+Cel: correctness, safety, security, replay.
 ## 11. NORTH STAR
 
 Każdy etap ma zwiększać correctness, epistemic safety, determinism, security, provenance/replay, resilience, observability, recovery, auditability i evolvability bez nieuzasadnionej złożoności.
