@@ -15,9 +15,10 @@ import os
 import re
 import subprocess
 import urllib.parse
+from collections.abc import Mapping
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Mapping
+from typing import Any
 
 from factory.github_actions_client import (
     GitHubActionsClient,
@@ -845,10 +846,8 @@ def load_manifest(
         json.JSONDecodeError,
     ) as exc:
         raise SignedAuthoringHardeningError(
-            (
-                "authoring manifest "
-                "cannot be read"
-            )
+            "authoring manifest "
+            "cannot be read"
         ) from exc
 
     require(
@@ -1043,10 +1042,8 @@ def remote_text_file(
         UnicodeDecodeError,
     ) as exc:
         raise PublishAmbiguous(
-            (
-                "remote file "
-                f"cannot be decoded: {path}"
-            )
+            "remote file "
+            f"cannot be decoded: {path}"
         ) from exc
 
 
@@ -1333,11 +1330,9 @@ def ensure_target_branch(
             != manifest.expected_head_sha
         ):
             raise PublishAmbiguous(
-                (
-                    "target branch creation "
-                    "failed and could not "
-                    "be reconciled"
-                )
+                "target branch creation "
+                "failed and could not "
+                "be reconciled"
             ) from exc
 
     require(
@@ -1372,13 +1367,11 @@ def publish_atomic_commit(
         != manifest.expected_head_sha
     ):
         raise StaleAuthoringOperation(
-            (
-                "base moved before "
-                "atomic publication: "
-                f"expected="
-                f"{manifest.expected_head_sha} "
-                f"live={live_base}"
-            )
+            "base moved before "
+            "atomic publication: "
+            f"expected="
+            f"{manifest.expected_head_sha} "
+            f"live={live_base}"
         )
 
     message_body = (
@@ -1431,10 +1424,8 @@ def publish_atomic_commit(
 
         if reconciled is None:
             raise PublishAmbiguous(
-                (
-                    "atomic publication failed "
-                    "and could not be reconciled"
-                )
+                "atomic publication failed "
+                "and could not be reconciled"
             ) from exc
 
         resulting_sha = reconciled
@@ -1454,13 +1445,11 @@ def publish_atomic_commit(
         != manifest.expected_head_sha
     ):
         raise StaleAuthoringOperation(
-            (
-                "base moved during publication; "
-                "verified candidate "
-                f"{resulting_sha} remains "
-                "isolated and requires "
-                "revalidation"
-            )
+            "base moved during publication; "
+            "verified candidate "
+            f"{resulting_sha} remains "
+            "isolated and requires "
+            "revalidation"
         )
 
     return resulting_sha
@@ -1542,10 +1531,8 @@ def ensure_pull_request(
 
             if len(reconciled) != 1:
                 raise PublishAmbiguous(
-                    (
-                        "PR creation failed "
-                        "and could not be reconciled"
-                    )
+                    "PR creation failed "
+                    "and could not be reconciled"
                 ) from exc
 
             pr = reconciled[0]
@@ -1667,12 +1654,10 @@ def publish_operation(
         != manifest.expected_head_sha
     ):
         raise StaleAuthoringOperation(
-            (
-                "base moved before publication: "
-                f"expected="
-                f"{manifest.expected_head_sha} "
-                f"live={live_base}"
-            )
+            "base moved before publication: "
+            f"expected="
+            f"{manifest.expected_head_sha} "
+            f"live={live_base}"
         )
 
     reconciled = ensure_target_branch(
