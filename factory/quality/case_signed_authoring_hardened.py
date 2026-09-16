@@ -1018,14 +1018,11 @@ def remote_text_file(
     content = payload.get("content")
     encoding = payload.get("encoding")
 
-    require(
-        isinstance(content, str)
-        and encoding == "base64",
-        (
+    if not isinstance(content, str) or encoding != "base64":
+        raise SignedAuthoringHardeningError(
             "remote file encoding "
             f"is invalid: {path}"
-        ),
-    )
+        )
 
     try:
         raw = base64.b64decode(
