@@ -1101,17 +1101,10 @@ def verify_published_commit(
         "parents"
     )
 
-    require(
-        isinstance(
-            parents,
-            list,
+    if not isinstance(parents, list) or len(parents) != 1:
+        raise SignedAuthoringHardeningError(
+            "published commit must have exactly one parent"
         )
-        and len(parents) == 1,
-        (
-            "published commit must "
-            "have exactly one parent"
-        ),
-    )
 
     parent = parents[0]
 
