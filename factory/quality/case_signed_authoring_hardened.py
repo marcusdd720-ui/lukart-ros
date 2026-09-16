@@ -954,13 +954,10 @@ def branch_head(
 
     obj = ref.get("object")
 
-    require(
-        isinstance(obj, dict),
-        (
-            "GitHub ref response "
-            "has no object"
-        ),
-    )
+    if not isinstance(obj, dict):
+        raise SignedAuthoringHardeningError(
+            "GitHub ref response has no object"
+        )
 
     sha = obj.get("sha")
 
