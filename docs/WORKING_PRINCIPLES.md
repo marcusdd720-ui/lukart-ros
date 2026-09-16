@@ -56,23 +56,7 @@ Defence in depth; least privilege; deny by default; tenant/case isolation; short
 
 Agent = bounded capability worker. Runtime wiąże capability, provider/model/plugin identity/version, budgets, fallback/circuit-breaker i audit. Brak undeclared permissions.
 
-### Privileged authoring / publication invariant
-
-Każda automatyczna ścieżka zapisu do repozytorium lub innego autorytatywnego systemu musi być fail-closed i egzekwować niezależnie od promptu:
-
-- **validated bytes = published bytes**: walidacja tworzy wersjonowany manifest/digest, a publisher nie może ponownie generować ani zmieniać zatwierdzonej treści;
-- **atomic publication**: kompletny zestaw zmian jest publikowany jako jedna logiczna rewizja/commit, bez częściowego sukcesu między plikami;
-- **compare-and-swap**: operacja wiąże `expected_head`/bazową rewizję; drift przed zapisem oznacza `STALE / REVALIDATION_REQUIRED`;
-- **secret-free validation**: testowany kod i proces walidacji nie otrzymują signing/write credentials; najmniejszy uprzywilejowany publisher dostaje je dopiero po PASS;
-- **idempotent operation identity**: każda operacja ma trwały `operation_id`; retry nie może tworzyć duplikatu;
-- **ambiguous write → reconcile**: timeout/zerwane połączenie/niejednoznaczna odpowiedź wymagają odczytu rzeczywistego stanu przed retry lub cleanup;
-- **no blind cleanup**: nie kasuj refów/artefaktów/evidence po ogólnym wyjątku bez potwierdzenia stanu;
-- **server-side scope**: repo/ref/PR, dozwolone ścieżki, typ operacji, actor i limity są egzekwowane przez executor/policy, nie tylko przez tekst instrukcji;
-- **post-write verification**: po zapisie ponownie odczytaj wynik i potwierdź signature/attestation, parent/base, tree/content digest, diff/allowlist, ref/PR head oraz wymagane CI dla dokładnej wynikowej rewizji;
-- **no unsigned/unsafe fallback**: brak podpisu/attestation lub niemożliwa weryfikacja nie może prowadzić do słabszej ścieżki publikacji;
-- **protected changes need separate scope**: workflow, auth, permissions, signing, publisher i polityki bezpieczeństwa wymagają odrębnego zakresu/review.
-
-Jeżeli platforma nie potrafi atomowo połączyć publikacji i aktualizacji refa, projektuj operację tak, aby stan pośredni był bezpieczny, rozpoznawalny i możliwy do jednoznacznego reconcile. Adapter dostawcy jest wymienny; powyższe invarianty należą do stabilnego wewnętrznego kontraktu.
+validated bytes = published bytes; atomic publication; compare-and-swap; secret-free validation; ambiguous write → reconcile; no blind cleanup; post-write verification; no unsigned/unsafe fallback
 
 ## 7. PERFORMANCE / CONTROLLED LEARNING
 
