@@ -1,4 +1,7 @@
 import json
+import subprocess
+import sys
+from pathlib import Path
 
 import pytest
 
@@ -7,6 +10,7 @@ from factory.quality.test_profiles import (
     ProfileStatus,
     StepResult,
     StepStatus,
+    execute_step,
     run_profile,
 )
 from factory.quality.test_profiles import (
@@ -215,3 +219,118 @@ def test_invalid_sha_fails_closed_without_executing_steps() -> None:
     assert result.status is ProfileStatus.FAIL
     assert "40-character" in result.reason
     assert called is False
+
+def test_execute_step_propagates_timeout_to_subprocess(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    seen: dict[str, object] = {}
+
+    def fake_run(*args, **kwargs):
+        seen["command"] = args[0]
+        seen["timeout"] = kwargs["timeout"]
+
+        return subprocess.CompletedProcess(
+            args=("python", "-V"),
+            returncode=0,
+            stdout="",
+            stderr="",
+        )
+
+    monkeypatch.setattr(
+        "factory.quality.test_profiles.subprocess.run",
+        fake_run,
+    )
+
+    step = ProfileStep(
+        "bounded",
+        ("python", "-V"),
+        timeout_seconds=17,
+    )
+
+    result = execute_step(step)
+
+    assert result.status is StepStatus.PASS
+    assert result.exit_code == 0
+    assert seen["timeout"] == 17
+
+    command = seen["command"]
+    assert isinstance(command, tuple)
+    assert command[0] == sys.executable
+
+
+def test_execute_step_timeout_fails_closed(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    def fake_run(*args, **kwargs):
+        raise subprocess.TimeoutExpired(
+            cmd=args[0],
+            timeout=kwargs["timeout"],
+        )
+
+    monkeypatch.setattr(
+        "factory.quality.test_profiles.subprocess.run",
+        fake_run,
+    )
+
+    step = ProfileStep(
+        "slow",
+        ("python", "-V"),
+        timeout_seconds=3,
+    )
+
+    result = execute_step(step)
+
+    assert result.status is StepStatus.FAIL
+    assert result.exit_code is None
+    assert result.reason == "timeout after 3s"
+
+
+def test_non_positive_timeout_fails_profile_contract() -> None:
+    called = False
+
+    def execute(step: ProfileStep) -> StepResult:
+        nonlocal called
+        called = True
+        return _result(
+            step,
+            StepStatus.PASS,
+        )
+
+    step = ProfileStep(
+        "invalid-budget",
+        ("python", "-V"),
+        timeout_seconds=0,
+    )
+
+    result = run_profile(
+        _profile(step),
+        SHA,
+        executor=execute,
+    )
+
+    assert result.status is ProfileStatus.FAIL
+    assert called is False
+    assert result.steps[0].status is StepStatus.FAIL
+    assert (
+        result.steps[0].reason
+        == (
+            "invalid timeout_seconds: "
+            "must be a positive integer"
+        )
+    )
+
+
+def test_case_testy_post_merge_has_job_watchdog() -> None:
+    workflow = Path(
+        ".github/workflows/"
+        "case-testy-post-merge.yml"
+    ).read_text(encoding="utf-8")
+
+    expected = (
+        "  case-testy-post-merge:\n"
+        "    name: case-testy-post-merge\n"
+        "    runs-on: ubuntu-latest\n"
+        "    timeout-minutes: 20\n"
+    )
+
+    assert expected in workflow
