@@ -959,3 +959,104 @@ def test_execution_profile_points_to_canonical_authority() -> None:
         "non-authoritative"
         in text.lower()
     )
+
+def test_legacy_authoring_module_is_pure_single_writer_boundary() -> None:
+    import ast
+
+    legacy_path = Path(
+        "factory/quality/case_signed_authoring.py"
+    )
+    hardened_path = Path(
+        "factory/quality/case_signed_authoring_hardened.py"
+    )
+
+    legacy_source = legacy_path.read_text(
+        encoding="utf-8"
+    )
+
+    forbidden_fragments = (
+        "GitHubActionsClient",
+        "GitHubActionsError",
+        "from_environment(",
+        "._api(",
+        "put_file(",
+        "delete_branch_best_effort(",
+        "create_pull_request(",
+        "verify_commit(",
+        "harden_manual_smoke_inventory(",
+        "subprocess",
+        "argparse",
+        "base64",
+        "urllib.parse",
+        "os.environ",
+        'if __name__ == "__main__"',
+    )
+
+    for fragment in forbidden_fragments:
+        assert fragment not in legacy_source, fragment
+
+    legacy_tree = ast.parse(legacy_source)
+
+    actual_functions = {
+        node.name
+        for node in legacy_tree.body
+        if isinstance(
+            node,
+            (ast.FunctionDef, ast.AsyncFunctionDef),
+        )
+    }
+
+    assert actual_functions == {
+        "require",
+        "replace_once",
+        "render_regression_suite_update",
+        "render_test_file",
+    }
+
+    actual_classes = {
+        node.name
+        for node in legacy_tree.body
+        if isinstance(node, ast.ClassDef)
+    }
+
+    assert actual_classes == {
+        "SignedAuthoringError",
+    }
+
+    runtime_imports = [
+        node
+        for node in legacy_tree.body
+        if isinstance(node, (ast.Import, ast.ImportFrom))
+        and not (
+            isinstance(node, ast.ImportFrom)
+            and node.module == "__future__"
+        )
+    ]
+
+    assert runtime_imports == []
+
+    hardened_tree = ast.parse(
+        hardened_path.read_text(
+            encoding="utf-8"
+        )
+    )
+
+    imported_from_legacy = {
+        alias.name
+        for node in hardened_tree.body
+        if isinstance(node, ast.ImportFrom)
+        and (
+            node.module
+            == "factory.quality.case_signed_authoring"
+        )
+        for alias in node.names
+    }
+
+    assert imported_from_legacy == {
+        "ALLOWED_PATHS",
+        "MAIN_BRANCH",
+        "OPERATION",
+        "TARGET_BRANCH",
+        "render_regression_suite_update",
+        "render_test_file",
+    }
