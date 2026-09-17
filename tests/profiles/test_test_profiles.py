@@ -5,6 +5,7 @@ from pathlib import Path
 
 import pytest
 
+import factory.quality.test_profiles as profiles
 from factory.quality.test_profiles import (
     ProfileName,
     ProfileStatus,
@@ -220,39 +221,39 @@ def test_invalid_sha_fails_closed_without_executing_steps() -> None:
     assert "40-character" in result.reason
     assert called is False
 
-def test_execute_step_propagates_timeout_to_subprocess(
+def test_execute_step_propagates_timeout_to_bounded_runner(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     seen: dict[str, object] = {}
 
-    def fake_run(*args, **kwargs):
-        seen["command"] = args[0]
-        seen["timeout"] = kwargs["timeout"]
-
+    def fake_bounded(
+        command: tuple[str, ...],
+        *,
+        cwd: Path | None,
+        timeout_seconds: int,
+    ) -> subprocess.CompletedProcess[str]:
+        seen["command"] = command
+        seen["cwd"] = cwd
+        seen["timeout"] = timeout_seconds
         return subprocess.CompletedProcess(
-            args=("python", "-V"),
+            args=command,
             returncode=0,
             stdout="",
             stderr="",
         )
 
-    monkeypatch.setattr(
-        "factory.quality.test_profiles.subprocess.run",
-        fake_run,
-    )
+    monkeypatch.setattr(profiles, "_run_bounded_process", fake_bounded)
 
     step = ProfileStep(
         "bounded",
         ("python", "-V"),
         timeout_seconds=17,
     )
-
     result = execute_step(step)
 
     assert result.status is StepStatus.PASS
     assert result.exit_code == 0
     assert seen["timeout"] == 17
-
     command = seen["command"]
     assert isinstance(command, tuple)
     assert command[0] == sys.executable
@@ -261,29 +262,206 @@ def test_execute_step_propagates_timeout_to_subprocess(
 def test_execute_step_timeout_fails_closed(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    def fake_run(*args, **kwargs):
-        raise subprocess.TimeoutExpired(
-            cmd=args[0],
-            timeout=kwargs["timeout"],
+    def fake_bounded(
+        command: tuple[str, ...],
+        *,
+        cwd: Path | None,
+        timeout_seconds: int,
+    ) -> subprocess.CompletedProcess[str]:
+        del command, cwd
+        raise profiles._BoundedProcessTimeout(
+            timeout_seconds,
+            tree_terminated=True,
         )
 
-    monkeypatch.setattr(
-        "factory.quality.test_profiles.subprocess.run",
-        fake_run,
-    )
+    monkeypatch.setattr(profiles, "_run_bounded_process", fake_bounded)
 
     step = ProfileStep(
         "slow",
         ("python", "-V"),
         timeout_seconds=3,
     )
-
     result = execute_step(step)
 
     assert result.status is StepStatus.FAIL
     assert result.exit_code is None
     assert result.reason == "timeout after 3s"
 
+
+def test_posix_process_launch_uses_isolated_session(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    seen: dict[str, object] = {}
+
+    class FakeProcess:
+        pass
+
+    def fake_popen(*args, **kwargs):
+        seen["args"] = args
+        seen.update(kwargs)
+        return FakeProcess()
+
+    monkeypatch.setattr(profiles, "_IS_WINDOWS", False)
+    monkeypatch.setattr(profiles.subprocess, "Popen", fake_popen)
+
+    profiles._start_process(("python", "-V"), cwd=None)
+
+    assert seen["start_new_session"] is True
+    assert "creationflags" not in seen
+
+
+def test_windows_process_launch_uses_new_process_group(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    seen: dict[str, object] = {}
+
+    class FakeProcess:
+        pass
+
+    def fake_popen(*args, **kwargs):
+        seen["args"] = args
+        seen.update(kwargs)
+        return FakeProcess()
+
+    monkeypatch.setattr(profiles, "_IS_WINDOWS", True)
+    monkeypatch.setattr(profiles.subprocess, "Popen", fake_popen)
+
+    profiles._start_process(("python", "-V"), cwd=None)
+
+    assert seen["creationflags"] == profiles._WINDOWS_NEW_PROCESS_GROUP
+    assert "start_new_session" not in seen
+
+
+def test_bounded_timeout_invokes_tree_cancellation(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    cancelled: list[int] = []
+
+    class FakeProcess:
+        pid = 731
+        returncode = None
+
+        def communicate(self, *, timeout: int):
+            raise subprocess.TimeoutExpired(cmd=("python", "-V"), timeout=timeout)
+
+    process = FakeProcess()
+
+    monkeypatch.setattr(profiles, "_start_process", lambda *args, **kwargs: process)
+
+    def fake_terminate(item) -> bool:
+        assert item is process
+        cancelled.append(item.pid)
+        return True
+
+    monkeypatch.setattr(profiles, "_terminate_process_tree", fake_terminate)
+
+    with pytest.raises(profiles._BoundedProcessTimeout) as caught:
+        profiles._run_bounded_process(
+            ("python", "-V"),
+            cwd=None,
+            timeout_seconds=2,
+        )
+
+    assert cancelled == [731]
+    assert caught.value.tree_terminated is True
+
+
+def test_posix_tree_termination_reaps_direct_child(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    signals: list[tuple[int, int]] = []
+    waits: list[int] = []
+
+    class FakeProcess:
+        pid = 991
+
+        def poll(self) -> int | None:
+            return 0
+
+        def wait(self, *, timeout: float | None = None) -> int:
+            assert timeout is not None
+            waits.append(int(timeout))
+            return 0
+
+        def terminate(self) -> None:
+            raise AssertionError("fallback terminate should not run")
+
+        def kill(self) -> None:
+            raise AssertionError("fallback kill should not run")
+
+    monkeypatch.setattr(profiles, "_IS_WINDOWS", False)
+    monkeypatch.setattr(profiles.signal, "SIGTERM", 15, raising=False)
+    monkeypatch.setattr(profiles.signal, "SIGKILL", 9, raising=False)
+    monkeypatch.setattr(
+        profiles.os,
+        "killpg",
+        lambda pid, sig: signals.append((pid, sig)),
+        raising=False,
+    )
+
+    assert profiles._terminate_process_tree(FakeProcess()) is True
+    assert signals == [
+        (991, 15),
+        (991, 9),
+    ]
+    assert waits == [profiles.PROCESS_TREE_TERMINATION_GRACE_SECONDS]
+
+
+def test_git_head_uses_explicit_deadline(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    seen: dict[str, object] = {}
+
+    def fake_bounded(
+        command: tuple[str, ...],
+        *,
+        cwd: Path | None,
+        timeout_seconds: int,
+    ) -> subprocess.CompletedProcess[str]:
+        seen["command"] = command
+        seen["cwd"] = cwd
+        seen["timeout"] = timeout_seconds
+        return subprocess.CompletedProcess(
+            args=command,
+            returncode=0,
+            stdout=SHA + "\n",
+            stderr="",
+        )
+
+    monkeypatch.setattr(profiles, "_run_bounded_process", fake_bounded)
+
+    head, error = profiles._git_head()
+
+    assert head == SHA
+    assert error is None
+    assert seen["command"] == ("git", "rev-parse", "HEAD")
+    assert seen["timeout"] == profiles.GIT_HEAD_TIMEOUT_SECONDS
+
+
+def test_git_head_timeout_fails_closed(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    def fake_bounded(
+        command: tuple[str, ...],
+        *,
+        cwd: Path | None,
+        timeout_seconds: int,
+    ) -> subprocess.CompletedProcess[str]:
+        del command, cwd
+        raise profiles._BoundedProcessTimeout(
+            timeout_seconds,
+            tree_terminated=True,
+        )
+
+    monkeypatch.setattr(profiles, "_run_bounded_process", fake_bounded)
+
+    head, error = profiles._git_head()
+
+    assert head == ""
+    assert error == (
+        "cannot resolve checkout SHA: "
+        f"timeout after {profiles.GIT_HEAD_TIMEOUT_SECONDS}s"
+    )
 
 def test_non_positive_timeout_fails_profile_contract() -> None:
     called = False

@@ -6,8 +6,10 @@ import argparse
 import json
 import os
 import re
+import signal
 import subprocess
 import sys
+import typing
 from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import UTC, datetime
@@ -18,6 +20,12 @@ from factory.quality.report_schema import REPORT_SCHEMA
 
 _FULL_SHA = re.compile(r"^[0-9a-fA-F]{40}$")
 DEFAULT_STEP_TIMEOUT_SECONDS = 900
+GIT_HEAD_TIMEOUT_SECONDS = 5
+PROCESS_TREE_TERMINATION_GRACE_SECONDS = 2
+_IS_WINDOWS = os.name == "nt"
+_WINDOWS_NEW_PROCESS_GROUP = getattr(
+    subprocess, "CREATE_NEW_PROCESS_GROUP", 0x00000200
+)
 
 
 class ProfileName(StrEnum):
@@ -232,6 +240,153 @@ def _metadata() -> tuple[str, str]:
     return repository, ref
 
 
+
+class _TerminableProcess(typing.Protocol):
+    pid: int
+
+    def poll(self) -> int | None: ...
+
+    def wait(self, *, timeout: float | None = None) -> int: ...
+
+    def terminate(self) -> None: ...
+
+    def kill(self) -> None: ...
+
+
+def _signal_number(name: str, fallback: int) -> int:
+    return int(getattr(signal, name, fallback))
+
+
+def _posix_killpg(pid: int, sig: int) -> None:
+    killpg = getattr(os, "killpg", None)
+    if killpg is None:
+        raise OSError("os.killpg is unavailable")
+    killpg(pid, sig)
+
+
+class _BoundedProcessTimeout(TimeoutError):
+    def __init__(self, timeout_seconds: int, *, tree_terminated: bool) -> None:
+        super().__init__(f"timeout after {timeout_seconds}s")
+        self.timeout_seconds = timeout_seconds
+        self.tree_terminated = tree_terminated
+
+
+def _start_process(
+    command: tuple[str, ...],
+    *,
+    cwd: Path | None,
+) -> subprocess.Popen[str]:
+    if _IS_WINDOWS:
+        return subprocess.Popen(
+            command,
+            cwd=cwd,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+            creationflags=_WINDOWS_NEW_PROCESS_GROUP,
+        )
+    return subprocess.Popen(
+        command,
+        cwd=cwd,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        text=True,
+        start_new_session=True,
+    )
+
+
+def _wait_for_direct_child(process: _TerminableProcess) -> bool:
+    try:
+        process.wait(timeout=PROCESS_TREE_TERMINATION_GRACE_SECONDS)
+    except subprocess.TimeoutExpired:
+        return False
+    return True
+
+
+def _terminate_process_tree(process: _TerminableProcess) -> bool:
+    if _IS_WINDOWS:
+        tree_kill_ok = False
+        try:
+            completed = subprocess.run(
+                (
+                    "taskkill",
+                    "/PID",
+                    str(process.pid),
+                    "/T",
+                    "/F",
+                ),
+                capture_output=True,
+                text=True,
+                check=False,
+                timeout=PROCESS_TREE_TERMINATION_GRACE_SECONDS,
+            )
+            tree_kill_ok = completed.returncode == 0
+        except (OSError, subprocess.TimeoutExpired):
+            tree_kill_ok = False
+
+        if not tree_kill_ok and process.poll() is None:
+            process.kill()
+
+        reaped = _wait_for_direct_child(process)
+        if not reaped and process.poll() is None:
+            process.kill()
+            reaped = _wait_for_direct_child(process)
+        return tree_kill_ok and reaped
+
+    group_signal_ok = True
+    try:
+        _posix_killpg(process.pid, _signal_number("SIGTERM", 15))
+    except ProcessLookupError:
+        pass
+    except OSError:
+        group_signal_ok = False
+        if process.poll() is None:
+            process.terminate()
+
+    reaped = _wait_for_direct_child(process)
+
+    try:
+        _posix_killpg(process.pid, _signal_number("SIGKILL", 9))
+    except ProcessLookupError:
+        pass
+    except OSError:
+        group_signal_ok = False
+        if process.poll() is None:
+            process.kill()
+
+    if not reaped:
+        reaped = _wait_for_direct_child(process)
+    if not reaped and process.poll() is None:
+        process.kill()
+        reaped = _wait_for_direct_child(process)
+    return group_signal_ok and reaped
+
+
+def _run_bounded_process(
+    command: tuple[str, ...],
+    *,
+    cwd: Path | None,
+    timeout_seconds: int,
+) -> subprocess.CompletedProcess[str]:
+    process = _start_process(command, cwd=cwd)
+    try:
+        stdout, stderr = process.communicate(timeout=timeout_seconds)
+    except subprocess.TimeoutExpired as exc:
+        tree_terminated = _terminate_process_tree(process)
+        raise _BoundedProcessTimeout(
+            timeout_seconds,
+            tree_terminated=tree_terminated,
+        ) from exc
+
+    if process.returncode is None:
+        raise RuntimeError("bounded process completed without a return code")
+    return subprocess.CompletedProcess(
+        args=command,
+        returncode=process.returncode,
+        stdout=stdout,
+        stderr=stderr,
+    )
+
 def execute_step(step: TestStep, *, cwd: Path | None = None) -> StepResult:
     if not step.command:
         return StepResult(
@@ -265,15 +420,12 @@ def execute_step(step: TestStep, *, cwd: Path | None = None) -> StepResult:
     )
 
     try:
-        completed = subprocess.run(
+        completed = _run_bounded_process(
             command,
             cwd=cwd,
-            capture_output=True,
-            text=True,
-            check=False,
-            timeout=step.timeout_seconds,
+            timeout_seconds=step.timeout_seconds,
         )
-    except subprocess.TimeoutExpired:
+    except _BoundedProcessTimeout:
         return StepResult(
             name=step.name,
             command=step.command,
@@ -541,18 +693,22 @@ def run_profile(
 
 def _git_head() -> tuple[str, str | None]:
     try:
-        completed = subprocess.run(
+        completed = _run_bounded_process(
             ("git", "rev-parse", "HEAD"),
-            capture_output=True,
-            text=True,
-            check=False,
+            cwd=None,
+            timeout_seconds=GIT_HEAD_TIMEOUT_SECONDS,
+        )
+    except _BoundedProcessTimeout:
+        return (
+            "",
+            "cannot resolve checkout SHA: "
+            f"timeout after {GIT_HEAD_TIMEOUT_SECONDS}s",
         )
     except Exception as exc:
         return "", f"cannot resolve checkout SHA: {type(exc).__name__}: {exc}"
     if completed.returncode != 0:
         return "", f"cannot resolve checkout SHA: git rev-parse exited {completed.returncode}"
     return completed.stdout.strip(), None
-
 
 def _resolve_git_sha(explicit_sha: str | None) -> tuple[str, str | None]:
     if explicit_sha is not None:
