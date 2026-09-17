@@ -11,6 +11,7 @@ jobs:
   case-testy-post-merge:
     name: case-testy-post-merge
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     env:
       HEAD_SHA: ${{ github.sha }}
     steps:
