@@ -56,6 +56,8 @@ Defence in depth; least privilege; deny by default; tenant/case isolation; short
 
 Agent = bounded capability worker. Runtime wiąże capability, provider/model/plugin identity/version, budgets, fallback/circuit-breaker i audit. Brak undeclared permissions.
 
+validated bytes = published bytes; atomic publication; compare-and-swap; secret-free validation; ambiguous write → reconcile; no blind cleanup; post-write verification; no unsigned/unsafe fallback
+
 ## 7. PERFORMANCE / CONTROLLED LEARNING
 
 Performance: `Measurement → profiling → budget → improvement → re-measurement`; mierz runtime, memory, concurrency i replay.
@@ -82,7 +84,7 @@ Branch/commit/PR/fresh SHA/partial PASS/waiting CI/merge-ready != DONE. Jeśli i
 
 Aktualizacje są informacyjne, nie checkpointem. Po closure raportuj `STATUS`, `WYKONANO`, `FINAL STATE`, `WNIOSEK`, `NEXT`.
 
-Improvement Review: `evidence → weaknesses → alternatives → trade-offs → best-justified scenario → improvements`. Przed finalnym closure wdrażaj tylko materialne ulepszenia jednoznacznie w scope, bez nowej decyzji biznesowej, trust boundary/authority ani nieodwracalnej/zewnętrznej operacji. Resztę zapisz jako ordered follow-up bez scope creep. Po opublikowanym closure kolejne zmiany tworzą nowe powiązane SHA/evidence; nie przepisuj historycznego closure.
+Improvement Review: `evidence → weaknesses → alternatives → trade-offs → improvements`. Wdrażaj tylko materialne ulepszenia w scope; reszta → ordered follow-up bez scope creep. Po closure nowe zmiany mają nowe SHA/evidence.
 
 ## 11. NORTH STAR
 
