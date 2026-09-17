@@ -36,6 +36,12 @@ Rules:
 | CASE-BATCH-007 | tests/case/test_case_ledger_integrity.py | Canonical Case Ledger integrity and authoritative-history invariants |
 | CASE-BATCH-008 | tests/case/test_p4_enterprise_regression_hardening.py | P4 lifecycle, deadline, authority, topology, renderer, privacy-canary and Red Team operational invariants |
 | CASE-BATCH-009 | tests/case/test_case_signed_authoring_hardening.py | Signed-authoring fail-closed API semantics, immutable validated bytes, SHA-drift rejection, atomic publication and idempotent reconcile |
+| CASE-BATCH-010 | tests/test_operation_contract_v1.py | Operation Contract v1 schema, authority, canonicalization and secret-boundary conformance |
+| CASE-BATCH-011 | tests/test_operation_runtime_v1.py | Operation Contract v1 CAS, exact replay, idempotency and privacy runtime invariants |
+| CASE-BATCH-012 | tests/test_operation_effects_evidence_v1.py | Operation Contract v1 adversarial effect declaration and evidence-bound success semantics |
+| CASE-BATCH-013 | tests/test_operation_timeout_evidence_v1.py | Operation Contract v1 timeout and partial-effect evidence semantics |
+| CASE-BATCH-014 | tests/test_operation_concurrency_v1.py | Operation Contract v1 concurrent idempotency and deterministic replay invariants |
+| CASE-BATCH-015 | tests/test_h4_operation_contract_assurance.py | H4 completeness gate requiring every Operation Contract v1 test file to remain in canonical batch SOT |
 
 ## TESTY RĘCZNE / PRODUCT SMOKE
 

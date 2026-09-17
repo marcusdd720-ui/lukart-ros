@@ -128,3 +128,40 @@ def test_privacy_mismatch_blocks_before_handler() -> None:
     assert execution["envelope"]["output"]["status"] == "blocked"
     assert execution["envelope"]["errors"]["items"][0]["code"] == "PRIVACY_SCOPE_MISMATCH"
     assert called is False
+
+
+def test_unhandled_handler_exception_is_sanitized_and_fail_closed() -> None:
+    secret = "synthetic-private-diagnostic-do-not-leak"
+
+    def handler(payload: Mapping[str, object], context: object) -> HandlerOutcome:
+        raise RuntimeError(secret)
+
+    execution = OperationRuntime().execute(
+        operation_request(idempotency_key="idem:h4:exception-sanitized"),
+        current_head=HEAD,
+        privacy_scope=PRIVACY_SCOPE,
+        handler=handler,
+    )
+    envelope = execution["envelope"]
+    assert envelope["output"]["status"] == "failure"
+    assert envelope["errors"]["items"][0]["code"] == "UNHANDLED_HANDLER_ERROR"
+    assert secret not in str(execution)
+
+
+def test_malformed_handler_return_cannot_produce_false_success() -> None:
+    def handler(payload: Mapping[str, object], context: object) -> HandlerOutcome:
+        return object()  # type: ignore[return-value]
+
+    execution = OperationRuntime().execute(
+        operation_request(idempotency_key="idem:h4:malformed-return"),
+        current_head=HEAD,
+        privacy_scope=PRIVACY_SCOPE,
+        handler=handler,
+    )
+    envelope = execution["envelope"]
+    assert envelope["output"]["status"] == "failure"
+    assert envelope["output"]["status"] != "success"
+    assert envelope["errors"]["items"][0]["code"] in {
+        "HANDLER_CONTRACT_ERROR",
+        "UNHANDLED_HANDLER_ERROR",
+    }
