@@ -7,6 +7,7 @@ import json
 import os
 import re
 import subprocess
+import sys
 from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import UTC, datetime
@@ -16,6 +17,7 @@ from pathlib import Path
 from factory.quality.report_schema import REPORT_SCHEMA
 
 _FULL_SHA = re.compile(r"^[0-9a-fA-F]{40}$")
+DEFAULT_STEP_TIMEOUT_SECONDS = 900
 
 
 class ProfileName(StrEnum):
@@ -42,6 +44,7 @@ class TestStep:
     name: str
     command: tuple[str, ...]
     required: bool = True
+    timeout_seconds: int = DEFAULT_STEP_TIMEOUT_SECONDS
 
 
 @dataclass(frozen=True)
@@ -131,8 +134,24 @@ _RUNNER_TEST_COMMAND = (
 )
 
 
-def _step(name: str, *command: str) -> TestStep:
-    return TestStep(name=name, command=tuple(command))
+def _valid_timeout_seconds(value: object) -> bool:
+    return (
+        isinstance(value, int)
+        and not isinstance(value, bool)
+        and value > 0
+    )
+
+
+def _step(
+    name: str,
+    *command: str,
+    timeout_seconds: int = DEFAULT_STEP_TIMEOUT_SECONDS,
+) -> TestStep:
+    return TestStep(
+        name=name,
+        command=tuple(command),
+        timeout_seconds=timeout_seconds,
+    )
 
 
 def _profile(name: ProfileName, steps: tuple[TestStep, ...]) -> TestProfile:
@@ -223,13 +242,48 @@ def execute_step(step: TestStep, *, cwd: Path | None = None) -> StepResult:
             exit_code=None,
             reason="missing command: command list is empty",
         )
+
+    if not _valid_timeout_seconds(
+        step.timeout_seconds
+    ):
+        return StepResult(
+            name=step.name,
+            command=step.command,
+            required=step.required,
+            status=StepStatus.FAIL,
+            exit_code=None,
+            reason=(
+                "invalid timeout_seconds: "
+                "must be a positive integer"
+            ),
+        )
+
+    command = (
+        (sys.executable, *step.command[1:])
+        if step.command[0] == "python"
+        else step.command
+    )
+
     try:
         completed = subprocess.run(
-            step.command,
+            command,
             cwd=cwd,
             capture_output=True,
             text=True,
             check=False,
+            timeout=step.timeout_seconds,
+        )
+    except subprocess.TimeoutExpired:
+        return StepResult(
+            name=step.name,
+            command=step.command,
+            required=step.required,
+            status=StepStatus.FAIL,
+            exit_code=None,
+            reason=(
+                f"timeout after "
+                f"{step.timeout_seconds}s"
+            ),
         )
     except FileNotFoundError as exc:
         missing = exc.filename or step.command[0]
@@ -282,6 +336,24 @@ def _profile_contract_failures(profile: TestProfile) -> tuple[StepResult, ...]:
                 reason="profile has no required steps",
             ),
         )
+    for profile_step in profile.steps:
+        if not _valid_timeout_seconds(
+            profile_step.timeout_seconds
+        ):
+            failures.append(
+                StepResult(
+                    name=profile_step.name,
+                    command=profile_step.command,
+                    required=profile_step.required,
+                    status=StepStatus.FAIL,
+                    exit_code=None,
+                    reason=(
+                        "invalid timeout_seconds: "
+                        "must be a positive integer"
+                    ),
+                )
+            )
+
     names = [step.name for step in profile.steps]
     duplicate_names = sorted({name for name in names if names.count(name) > 1})
     if duplicate_names:
