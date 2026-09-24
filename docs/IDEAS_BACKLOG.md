@@ -380,3 +380,209 @@ Agents should not:
 Owner decision recorded `2026-09-19`: the proposal to add visible labels such as `REVIEW_REQUIRED`, `REVIEWED`, `AI-generated`, `Wygenerowano przez LukArt RoS`, or visible provenance statements to final legal/client documents is rejected.
 
 This backlog does not authorize such labels. Internal provenance, identity and audit evidence may exist within LUKART system metadata/evidence boundaries, but must not be rendered into final documents merely because an artifact was produced with LUKART assistance.
+
+## IDEA-011 — Colombia Career OS as Colombia-First Career Operating System
+
+Status: `DEFERRED / DISCOVERY`
+Recorded: `2026-09-24`
+Owner direction: Colombia is the first flagship market, learning environment, validation ground and reference implementation. Brazil and later LATAM markets must inherit only architecture that has first been validated in Colombia.
+
+### Problem / motivation
+
+Do not build a narrow "CV writing service" or prematurely generalize across Latin America. Build a professional operating system for career positioning, applications and employability, with Colombia as the first production market and the place where current and future ideas are tested, measured, improved and operationalized.
+
+Previous CV-related Steps 1–19 remain useful as `Discovery v0`, but they are not the new canonical architecture.
+
+### Target concept
+
+Working concept:
+
+`COLOMBIA CAREER OS — Operating System for Professional Career Positioning, Applications & Employability`
+
+The system should cover the full candidate journey:
+
+- Career Diagnosis;
+- Candidate Intake;
+- Career Truth Record;
+- target-role definition;
+- professional value proposition;
+- competency and achievement mapping;
+- Hoja de Vida ES-CO;
+- international Resume EN;
+- Carta de Presentación / Cover Letter;
+- LinkedIn Rebuild;
+- Vacancy Intelligence and role matching;
+- ATS-oriented document structure;
+- Interview Preparation;
+- Application Tracking;
+- client revisions, delivery, reviews and referrals;
+- future career updates and maintenance.
+
+### Core operating doctrines
+
+- **Truth Before Persuasion** — never invent experience, education, certifications, language levels, tools, achievements or metrics.
+- **Evidence Before Achievement** — quantified claims require a known evidence status.
+- **Target Before Writing** — define the target role before final document generation.
+- **Career Story Before Layout** — content and positioning precede visual design.
+- **ATS + Human** — optimize for parsability and recruiter readability.
+- **Localization Before Translation** — English documents are independently written, not literal translations.
+- **Measured Before Automated** — observe and measure the real process before automating it.
+- **Human Control at Critical Gates** — material facts, metrics, positioning and final delivery remain human-controlled.
+- **Colombia First** — new product and automation ideas are first validated in Colombia.
+- **Expansion After Evidence** — Brazil and later markets receive validated architecture plus local market/language packs, not copy-pasted Colombian workflows.
+
+### Candidate Truth Record
+
+Create a canonical candidate fact layer independent from any specific CV or LinkedIn output.
+
+Each material claim should support explicit provenance/status, for example:
+
+- `CONFIRMED`;
+- `UNCONFIRMED`;
+- `ESTIMATED`;
+- `DO_NOT_USE`.
+
+The same canonical fact set should feed CV, Resume, LinkedIn, cover letters, vacancy matching and interview preparation to prevent contradictions between outputs.
+
+### LinkedIn Rebuild Engine
+
+Treat LinkedIn reconstruction as a first-class product, not merely an "About" rewrite.
+
+Potential scope:
+
+- profile-photo and banner recommendations;
+- headline;
+- location / industry;
+- About;
+- Experience;
+- Skills;
+- Featured;
+- certifications;
+- languages;
+- keyword strategy;
+- consistency with CV;
+- target-role alignment;
+- recruiter-search alignment.
+
+A future "Before / After" scorecard may use explicit criteria, but must not rely on pseudo-scientific opaque scores.
+
+### Vacancy Intelligence
+
+Parse a target vacancy into:
+
+- must-have requirements;
+- nice-to-have requirements;
+- responsibilities;
+- tools;
+- languages;
+- seniority;
+- keywords;
+- industry terminology.
+
+Then compare vacancy requirements with the Candidate Truth Record and produce a transparent match map without fabricating missing qualifications.
+
+### Lead / CRM / Order identity
+
+Separate identifiers by role, e.g.:
+
+- campaign/source: `CM-001`, `FB-001`, `LI-001`;
+- lead: `LEAD-000001`;
+- client: `CL-000001`;
+- candidate: `CAND-000001`;
+- order: `ORD-000001` or market-aware `CO-ORD-000001`;
+- product identity such as `CV-PRO-CO` or `LINKEDIN-REBUILD-CO`.
+
+### Event-driven operating model
+
+Even while manually operated, design the lifecycle around explicit events such as:
+
+`LEAD_CREATED`
+`LEAD_QUALIFIED`
+`OFFER_SENT`
+`PAYMENT_CONFIRMED`
+`INTAKE_RECEIVED`
+`FACTS_VALIDATED`
+`POSITIONING_APPROVED`
+`DRAFT_READY`
+`QA_PASSED`
+`CLIENT_REVIEW`
+`REVISION_REQUESTED`
+`FINAL_DELIVERED`
+`REVIEW_REQUESTED`
+`ORDER_CLOSED`
+
+This allows future automation without redesigning the authority model.
+
+### AI / bot direction
+
+Do **not** deploy an autonomous customer-facing bot at the start.
+
+Initial automation direction:
+
+1. **AI Copilot v0.1** — generates suggested replies, package explanations, FAQ responses and intake reminders; human reviews before sending.
+2. **Bot v1** — automates only proven repetitive FAQs and basic routing after sufficient real conversation evidence.
+3. **Bot v2** — may perform structured lead qualification, collect basic information, recommend a package within bounded rules, create Lead ID and send intake forms.
+4. **Bot v3** — semi-autonomous customer operations only after stable pricing, CRM, payments, QA gates and sufficient production evidence.
+
+Bots must not autonomously invent career facts or metrics, negotiate exceptional cases, decide refunds/complaints, promise employment outcomes, or resolve ambiguous candidate claims.
+
+### Analytics
+
+Colombia should function as the measured laboratory for:
+
+- new and qualified leads;
+- paid orders;
+- lead-to-customer conversion;
+- revenue by channel and product;
+- average order value;
+- delivery time;
+- revision count;
+- refund rate;
+- LinkedIn attach rate;
+- English upgrade rate;
+- vacancy add-on rate;
+- repeat-customer rate;
+- referral rate;
+- time per order;
+- revenue per delivery hour.
+
+### Fresh-stage roadmap
+
+Restart the canonical design sequence as:
+
+- Stage 00 — Constitution & Vision;
+- Stage 01 — Domain Model;
+- Stage 02 — Colombia Market Model;
+- Stage 03 — Product Architecture;
+- Stage 04 — Candidate Truth System;
+- Stage 05 — Lead / Client / Order System;
+- Stage 06 — Intake Engine;
+- Stage 07 — Career Positioning Engine;
+- Stage 08 — CV / Document Engine;
+- Stage 09 — LinkedIn Rebuild Engine;
+- Stage 10 — Vacancy Intelligence;
+- Stage 11 — Interview Engine;
+- Stage 12 — QA / Trust Engine;
+- Stage 13 — CRM & Client Operations;
+- Stage 14 — Payments / Legal / Privacy;
+- Stage 15 — Analytics;
+- Stage 16 — AI Copilot;
+- Stage 17 — Bot / Automation;
+- Stage 18 — Market Validation;
+- Stage 19 — Scale Colombia;
+- Stage 20 — Brazil Readiness.
+
+### Language rule for project work
+
+When Spanish content is produced for this project, provide a Polish translation alongside it.
+
+### Expansion doctrine
+
+Brazil is the next intended market after Colombia reaches sufficient maturity. Brazil must use a localized `pt-BR` market/language pack and locally validated pricing, channels, CV conventions, ATS practices and LinkedIn positioning.
+
+Later LATAM markets should follow the same model: shared proven core, explicit market/language packs, fresh local validation.
+
+### Strategic summary
+
+**Think regionally. Build locally. Validate in Colombia. Automate only what reality proves. Expand only what Colombia validates.**
+
