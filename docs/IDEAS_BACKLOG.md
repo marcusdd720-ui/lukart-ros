@@ -381,7 +381,7 @@ Owner decision recorded `2026-09-19`: the proposal to add visible labels such as
 
 This backlog does not authorize such labels. Internal provenance, identity and audit evidence may exist within LUKART system metadata/evidence boundaries, but must not be rendered into final documents merely because an artifact was produced with LUKART assistance.
 
-## IDEA-011 — Colombia Career OS as Colombia-First Career Operating System
+## IDEA-011 — LATAM Career OS — Colombia-First Reference Implementation
 
 Status: `DEFERRED / DISCOVERY`
 Recorded: `2026-09-24`
@@ -389,7 +389,7 @@ Owner direction: Colombia is the first flagship market, learning environment, va
 
 ### Problem / motivation
 
-Do not build a narrow "CV writing service" or prematurely generalize across Latin America. Build a professional operating system for career positioning, applications and employability, with Colombia as the first production market and the place where current and future ideas are tested, measured, improved and operationalized.
+Do not build a narrow "CV writing service" or prematurely generalize across Latin America. Build a regional operating system for career positioning, applications and employability, with Colombia as the first production market, learning environment, validation ground and reference implementation. The system name and shared core must remain country-neutral so that Brazil and later markets can reuse the validated architecture through explicit market packs.
 
 Previous CV-related Steps 1–19 remain useful as `Discovery v0`, but they are not the new canonical architecture.
 
@@ -397,9 +397,9 @@ Previous CV-related Steps 1–19 remain useful as `Discovery v0`, but they are n
 
 Working concept:
 
-`COLOMBIA CAREER OS — Operating System for Professional Career Positioning, Applications & Employability`
+`LATAM CAREER OS — Operating System for Professional Career Positioning, Applications & Employability`
 
-The system should cover the full candidate journey:
+The country-neutral LATAM Career OS core should support the full candidate journey, while Colombia remains Market Pack #1 and the first reference implementation:
 
 - Career Diagnosis;
 - Candidate Intake;
@@ -577,6 +577,8 @@ Restart the canonical design sequence as:
 When Spanish content is produced for this project, provide a Polish translation alongside it.
 
 ### Expansion doctrine
+
+The system name and shared core remain country-neutral. Colombia is Market Pack #1 / Reference Implementation, not the name of the operating system.
 
 Brazil is the next intended market after Colombia reaches sufficient maturity. Brazil must use a localized `pt-BR` market/language pack and locally validated pricing, channels, CV conventions, ATS practices and LinkedIn positioning.
 
