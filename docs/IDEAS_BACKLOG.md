@@ -380,3 +380,568 @@ Agents should not:
 Owner decision recorded `2026-09-19`: the proposal to add visible labels such as `REVIEW_REQUIRED`, `REVIEWED`, `AI-generated`, `Wygenerowano przez LukArt RoS`, or visible provenance statements to final legal/client documents is rejected.
 
 This backlog does not authorize such labels. Internal provenance, identity and audit evidence may exist within LUKART system metadata/evidence boundaries, but must not be rendered into final documents merely because an artifact was produced with LUKART assistance.
+
+
+## IDEA-011 — Synthetic Reality / Synthetic Assurance Fabric
+
+Status: `DEFERRED`
+Recorded: `2026-09-25`
+
+### Problem / motivation
+
+Both LUKART and the LATAM Career OS need large volumes of realistic test/demo data without relying on real client identities or a small hand-authored corpus.
+
+The failure mode is not merely "insufficient fake data". The material risk is that independently generated fields look plausible in isolation while the whole scenario is internally inconsistent, irreproducible, or unable to prove what the system was expected to detect.
+
+Examples include:
+
+- impossible career timelines;
+- unsupported skills or achievements;
+- contradictory employment dates;
+- legal facts that violate temporal constraints;
+- missing evidence that is not detected;
+- stale or wrong-jurisdiction legal authority;
+- synthetic scenarios whose expected result is unknown;
+- test data that changes silently after generator/provider upgrades.
+
+### Target concept
+
+Create a domain-neutral synthetic-generation and assurance framework capable of producing reproducible, relationally coherent, explainable synthetic worlds.
+
+Working names:
+
+- `Synthetic Reality Engine` — generation substrate;
+- `Synthetic Assurance Fabric (SAF)` — assurance/test layer built on top of generated scenarios.
+
+The shared core should not contain CV-specific or legal-specific semantics. Domain packages should remain separate.
+
+Candidate structure:
+
+```text
+synthetic/
+    core/
+        seed
+        provenance
+        versioning
+        manifest
+    providers/
+    constraints/
+    scenarios/
+    mutation/
+    oracle/
+    replay/
+```
+
+### Core design principles
+
+1. **Canonical model before rendering**
+   - generated documents are projections of a canonical scenario/person/case model;
+   - the rendered CV, filing, letter, README, etc. is never the source of truth.
+
+2. **Deterministic replay**
+   - persist generator identity/version, schema version, locale/provider version, seed, policy/constraint set and artifact hash;
+   - do not rely on a single library seed as a long-term reproducibility guarantee.
+
+3. **Derived sub-seeds**
+   - derive independent deterministic seeds for identity, education, career, achievements, evidence, chronology, etc.;
+   - adding a new field/provider must not reshuffle unrelated previously generated state.
+
+4. **Constraint-first generation**
+   - generate values under explicit relational, temporal, jurisdictional and domain constraints;
+   - reject impossible scenarios instead of post-hoc accepting plausible-looking fields.
+
+5. **Expected Outcome Oracle**
+   - every assurance scenario should carry explicit expected findings/results where applicable;
+   - an LLM that generated a scenario must not be the sole oracle judging that scenario.
+
+6. **Mutation and metamorphic testing**
+   - start from a valid scenario;
+   - deliberately mutate evidence, dates, jurisdiction, authority, provenance, identities or relations;
+   - assert the expected failure mode deterministically.
+
+7. **Failure-mode coverage**
+   - measure coverage by scenario class, constraint, relation, failure mode, jurisdiction and temporal boundary rather than only by test count.
+
+8. **Synthetic-data provenance**
+   - distinguish internal data classes such as `REAL`, `SYNTHETIC`, `ANONYMIZED`, and `TEST`;
+   - the system must never silently promote synthetic material into a real-client workflow.
+
+### LATAM Career OS / Colombia application
+
+Use the framework to generate coherent demonstration candidates for Colombian CV, cover-letter, LinkedIn and portfolio examples.
+
+A canonical synthetic career should bind, for example:
+
+- synthetic identity;
+- Colombia locale (`es_CO`) provider data;
+- age/education chronology;
+- employment history;
+- role progression;
+- skills;
+- achievements;
+- languages;
+- target roles;
+- document/rendering variants.
+
+The key requirement is coherence across all outputs: one canonical synthetic career may render into multiple CV designs, cover letters, LinkedIn sections and interview materials without contradictory facts.
+
+A low-level library such as Python Faker may be used as a replaceable provider for locale-safe primitive data, but must not own career logic, canonical truth, validation, or replay semantics.
+
+### LUKART application
+
+Use the same framework pattern, with a separate legal-domain package, to generate synthetic legal cases and adversarial validation scenarios.
+
+Candidate scenario families include:
+
+- coherent case;
+- missing evidence;
+- contradictory fact;
+- temporal impossibility;
+- wrong jurisdiction;
+- stale legal source;
+- citation/source mismatch;
+- provenance break;
+- duplicate or substituted evidence;
+- concurrency/mutation edge cases.
+
+Each scenario should bind expected validation findings and, where safe and well-defined, expected decision constraints.
+
+This is intended to complement — not replace — unit, contract, integration, exact-SHA, regression and independently reviewed Gold-corpus testing.
+
+### External projects reviewed
+
+The following external projects informed the idea but are not approved as production dependencies by this entry:
+
+- `FakerPHP/Faker`;
+- `YukinobuAsakawa/FakerPHP-Sample`;
+- `yunwei37/AI-GitHub-Profile-Generator`.
+
+Useful patterns:
+
+- locale-aware primitive fake-data providers;
+- source-data → analysis → representation pipeline;
+- synthetic/demo generation.
+
+Patterns not to adopt directly:
+
+- PHP runtime solely for fake-data generation;
+- single-RNG/seeding as a long-term replay guarantee;
+- inference-first truth creation;
+- random presentation decisions in assurance-critical paths;
+- LLM self-evaluation as the only oracle.
+
+### Deep technical review decision gate — 2026-09-25
+
+The following provider/tool decisions are recorded from the comparative review:
+
+- **Python Faker — ADAPTER-ONLY / APPROVED**
+  - first practical primitive-data provider for Colombia;
+  - preferred initial locale path because native `es_CO` support exists;
+  - must remain behind a provider contract and MUST NOT become canonical career truth.
+
+- **Mimesis — ADAPTER-ONLY / APPROVED AS SECONDARY**
+  - useful as an alternate provider, structured-data reference and benchmark;
+  - not preferred as the first Colombia provider because no dedicated `es_CO` locale was confirmed;
+  - may be used to test provider portability and performance assumptions.
+
+- **SeedFaker — RESEARCH-ONLY / HIGH PRIORITY**
+  - strategically interesting for field-addressable determinism, multi-runtime reproducibility, algorithm fingerprinting and controlled corruption;
+  - not accepted as a production dependency until a dedicated determinism/security/maintenance spike passes;
+  - future status may be promoted to adapter-only only with evidence.
+
+- **SDV — RESEARCH-ONLY / FUTURE POPULATION SYNTHESIS**
+  - applicable to statistically representative synthetic populations learned from sufficiently large real datasets;
+  - not suitable as the present primitive provider or canonical deterministic scenario engine;
+  - licensing and service-use constraints require fresh review before any production adoption.
+
+- **Synthcity — RESEARCH-ONLY / FUTURE ASSURANCE**
+  - primarily valuable as a reference for privacy, quality, re-identification-risk and synthetic-data evaluation;
+  - not part of the current runtime architecture.
+
+- **Any external faker/synthetic library as core architecture — REJECT**
+  - no external data generator may own canonical truth, replay semantics, constraints, provenance, scenario identity or expected outcome.
+
+### Adopted architecture direction
+
+The strategic component remains an internally controlled **Synthetic Core** with replaceable adapters.
+
+The intended separation is:
+
+```text
+Synthetic Core
+    ├── Canonical Domain Model
+    ├── SyntheticProvider Contract
+    ├── Constraint Engine
+    ├── Scenario DNA / deterministic identity
+    ├── Provenance + versioned manifest
+    ├── Replay
+    ├── Mutation / metamorphic layer
+    └── Expected Outcome Oracle
+             │
+             ├── Career domain
+             └── Legal domain
+```
+
+External libraries are subordinate providers or research inputs only.
+
+### Scenario DNA refinement
+
+Long-term deterministic identity should be field-addressable rather than rely solely on one sequential RNG stream.
+
+Candidate value derivation model:
+
+```text
+value = H(
+    scenario_seed,
+    namespace,
+    entity_id,
+    field_id,
+    schema_version
+)
+```
+
+A scenario manifest should be able to bind at least:
+
+- engine version;
+- schema version;
+- domain version;
+- scenario seed;
+- namespace;
+- entity identity;
+- field identity;
+- provider identity/version;
+- algorithm fingerprint where available;
+- constraint-set identity;
+- output hash.
+
+Adding unrelated fields or providers should not reshuffle existing validated synthetic state.
+
+### Colombia first implementation direction
+
+The first implementation candidate, if/when IDEA-011 is activated, should be:
+
+1. `Canonical Career Schema 1.0`;
+2. `SyntheticProvider` protocol;
+3. `FakerCOAdapter` backed by Python Faker `es_CO`;
+4. `Career Constraint Engine 0.1`;
+5. three controlled personas:
+   - `CO-DEMO-JUNIOR-001`;
+   - `CO-DEMO-MID-001`;
+   - `CO-DEMO-SENIOR-001`;
+6. deterministic replay + manifest/hash verification;
+7. render-consistency test across CV / cover letter / LinkedIn projections;
+8. deliberate mutation tests for impossible chronology and unsupported claims.
+
+Mimesis should remain a secondary adapter candidate. SeedFaker should receive a separate research spike before any production role.
+
+### LUKART assurance direction
+
+LUKART should not reuse Career-domain semantics. It may reuse the Synthetic Core pattern with a separate legal scenario package containing:
+
+- Legal Scenario Engine;
+- legal/temporal/jurisdictional constraints;
+- controlled mutation engine;
+- independent Expected Outcome Oracle;
+- failure-mode coverage;
+- replay/provenance manifests.
+
+The most interesting SeedFaker ideas for LUKART are:
+
+- field-addressable deterministic generation;
+- algorithm-drift fingerprinting;
+- controlled data corruption for known-failure scenarios.
+
+These ideas may be reimplemented internally even if SeedFaker itself is never adopted as a dependency.
+
+### Acceptance criteria for future activation
+
+Before promotion from `DEFERRED`:
+
+- define a concrete Decision Need for the target domain;
+- define canonical scenario schema and data-class boundary;
+- prove deterministic replay across a pinned toolchain;
+- add sub-seed derivation and versioned manifests;
+- implement constraint validation and explicit failure states;
+- prove that synthetic data cannot enter real-client state without an authorized boundary crossing;
+- implement at least one independent deterministic oracle;
+- implement mutation/metamorphic regression tests;
+- demonstrate failure-mode coverage metrics;
+- validate Colombia synthetic career coherence before using generated personas in public demo materials;
+- validate LUKART synthetic cases independently before using them as assurance evidence.
+
+Evidence Before Standard. Planned ≠ Implemented ≠ Validated ≠ Certified.
+
+## IDEA-012 — Provider-Agnostic Messaging Gateway for LATAM Career OS
+
+Status: `DEFERRED`
+Recorded: `2026-09-25`
+Primary target: LATAM Career OS, Colombia-first communication channel.
+
+### Problem / motivation
+
+LATAM Career OS may need a low-cost, controllable messaging channel for transactional client communication, intake, status notifications and future agent-assisted workflows without coupling the Product directly to one SMS/SaaS vendor.
+
+The phone number, carrier/SIM, transport gateway and Product workflow are separate concerns. A gateway application does not itself provide a Colombian phone number. A real Colombia `+57` SIM/eSIM remains a separate operational asset.
+
+The architecture must avoid vendor lock-in and must not allow a third-party messaging platform to become the source of truth for client workflow state.
+
+### External projects reviewed
+
+#### `capcom6/android-sms-gateway`
+
+Decision direction: **ADOPT CANDIDATE — PRIMARY SMS TRANSPORT / FIRST PoC**.
+
+Useful capabilities identified:
+
+- turns an Android phone with a SIM into a programmable SMS/MMS gateway;
+- REST API for sending messages;
+- receiving SMS and reporting events through webhooks;
+- delivery/failure/cancellation status handling;
+- inbox access;
+- local-server mode suitable for a zero-cost LAN proof of concept;
+- private-server/self-host direction for later deployment;
+- multi-SIM and multi-device operation;
+- message scheduling / working-hour controls;
+- rate limiting and bounded sending controls;
+- MMS support;
+- API/authentication and signed-webhook security mechanisms;
+- client ecosystem suitable for Python/TypeScript/Go/PHP/Rust integration.
+
+Important boundary:
+
+- the project **does not provide a phone number**;
+- it requires a real SIM/eSIM and Android device;
+- a future Colombia `+57` number must be procured and controlled independently;
+- the gateway should be treated as transport infrastructure, not as LATAM Career OS domain logic or canonical client state.
+
+#### `textbee/textbee`
+
+Decision direction: **ADAPTER / REFERENCE IMPLEMENTATION — SECONDARY PoC**.
+
+Useful capabilities identified:
+
+- open-source Android + backend + web dashboard stack;
+- REST API;
+- incoming/outgoing SMS workflows;
+- webhooks and delivery history;
+- self-hosting;
+- JavaScript/TypeScript SDK;
+- multi-device management;
+- operational dashboard;
+- integrations oriented toward automation;
+- MCP and n8n integration patterns useful for later agent/workflow research.
+
+Strategic value:
+
+- strong reference for a more complete messaging product and operational UI;
+- useful source of patterns for agent/MCP/n8n integration;
+- higher platform complexity than the minimal Android SMS Gateway path;
+- should remain replaceable behind the LATAM Career OS provider boundary.
+
+### Adopted architecture direction
+
+LATAM Career OS should own a provider-neutral messaging contract rather than call either external project directly from domain code.
+
+Candidate contract:
+
+```text
+MessagingProvider
+
+send_message()
+receive_message()
+get_status()
+list_devices()
+health_check()
+```
+
+Initial adapters:
+
+```text
+AndroidSmsGatewayProvider
+TextBeeProvider
+```
+
+Future adapters may include other SMS, WhatsApp or carrier providers without changing the Product-domain workflow.
+
+Target separation:
+
+```text
+LATAM Career OS
+      |
+      v
+Messaging Service / Provider Contract
+      |
+      +--> AndroidSmsGatewayProvider
+      |
+      +--> TextBeeProvider
+      |
+      +--> future providers
+```
+
+No external gateway may become the canonical store for client identity, CV workflow state, payment state, case history or business decisions.
+
+### Colombia-first operating model
+
+Target long-term path:
+
+```text
+Colombia +57 SIM/eSIM
+        |
+        v
+Android device
+        |
+        v
+SMS Gateway
+        |
+        v
+Provider Adapter
+        |
+        v
+LATAM Career OS
+        |
+        +--> client identification
+        +--> intake/status workflow
+        +--> CRM/state machine
+        +--> notifications
+        +--> future bounded agent assistance
+```
+
+A Colombia `+57` SIM/eSIM is therefore an operational dependency, not part of the gateway software itself.
+
+### Zero-cost proof-of-concept direction
+
+Before buying a Colombia number, validate the architecture with an existing Android phone and an available Polish SIM.
+
+#### SMS-00 — Android SMS Gateway PoC
+
+Validate:
+
+1. Android installation and permissions;
+2. local/LAN server mode;
+3. REST send operation;
+4. incoming SMS;
+5. webhook delivery;
+6. delivery/failure status;
+7. restart recovery;
+8. reconnect behavior;
+9. duplicate-event handling;
+10. authentication/signature handling;
+11. bounded rate behavior;
+12. basic resource usage.
+
+Target:
+
+```text
+PC / local service
+      |
+      | REST
+      v
+Android SMS Gateway
+      |
+      v
+SIM
+      |
+      v
+mobile network
+```
+
+#### SMS-01 — TextBee PoC
+
+Run the same functional scenario against TextBee and compare it with SMS-00.
+
+### Comparison / measurement gate
+
+Do not choose production transport solely from README/features. Measure both implementations against the same test matrix:
+
+- send latency;
+- receive latency;
+- delivery-status accuracy;
+- reliability over extended runtime;
+- restart recovery;
+- network reconnect;
+- duplicate delivery/event behavior;
+- webhook retry behavior;
+- authentication and secret handling;
+- local/self-host requirements;
+- resource consumption;
+- operational observability;
+- multi-device behavior;
+- failure isolation;
+- dependency complexity;
+- maintenance activity;
+- upgrade/replay behavior.
+
+### Security / operational constraints
+
+Before production activation:
+
+- do not expose an Android local API directly to the public Internet;
+- authenticate API access;
+- verify webhook authenticity where supported;
+- keep credentials/secrets out of repository content;
+- use explicit allowlists/network boundaries where practical;
+- define idempotency/duplicate-event handling;
+- define message retention and deletion policy;
+- treat phone numbers and message contents as client data;
+- verify carrier terms and anti-spam limits;
+- use bounded sending rates;
+- require explicit failure states rather than silently dropping or retrying indefinitely;
+- test device reboot, application restart, SIM outage and network outage.
+
+### Intended LATAM Career OS use cases
+
+Candidate uses include:
+
+- transactional status notifications;
+- appointment/reminder messages;
+- notification that CV/cover letter work is ready;
+- client intake acknowledgements;
+- controlled inbound SMS intake;
+- client reply capture;
+- workflow transitions triggered by verified inbound events;
+- future CRM integration;
+- future bounded AI-assisted response preparation;
+- multi-country expansion through replaceable country/provider adapters.
+
+This is not intended as a bulk unsolicited SMS marketing engine.
+
+### Acceptance criteria for future activation
+
+Before promotion from `DEFERRED`:
+
+- complete SMS-00 with a real Android + SIM;
+- complete SMS-01 if comparison remains decision-relevant;
+- record measured reliability/reconnect/duplicate/restart results;
+- define the versioned `MessagingProvider` contract;
+- prove that provider substitution does not change LATAM Career OS canonical business state;
+- define secure webhook/API boundaries;
+- define message idempotency and delivery-state semantics;
+- validate zero-cost/local mode before adding paid infrastructure;
+- separately validate procurement/ownership of a Colombia `+57` number;
+- perform a fresh license/security/maintenance review of the selected external dependency;
+- keep WhatsApp Business / Meta transport as a separate future adapter rather than conflating it with SMS transport.
+
+
+
+### Owner operating decisions — Colombia number strategy
+
+Recorded: `2026-09-25`
+
+The current operating preference for LATAM Career OS is:
+
+- **testing:** use free public temporary numbers where sufficient for non-sensitive SMS/OTP experiments;
+- public temporary numbers are test-only and MUST NOT be used for important production accounts, recovery-critical access, client-sensitive data or long-term business identity;
+- **production direction:** obtain a normal Colombian prepaid `+57` number on a physical SIM or eSIM when the project actually needs it;
+- **Movistar Colombia** remains a previously reviewed prepaid candidate for the future permanent `+57` line;
+- target operating model is low-cost prepaid maintenance with periodic top-ups rather than a recurring virtual-number subscription;
+- the working preference is approximately one maintenance/top-up cycle every three months, but the exact validity/retention rule MUST be re-verified against the selected carrier's current terms at purchase time;
+- **eSIM is optional**, not a requirement: purchase/activation should happen only when the owner decides it is useful;
+- **Telnyx is rejected for the current project direction on cost grounds**;
+- paid private temporary-number/OTP services are not required while free public numbers are sufficient for the current test scope;
+- the permanent `+57` line, once acquired, may later be connected to WhatsApp Business and/or a provider adapter such as Android SMS Gateway or TextBee;
+- the phone number/SIM remains an independently controlled operational asset and must not be coupled to one messaging software provider.
+
+This decision intentionally optimizes for low recurring cost and operational ownership while preserving the ability to upgrade later if scale or reliability requirements justify it.
+
+Evidence Before Standard. Planned ≠ Implemented ≠ Validated ≠ Certified.
+
