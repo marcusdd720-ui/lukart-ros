@@ -643,7 +643,7 @@ Nie mogą różnić się:
 - datami;
 - nazwami firm;
 - stanowiskami;
-- potwierdzonymi wynikami;
+- wynikami podanymi i potwierdzonymi przez klienta;
 - rzeczywistymi kompetencjami;
 - historią wykształcenia i certyfikacji.
 
@@ -678,7 +678,7 @@ Wynik porównania:
 ```text
 MOCNE_DOPASOWANIE
 CZĘŚCIOWE_DOPASOWANIE
-BRAK_DOWODU
+BRAK_DANYCH_W_PROFILU
 BRAK_KOMPETENCJI
 NIEJEDNOZNACZNE
 ```
@@ -827,4 +827,93 @@ brak wymyślania kompetencji
 - `H-P3-002` — spójność CV, oferty i odpowiedzi rekrutacyjnych zmniejsza liczbę sprzeczności i zwiększa przygotowanie kandydata.
 
 Wszystkie powyższe pozostają hipotezami do walidacji na rzeczywistym rynku Kolumbii.
+
+### KANON-TRUST-001 — Domyślne zaufanie do kompetencji i relacji klienta
+
+Status: `CANONICAL`  
+Recorded: `2026-09-25`
+
+LATAM Career OS traktuje klienta jako podstawowe źródło wiedzy o jego własnej historii zawodowej. System nie prowadzi wobec klienta śledztwa, nie podważa jego kompetencji i nie wymaga dokumentowego dowodu dla każdej zwykłej informacji o doświadczeniu, odpowiedzialności, osiągnięciu lub wyniku.
+
+Jeżeli klient podaje, że osiągnięty wynik wynosił np. `25%`, system może użyć `25%`. Jeżeli klient określa wynik jako przybliżony, publikacja powinna zachować charakter przybliżenia, np. `około 25%`.
+
+Domyślna ścieżka:
+
+```text
+INFORMACJA OD KLIENTA
+        ↓
+POTWIERDZONE PRZEZ KLIENTA
+        ↓
+DOZWOLONE DO UŻYCIA
+```
+
+Dodatkowy dokument, raport, certyfikat lub inne źródło może wzbogacać informację, ale nie jest domyślnym warunkiem jej użycia w CV lub przygotowaniu do rozmowy.
+
+#### Uogólnienie jest dozwolone
+
+System może profesjonalnie upraszczać i uogólniać wypowiedzi klienta, jeśli nie zmienia ich znaczenia. Dozwolone jest w szczególności:
+
+- skracanie opisu;
+- łączenie powiązanych działań;
+- pomijanie nieistotnych detali;
+- używanie przedziałów i wartości przybliżonych;
+- koncentrowanie komunikatu na rezultacie;
+- dostosowanie poziomu szczegółowości do CV, profilu lub rozmowy rekrutacyjnej.
+
+Zasada:
+
+```text
+BOGATSZY KONTEKST WEWNĘTRZNY
+        ↓
+ZWIĘZŁA I TRAFNA KOMUNIKACJA ZEWNĘTRZNA
+```
+
+Uogólnienie nie może tworzyć nowych faktów, zwiększać wyniku, dodawać niepodanej kompetencji ani zmieniać charakteru odpowiedzialności.
+
+#### Dopytanie jest wyjątkiem
+
+System dopytuje przede wszystkim wtedy, gdy:
+
+- klient sam wskazuje niepewność;
+- dwie informacje są ze sobą sprzeczne;
+- istnieją dwie różne wartości tej samej metryki;
+- nie wiadomo, jakiego znaczenia klient chce użyć;
+- dana informacja mogłaby istotnie wprowadzić odbiorcę w błąd.
+
+Dopytanie służy doprecyzowaniu, nie kwestionowaniu kompetencji klienta.
+
+#### Rozdzielenie źródła i publikacji
+
+Dla informacji podanej przez klienta preferowany model statusu to:
+
+```text
+ŹRÓDŁO: KLIENT
+STAN: POTWIERDZONE_PRZEZ_KLIENTA
+PUBLIKACJA: DOZWOLONA / OGRANICZONA / NIE_UŻYWAĆ
+```
+
+Nie należy automatycznie oznaczać zwykłej relacji klienta jako `NIEPOTWIERDZONEJ` tylko dlatego, że nie istnieje dokument zewnętrzny.
+
+#### Niezmiennik prawdy
+
+Domyślne zaufanie nie oznacza fabrykowania danych.
+
+System:
+
+- ufa klientowi w zakresie jego własnej relacji zawodowej;
+- nie dodaje kompetencji, których klient nie deklaruje;
+- nie zwiększa podanych wyników;
+- nie zmienia faktów w celu dopasowania do oferty;
+- nie przedstawia danych wywnioskowanych jako danych podanych przez klienta.
+
+Kanoniczna zasada operacyjna:
+
+```text
+ZAUFANIE DO KLIENTA = DOMYŚLNE
+DOPYTANIE = WYJĄTEK
+UOGÓLNIENIE = DOZWOLONE
+FABRYKOWANIE = NIEDOZWOLONE
+```
+
+Zasada ma pierwszeństwo przy projektowaniu formularzy, Grafu Prawdy Kariery, generowania CV, dopasowania do ofert oraz symulacji rozmów rekrutacyjnych.
 
