@@ -380,3 +380,540 @@ Agents should not:
 Owner decision recorded `2026-09-19`: the proposal to add visible labels such as `REVIEW_REQUIRED`, `REVIEWED`, `AI-generated`, `Wygenerowano przez LukArt RoS`, or visible provenance statements to final legal/client documents is rejected.
 
 This backlog does not authorize such labels. Internal provenance, identity and audit evidence may exist within LUKART system metadata/evidence boundaries, but must not be rendered into final documents merely because an artifact was produced with LUKART assistance.
+
+## IDEA-011 — LATAM Career OS — Colombia-First Reference Implementation
+
+Status: `DEFERRED / DISCOVERY`
+Recorded: `2026-09-24`
+Owner direction: Colombia is the first flagship market, learning environment, validation ground and reference implementation. Brazil and later LATAM markets must inherit only architecture that has first been validated in Colombia.
+
+### Problem / motivation
+
+Do not build a narrow "CV writing service" or prematurely generalize across Latin America. Build a regional operating system for career positioning, applications and employability, with Colombia as the first production market, learning environment, validation ground and reference implementation. The system name and shared core must remain country-neutral so that Brazil and later markets can reuse the validated architecture through explicit market packs.
+
+Previous CV-related Steps 1–19 remain useful as `Discovery v0`, but they are not the new canonical architecture.
+
+### Target concept
+
+Working concept:
+
+`LATAM CAREER OS — Operating System for Professional Career Positioning, Applications & Employability`
+
+The country-neutral LATAM Career OS core should support the full candidate journey, while Colombia remains Market Pack #1 and the first reference implementation:
+
+- Career Diagnosis;
+- Candidate Intake;
+- Career Truth Record;
+- target-role definition;
+- professional value proposition;
+- competency and achievement mapping;
+- Hoja de Vida ES-CO;
+- international Resume EN;
+- Carta de Presentación / Cover Letter;
+- LinkedIn Rebuild;
+- Vacancy Intelligence and role matching;
+- ATS-oriented document structure;
+- Interview Preparation;
+- Application Tracking;
+- client revisions, delivery, reviews and referrals;
+- future career updates and maintenance.
+
+### Core operating doctrines
+
+- **Truth Before Persuasion** — never invent experience, education, certifications, language levels, tools, achievements or metrics.
+- **Evidence Before Achievement** — quantified claims require a known evidence status.
+- **Target Before Writing** — define the target role before final document generation.
+- **Career Story Before Layout** — content and positioning precede visual design.
+- **ATS + Human** — optimize for parsability and recruiter readability.
+- **Localization Before Translation** — English documents are independently written, not literal translations.
+- **Measured Before Automated** — observe and measure the real process before automating it.
+- **Human Control at Critical Gates** — material facts, metrics, positioning and final delivery remain human-controlled.
+- **Colombia First** — new product and automation ideas are first validated in Colombia.
+- **Expansion After Evidence** — Brazil and later markets receive validated architecture plus local market/language packs, not copy-pasted Colombian workflows.
+
+### Candidate Truth Record
+
+Create a canonical candidate fact layer independent from any specific CV or LinkedIn output.
+
+Each material claim should support explicit provenance/status, for example:
+
+- `CONFIRMED`;
+- `UNCONFIRMED`;
+- `ESTIMATED`;
+- `DO_NOT_USE`.
+
+The same canonical fact set should feed CV, Resume, LinkedIn, cover letters, vacancy matching and interview preparation to prevent contradictions between outputs.
+
+### LinkedIn Rebuild Engine
+
+Treat LinkedIn reconstruction as a first-class product, not merely an "About" rewrite.
+
+Potential scope:
+
+- profile-photo and banner recommendations;
+- headline;
+- location / industry;
+- About;
+- Experience;
+- Skills;
+- Featured;
+- certifications;
+- languages;
+- keyword strategy;
+- consistency with CV;
+- target-role alignment;
+- recruiter-search alignment.
+
+A future "Before / After" scorecard may use explicit criteria, but must not rely on pseudo-scientific opaque scores.
+
+### Vacancy Intelligence
+
+Parse a target vacancy into:
+
+- must-have requirements;
+- nice-to-have requirements;
+- responsibilities;
+- tools;
+- languages;
+- seniority;
+- keywords;
+- industry terminology.
+
+Then compare vacancy requirements with the Candidate Truth Record and produce a transparent match map without fabricating missing qualifications.
+
+### Lead / CRM / Order identity
+
+Separate identifiers by role, e.g.:
+
+- campaign/source: `CM-001`, `FB-001`, `LI-001`;
+- lead: `LEAD-000001`;
+- client: `CL-000001`;
+- candidate: `CAND-000001`;
+- order: `ORD-000001` or market-aware `CO-ORD-000001`;
+- product identity such as `CV-PRO-CO` or `LINKEDIN-REBUILD-CO`.
+
+### Event-driven operating model
+
+Even while manually operated, design the lifecycle around explicit events such as:
+
+`LEAD_CREATED`
+`LEAD_QUALIFIED`
+`OFFER_SENT`
+`PAYMENT_CONFIRMED`
+`INTAKE_RECEIVED`
+`FACTS_VALIDATED`
+`POSITIONING_APPROVED`
+`DRAFT_READY`
+`QA_PASSED`
+`CLIENT_REVIEW`
+`REVISION_REQUESTED`
+`FINAL_DELIVERED`
+`REVIEW_REQUESTED`
+`ORDER_CLOSED`
+
+This allows future automation without redesigning the authority model.
+
+### AI / bot direction
+
+Do **not** deploy an autonomous customer-facing bot at the start.
+
+Initial automation direction:
+
+1. **AI Copilot v0.1** — generates suggested replies, package explanations, FAQ responses and intake reminders; human reviews before sending.
+2. **Bot v1** — automates only proven repetitive FAQs and basic routing after sufficient real conversation evidence.
+3. **Bot v2** — may perform structured lead qualification, collect basic information, recommend a package within bounded rules, create Lead ID and send intake forms.
+4. **Bot v3** — semi-autonomous customer operations only after stable pricing, CRM, payments, QA gates and sufficient production evidence.
+
+Bots must not autonomously invent career facts or metrics, negotiate exceptional cases, decide refunds/complaints, promise employment outcomes, or resolve ambiguous candidate claims.
+
+### Analytics
+
+Colombia should function as the measured laboratory for:
+
+- new and qualified leads;
+- paid orders;
+- lead-to-customer conversion;
+- revenue by channel and product;
+- average order value;
+- delivery time;
+- revision count;
+- refund rate;
+- LinkedIn attach rate;
+- English upgrade rate;
+- vacancy add-on rate;
+- repeat-customer rate;
+- referral rate;
+- time per order;
+- revenue per delivery hour.
+
+### Fresh-stage roadmap
+
+Restart the canonical design sequence as:
+
+- Stage 00 — Constitution & Vision;
+- Stage 01 — Domain Model;
+- Stage 02 — Colombia Market Model;
+- Stage 03 — Product Architecture;
+- Stage 04 — Candidate Truth System;
+- Stage 05 — Lead / Client / Order System;
+- Stage 06 — Intake Engine;
+- Stage 07 — Career Positioning Engine;
+- Stage 08 — CV / Document Engine;
+- Stage 09 — LinkedIn Rebuild Engine;
+- Stage 10 — Vacancy Intelligence;
+- Stage 11 — Interview Engine;
+- Stage 12 — QA / Trust Engine;
+- Stage 13 — CRM & Client Operations;
+- Stage 14 — Payments / Legal / Privacy;
+- Stage 15 — Analytics;
+- Stage 16 — AI Copilot;
+- Stage 17 — Bot / Automation;
+- Stage 18 — Market Validation;
+- Stage 19 — Scale Colombia;
+- Stage 20 — Brazil Readiness.
+
+### Language rule for project work
+
+When Spanish content is produced for this project, provide a Polish translation alongside it.
+
+### Expansion doctrine
+
+The system name and shared core remain country-neutral. Colombia is Market Pack #1 / Reference Implementation, not the name of the operating system.
+
+Brazil is the next intended market after Colombia reaches sufficient maturity. Brazil must use a localized `pt-BR` market/language pack and locally validated pricing, channels, CV conventions, ATS practices and LinkedIn positioning.
+
+Later LATAM markets should follow the same model: shared proven core, explicit market/language packs, fresh local validation.
+
+### Strategic summary
+
+**Think regionally. Build locally. Validate in Colombia. Automate only what reality proves. Expand only what Colombia validates.**
+
+## IDEA-012 — Aplikacja pod konkretną ofertę i symulacja rozmowy rekrutacyjnej
+
+Status: `DEFERRED / DISCOVERY`  
+Recorded: `2026-09-25`  
+System: `LATAM Career OS`  
+Pierwszy rynek referencyjny: Kolumbia
+
+### Problem / motywacja
+
+Nie ograniczać produktu do jednego ogólnego CV ani do szablonu, który kandydat wysyła do każdej firmy.
+
+Kandydat powinien posiadać stabilny, prawdziwy rdzeń kariery, a następnie móc tworzyć kontrolowane wersje aplikacji pod konkretne stanowisko i konkretną ofertę pracy.
+
+Celem nie jest zmiana faktów pod ofertę. Celem jest zmiana priorytetu, kolejności i sposobu prezentacji prawdziwych informacji zależnie od relewantności dla konkretnego stanowiska.
+
+### Model docelowy
+
+```text
+GRAF PRAWDY KARIERY
+        ↓
+PROFIL ZAWODOWY
+        ↓
+CV BAZOWE DLA KIERUNKU
+        ↓
+ANALIZA KONKRETNEJ OFERTY
+        ↓
+CV POD KONKRETNĄ OFERTĘ
+        ↓
+PAKIET APLIKACYJNY
+        ↓
+SYMULACJA ROZMOWY
+```
+
+Przykład:
+
+kandydat celuje w logistykę i posiada jedno CV bazowe dla kierunku logistycznego, ale po przesłaniu linku do konkretnej oferty firmy X system analizuje wymagania i przygotowuje wersję CV dopasowaną do tej konkretnej rekrutacji.
+
+### Niezmiennik prawdy
+
+Wersje CV mogą różnić się:
+
+- kolejnością informacji;
+- wyborem osiągnięć;
+- akcentem na konkretne kompetencje;
+- profilem zawodowym;
+- słownictwem;
+- doborem słów kluczowych;
+- kolejnością narzędzi i doświadczeń.
+
+Nie mogą różnić się:
+
+- faktami;
+- datami;
+- nazwami firm;
+- stanowiskami;
+- wynikami podanymi i potwierdzonymi przez klienta;
+- rzeczywistymi kompetencjami;
+- historią wykształcenia i certyfikacji.
+
+Brak wymaganej kompetencji w ofercie nie może powodować jej dopisania do CV. Powstaje jawna luka.
+
+### Silnik dopasowania do oferty
+
+Wejście:
+
+- link lub treść oferty pracy;
+- Graf Prawdy Kariery;
+- profil bazowy;
+- rynek i język;
+- poziom stanowiska.
+
+Analiza powinna rozdzielać co najmniej:
+
+- wymagania obowiązkowe;
+- wymagania dodatkowe;
+- wymagania jawne;
+- wymagania wywnioskowane;
+- narzędzia;
+- doświadczenie;
+- kompetencje;
+- branżę;
+- poziom stanowiska;
+- słowa kluczowe;
+- odpowiedzialności.
+
+Wynik porównania:
+
+```text
+MOCNE_DOPASOWANIE
+CZĘŚCIOWE_DOPASOWANIE
+BRAK_DANYCH_W_PROFILU
+BRAK_KOMPETENCJI
+NIEJEDNOZNACZNE
+```
+
+### Pakiet aplikacyjny pod konkretną ofertę
+
+Możliwy zakres produktu:
+
+1. CV dopasowane do konkretnej oferty;
+2. analiza dopasowania kandydata do wymagań;
+3. lista najmocniejszych argumentów;
+4. lista luk i ryzyk;
+5. list motywacyjny lub wiadomość aplikacyjna, jeśli ma sens dla danego procesu;
+6. przewidywane pytania rekrutera;
+7. przygotowane odpowiedzi oparte na prawdziwych faktach;
+8. historie sytuacyjne z kariery do wykorzystania podczas rozmowy;
+9. pytania, które kandydat może zadać rekruterowi;
+10. trudne pytania wynikające z CV lub luk profilu.
+
+### Produkt P2 — Aplikacja pod konkretną ofertę
+
+Kandydat posiada już rdzeń kariery i CV bazowe.
+
+Dla każdej wybranej oferty może zamówić osobne dopasowanie bez budowania całego profilu od początku.
+
+To tworzy potencjalny model powtarzalnej współpracy:
+
+```text
+RDZEŃ KARIERY
+        ↓
+OFERTA 1
+        ↓
+OFERTA 2
+        ↓
+OFERTA 3
+        ↓
+kolejne aplikacje
+```
+
+Hipoteza biznesowa wymaga walidacji. Cena i liczba ofert w pakiecie nie są jeszcze standardem.
+
+### Produkt P3 — Symulacja rozmowy pod konkretną ofertę
+
+Symulacja rozmowy powinna korzystać z tych samych danych co CV:
+
+```text
+OFERTA
++
+CV DLA TEJ OFERTY
++
+GRAF PRAWDY KARIERY
+```
+
+System zadaje pytania odpowiadające roli, wymaganiom i potencjalnym ryzykom profilu.
+
+Po odpowiedzi kandydata system może analizować:
+
+- czy odpowiedź rzeczywiście odpowiada na pytanie;
+- konkretność;
+- długość;
+- zgodność z faktami;
+- użycie właściwego przykładu;
+- wynik;
+- atrybucję indywidualną lub zespołową;
+- spójność z CV;
+- nieuzasadnione rozszerzenie faktów;
+- obszary wymagające doprecyzowania.
+
+### Struktura odpowiedzi sytuacyjnych
+
+Dla pytań opartych na zachowaniu można wykorzystywać strukturę:
+
+```text
+SYTUACJA
+↓
+ZADANIE
+↓
+DZIAŁANIE
+↓
+REZULTAT
+↓
+WNIOSKI
+```
+
+Nie jako sztywną formułę do recytacji, lecz jako wewnętrzny mechanizm pomagający kandydatowi budować konkretne i prawdziwe odpowiedzi.
+
+### Odpowiedzi na pytania rekrutera
+
+Nie budować ogólnej biblioteki "50 najlepszych odpowiedzi" jako głównej wartości.
+
+Największa wartość powinna wynikać z:
+
+```text
+PYTANIE
+↓
+WYMAGANIE OFERTY
+↓
+WŁAŚCIWY ELEMENT GRAFU PRAWDY KARIERY
+↓
+POTWIERDZONY PRZYKŁAD
+↓
+PROPONOWANA ODPOWIEDŹ
+```
+
+Dzięki temu CV, profil zawodowy i rozmowa używają tej samej historii zawodowej.
+
+### Granica etyczna i operacyjna
+
+System może:
+
+- przygotowywać kandydata przed rozmową;
+- przeprowadzać symulację rozmowy;
+- analizować jego odpowiedzi;
+- wskazywać mocne i słabe elementy;
+- sugerować poprawę sposobu wypowiedzi.
+
+System nie powinien być projektowany jako ukryty mechanizm podsłuchujący prawdziwą rozmowę rekrutacyjną i przekazujący kandydatowi odpowiedzi w czasie rzeczywistym bez wiedzy drugiej strony.
+
+### Potencjalna przewaga systemowa
+
+Nie sprzedajemy jednego "szablonu CV".
+
+Docelowo klient posiada żywy, kontrolowany profil kariery, z którego system może przygotowywać kolejne aplikacje na konkretne okazje zawodowe bez naruszania prawdy o kandydacie.
+
+Potencjalna przewaga:
+
+```text
+jeden Graf Prawdy Kariery
++
+wiele kontrolowanych aplikacji
++
+spójność CV
++
+spójność przygotowania do rozmowy
++
+analiza luk
++
+brak wymyślania kompetencji
+```
+
+### Hipotezy do przyszłej walidacji
+
+- `H-P2-001` — kandydat zapłaci dodatkowo za CV i analizę dopasowaną do konkretnej oferty;
+- `H-P2-002` — pakiety kilku ofert mogą tworzyć powtarzalny przychód po zakupie rdzenia kariery;
+- `H-P3-001` — symulacja rozmowy oparta na konkretnej ofercie ma większą wartość niż ogólne przygotowanie do rozmowy;
+- `H-P3-002` — spójność CV, oferty i odpowiedzi rekrutacyjnych zmniejsza liczbę sprzeczności i zwiększa przygotowanie kandydata.
+
+Wszystkie powyższe pozostają hipotezami do walidacji na rzeczywistym rynku Kolumbii.
+
+### KANON-TRUST-001 — Domyślne zaufanie do kompetencji i relacji klienta
+
+Status: `CANONICAL`  
+Recorded: `2026-09-25`
+
+LATAM Career OS traktuje klienta jako podstawowe źródło wiedzy o jego własnej historii zawodowej. System nie prowadzi wobec klienta śledztwa, nie podważa jego kompetencji i nie wymaga dokumentowego dowodu dla każdej zwykłej informacji o doświadczeniu, odpowiedzialności, osiągnięciu lub wyniku.
+
+Jeżeli klient podaje, że osiągnięty wynik wynosił np. `25%`, system może użyć `25%`. Jeżeli klient określa wynik jako przybliżony, publikacja powinna zachować charakter przybliżenia, np. `około 25%`.
+
+Domyślna ścieżka:
+
+```text
+INFORMACJA OD KLIENTA
+        ↓
+POTWIERDZONE PRZEZ KLIENTA
+        ↓
+DOZWOLONE DO UŻYCIA
+```
+
+Dodatkowy dokument, raport, certyfikat lub inne źródło może wzbogacać informację, ale nie jest domyślnym warunkiem jej użycia w CV lub przygotowaniu do rozmowy.
+
+#### Uogólnienie jest dozwolone
+
+System może profesjonalnie upraszczać i uogólniać wypowiedzi klienta, jeśli nie zmienia ich znaczenia. Dozwolone jest w szczególności:
+
+- skracanie opisu;
+- łączenie powiązanych działań;
+- pomijanie nieistotnych detali;
+- używanie przedziałów i wartości przybliżonych;
+- koncentrowanie komunikatu na rezultacie;
+- dostosowanie poziomu szczegółowości do CV, profilu lub rozmowy rekrutacyjnej.
+
+Zasada:
+
+```text
+BOGATSZY KONTEKST WEWNĘTRZNY
+        ↓
+ZWIĘZŁA I TRAFNA KOMUNIKACJA ZEWNĘTRZNA
+```
+
+Uogólnienie nie może tworzyć nowych faktów, zwiększać wyniku, dodawać niepodanej kompetencji ani zmieniać charakteru odpowiedzialności.
+
+#### Dopytanie jest wyjątkiem
+
+System dopytuje przede wszystkim wtedy, gdy:
+
+- klient sam wskazuje niepewność;
+- dwie informacje są ze sobą sprzeczne;
+- istnieją dwie różne wartości tej samej metryki;
+- nie wiadomo, jakiego znaczenia klient chce użyć;
+- dana informacja mogłaby istotnie wprowadzić odbiorcę w błąd.
+
+Dopytanie służy doprecyzowaniu, nie kwestionowaniu kompetencji klienta.
+
+#### Rozdzielenie źródła i publikacji
+
+Dla informacji podanej przez klienta preferowany model statusu to:
+
+```text
+ŹRÓDŁO: KLIENT
+STAN: POTWIERDZONE_PRZEZ_KLIENTA
+PUBLIKACJA: DOZWOLONA / OGRANICZONA / NIE_UŻYWAĆ
+```
+
+Nie należy automatycznie oznaczać zwykłej relacji klienta jako `NIEPOTWIERDZONEJ` tylko dlatego, że nie istnieje dokument zewnętrzny.
+
+#### Niezmiennik prawdy
+
+Domyślne zaufanie nie oznacza fabrykowania danych.
+
+System:
+
+- ufa klientowi w zakresie jego własnej relacji zawodowej;
+- nie dodaje kompetencji, których klient nie deklaruje;
+- nie zwiększa podanych wyników;
+- nie zmienia faktów w celu dopasowania do oferty;
+- nie przedstawia danych wywnioskowanych jako danych podanych przez klienta.
+
+Kanoniczna zasada operacyjna:
+
+```text
+ZAUFANIE DO KLIENTA = DOMYŚLNE
+DOPYTANIE = WYJĄTEK
+UOGÓLNIENIE = DOZWOLONE
+FABRYKOWANIE = NIEDOZWOLONE
+```
+
+Zasada ma pierwszeństwo przy projektowaniu formularzy, Grafu Prawdy Kariery, generowania CV, dopasowania do ofert oraz symulacji rozmów rekrutacyjnych.
+
