@@ -670,3 +670,256 @@ Before promotion from `DEFERRED`:
 - validate LUKART synthetic cases independently before using them as assurance evidence.
 
 Evidence Before Standard. Planned ≠ Implemented ≠ Validated ≠ Certified.
+
+## IDEA-012 — Provider-Agnostic Messaging Gateway for LATAM Career OS
+
+Status: `DEFERRED`
+Recorded: `2026-09-25`
+Primary target: LATAM Career OS, Colombia-first communication channel.
+
+### Problem / motivation
+
+LATAM Career OS may need a low-cost, controllable messaging channel for transactional client communication, intake, status notifications and future agent-assisted workflows without coupling the Product directly to one SMS/SaaS vendor.
+
+The phone number, carrier/SIM, transport gateway and Product workflow are separate concerns. A gateway application does not itself provide a Colombian phone number. A real Colombia `+57` SIM/eSIM remains a separate operational asset.
+
+The architecture must avoid vendor lock-in and must not allow a third-party messaging platform to become the source of truth for client workflow state.
+
+### External projects reviewed
+
+#### `capcom6/android-sms-gateway`
+
+Decision direction: **ADOPT CANDIDATE — PRIMARY SMS TRANSPORT / FIRST PoC**.
+
+Useful capabilities identified:
+
+- turns an Android phone with a SIM into a programmable SMS/MMS gateway;
+- REST API for sending messages;
+- receiving SMS and reporting events through webhooks;
+- delivery/failure/cancellation status handling;
+- inbox access;
+- local-server mode suitable for a zero-cost LAN proof of concept;
+- private-server/self-host direction for later deployment;
+- multi-SIM and multi-device operation;
+- message scheduling / working-hour controls;
+- rate limiting and bounded sending controls;
+- MMS support;
+- API/authentication and signed-webhook security mechanisms;
+- client ecosystem suitable for Python/TypeScript/Go/PHP/Rust integration.
+
+Important boundary:
+
+- the project **does not provide a phone number**;
+- it requires a real SIM/eSIM and Android device;
+- a future Colombia `+57` number must be procured and controlled independently;
+- the gateway should be treated as transport infrastructure, not as LATAM Career OS domain logic or canonical client state.
+
+#### `textbee/textbee`
+
+Decision direction: **ADAPTER / REFERENCE IMPLEMENTATION — SECONDARY PoC**.
+
+Useful capabilities identified:
+
+- open-source Android + backend + web dashboard stack;
+- REST API;
+- incoming/outgoing SMS workflows;
+- webhooks and delivery history;
+- self-hosting;
+- JavaScript/TypeScript SDK;
+- multi-device management;
+- operational dashboard;
+- integrations oriented toward automation;
+- MCP and n8n integration patterns useful for later agent/workflow research.
+
+Strategic value:
+
+- strong reference for a more complete messaging product and operational UI;
+- useful source of patterns for agent/MCP/n8n integration;
+- higher platform complexity than the minimal Android SMS Gateway path;
+- should remain replaceable behind the LATAM Career OS provider boundary.
+
+### Adopted architecture direction
+
+LATAM Career OS should own a provider-neutral messaging contract rather than call either external project directly from domain code.
+
+Candidate contract:
+
+```text
+MessagingProvider
+
+send_message()
+receive_message()
+get_status()
+list_devices()
+health_check()
+```
+
+Initial adapters:
+
+```text
+AndroidSmsGatewayProvider
+TextBeeProvider
+```
+
+Future adapters may include other SMS, WhatsApp or carrier providers without changing the Product-domain workflow.
+
+Target separation:
+
+```text
+LATAM Career OS
+      |
+      v
+Messaging Service / Provider Contract
+      |
+      +--> AndroidSmsGatewayProvider
+      |
+      +--> TextBeeProvider
+      |
+      +--> future providers
+```
+
+No external gateway may become the canonical store for client identity, CV workflow state, payment state, case history or business decisions.
+
+### Colombia-first operating model
+
+Target long-term path:
+
+```text
+Colombia +57 SIM/eSIM
+        |
+        v
+Android device
+        |
+        v
+SMS Gateway
+        |
+        v
+Provider Adapter
+        |
+        v
+LATAM Career OS
+        |
+        +--> client identification
+        +--> intake/status workflow
+        +--> CRM/state machine
+        +--> notifications
+        +--> future bounded agent assistance
+```
+
+A Colombia `+57` SIM/eSIM is therefore an operational dependency, not part of the gateway software itself.
+
+### Zero-cost proof-of-concept direction
+
+Before buying a Colombia number, validate the architecture with an existing Android phone and an available Polish SIM.
+
+#### SMS-00 — Android SMS Gateway PoC
+
+Validate:
+
+1. Android installation and permissions;
+2. local/LAN server mode;
+3. REST send operation;
+4. incoming SMS;
+5. webhook delivery;
+6. delivery/failure status;
+7. restart recovery;
+8. reconnect behavior;
+9. duplicate-event handling;
+10. authentication/signature handling;
+11. bounded rate behavior;
+12. basic resource usage.
+
+Target:
+
+```text
+PC / local service
+      |
+      | REST
+      v
+Android SMS Gateway
+      |
+      v
+SIM
+      |
+      v
+mobile network
+```
+
+#### SMS-01 — TextBee PoC
+
+Run the same functional scenario against TextBee and compare it with SMS-00.
+
+### Comparison / measurement gate
+
+Do not choose production transport solely from README/features. Measure both implementations against the same test matrix:
+
+- send latency;
+- receive latency;
+- delivery-status accuracy;
+- reliability over extended runtime;
+- restart recovery;
+- network reconnect;
+- duplicate delivery/event behavior;
+- webhook retry behavior;
+- authentication and secret handling;
+- local/self-host requirements;
+- resource consumption;
+- operational observability;
+- multi-device behavior;
+- failure isolation;
+- dependency complexity;
+- maintenance activity;
+- upgrade/replay behavior.
+
+### Security / operational constraints
+
+Before production activation:
+
+- do not expose an Android local API directly to the public Internet;
+- authenticate API access;
+- verify webhook authenticity where supported;
+- keep credentials/secrets out of repository content;
+- use explicit allowlists/network boundaries where practical;
+- define idempotency/duplicate-event handling;
+- define message retention and deletion policy;
+- treat phone numbers and message contents as client data;
+- verify carrier terms and anti-spam limits;
+- use bounded sending rates;
+- require explicit failure states rather than silently dropping or retrying indefinitely;
+- test device reboot, application restart, SIM outage and network outage.
+
+### Intended LATAM Career OS use cases
+
+Candidate uses include:
+
+- transactional status notifications;
+- appointment/reminder messages;
+- notification that CV/cover letter work is ready;
+- client intake acknowledgements;
+- controlled inbound SMS intake;
+- client reply capture;
+- workflow transitions triggered by verified inbound events;
+- future CRM integration;
+- future bounded AI-assisted response preparation;
+- multi-country expansion through replaceable country/provider adapters.
+
+This is not intended as a bulk unsolicited SMS marketing engine.
+
+### Acceptance criteria for future activation
+
+Before promotion from `DEFERRED`:
+
+- complete SMS-00 with a real Android + SIM;
+- complete SMS-01 if comparison remains decision-relevant;
+- record measured reliability/reconnect/duplicate/restart results;
+- define the versioned `MessagingProvider` contract;
+- prove that provider substitution does not change LATAM Career OS canonical business state;
+- define secure webhook/API boundaries;
+- define message idempotency and delivery-state semantics;
+- validate zero-cost/local mode before adding paid infrastructure;
+- separately validate procurement/ownership of a Colombia `+57` number;
+- perform a fresh license/security/maintenance review of the selected external dependency;
+- keep WhatsApp Business / Meta transport as a separate future adapter rather than conflating it with SMS transport.
+
+Evidence Before Standard. Planned ≠ Implemented ≠ Validated ≠ Certified.
+
