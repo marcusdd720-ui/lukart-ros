@@ -380,3 +380,170 @@ Agents should not:
 Owner decision recorded `2026-09-19`: the proposal to add visible labels such as `REVIEW_REQUIRED`, `REVIEWED`, `AI-generated`, `Wygenerowano przez LukArt RoS`, or visible provenance statements to final legal/client documents is rejected.
 
 This backlog does not authorize such labels. Internal provenance, identity and audit evidence may exist within LUKART system metadata/evidence boundaries, but must not be rendered into final documents merely because an artifact was produced with LUKART assistance.
+
+
+## IDEA-011 — Synthetic Reality / Synthetic Assurance Fabric
+
+Status: `DEFERRED`
+Recorded: `2026-09-25`
+
+### Problem / motivation
+
+Both LUKART and the LATAM Career OS need large volumes of realistic test/demo data without relying on real client identities or a small hand-authored corpus.
+
+The failure mode is not merely "insufficient fake data". The material risk is that independently generated fields look plausible in isolation while the whole scenario is internally inconsistent, irreproducible, or unable to prove what the system was expected to detect.
+
+Examples include:
+
+- impossible career timelines;
+- unsupported skills or achievements;
+- contradictory employment dates;
+- legal facts that violate temporal constraints;
+- missing evidence that is not detected;
+- stale or wrong-jurisdiction legal authority;
+- synthetic scenarios whose expected result is unknown;
+- test data that changes silently after generator/provider upgrades.
+
+### Target concept
+
+Create a domain-neutral synthetic-generation and assurance framework capable of producing reproducible, relationally coherent, explainable synthetic worlds.
+
+Working names:
+
+- `Synthetic Reality Engine` — generation substrate;
+- `Synthetic Assurance Fabric (SAF)` — assurance/test layer built on top of generated scenarios.
+
+The shared core should not contain CV-specific or legal-specific semantics. Domain packages should remain separate.
+
+Candidate structure:
+
+```text
+synthetic/
+    core/
+        seed
+        provenance
+        versioning
+        manifest
+    providers/
+    constraints/
+    scenarios/
+    mutation/
+    oracle/
+    replay/
+```
+
+### Core design principles
+
+1. **Canonical model before rendering**
+   - generated documents are projections of a canonical scenario/person/case model;
+   - the rendered CV, filing, letter, README, etc. is never the source of truth.
+
+2. **Deterministic replay**
+   - persist generator identity/version, schema version, locale/provider version, seed, policy/constraint set and artifact hash;
+   - do not rely on a single library seed as a long-term reproducibility guarantee.
+
+3. **Derived sub-seeds**
+   - derive independent deterministic seeds for identity, education, career, achievements, evidence, chronology, etc.;
+   - adding a new field/provider must not reshuffle unrelated previously generated state.
+
+4. **Constraint-first generation**
+   - generate values under explicit relational, temporal, jurisdictional and domain constraints;
+   - reject impossible scenarios instead of post-hoc accepting plausible-looking fields.
+
+5. **Expected Outcome Oracle**
+   - every assurance scenario should carry explicit expected findings/results where applicable;
+   - an LLM that generated a scenario must not be the sole oracle judging that scenario.
+
+6. **Mutation and metamorphic testing**
+   - start from a valid scenario;
+   - deliberately mutate evidence, dates, jurisdiction, authority, provenance, identities or relations;
+   - assert the expected failure mode deterministically.
+
+7. **Failure-mode coverage**
+   - measure coverage by scenario class, constraint, relation, failure mode, jurisdiction and temporal boundary rather than only by test count.
+
+8. **Synthetic-data provenance**
+   - distinguish internal data classes such as `REAL`, `SYNTHETIC`, `ANONYMIZED`, and `TEST`;
+   - the system must never silently promote synthetic material into a real-client workflow.
+
+### LATAM Career OS / Colombia application
+
+Use the framework to generate coherent demonstration candidates for Colombian CV, cover-letter, LinkedIn and portfolio examples.
+
+A canonical synthetic career should bind, for example:
+
+- synthetic identity;
+- Colombia locale (`es_CO`) provider data;
+- age/education chronology;
+- employment history;
+- role progression;
+- skills;
+- achievements;
+- languages;
+- target roles;
+- document/rendering variants.
+
+The key requirement is coherence across all outputs: one canonical synthetic career may render into multiple CV designs, cover letters, LinkedIn sections and interview materials without contradictory facts.
+
+A low-level library such as Python Faker may be used as a replaceable provider for locale-safe primitive data, but must not own career logic, canonical truth, validation, or replay semantics.
+
+### LUKART application
+
+Use the same framework pattern, with a separate legal-domain package, to generate synthetic legal cases and adversarial validation scenarios.
+
+Candidate scenario families include:
+
+- coherent case;
+- missing evidence;
+- contradictory fact;
+- temporal impossibility;
+- wrong jurisdiction;
+- stale legal source;
+- citation/source mismatch;
+- provenance break;
+- duplicate or substituted evidence;
+- concurrency/mutation edge cases.
+
+Each scenario should bind expected validation findings and, where safe and well-defined, expected decision constraints.
+
+This is intended to complement — not replace — unit, contract, integration, exact-SHA, regression and independently reviewed Gold-corpus testing.
+
+### External projects reviewed
+
+The following external projects informed the idea but are not approved as production dependencies by this entry:
+
+- `FakerPHP/Faker`;
+- `YukinobuAsakawa/FakerPHP-Sample`;
+- `yunwei37/AI-GitHub-Profile-Generator`.
+
+Useful patterns:
+
+- locale-aware primitive fake-data providers;
+- source-data → analysis → representation pipeline;
+- synthetic/demo generation.
+
+Patterns not to adopt directly:
+
+- PHP runtime solely for fake-data generation;
+- single-RNG/seeding as a long-term replay guarantee;
+- inference-first truth creation;
+- random presentation decisions in assurance-critical paths;
+- LLM self-evaluation as the only oracle.
+
+### Acceptance criteria for future activation
+
+Before promotion from `DEFERRED`:
+
+- define a concrete Decision Need for the target domain;
+- define canonical scenario schema and data-class boundary;
+- prove deterministic replay across a pinned toolchain;
+- add sub-seed derivation and versioned manifests;
+- implement constraint validation and explicit failure states;
+- prove that synthetic data cannot enter real-client state without an authorized boundary crossing;
+- implement at least one independent deterministic oracle;
+- implement mutation/metamorphic regression tests;
+- demonstrate failure-mode coverage metrics;
+- validate Colombia synthetic career coherence before using generated personas in public demo materials;
+- validate LUKART synthetic cases independently before using them as assurance evidence.
+
+Evidence Before Standard. Planned ≠ Implemented ≠ Validated ≠ Certified.
