@@ -530,6 +530,129 @@ Patterns not to adopt directly:
 - random presentation decisions in assurance-critical paths;
 - LLM self-evaluation as the only oracle.
 
+### Deep technical review decision gate — 2026-09-25
+
+The following provider/tool decisions are recorded from the comparative review:
+
+- **Python Faker — ADAPTER-ONLY / APPROVED**
+  - first practical primitive-data provider for Colombia;
+  - preferred initial locale path because native `es_CO` support exists;
+  - must remain behind a provider contract and MUST NOT become canonical career truth.
+
+- **Mimesis — ADAPTER-ONLY / APPROVED AS SECONDARY**
+  - useful as an alternate provider, structured-data reference and benchmark;
+  - not preferred as the first Colombia provider because no dedicated `es_CO` locale was confirmed;
+  - may be used to test provider portability and performance assumptions.
+
+- **SeedFaker — RESEARCH-ONLY / HIGH PRIORITY**
+  - strategically interesting for field-addressable determinism, multi-runtime reproducibility, algorithm fingerprinting and controlled corruption;
+  - not accepted as a production dependency until a dedicated determinism/security/maintenance spike passes;
+  - future status may be promoted to adapter-only only with evidence.
+
+- **SDV — RESEARCH-ONLY / FUTURE POPULATION SYNTHESIS**
+  - applicable to statistically representative synthetic populations learned from sufficiently large real datasets;
+  - not suitable as the present primitive provider or canonical deterministic scenario engine;
+  - licensing and service-use constraints require fresh review before any production adoption.
+
+- **Synthcity — RESEARCH-ONLY / FUTURE ASSURANCE**
+  - primarily valuable as a reference for privacy, quality, re-identification-risk and synthetic-data evaluation;
+  - not part of the current runtime architecture.
+
+- **Any external faker/synthetic library as core architecture — REJECT**
+  - no external data generator may own canonical truth, replay semantics, constraints, provenance, scenario identity or expected outcome.
+
+### Adopted architecture direction
+
+The strategic component remains an internally controlled **Synthetic Core** with replaceable adapters.
+
+The intended separation is:
+
+```text
+Synthetic Core
+    ├── Canonical Domain Model
+    ├── SyntheticProvider Contract
+    ├── Constraint Engine
+    ├── Scenario DNA / deterministic identity
+    ├── Provenance + versioned manifest
+    ├── Replay
+    ├── Mutation / metamorphic layer
+    └── Expected Outcome Oracle
+             │
+             ├── Career domain
+             └── Legal domain
+```
+
+External libraries are subordinate providers or research inputs only.
+
+### Scenario DNA refinement
+
+Long-term deterministic identity should be field-addressable rather than rely solely on one sequential RNG stream.
+
+Candidate value derivation model:
+
+```text
+value = H(
+    scenario_seed,
+    namespace,
+    entity_id,
+    field_id,
+    schema_version
+)
+```
+
+A scenario manifest should be able to bind at least:
+
+- engine version;
+- schema version;
+- domain version;
+- scenario seed;
+- namespace;
+- entity identity;
+- field identity;
+- provider identity/version;
+- algorithm fingerprint where available;
+- constraint-set identity;
+- output hash.
+
+Adding unrelated fields or providers should not reshuffle existing validated synthetic state.
+
+### Colombia first implementation direction
+
+The first implementation candidate, if/when IDEA-011 is activated, should be:
+
+1. `Canonical Career Schema 1.0`;
+2. `SyntheticProvider` protocol;
+3. `FakerCOAdapter` backed by Python Faker `es_CO`;
+4. `Career Constraint Engine 0.1`;
+5. three controlled personas:
+   - `CO-DEMO-JUNIOR-001`;
+   - `CO-DEMO-MID-001`;
+   - `CO-DEMO-SENIOR-001`;
+6. deterministic replay + manifest/hash verification;
+7. render-consistency test across CV / cover letter / LinkedIn projections;
+8. deliberate mutation tests for impossible chronology and unsupported claims.
+
+Mimesis should remain a secondary adapter candidate. SeedFaker should receive a separate research spike before any production role.
+
+### LUKART assurance direction
+
+LUKART should not reuse Career-domain semantics. It may reuse the Synthetic Core pattern with a separate legal scenario package containing:
+
+- Legal Scenario Engine;
+- legal/temporal/jurisdictional constraints;
+- controlled mutation engine;
+- independent Expected Outcome Oracle;
+- failure-mode coverage;
+- replay/provenance manifests.
+
+The most interesting SeedFaker ideas for LUKART are:
+
+- field-addressable deterministic generation;
+- algorithm-drift fingerprinting;
+- controlled data corruption for known-failure scenarios.
+
+These ideas may be reimplemented internally even if SeedFaker itself is never adopted as a dependency.
+
 ### Acceptance criteria for future activation
 
 Before promotion from `DEFERRED`:
