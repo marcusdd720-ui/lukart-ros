@@ -588,3 +588,243 @@ Later LATAM markets should follow the same model: shared proven core, explicit m
 
 **Think regionally. Build locally. Validate in Colombia. Automate only what reality proves. Expand only what Colombia validates.**
 
+## IDEA-012 — Aplikacja pod konkretną ofertę i symulacja rozmowy rekrutacyjnej
+
+Status: `DEFERRED / DISCOVERY`  
+Recorded: `2026-09-25`  
+System: `LATAM Career OS`  
+Pierwszy rynek referencyjny: Kolumbia
+
+### Problem / motywacja
+
+Nie ograniczać produktu do jednego ogólnego CV ani do szablonu, który kandydat wysyła do każdej firmy.
+
+Kandydat powinien posiadać stabilny, prawdziwy rdzeń kariery, a następnie móc tworzyć kontrolowane wersje aplikacji pod konkretne stanowisko i konkretną ofertę pracy.
+
+Celem nie jest zmiana faktów pod ofertę. Celem jest zmiana priorytetu, kolejności i sposobu prezentacji prawdziwych informacji zależnie od relewantności dla konkretnego stanowiska.
+
+### Model docelowy
+
+```text
+GRAF PRAWDY KARIERY
+        ↓
+PROFIL ZAWODOWY
+        ↓
+CV BAZOWE DLA KIERUNKU
+        ↓
+ANALIZA KONKRETNEJ OFERTY
+        ↓
+CV POD KONKRETNĄ OFERTĘ
+        ↓
+PAKIET APLIKACYJNY
+        ↓
+SYMULACJA ROZMOWY
+```
+
+Przykład:
+
+kandydat celuje w logistykę i posiada jedno CV bazowe dla kierunku logistycznego, ale po przesłaniu linku do konkretnej oferty firmy X system analizuje wymagania i przygotowuje wersję CV dopasowaną do tej konkretnej rekrutacji.
+
+### Niezmiennik prawdy
+
+Wersje CV mogą różnić się:
+
+- kolejnością informacji;
+- wyborem osiągnięć;
+- akcentem na konkretne kompetencje;
+- profilem zawodowym;
+- słownictwem;
+- doborem słów kluczowych;
+- kolejnością narzędzi i doświadczeń.
+
+Nie mogą różnić się:
+
+- faktami;
+- datami;
+- nazwami firm;
+- stanowiskami;
+- potwierdzonymi wynikami;
+- rzeczywistymi kompetencjami;
+- historią wykształcenia i certyfikacji.
+
+Brak wymaganej kompetencji w ofercie nie może powodować jej dopisania do CV. Powstaje jawna luka.
+
+### Silnik dopasowania do oferty
+
+Wejście:
+
+- link lub treść oferty pracy;
+- Graf Prawdy Kariery;
+- profil bazowy;
+- rynek i język;
+- poziom stanowiska.
+
+Analiza powinna rozdzielać co najmniej:
+
+- wymagania obowiązkowe;
+- wymagania dodatkowe;
+- wymagania jawne;
+- wymagania wywnioskowane;
+- narzędzia;
+- doświadczenie;
+- kompetencje;
+- branżę;
+- poziom stanowiska;
+- słowa kluczowe;
+- odpowiedzialności.
+
+Wynik porównania:
+
+```text
+MOCNE_DOPASOWANIE
+CZĘŚCIOWE_DOPASOWANIE
+BRAK_DOWODU
+BRAK_KOMPETENCJI
+NIEJEDNOZNACZNE
+```
+
+### Pakiet aplikacyjny pod konkretną ofertę
+
+Możliwy zakres produktu:
+
+1. CV dopasowane do konkretnej oferty;
+2. analiza dopasowania kandydata do wymagań;
+3. lista najmocniejszych argumentów;
+4. lista luk i ryzyk;
+5. list motywacyjny lub wiadomość aplikacyjna, jeśli ma sens dla danego procesu;
+6. przewidywane pytania rekrutera;
+7. przygotowane odpowiedzi oparte na prawdziwych faktach;
+8. historie sytuacyjne z kariery do wykorzystania podczas rozmowy;
+9. pytania, które kandydat może zadać rekruterowi;
+10. trudne pytania wynikające z CV lub luk profilu.
+
+### Produkt P2 — Aplikacja pod konkretną ofertę
+
+Kandydat posiada już rdzeń kariery i CV bazowe.
+
+Dla każdej wybranej oferty może zamówić osobne dopasowanie bez budowania całego profilu od początku.
+
+To tworzy potencjalny model powtarzalnej współpracy:
+
+```text
+RDZEŃ KARIERY
+        ↓
+OFERTA 1
+        ↓
+OFERTA 2
+        ↓
+OFERTA 3
+        ↓
+kolejne aplikacje
+```
+
+Hipoteza biznesowa wymaga walidacji. Cena i liczba ofert w pakiecie nie są jeszcze standardem.
+
+### Produkt P3 — Symulacja rozmowy pod konkretną ofertę
+
+Symulacja rozmowy powinna korzystać z tych samych danych co CV:
+
+```text
+OFERTA
++
+CV DLA TEJ OFERTY
++
+GRAF PRAWDY KARIERY
+```
+
+System zadaje pytania odpowiadające roli, wymaganiom i potencjalnym ryzykom profilu.
+
+Po odpowiedzi kandydata system może analizować:
+
+- czy odpowiedź rzeczywiście odpowiada na pytanie;
+- konkretność;
+- długość;
+- zgodność z faktami;
+- użycie właściwego przykładu;
+- wynik;
+- atrybucję indywidualną lub zespołową;
+- spójność z CV;
+- nieuzasadnione rozszerzenie faktów;
+- obszary wymagające doprecyzowania.
+
+### Struktura odpowiedzi sytuacyjnych
+
+Dla pytań opartych na zachowaniu można wykorzystywać strukturę:
+
+```text
+SYTUACJA
+↓
+ZADANIE
+↓
+DZIAŁANIE
+↓
+REZULTAT
+↓
+WNIOSKI
+```
+
+Nie jako sztywną formułę do recytacji, lecz jako wewnętrzny mechanizm pomagający kandydatowi budować konkretne i prawdziwe odpowiedzi.
+
+### Odpowiedzi na pytania rekrutera
+
+Nie budować ogólnej biblioteki "50 najlepszych odpowiedzi" jako głównej wartości.
+
+Największa wartość powinna wynikać z:
+
+```text
+PYTANIE
+↓
+WYMAGANIE OFERTY
+↓
+WŁAŚCIWY ELEMENT GRAFU PRAWDY KARIERY
+↓
+POTWIERDZONY PRZYKŁAD
+↓
+PROPONOWANA ODPOWIEDŹ
+```
+
+Dzięki temu CV, profil zawodowy i rozmowa używają tej samej historii zawodowej.
+
+### Granica etyczna i operacyjna
+
+System może:
+
+- przygotowywać kandydata przed rozmową;
+- przeprowadzać symulację rozmowy;
+- analizować jego odpowiedzi;
+- wskazywać mocne i słabe elementy;
+- sugerować poprawę sposobu wypowiedzi.
+
+System nie powinien być projektowany jako ukryty mechanizm podsłuchujący prawdziwą rozmowę rekrutacyjną i przekazujący kandydatowi odpowiedzi w czasie rzeczywistym bez wiedzy drugiej strony.
+
+### Potencjalna przewaga systemowa
+
+Nie sprzedajemy jednego "szablonu CV".
+
+Docelowo klient posiada żywy, kontrolowany profil kariery, z którego system może przygotowywać kolejne aplikacje na konkretne okazje zawodowe bez naruszania prawdy o kandydacie.
+
+Potencjalna przewaga:
+
+```text
+jeden Graf Prawdy Kariery
++
+wiele kontrolowanych aplikacji
++
+spójność CV
++
+spójność przygotowania do rozmowy
++
+analiza luk
++
+brak wymyślania kompetencji
+```
+
+### Hipotezy do przyszłej walidacji
+
+- `H-P2-001` — kandydat zapłaci dodatkowo za CV i analizę dopasowaną do konkretnej oferty;
+- `H-P2-002` — pakiety kilku ofert mogą tworzyć powtarzalny przychód po zakupie rdzenia kariery;
+- `H-P3-001` — symulacja rozmowy oparta na konkretnej ofercie ma większą wartość niż ogólne przygotowanie do rozmowy;
+- `H-P3-002` — spójność CV, oferty i odpowiedzi rekrutacyjnych zmniejsza liczbę sprzeczności i zwiększa przygotowanie kandydata.
+
+Wszystkie powyższe pozostają hipotezami do walidacji na rzeczywistym rynku Kolumbii.
+
