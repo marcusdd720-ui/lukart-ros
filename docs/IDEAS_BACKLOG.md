@@ -921,5 +921,27 @@ Before promotion from `DEFERRED`:
 - perform a fresh license/security/maintenance review of the selected external dependency;
 - keep WhatsApp Business / Meta transport as a separate future adapter rather than conflating it with SMS transport.
 
+
+
+### Owner operating decisions — Colombia number strategy
+
+Recorded: `2026-09-25`
+
+The current operating preference for LATAM Career OS is:
+
+- **testing:** use free public temporary numbers where sufficient for non-sensitive SMS/OTP experiments;
+- public temporary numbers are test-only and MUST NOT be used for important production accounts, recovery-critical access, client-sensitive data or long-term business identity;
+- **production direction:** obtain a normal Colombian prepaid `+57` number on a physical SIM or eSIM when the project actually needs it;
+- **Movistar Colombia** remains a previously reviewed prepaid candidate for the future permanent `+57` line;
+- target operating model is low-cost prepaid maintenance with periodic top-ups rather than a recurring virtual-number subscription;
+- the working preference is approximately one maintenance/top-up cycle every three months, but the exact validity/retention rule MUST be re-verified against the selected carrier's current terms at purchase time;
+- **eSIM is optional**, not a requirement: purchase/activation should happen only when the owner decides it is useful;
+- **Telnyx is rejected for the current project direction on cost grounds**;
+- paid private temporary-number/OTP services are not required while free public numbers are sufficient for the current test scope;
+- the permanent `+57` line, once acquired, may later be connected to WhatsApp Business and/or a provider adapter such as Android SMS Gateway or TextBee;
+- the phone number/SIM remains an independently controlled operational asset and must not be coupled to one messaging software provider.
+
+This decision intentionally optimizes for low recurring cost and operational ownership while preserving the ability to upgrade later if scale or reliability requirements justify it.
+
 Evidence Before Standard. Planned ≠ Implemented ≠ Validated ≠ Certified.
 
