@@ -375,6 +375,145 @@ Agents should not:
 - adversarial tests cover fabricated citations, stale authority, cross-case substitution and unsupported legal conclusions;
 - agent output remains untrusted until normal Product validation accepts it.
 
+## IDEA-011 — Persistent Agent Work Ledger
+
+Status: `DEFERRED / HIGH-VALUE CANDIDATE`
+Recorded: `2026-09-26`
+External inspiration: `planning-with-files`; no external repository is approved by this entry.
+
+### Problem / motivation
+
+Long-running LUKART engineering tasks can waste high-capability agent context and repeated GitHub reads after compaction, restart or transfer between Chat, Work, Codex or another approved execution surface. Reconstructing the plan, decisions, exact SHA, tests and remaining steps from conversation history is inefficient and can create state drift.
+
+### Target concept
+
+Create a LUKART-native, content-addressed resumable task-state contract containing: task/stage identity, objective, last verified `main` SHA, active branch/PR/candidate SHA, ordered plan, research/decisions, execution log, test evidence, blockers, next executable action, state digest/version and last verification time.
+
+The useful `plan / findings / progress` separation may be borrowed conceptually, but the ledger remains Factory-only. It MUST NOT become a second roadmap, case-history authority, Canonical Case Ledger, evidence store or substitute for live GitHub state.
+
+### Resource-efficiency objective
+
+A fresh agent session should recover the active task from one small persisted state plus bounded live-state verification instead of re-reading large chats and repeatedly traversing GitHub.
+
+### Acceptance criteria
+
+- cold-session recovery does not depend on model memory;
+- stale state is detected when live `main`, PR head, candidate SHA or required evidence changes;
+- unfinished required steps cannot be represented as closed;
+- task-state identity is tamper-evident;
+- private case data never enters public task-state files;
+- live GitHub remains authoritative for current SHA/PR/CI state.
+
+## IDEA-012 — Resource-Aware Hybrid Agent Budget Controller
+
+Status: `DEFERRED / HIGH-VALUE CANDIDATE`
+Recorded: `2026-09-26`
+External inspiration: OmniRouter-style fallback ideas; OmniRouter itself is not approved.
+
+### Problem / motivation
+
+Astra/Work-class execution is scarce. LUKART already has `AgentResourceLimits.max_model_calls` and `max_cost_units`, but the current gate mainly validates reported usage after execution. A pre-execution budget/reservation and escalation layer is still missing.
+
+### Target concept
+
+Extend the existing LUKART `CapabilityRouter` rather than replacing it:
+
+1. `LOCAL_DETERMINISTIC` — repository inspection, hashing, schemas, tests, static analysis, replay;
+2. `LOCAL_OR_LOW_COST_MODEL` — only capabilities separately validated for that model;
+3. `HIGH_CAPABILITY_MODEL` — difficult synthesis/reasoning;
+4. `ASTRA_WORK_ESCALATION` — only when complexity or computer-use justifies the scarce Work pool.
+
+Add pre-run budget reservation, per-task/stage ceilings, provider/model/version identity, explicit escalation reason, circuit breaker, approved fallback sets and local/deterministic preference.
+
+### Critical boundary
+
+This cannot increase or bypass ChatGPT Work/Codex limits. Its purpose is to reduce consumption by moving suitable work to deterministic/local or separately approved lower-cost execution paths.
+
+### Acceptance criteria
+
+- current capability/certification/schema routing remains authoritative;
+- no provider/model is selected merely because it is free;
+- trust-sensitive fallbacks require explicit approval;
+- insufficient reserved budget fails closed before expensive execution;
+- execution evidence records actual model/provider/version and measured resource use.
+
+## IDEA-013 — Local-First GitHub Evidence Cache and Bounded Remote Access
+
+Status: `DEFERRED / HIGH-VALUE CANDIDATE`
+Recorded: `2026-09-26`
+
+### Problem / motivation
+
+Repeated remote reads of unchanged files, commits, PR metadata and workflow state consume GitHub/API/tool capacity and agent context.
+
+### Target concept
+
+Use the exact-SHA local clone/worktree as the primary inspection surface for code search, diffs, history, tests and static analysis. Synchronize from GitHub only at explicit trust boundaries. Key cache entries to immutable commit SHA and record `verified_at`, repo and ref.
+
+Remote GitHub authority remains mandatory at stage start, candidate publication, CI verification, guarded merge and post-merge closure.
+
+### Acceptance criteria
+
+- local inspection/testing proceeds without repeated GitHub reads for the same exact SHA;
+- current PR/CI/merge claims always require remote verification;
+- cache entries cannot silently follow a moving branch;
+- stale/unknown cache fails closed at promotion/closure gates;
+- measured remote-call reduction does not weaken exact-SHA evidence.
+
+## IDEA-014 — Self-Hosted / Local Validation Offload
+
+Status: `DEFERRED / RESEARCH CANDIDATE`
+Recorded: `2026-09-26`
+
+### Problem / motivation
+
+Deterministic lint, type-check, unit/regression and architecture checks can be wastefully repeated on hosted runners when equivalent preflight can be proven locally.
+
+### Target concept
+
+Evaluate a controlled hybrid topology: local deterministic preflight first; hardened self-hosted WSL/Linux runner for selected trusted workflows; GitHub-hosted execution retained where independent environment properties are useful or required.
+
+### Acceptance criteria
+
+- explicit threat model for self-hosted execution;
+- untrusted PR/fork code cannot reach privileged host secrets/resources;
+- exact checked-out SHA and runner provenance are recorded;
+- local/self-hosted PASS never masquerades as independent external validation;
+- broad adoption requires measured reduction in unnecessary hosted runs.
+
+## IDEA-015 — Read-Only External Research Ingestion Adapter
+
+Status: `DEFERRED / RESEARCH-ONLY`
+Recorded: `2026-09-26`
+External inspiration: Agent Reach-style multi-source access.
+
+### Problem / motivation
+
+Reusable read-only ingestion of public GitHub, RSS, web and YouTube transcript material could reduce expensive interactive research time before high-capability synthesis.
+
+### Target concept
+
+Evaluate replaceable read-only adapters for non-authoritative public research. Retrieved material remains untrusted input and MUST NOT become legal authority, case evidence, verified fact or trusted instruction merely because an adapter fetched it.
+
+### Acceptance criteria
+
+- read-only capability by default;
+- source/provider identity and retrieval time recorded;
+- credentials/cookies remain outside repository/case artifacts;
+- prompt injection is treated as data, never instruction;
+- legal-authority workflows still require the Verified Legal Authority Fabric.
+
+## External repository disposition from 2026-09-26 review
+
+- `planning-with-files`: `ADOPT CONCEPT / DEEP REVIEW CANDIDATE`;
+- OmniRouter: `RESEARCH-ONLY` — do not replace LUKART `CapabilityRouter`;
+- Agent Reach: `RESEARCH-ONLY / ADAPTER PATTERN`;
+- Orka/multi-agent workbench: `CONCEPT-ONLY` — avoid a second orchestration authority without a measured gap;
+- OpenMontage: `REJECT FOR CORE / POSSIBLE FUTURE MARKETING TOOL`;
+- OpenSEO: `REJECT FOR CORE / POSSIBLE FUTURE PRODUCT-MARKETING TOOL`;
+- No-AI-Slop-style checking: `OPTIONAL RENDERING/QUALITY RESEARCH`;
+- God's Eye-style visualization: `REJECT FOR CORE / INSPIRATION-ONLY`.
+
 ## Review boundary — rendered-document labels
 
 Owner decision recorded `2026-09-19`: the proposal to add visible labels such as `REVIEW_REQUIRED`, `REVIEWED`, `AI-generated`, `Wygenerowano przez LukArt RoS`, or visible provenance statements to final legal/client documents is rejected.
