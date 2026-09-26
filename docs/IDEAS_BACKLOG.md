@@ -503,6 +503,219 @@ Evaluate replaceable read-only adapters for non-authoritative public research. R
 - prompt injection is treated as data, never instruction;
 - legal-authority workflows still require the Verified Legal Authority Fabric.
 
+## IDEA-016 — Vendor-Neutral Memory Provider Fabric
+
+Status: `DEFERRED / HIGH-VALUE CANDIDATE`
+Recorded: `2026-09-26`
+External inspiration: Hermes memory providers, Honcho and OpenClaw-style persistent memory.
+
+### Problem / motivation
+
+Long-running agent work benefits from cross-session recall, but memory must not become an unverified truth authority. LUKART needs continuity without allowing remembered statements to override live GitHub state, Canonical Case Ledger, evidence, legal authority or current validation evidence.
+
+### Target concept
+
+Introduce a vendor-neutral `MemoryProviderV1` sidecar contract for contextual agent continuity. Candidate backends may include Honcho-like systems, Hermes built-in memory, Mem0/Hindsight-style providers or a local implementation, but none is trusted by default.
+
+Memory may contain:
+
+- prior workflow decisions;
+- user/project preferences;
+- prior experiments and rejected approaches;
+- task continuity summaries;
+- useful recurring project context;
+- pointers to authoritative artifacts.
+
+Memory MUST NOT independently establish:
+
+- case facts/evidence;
+- legal authority;
+- current GitHub/CI/PR state;
+- certification status;
+- release authorization;
+- Canonical Case Ledger state.
+
+### Acceptance criteria
+
+- every recalled memory carries provider identity, timestamp and source/provenance where available;
+- recalled memory is explicitly marked contextual/untrusted until revalidated when it affects a trust-sensitive decision;
+- provider replacement does not change Product authority;
+- memory export/import is possible without vendor lock-in;
+- private/sensitive memory storage follows the private-case security boundary;
+- no memory backend can bypass normal validation gates.
+
+## IDEA-017 — Controlled Knowledge Consolidation / Dreaming
+
+Status: `DEFERRED / RESEARCH CANDIDATE`
+Recorded: `2026-09-26`
+External inspiration: OpenClaw-style background memory consolidation.
+
+### Problem / motivation
+
+Raw session history grows quickly and makes retrieval noisy and expensive. Useful repeated knowledge should be distilled, but autonomous promotion of remembered statements to trusted knowledge would create a hidden second authority.
+
+### Target concept
+
+Evaluate a staged consolidation pipeline:
+
+```text
+raw events / conversations
+        ↓
+candidate insight
+        ↓
+repetition / usefulness / evidence scoring
+        ↓
+knowledge candidate
+        ↓
+validation / human or deterministic gate
+        ↓
+durable project knowledge
+```
+
+The process may run in background-like phases, but LUKART should use explicit states rather than anthropomorphic trust semantics.
+
+### Acceptance criteria
+
+- consolidation cannot promote unverified case/legal claims into trusted state;
+- source links remain available after summarization;
+- contradictory candidates remain explicit rather than silently merged;
+- promoted knowledge has version/digest/provenance;
+- stale knowledge can be invalidated by newer authoritative evidence;
+- measurable retrieval/context reduction is demonstrated.
+
+## IDEA-018 — Fast Task Classifier Before Expensive Models
+
+Status: `DEFERRED / HIGH-VALUE CANDIDATE`
+Recorded: `2026-09-26`
+External inspiration: JEV-style classifier/dispatcher.
+
+### Problem / motivation
+
+Using a high-capability model merely to decide which model/tool should execute a task wastes scarce Work/Codex capacity.
+
+### Target concept
+
+Add a small, bounded classifier before the existing capability router. It should classify task requirements such as:
+
+- deterministic/local;
+- low-cost model;
+- standard high-capability model;
+- Astra/Work escalation;
+- research-only;
+- reviewer/adversarial path.
+
+The classifier outputs only a structured route recommendation and confidence/evidence fields. It does not execute the task or make trust-sensitive conclusions.
+
+### Acceptance criteria
+
+- classifier failure or low confidence falls back to a safe deterministic policy;
+- model/provider choice remains constrained by approved capability/certification rules;
+- classification output is schema-bound and auditable;
+- routing accuracy and resource savings are measured against a baseline;
+- classifier cannot silently downgrade a task that policy requires to run on a stronger/approved executor.
+
+## IDEA-019 — Multi-Agent Worktree Orchestrator
+
+Status: `DEFERRED / HIGH-VALUE CANDIDATE`
+Recorded: `2026-09-26`
+External inspiration: parallel Codex/agent workflows.
+
+### Problem / motivation
+
+Parallel agents can shorten large engineering tasks, but uncontrolled parallel edits create merge conflicts, duplicated work and authority ambiguity.
+
+### Target concept
+
+Use isolated branches/worktrees and explicit agent roles under one orchestrator:
+
+- builder;
+- focused-test agent;
+- adversarial reviewer;
+- security/policy reviewer;
+- research agent;
+- synthesis/landing coordinator.
+
+Each parallel job binds: input SHA, scope, permissions, budget, expected artifact and allowed files/operations.
+
+### Acceptance criteria
+
+- no two agents mutate the same authority surface without explicit coordination;
+- every result binds to its input SHA and isolated worktree/branch;
+- agent outputs are compared/reviewed before candidate promotion;
+- parallelism never bypasses exact-SHA CI or independent-review boundaries;
+- failed/abandoned worktrees can be safely discarded;
+- measured wall-clock benefit justifies orchestration complexity.
+
+## IDEA-020 — Controlled Self-Improvement Loop
+
+Status: `DEFERRED / RESEARCH CANDIDATE`
+Recorded: `2026-09-26`
+External inspiration: RSI/self-improving agent patterns and Hermes review loops.
+
+### Problem / motivation
+
+Agents can propose improvements to prompts, routing, heuristics, skills or parameters, but allowing the same agent to change and certify its own behavior would violate LUKART validation principles.
+
+### Target concept
+
+Use an explicit lifecycle:
+
+```text
+Observation
+→ Hypothesis
+→ Candidate Improvement
+→ Shadow Mode
+→ Experiment
+→ Measurement
+→ Independent/Separate Validation
+→ Promotion or Rejection
+```
+
+No self-generated improvement becomes production behavior solely because the proposing agent reports better performance.
+
+### Acceptance criteria
+
+- baseline and candidate are evaluated on fixed/versioned evidence;
+- improvement criteria are defined before promotion;
+- proposer and validator are separated where material;
+- regressions/adversarial cases are included;
+- rollback is deterministic;
+- self-improvement cannot alter governance, trust or security policy without explicit authorization.
+
+## IDEA-021 — Local Model Execution Tier
+
+Status: `DEFERRED / HIGH-VALUE RESEARCH CANDIDATE`
+Recorded: `2026-09-26`
+External inspiration: current local-model workflows on consumer GPUs.
+
+### Problem / motivation
+
+A meaningful share of preprocessing and low-risk engineering work may not require remote high-capability models. Running suitable workloads locally can reduce Work/API usage, improve privacy and remove network/rate-limit dependence.
+
+### Candidate workloads
+
+- document classification;
+- PII detection/redaction assistance;
+- keyword/entity extraction;
+- text normalization;
+- simple summarization;
+- embeddings/reranking;
+- synthetic-data assistance;
+- test-case generation;
+- repository/file classification;
+- low-risk drafting where quality has been separately benchmarked.
+
+Trust-sensitive legal reasoning, architecture and difficult debugging remain on approved higher-capability paths unless a local model is separately validated for that capability.
+
+### Acceptance criteria
+
+- benchmark on representative LUKART/Synthetic Test Data Factory tasks;
+- explicit hardware/runtime requirements and latency measurements;
+- no capability is promoted based only on anecdotal quality;
+- local model/version/quantization identity is recorded;
+- privacy-sensitive local processing remains within approved device boundaries;
+- fallback/escalation rules are deterministic and auditable.
+
 ## External repository disposition from 2026-09-26 review
 
 - `planning-with-files`: `ADOPT CONCEPT / DEEP REVIEW CANDIDATE`;
