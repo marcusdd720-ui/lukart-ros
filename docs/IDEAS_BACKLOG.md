@@ -1673,6 +1673,22 @@ After current project completion, perform a fresh portfolio review against live 
 
 Do not preserve today's implementation ordering as immutable. Preserve the ideas and evidence, then re-rank them with fresh measurements when execution capacity becomes available.
 
+## Backlog capture policy — owner decision
+
+Recorded: `2026-09-26`
+
+Owner instruction: material new ideas arising during LUKART ROS research, architecture, implementation review, external-source analysis or cross-project learning should be captured automatically in this backlog without requiring a separate confirmation each time.
+
+Capture rules:
+
+- add only ideas with concrete architectural, legal-domain, operational, evaluation, interoperability, reliability or implementation value;
+- avoid duplicates; extend an existing idea when the new insight is materially the same concept;
+- keep speculative/low-signal observations out of the backlog until they cross a meaningful evidence threshold;
+- mark every captured item as non-authoritative until separately researched/measured/implemented/validated;
+- preserve live GitHub/main and `docs/WORKING_PRINCIPLES.md` as authoritative implementation/governance state;
+- major ideas may also receive a dedicated research/ADR artifact when depth, trade-offs or evidence justify it;
+- automatic capture never authorizes implementation, merge, production activation or policy weakening.
+
 ## External repository disposition from 2026-09-26 review
 
 - `planning-with-files`: `ADOPT CONCEPT / DEEP REVIEW CANDIDATE`;
