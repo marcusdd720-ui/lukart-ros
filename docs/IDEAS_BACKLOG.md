@@ -716,6 +716,234 @@ Trust-sensitive legal reasoning, architecture and difficult debugging remain on 
 - privacy-sensitive local processing remains within approved device boundaries;
 - fallback/escalation rules are deterministic and auditable.
 
+## IDEA-022 — LUKART Agent Runtime as the Control Plane
+
+Status: `DEFERRED / STRATEGIC HIGH-VALUE CANDIDATE`
+Recorded: `2026-09-26`
+
+### Problem / motivation
+
+LUKART should not become a clone of Hermes, OpenClaw, Codex, ChatGPT Work or any single model/provider. Those systems can evolve, disappear, change pricing, change limits or be replaced. LUKART therefore needs its own stable control plane above interchangeable executors.
+
+### Target concept
+
+Build a `LUKART Agent Runtime` in which external and local agent/model systems are execution backends rather than Product authorities.
+
+Candidate executor classes:
+
+- Hermes;
+- Codex;
+- ChatGPT Work;
+- GPT-6 Sol / Astra-class models;
+- approved Claude/Gemini-class providers where justified;
+- local Qwen/Llama-family models;
+- Ollama / llama.cpp / vLLM-backed local endpoints;
+- future compatible executors.
+
+LUKART remains responsible for:
+
+- governance;
+- capability routing;
+- evidence/provenance;
+- validation and fail-closed gates;
+- exact-SHA execution identity;
+- memory-provider contracts;
+- resource budgets;
+- authorization;
+- task-state continuity;
+- promotion/closure decisions.
+
+No executor gains authority merely because it is more capable, cheaper, local or available.
+
+### Architectural boundary
+
+```text
+LUKART
+├── governance
+├── routing
+├── evidence
+├── validation
+├── memory contracts
+├── task ledger
+└── resource budgets
+        │
+        ▼
+EXECUTOR ADAPTERS
+├── Hermes
+├── Codex
+├── ChatGPT Work
+├── Sol / Astra
+├── local model endpoint
+└── future providers
+```
+
+### Acceptance criteria
+
+- provider/model replacement does not alter Product authority;
+- every executor has an explicit capability/schema/permission/budget contract;
+- executor/model/version identity is recorded in result evidence;
+- no backend can bypass CCL, legal-authority, validation or release gates;
+- failover is explicit and policy-bound, never silent;
+- trust-sensitive capability changes invalidate prior certification unless explicitly covered.
+
+## IDEA-023 — Local-First 24x7 Agent Execution Fabric
+
+Status: `DEFERRED / HIGH-VALUE RESEARCH CANDIDATE`
+Recorded: `2026-09-26`
+
+### Problem / motivation
+
+Continuous agent operation does not require every task to consume scarce Work/Astra capacity. Many collection, preprocessing, monitoring, classification, local validation and routine execution tasks can run continuously on owned infrastructure.
+
+### Target concept
+
+Create a layered local-first runtime:
+
+```text
+scheduler / events
+       ↓
+fast task classifier
+       ↓
+local deterministic tools
+       ↓
+local model endpoint
+       ↓
+approved remote model escalation
+       ↓
+Astra/Work only when justified
+```
+
+Supporting components may include:
+
+- local model serving through Ollama/llama.cpp initially and vLLM where scale/throughput justify it;
+- scheduler/routines;
+- read-only research collectors;
+- inter-agent messaging;
+- isolated worktrees;
+- persistent task ledger;
+- memory-provider sidecar;
+- operator dashboard;
+- health checks, audit logs and kill switch.
+
+### Resource objective
+
+Use local compute for repeatable low-risk tasks and reserve scarce remote/high-capability execution for difficult reasoning, architecture, legal synthesis, complex debugging and other explicitly classified workloads.
+
+### Acceptance criteria
+
+- no 24x7 agent obtains unrestricted filesystem/network/secrets access by default;
+- continuous execution has explicit budgets and circuit breakers;
+- local runtime can operate without GitHub polling except at required trust boundaries;
+- remote escalation is auditable and policy constrained;
+- local/background operation cannot self-promote code, rules, memory or legal conclusions into trusted state;
+- operational metrics demonstrate reduced Work/API usage before broad activation.
+
+## IDEA-024 — Bot/Profile Runtime with Isolated Memory and Toolsets
+
+Status: `DEFERRED / RESEARCH CANDIDATE`
+Recorded: `2026-09-26`
+External inspiration: Hermes Bot Mode.
+
+### Problem / motivation
+
+Different models and agents are strong at different tasks, but a single omnipotent agent profile creates excessive permissions, context pollution and unclear responsibility.
+
+### Target concept
+
+Support bounded bot/profile instances with separately declared:
+
+- executor/model;
+- capabilities;
+- memory namespace;
+- tools/MCP adapters;
+- credentials;
+- filesystem/network permissions;
+- resource budget;
+- allowed task types;
+- validation gates.
+
+Profiles should be capability-oriented rather than personality-oriented. Candidate examples include:
+
+- research collector;
+- coding executor;
+- legal-authority analyst;
+- reviewer/red-team agent;
+- local utility agent;
+- rendering/document agent.
+
+### Acceptance criteria
+
+- profile memory is isolated unless an explicit sharing contract exists;
+- credentials are scoped per profile;
+- cross-agent communication is typed/auditable;
+- no profile can broaden its own permissions;
+- profile identity and executor identity are captured in provenance;
+- profile outputs remain untrusted until normal LUKART validation accepts them.
+
+## IDEA-025 — Provider-Neutral Local Model Serving Layer
+
+Status: `DEFERRED / HIGH-VALUE RESEARCH CANDIDATE`
+Recorded: `2026-09-26`
+
+### Problem / motivation
+
+Directly coupling Product code to one local runtime such as Ollama would create avoidable lock-in. LUKART should consume local inference through a replaceable provider contract.
+
+### Target concept
+
+Introduce a local-model adapter boundary compatible with OpenAI-style APIs where practical.
+
+Candidate runtime progression:
+
+1. Ollama / llama.cpp for simple workstation deployment;
+2. vLLM for higher-throughput or multi-user/model-server scenarios;
+3. future runtimes behind the same provider contract.
+
+The provider contract should capture:
+
+- runtime/provider identity;
+- model identity;
+- quantization;
+- context size;
+- hardware requirements;
+- latency/throughput;
+- deterministic parameters where available;
+- health status;
+- privacy boundary;
+- capability certification.
+
+### Acceptance criteria
+
+- Product logic does not depend on Ollama/vLLM-specific semantics outside adapters;
+- model/runtime changes are explicit and measurable;
+- unsupported context/capability fails closed;
+- local endpoints are not assumed secure merely because they run locally;
+- benchmark evidence is required before assigning production capabilities.
+
+## IDEA-026 — Trading/Autonomous Bot Patterns as Architecture-Only Research
+
+Status: `DEFERRED / INSPIRATION-ONLY`
+Recorded: `2026-09-26`
+
+### Problem / motivation
+
+Several reviewed videos demonstrate autonomous trading agents, TradingView/webhook execution and 24x7 loops. These materials are useful as architecture patterns, but their profitability claims are not evidence suitable for LUKART adoption.
+
+### Reusable patterns
+
+- event/webhook-driven execution;
+- scheduler-based routines;
+- read-only/shadow first cycle;
+- explicit ledger;
+- monitoring and alerts;
+- risk/budget limits;
+- kill switch;
+- staged promotion from observation to active execution.
+
+### Boundary
+
+LUKART may reuse these operational patterns for agent automation, but should not treat trading-video outcomes as validation of financial performance or self-improving autonomy.
+
 ## External repository disposition from 2026-09-26 review
 
 - `planning-with-files`: `ADOPT CONCEPT / DEEP REVIEW CANDIDATE`;
