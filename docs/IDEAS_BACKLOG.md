@@ -1496,6 +1496,183 @@ Candidate evaluation dimensions:
 - no proprietary ATS score is treated as ground truth without evidence;
 - Colombia/Spanish-specific corpus is added before production claims.
 
+## IDEA-043 — CO Source & Authority Matrix v1
+
+Status: `DEFERRED / RESEARCH BASELINE CREATED`
+Recorded: `2026-09-26`
+Research artifact: `docs/research/CO_SOURCE_AUTHORITY_MATRIX_V1.md`
+
+### Problem / motivation
+
+Colombia has multiple legal, judicial, pension, contribution, social-protection and health sources. Without a source/authority map, implementation risks ad-hoc scraping, duplicated adapters and incorrect authority assumptions.
+
+### Target concept
+
+Maintain a Colombia source matrix covering:
+
+- institution/source;
+- access/API/web mode;
+- authority class;
+- temporal capability;
+- privacy class;
+- adapter candidate;
+- fallback/corroboration;
+- fail-closed semantics.
+
+SUIN-Juriscol is explicitly retained as a high-value official consolidated legal/temporal source. Its role is complementary to primary publication evidence such as Diario Oficial.
+
+### Acceptance criteria
+
+- every Colombia integration maps to a declared source class and trust boundary;
+- no source is silently treated as universally authoritative for all propositions;
+- privacy-sensitive portals require case-scoped authorization;
+- transport/API instability is separated from legal authority semantics;
+- matrix is revalidated before Colombia implementation begins.
+
+## IDEA-044 — Jurisdiction Adapter SDK / ExternalSourceAdapterV1
+
+Status: `DEFERRED / STRATEGIC ACCELERATION CANDIDATE`
+Recorded: `2026-09-26`
+
+### Problem / motivation
+
+Building a custom agent/integration for every institution creates repeated work and long-term maintenance risk.
+
+### Target concept
+
+Create one reusable SDK/contract for external legal/administrative sources. Each country/provider becomes a thin adapter over the same envelope.
+
+Common capabilities should include:
+
+- source/institution identity;
+- jurisdiction;
+- source class;
+- exact locator/document identity;
+- content/source digest;
+- adapter/parser/schema identity;
+- temporal metadata;
+- privacy classification;
+- authorization evidence;
+- coverage/completeness declaration;
+- explicit failure state;
+- fallback/corroboration pointers.
+
+Transport implementations may be REST, Socrata, HTML, MCP, browser automation or authenticated portal access without changing the Product authority model.
+
+### Acceleration objective
+
+After the SDK and conformance suite exist, new integrations should primarily require:
+
+`adapter + fixtures + source-specific tests + authority policy`
+
+instead of a new bespoke subsystem.
+
+## IDEA-045 — Portfolio Execution Accelerator with WIP Limits
+
+Status: `DEFERRED / OPERATING-MODEL CANDIDATE`
+Recorded: `2026-09-26`
+
+### Problem / motivation
+
+The project now has more valuable ideas than can be implemented safely in parallel. Excessive simultaneous work would increase context switching, incomplete stages, duplicated infrastructure and governance drift.
+
+### Target concept
+
+Use a portfolio funnel:
+
+```text
+IDEA
+→ RESEARCHED
+→ MEASURED
+→ READY
+→ ACTIVE
+→ VALIDATED
+→ CLOSED
+```
+
+with explicit WIP limits.
+
+Recommended delivery lanes:
+
+1. `LEGAL-CORRECTNESS` — authority, retrieval, citations, temporal law, procedural rules;
+2. `EXECUTION-FABRIC` — routing, local/remote models, memory, execution receipts;
+3. `DOCUMENT/WORK` — parsing, provenance, rendering, filing workflow;
+4. `EVALUATION/DATA` — Gold, scenario factory, synthetic test data;
+5. `JURISDICTION-PACKS` — PL/EU first, CO research/shadow until activation.
+
+At any time, only a small bounded number of implementation stages are ACTIVE. Research can continue in parallel but cannot silently expand implementation scope.
+
+### Acceptance criteria
+
+- every active stage has a measurable decision need and dependency map;
+- no new implementation begins merely because an idea is attractive;
+- shared primitives are implemented before duplicated jurisdiction-specific equivalents;
+- WIP/blocked state is visible;
+- closure precedes activation of the next dependent stage.
+
+## IDEA-046 — Vertical Slice Accelerator
+
+Status: `DEFERRED / HIGH-VALUE CANDIDATE`
+Recorded: `2026-09-26`
+
+### Problem / motivation
+
+Broad platform integrations delay evidence. A thin end-to-end slice can validate shared architecture faster than integrating every source first.
+
+### Target concept
+
+For each major capability/jurisdiction, implement one narrow representative path through all required layers.
+
+Example Colombia public-law slice:
+
+```text
+legal question
+→ SUIN/Función Pública discovery
+→ exact norm identity
+→ temporal/vigencia metadata
+→ Diario Oficial corroboration when material
+→ related court source
+→ citation/grounding verification
+→ execution receipt
+→ final answer
+```
+
+Only after this slice passes should additional Colombian courts or private social-security connectors be added.
+
+### Acceptance criteria
+
+- slice crosses real authority, temporal, retrieval, validation and provenance boundaries;
+- synthetic fixtures precede private-data integrations;
+- architecture gaps found by the slice are fixed in shared core before broad expansion;
+- the slice is benchmarked for quality, latency and resource cost.
+
+## IDEA-047 — Post-Current-Projects Reprioritization Gate
+
+Status: `DEFERRED / OWNER STRATEGY`
+Recorded: `2026-09-26`
+
+### Owner decision
+
+Current projects should be completed before launching the accumulated strategic backlog as new implementation programs.
+
+After current project completion, perform a fresh portfolio review against live repository state and current external technology/source landscape.
+
+### Reprioritization inputs
+
+- current legal-domain maturity;
+- current blockers and technical debt;
+- reusable primitives already implemented;
+- newest legal-AI/retrieval research;
+- source/API changes in Poland/EU/Colombia;
+- cost/resource limits;
+- business value and user demand;
+- dependency graph;
+- risk reduction per unit of implementation effort.
+
+### Decision rule
+
+Do not preserve today's implementation ordering as immutable. Preserve the ideas and evidence, then re-rank them with fresh measurements when execution capacity becomes available.
+
 ## External repository disposition from 2026-09-26 review
 
 - `planning-with-files`: `ADOPT CONCEPT / DEEP REVIEW CANDIDATE`;
