@@ -944,6 +944,253 @@ Several reviewed videos demonstrate autonomous trading agents, TradingView/webho
 
 LUKART may reuse these operational patterns for agent automation, but should not treat trading-video outcomes as validation of financial performance or self-improving autonomy.
 
+## IDEA-027 — Sovereign Execution Fabric (15+ Year Agent Control Plane)
+
+Status: `DEFERRED / STRATEGIC CANDIDATE`
+Recorded: `2026-09-26`
+
+### Problem / motivation
+
+The long-term risk is not lack of another agent framework. It is coupling LUKART to transient model/provider/runtime semantics. Over a 15+ year horizon, model vendors, APIs, agent frameworks, pricing, limits and protocols will change repeatedly.
+
+### Target concept
+
+Define a LUKART-owned Sovereign Execution Fabric (SEF) with three strictly separated planes:
+
+1. **Authority Plane** — CCL, verified evidence, Legal Authority Fabric, jurisdiction/rule identities, release/trust policy.
+2. **Control Plane** — capability routing, budgets, authorization, task ledger, certification, scheduling, memory policy, protocol adapters.
+3. **Execution Plane** — replaceable local/remote models and agents such as Hermes, Codex, Work, Sol/Astra, local inference servers and future providers.
+
+Execution Plane components are never authorities.
+
+### Design rule
+
+LUKART internal contracts remain stable and versioned. External ecosystems are connected by adapters. Provider-specific concepts may not leak into Authority Plane schemas.
+
+### Acceptance criteria
+
+- any executor can be removed without rewriting Product truth semantics;
+- every execution route is policy-bound, versioned and replayable;
+- no provider outage or product retirement destroys task/evidence continuity;
+- migrations between runtime generations are covered by deterministic compatibility tests;
+- the architecture supports local-only degraded operation for bounded capabilities.
+
+## IDEA-028 — Proof-Carrying Agent Execution Receipt
+
+Status: `DEFERRED / HIGH-VALUE CANDIDATE`
+Recorded: `2026-09-26`
+
+### Problem / motivation
+
+A model output alone is insufficient evidence of how a result was produced. Future reproducibility requires more than model name plus prompt text.
+
+### Target concept
+
+Every material agent execution should emit a content-addressed receipt binding, where applicable:
+
+- task/capability identity;
+- input/evidence digests;
+- code/config/schema/policy digests;
+- executor/provider/model/version/quantization identity;
+- tool/MCP/A2A adapter identities;
+- memory/context snapshot digest or explicit no-memory state;
+- budget reservation and measured consumption;
+- start/end time and runtime class;
+- output digest;
+- validation findings;
+- fallback/escalation path;
+- human/independent approval references where genuinely present.
+
+The receipt proves execution identity/provenance, not factual or legal truth.
+
+### Acceptance criteria
+
+- materially different execution conditions produce a different receipt identity;
+- incomplete identity cannot claim identical replay;
+- receipt verification works offline for stored artifacts where feasible;
+- no executor can self-declare trusted validation evidence;
+- receipts can survive provider replacement through stable LUKART schemas.
+
+## IDEA-029 — Capability Certification Matrix and Executor Escrow Corpus
+
+Status: `DEFERRED / STRATEGIC CANDIDATE`
+Recorded: `2026-09-26`
+
+### Problem / motivation
+
+Routing by model brand or generic benchmark is unsafe. A model may be excellent at coding but poor at legal citation verification, or strong at English while weak in Polish procedural terminology.
+
+### Target concept
+
+Maintain a versioned capability certification matrix keyed by:
+
+`capability × jurisdiction/language × executor/model/version × toolset × context class`.
+
+Before an executor is eligible for a production capability, run it against a fixed/versioned escrow evaluation corpus containing focused, adversarial, regression and abstention cases.
+
+Candidate outcomes:
+
+- `CERTIFIED`;
+- `SHADOW_ONLY`;
+- `RESEARCH_ONLY`;
+- `REJECTED`;
+- `EXPIRED_REVALIDATION_REQUIRED`.
+
+### Acceptance criteria
+
+- provider/model upgrades do not inherit prior certification automatically;
+- certification is evidence-bound and time/version limited where appropriate;
+- route selection uses capability certification, not marketing/model rankings;
+- difficult legal capabilities require independently reviewed evaluation material where necessary;
+- local/cheap models may be certified for narrow tasks without being trusted globally.
+
+## IDEA-030 — Protocol Neutrality Bridge: Internal Contract + MCP/A2A Adapters
+
+Status: `DEFERRED / HIGH-VALUE CANDIDATE`
+Recorded: `2026-09-26`
+
+### Problem / motivation
+
+Open protocols improve interoperability, but directly making Product logic depend on MCP or A2A would replace vendor lock-in with protocol-version lock-in.
+
+### Target concept
+
+Use a stable LUKART internal capability/task envelope and implement protocol adapters around it:
+
+- MCP adapter for tools/resources where appropriate;
+- A2A adapter for interoperable agent-to-agent task exchange;
+- native/local adapters for deterministic tools and local runtimes;
+- future protocol adapters without changing Product authority contracts.
+
+### Acceptance criteria
+
+- protocol version changes are isolated to adapters/migrations;
+- unknown capabilities/schema/extensions fail closed;
+- remote agent discovery never implies authorization;
+- A2A/MCP messages are untrusted boundary inputs until validated;
+- protocol conformance tests are separate from LUKART semantic/capability certification.
+
+## IDEA-031 — Epistemic Memory Firewall
+
+Status: `DEFERRED / STRATEGIC SAFETY CANDIDATE`
+Recorded: `2026-09-26`
+
+### Problem / motivation
+
+Persistent memory systems such as Honcho-style context stores can improve continuity while also amplifying stale, incorrect or cross-context statements over months or years.
+
+### Target concept
+
+Place an epistemic firewall between memory retrieval and trusted reasoning.
+
+Memory entries are classified into at least:
+
+- preference/workflow context;
+- historical task context;
+- unverified factual recollection;
+- pointer to authoritative evidence;
+- expired/stale candidate;
+- prohibited/sensitive class.
+
+A memory may influence convenience/routing, but a trust-sensitive factual/legal conclusion must resolve back to authoritative evidence/source identities.
+
+### Acceptance criteria
+
+- remembered legal/factual statements cannot become FACT merely through repetition;
+- memory retrieval records source/provider and age;
+- stale/conflicting memory is surfaced, not silently merged;
+- case boundaries and tenant boundaries remain enforced;
+- memory provider loss does not destroy Authority Plane data.
+
+## IDEA-032 — Risk-Tiered Heterogeneous Quorum and Shadow Replay
+
+Status: `DEFERRED / RESEARCH CANDIDATE`
+Recorded: `2026-09-26`
+
+### Problem / motivation
+
+Using multiple agents for every task is wasteful, while trusting one executor for high-impact ambiguous decisions can create correlated failure.
+
+### Target concept
+
+Introduce risk-tiered execution:
+
+- low risk: one certified cheapest/local executor;
+- medium risk: primary executor + deterministic verifier;
+- high risk: heterogeneous independent executors or generator/reviewer split + deterministic/legal validation;
+- critical/novel: shadow replay on alternate executor before promotion, plus human/independent review where required.
+
+Quorum disagreement is an explicit signal, not a majority-vote truth mechanism.
+
+### Acceptance criteria
+
+- quorum use is policy/risk triggered, not default;
+- independent paths do not share hidden mutable memory where independence matters;
+- disagreement yields `UNRESOLVED/REVIEW_REQUIRED` rather than forced consensus;
+- cost/latency impact is measured;
+- correlated provider/model-family failures are considered.
+
+## IDEA-033 — Long-Horizon Compatibility and Provider Exit Harness
+
+Status: `DEFERRED / STRATEGIC CANDIDATE`
+Recorded: `2026-09-26`
+
+### Problem / motivation
+
+A 15+ year system must assume provider retirement, API deprecation, model disappearance, incompatible schemas and loss of hosted features.
+
+### Target concept
+
+Maintain recurring exit drills and compatibility fixtures proving that critical bounded workflows can migrate between:
+
+- remote provider A → remote provider B;
+- remote → local model;
+- one memory provider → another/no memory;
+- one tool protocol/version → another adapter version;
+- current runtime → archived replay mode.
+
+Store stable synthetic fixtures and expected semantic outcomes for these drills.
+
+### Acceptance criteria
+
+- at least one bounded critical workflow remains executable without any single named AI vendor;
+- provider retirement has a documented migration path;
+- archived receipts/artifacts remain verifiable after executor disappearance;
+- migration changes do not silently alter legal/epistemic meaning;
+- exit drills are measured periodically rather than assumed.
+
+## IDEA-034 — Legal-Domain Maturity Gate Before Further Agent Complexity
+
+Status: `DEFERRED / STRATEGIC PRIORITY CANDIDATE`
+Recorded: `2026-09-26`
+
+### Problem / motivation
+
+Current strategic asymmetry remains:
+
+`Assurance / infrastructure maturity > verified legal-domain maturity`.
+
+Adding increasingly sophisticated agents, memory and orchestration can amplify throughput without improving legal correctness.
+
+### Target concept
+
+Before activating major new autonomous/multi-agent capabilities, require measurable progress in the legal-domain maturity program, especially:
+
+- authoritative source coverage/freshness;
+- proposition-to-authority verification;
+- procedural rule correctness;
+- deadline/filing-route correctness;
+- jurisdiction/version binding;
+- legal Gold/adversarial corpus;
+- abstention quality.
+
+### Acceptance criteria
+
+- agent throughput is not used as a proxy for legal quality;
+- legal correctness metrics are tracked independently from CI/engineering PASS;
+- new autonomy that increases blast radius requires corresponding domain-validation maturity;
+- architecture work may proceed in research/shadow mode while legal maturity gates production activation.
+
 ## External repository disposition from 2026-09-26 review
 
 - `planning-with-files`: `ADOPT CONCEPT / DEEP REVIEW CANDIDATE`;
