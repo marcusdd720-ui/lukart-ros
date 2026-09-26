@@ -6,6 +6,7 @@ from collections.abc import Iterable
 from types import MappingProxyType
 
 from .contracts import (
+    AuthorityCapability,
     FallbackPolicy,
     LegalAuthorityContractError,
     LegalSourceProfile,
@@ -47,10 +48,17 @@ class LegalSourceRegistry:
                     )
                 if (
                     profile.fallback_policy is FallbackPolicy.OFFICIAL_ONLY
-                    and not target.can_establish_authority
+                    and not target.is_official
                 ):
                     raise LegalAuthorityContractError(
-                        "OFFICIAL_ONLY fallback must target an authority-capable source"
+                        "OFFICIAL_ONLY fallback must target an official source"
+                    )
+                if (
+                    profile.fallback_policy is FallbackPolicy.DISCOVERY_ONLY
+                    and not target.can_establish(AuthorityCapability.DISCOVERY)
+                ):
+                    raise LegalAuthorityContractError(
+                        "DISCOVERY_ONLY fallback must target a discovery-capable source"
                     )
 
         for source_id in profiles:
@@ -89,9 +97,21 @@ class LegalSourceRegistry:
                 f"unknown legal source_id: {source_id}"
             ) from exc
 
-    def fallback_chain(self, source_id: str) -> tuple[LegalSourceProfile, ...]:
+    def fallback_targets(
+        self,
+        source_id: str,
+        *,
+        required_capability: AuthorityCapability,
+    ) -> tuple[LegalSourceProfile, ...]:
         profile = self.get(source_id)
-        return tuple(self.get(item) for item in profile.fallback_source_ids)
+        targets = tuple(self.get(item) for item in profile.fallback_source_ids)
+        for target in targets:
+            if not target.can_establish(required_capability):
+                raise LegalAuthorityContractError(
+                    f"fallback source {target.source_id} lacks required capability "
+                    f"{required_capability.value}"
+                )
+        return targets
 
     def source_ids(self) -> tuple[str, ...]:
         return tuple(self._profiles)

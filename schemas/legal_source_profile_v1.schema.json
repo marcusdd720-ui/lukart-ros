@@ -9,7 +9,9 @@
     "source_id",
     "jurisdiction",
     "institution",
-    "authority_class",
+    "source_classes",
+    "authority_capabilities",
+    "privacy_class",
     "access_mode",
     "canonical_base_uri",
     "allowed_hosts",
@@ -33,13 +35,39 @@
       "type": "string",
       "minLength": 1
     },
-    "authority_class": {
-      "enum": [
-        "PRIMARY_OFFICIAL",
-        "OFFICIAL_REPUBLICATION",
-        "OFFICIAL_DISCOVERY",
-        "NON_AUTHORITATIVE_DISCOVERY"
-      ]
+    "source_classes": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "enum": [
+          "PRIMARY_PUBLICATION",
+          "OFFICIAL_CONSOLIDATED",
+          "OFFICIAL_JURISPRUDENCE",
+          "OFFICIAL_OPEN_DATA",
+          "OFFICIAL_OPERATIONAL",
+          "DERIVED_OPEN_SOURCE"
+        ]
+      }
+    },
+    "authority_capabilities": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "enum": [
+          "PUBLICATION_IDENTITY",
+          "NORM_TEXT",
+          "TEMPORAL_STATUS",
+          "JUDGMENT_FULL_TEXT",
+          "CITATION_METADATA",
+          "OPERATIONAL_STATE",
+          "DISCOVERY"
+        ]
+      }
+    },
+    "privacy_class": {
+      "enum": ["PUBLIC", "CASE_SENSITIVE", "PRIVATE_CASE_DATA"]
     },
     "access_mode": {
       "enum": ["WEB", "API", "WEB_AND_API"]
@@ -89,6 +117,20 @@
       "else": {
         "properties": {
           "fallback_source_ids": {"minItems": 1}
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "source_classes": {
+            "contains": {"const": "DERIVED_OPEN_SOURCE"}
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "source_classes": {"maxItems": 1}
         }
       }
     }

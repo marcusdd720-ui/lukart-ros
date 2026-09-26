@@ -3,11 +3,13 @@ from __future__ import annotations
 import pytest
 
 from core.legal_authority import (
+    AuthorityCapability,
     FallbackPolicy,
     LegalAuthorityContractError,
     LegalSourceProfile,
+    PrivacyClass,
     SourceAccessMode,
-    SourceAuthorityClass,
+    SourceClass,
     TemporalCoverage,
 )
 
@@ -17,7 +19,13 @@ def _profile(**overrides: object) -> LegalSourceProfile:
         "source_id": "PL.TEST.OFFICIAL",
         "jurisdiction": "PL",
         "institution": "Synthetic Official Institution",
-        "authority_class": SourceAuthorityClass.PRIMARY_OFFICIAL,
+        "source_classes": (SourceClass.PRIMARY_PUBLICATION,),
+        "authority_capabilities": (
+            AuthorityCapability.PUBLICATION_IDENTITY,
+            AuthorityCapability.NORM_TEXT,
+            AuthorityCapability.TEMPORAL_STATUS,
+        ),
+        "privacy_class": PrivacyClass.PUBLIC,
         "access_mode": SourceAccessMode.WEB,
         "canonical_base_uri": "https://official.example.test/legal",
         "allowed_hosts": ("official.example.test",),
@@ -28,23 +36,31 @@ def _profile(**overrides: object) -> LegalSourceProfile:
     return LegalSourceProfile(**values)  # type: ignore[arg-type]
 
 
-def test_primary_official_exact_source_can_establish_authority_and_time() -> None:
+def test_primary_official_exact_source_has_capability_specific_authority() -> None:
     profile = _profile()
 
-    assert profile.can_establish_authority
+    assert profile.can_establish(AuthorityCapability.PUBLICATION_IDENTITY)
+    assert profile.can_establish(AuthorityCapability.NORM_TEXT)
+    assert not profile.can_establish(AuthorityCapability.JUDGMENT_FULL_TEXT)
     assert profile.can_establish_temporal_applicability
     assert profile.permits_host("OFFICIAL.EXAMPLE.TEST")
 
 
-def test_discovery_source_cannot_establish_authority() -> None:
+def test_metadata_source_is_authoritative_only_for_declared_capability() -> None:
     profile = _profile(
-        source_id="CO.TEST.DISCOVERY",
+        source_id="CO.TEST.METADATA",
         jurisdiction="CO",
-        authority_class=SourceAuthorityClass.OFFICIAL_DISCOVERY,
+        source_classes=(SourceClass.OFFICIAL_OPEN_DATA,),
+        authority_capabilities=(
+            AuthorityCapability.CITATION_METADATA,
+            AuthorityCapability.DISCOVERY,
+        ),
         temporal_coverage=TemporalCoverage.PARTIAL,
     )
 
-    assert not profile.can_establish_authority
+    assert profile.is_official
+    assert profile.can_establish(AuthorityCapability.CITATION_METADATA)
+    assert not profile.can_establish(AuthorityCapability.JUDGMENT_FULL_TEXT)
     assert not profile.can_establish_temporal_applicability
 
 
@@ -57,6 +73,8 @@ def test_discovery_source_cannot_establish_authority() -> None:
             "allowed_hosts": ("official.example.test",),
         },
         {"allowed_hosts": ()},
+        {"source_classes": ()},
+        {"authority_capabilities": ()},
         {
             "fallback_policy": FallbackPolicy.NONE,
             "fallback_source_ids": ("PL.OTHER",),
@@ -83,3 +101,29 @@ def test_explicit_official_fallback_chain_is_accepted() -> None:
     )
 
     assert profile.fallback_source_ids == ("PL.TEST.OFFICIAL.REPUBLICATION",)
+
+
+def test_profile_supports_multiple_source_classes_and_private_data_axis() -> None:
+    profile = _profile(
+        source_id="CO.TEST.OPERATIONAL.PRIVATE",
+        source_classes=(SourceClass.OFFICIAL_OPERATIONAL,),
+        authority_capabilities=(AuthorityCapability.OPERATIONAL_STATE,),
+        privacy_class=PrivacyClass.PRIVATE_CASE_DATA,
+        temporal_coverage=TemporalCoverage.PARTIAL,
+    )
+
+    assert profile.source_classes == (SourceClass.OFFICIAL_OPERATIONAL,)
+    assert profile.privacy_class is PrivacyClass.PRIVATE_CASE_DATA
+    assert profile.can_establish(AuthorityCapability.OPERATIONAL_STATE)
+    assert not profile.can_establish(AuthorityCapability.NORM_TEXT)
+
+
+def test_profile_rejects_mixed_derived_and_official_source_classes() -> None:
+    with pytest.raises(LegalAuthorityContractError):
+        _profile(
+            source_classes=(
+                SourceClass.DERIVED_OPEN_SOURCE,
+                SourceClass.OFFICIAL_OPEN_DATA,
+            ),
+            authority_capabilities=(AuthorityCapability.DISCOVERY,),
+        )

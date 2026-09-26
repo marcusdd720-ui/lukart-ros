@@ -17,11 +17,29 @@ class LegalAuthorityContractError(ValueError):
     """Fail-closed legal-authority contract violation."""
 
 
-class SourceAuthorityClass(StrEnum):
-    PRIMARY_OFFICIAL = "PRIMARY_OFFICIAL"
-    OFFICIAL_REPUBLICATION = "OFFICIAL_REPUBLICATION"
-    OFFICIAL_DISCOVERY = "OFFICIAL_DISCOVERY"
-    NON_AUTHORITATIVE_DISCOVERY = "NON_AUTHORITATIVE_DISCOVERY"
+class SourceClass(StrEnum):
+    PRIMARY_PUBLICATION = "PRIMARY_PUBLICATION"
+    OFFICIAL_CONSOLIDATED = "OFFICIAL_CONSOLIDATED"
+    OFFICIAL_JURISPRUDENCE = "OFFICIAL_JURISPRUDENCE"
+    OFFICIAL_OPEN_DATA = "OFFICIAL_OPEN_DATA"
+    OFFICIAL_OPERATIONAL = "OFFICIAL_OPERATIONAL"
+    DERIVED_OPEN_SOURCE = "DERIVED_OPEN_SOURCE"
+
+
+class PrivacyClass(StrEnum):
+    PUBLIC = "PUBLIC"
+    CASE_SENSITIVE = "CASE_SENSITIVE"
+    PRIVATE_CASE_DATA = "PRIVATE_CASE_DATA"
+
+
+class AuthorityCapability(StrEnum):
+    PUBLICATION_IDENTITY = "PUBLICATION_IDENTITY"
+    NORM_TEXT = "NORM_TEXT"
+    TEMPORAL_STATUS = "TEMPORAL_STATUS"
+    JUDGMENT_FULL_TEXT = "JUDGMENT_FULL_TEXT"
+    CITATION_METADATA = "CITATION_METADATA"
+    OPERATIONAL_STATE = "OPERATIONAL_STATE"
+    DISCOVERY = "DISCOVERY"
 
 
 class SourceAccessMode(StrEnum):
@@ -62,7 +80,9 @@ class LegalSourceProfile:
     source_id: str
     jurisdiction: str
     institution: str
-    authority_class: SourceAuthorityClass
+    source_classes: tuple[SourceClass, ...]
+    authority_capabilities: tuple[AuthorityCapability, ...]
+    privacy_class: PrivacyClass
     access_mode: SourceAccessMode
     canonical_base_uri: str
     allowed_hosts: tuple[str, ...]
@@ -86,6 +106,27 @@ class LegalSourceProfile:
             raise LegalAuthorityContractError(
                 "canonical_base_uri must be an absolute https URI"
             )
+
+        source_classes = tuple(self.source_classes)
+        if not source_classes or len(source_classes) != len(set(source_classes)):
+            raise LegalAuthorityContractError(
+                "source_classes must be non-empty and contain no duplicates"
+            )
+        if (
+            SourceClass.DERIVED_OPEN_SOURCE in source_classes
+            and len(source_classes) != 1
+        ):
+            raise LegalAuthorityContractError(
+                "DERIVED_OPEN_SOURCE cannot be mixed with official source classes"
+            )
+        object.__setattr__(self, "source_classes", source_classes)
+
+        capabilities = tuple(self.authority_capabilities)
+        if not capabilities or len(capabilities) != len(set(capabilities)):
+            raise LegalAuthorityContractError(
+                "authority_capabilities must be non-empty and contain no duplicates"
+            )
+        object.__setattr__(self, "authority_capabilities", capabilities)
 
         hosts = tuple(_canonical_host(item) for item in self.allowed_hosts)
         if not hosts or len(hosts) != len(set(hosts)):
@@ -120,15 +161,21 @@ class LegalSourceProfile:
             )
 
     @property
-    def can_establish_authority(self) -> bool:
-        return self.authority_class in {
-            SourceAuthorityClass.PRIMARY_OFFICIAL,
-            SourceAuthorityClass.OFFICIAL_REPUBLICATION,
-        }
+    def is_official(self) -> bool:
+        return any(
+            source_class is not SourceClass.DERIVED_OPEN_SOURCE
+            for source_class in self.source_classes
+        )
+
+    def can_establish(self, capability: AuthorityCapability) -> bool:
+        return capability in self.authority_capabilities
 
     @property
     def can_establish_temporal_applicability(self) -> bool:
-        return self.temporal_coverage is TemporalCoverage.EXACT
+        return (
+            self.temporal_coverage is TemporalCoverage.EXACT
+            and self.can_establish(AuthorityCapability.TEMPORAL_STATUS)
+        )
 
     def permits_host(self, host: str) -> bool:
         return _canonical_host(host) in self.allowed_hosts
@@ -139,7 +186,11 @@ class LegalSourceProfile:
             "source_id": self.source_id,
             "jurisdiction": self.jurisdiction,
             "institution": self.institution,
-            "authority_class": self.authority_class.value,
+            "source_classes": [item.value for item in self.source_classes],
+            "authority_capabilities": [
+                item.value for item in self.authority_capabilities
+            ],
+            "privacy_class": self.privacy_class.value,
             "access_mode": self.access_mode.value,
             "canonical_base_uri": self.canonical_base_uri,
             "allowed_hosts": list(self.allowed_hosts),

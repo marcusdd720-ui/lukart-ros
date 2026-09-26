@@ -5,10 +5,12 @@ from pathlib import Path
 
 from core.legal_authority import (
     LEGAL_SOURCE_PROFILE_SCHEMA_V1,
+    AuthorityCapability,
     FallbackPolicy,
     LegalSourceProfile,
+    PrivacyClass,
     SourceAccessMode,
-    SourceAuthorityClass,
+    SourceClass,
     TemporalCoverage,
 )
 
@@ -24,7 +26,13 @@ def _profile() -> LegalSourceProfile:
         source_id="TEST.OFFICIAL",
         jurisdiction="TEST",
         institution="Synthetic Official Institution",
-        authority_class=SourceAuthorityClass.PRIMARY_OFFICIAL,
+        source_classes=(SourceClass.PRIMARY_PUBLICATION,),
+        authority_capabilities=(
+            AuthorityCapability.PUBLICATION_IDENTITY,
+            AuthorityCapability.NORM_TEXT,
+            AuthorityCapability.TEMPORAL_STATUS,
+        ),
+        privacy_class=PrivacyClass.PUBLIC,
         access_mode=SourceAccessMode.WEB_AND_API,
         canonical_base_uri="https://official.example.test/legal",
         allowed_hosts=("official.example.test",),
@@ -54,8 +62,14 @@ def test_schema_enums_match_python_contract() -> None:
     properties = _schema()["properties"]
     assert isinstance(properties, dict)
 
-    assert set(properties["authority_class"]["enum"]) == {
-        item.value for item in SourceAuthorityClass
+    assert set(properties["source_classes"]["items"]["enum"]) == {
+        item.value for item in SourceClass
+    }
+    assert set(properties["authority_capabilities"]["items"]["enum"]) == {
+        item.value for item in AuthorityCapability
+    }
+    assert set(properties["privacy_class"]["enum"]) == {
+        item.value for item in PrivacyClass
     }
     assert set(properties["access_mode"]["enum"]) == {
         item.value for item in SourceAccessMode
@@ -77,3 +91,15 @@ def test_schema_encodes_fail_closed_fallback_cardinality() -> None:
     assert rule["if"]["properties"]["fallback_policy"]["const"] == "NONE"
     assert rule["then"]["properties"]["fallback_source_ids"]["maxItems"] == 0
     assert rule["else"]["properties"]["fallback_source_ids"]["minItems"] == 1
+
+
+def test_schema_rejects_mixed_derived_and_official_source_classes() -> None:
+    rules = _schema()["allOf"]
+    assert isinstance(rules, list)
+    rule = rules[1]
+
+    assert (
+        rule["if"]["properties"]["source_classes"]["contains"]["const"]
+        == "DERIVED_OPEN_SOURCE"
+    )
+    assert rule["then"]["properties"]["source_classes"]["maxItems"] == 1
