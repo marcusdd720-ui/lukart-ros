@@ -1191,6 +1191,311 @@ Before activating major new autonomous/multi-agent capabilities, require measura
 - new autonomy that increases blast radius requires corresponding domain-validation maturity;
 - architecture work may proceed in research/shadow mode while legal maturity gates production activation.
 
+## IDEA-035 — Polish Statutory Retrieval Benchmark Lab
+
+Status: `DEFERRED / STRATEGIC HIGH-VALUE CANDIDATE`
+Recorded: `2026-09-26`
+Primary target: LUKART ROS
+Research inspiration: fresh 2026 Polish statutory-retrieval work comparing lexical, dense, hybrid, surrogate and reranking strategies.
+
+### Problem / motivation
+
+For legal reasoning, retrieval quality can dominate final answer quality. A stronger generator cannot reliably repair the wrong statute, wrong provision or missing controlling authority returned upstream.
+
+### Target concept
+
+Create a reproducible Polish legal retrieval benchmark over versioned statutory snapshots and controlled questions.
+
+Benchmark candidate strategies:
+
+- BM25 / lexical retrieval;
+- dense retrieval;
+- hybrid lexical+dense;
+- reranking;
+- surrogate/annotation-assisted retrieval;
+- DTF-like low-cost retrieval pipelines;
+- later graph/multi-hop retrieval only if the benchmark demonstrates a material gap.
+
+### Required measurements
+
+- Hit@1 / Hit@k;
+- MRR / nDCG where appropriate;
+- controlling-provision recall;
+- latency;
+- cost;
+- index size;
+- freshness/update cost;
+- robustness to paraphrase, noisy facts and outdated-law traps.
+
+### Acceptance criteria
+
+- no retrieval strategy becomes canonical without measured evidence;
+- benchmark corpus/source identities are versioned and content-addressed;
+- temporal version of each legal source is explicit;
+- benchmark distinguishes retrieval failure from reasoning failure;
+- local/cheap retrievers may win production routing when quality is sufficient.
+
+## IDEA-036 — Legal Temporal Applicability Engine
+
+Status: `DEFERRED / P0 LEGAL-DOMAIN CANDIDATE`
+Recorded: `2026-09-26`
+Primary target: LUKART ROS
+
+### Problem / motivation
+
+A legally correct citation can still be wrong for the case if the cited provision was not in force on the relevant date, transitional rules apply, or the procedural event is tied to a different legal version.
+
+### Target concept
+
+Introduce an explicit temporal applicability layer binding:
+
+- legal source identity;
+- version identity;
+- publication date;
+- effective-from;
+- effective-until;
+- repeal/supersession relation;
+- event/fact date;
+- procedural trigger date;
+- transitional/intertemporal rule identity;
+- evaluation time.
+
+The engine should answer not only `which rule?` but `which version of which rule applies to which event and why?`.
+
+### Acceptance criteria
+
+- current-law text cannot silently substitute for historically applicable law;
+- unknown/ambiguous temporal applicability returns explicit non-PASS;
+- every material legal conclusion binds the evaluated legal-version identity;
+- temporal changes invalidate dependent reasoning/replay evidence;
+- adversarial corpus includes repealed, amended and transitional-rule cases.
+
+## IDEA-037 — Grounding, Citation and Abstention Composite Gate
+
+Status: `DEFERRED / HIGH-VALUE CANDIDATE`
+Recorded: `2026-09-26`
+Primary target: LUKART ROS
+
+### Problem / motivation
+
+Citation correctness, proposition support and justified abstention are related but distinct. A real citation may not support the claimed proposition; a grounded answer may still be incomplete; an unsupported answer should abstain rather than fabricate.
+
+### Target concept
+
+Create a composite validation pipeline:
+
+```text
+candidate legal output
+→ source identity verification
+→ quotation/section verification
+→ proposition-to-source support
+→ temporal applicability
+→ grounding sufficiency
+→ contradiction/open-question check
+→ abstention decision
+```
+
+Possible result states include:
+`VERIFIED`, `PARTIALLY_GROUNDED`, `MISMATCH`, `STALE`, `INSUFFICIENT_EVIDENCE`, `UNVERIFIABLE`, `ABSTAIN_REQUIRED`.
+
+### Acceptance criteria
+
+- generator and validator roles are separated where material;
+- model memory is never accepted as legal-source evidence;
+- unsupported confidence cannot pass;
+- abstention quality is measured as a first-class metric;
+- composite PASS binds exact source and validator identities.
+
+## IDEA-038 — Legal Scenario Factory with Deterministic Gold Solver
+
+Status: `DEFERRED / STRATEGIC HIGH-VALUE CANDIDATE`
+Recorded: `2026-09-26`
+Primary targets: LUKART ROS + Synthetic Test Data Factory
+Research inspiration: dynamic legal-task generation with deterministic/symbolic gold.
+
+### Problem / motivation
+
+Static hand-authored legal Gold sets are expensive, small and prone to memorization. They also under-cover combinatorial fact patterns and procedural edge cases.
+
+### Target concept
+
+Build a rule-driven `Legal Scenario Factory`:
+
+```text
+versioned fact generator
++ versioned procedural/legal rule pack
++ deterministic/symbolic solver
+→ expected legal/procedural state
+→ generated adversarial scenario
+```
+
+Initial candidate families:
+
+- ZUS appeals;
+- contribution decisions/remission/installments;
+- WSA/NSA procedural routing;
+- deadlines;
+- service/delivery events;
+- enforcement;
+- KRS/registry matters;
+- jurisdiction and standing traps.
+
+### Acceptance criteria
+
+- generated facts remain schema-valid and legally coherent;
+- deterministic expected state is traceable to rule/source identities;
+- generator diversity is measured;
+- train/evaluation separation prevents benchmark contamination;
+- synthetic difficulty and error distribution are compared with reviewed real/anonymized cases where legally permissible.
+
+## IDEA-039 — Retrieval Strategy Registry and Evidence-Based Selection
+
+Status: `DEFERRED / HIGH-VALUE CANDIDATE`
+Recorded: `2026-09-26`
+Primary targets: LUKART ROS + LUKART WORK
+
+### Problem / motivation
+
+There is no universal best retrieval stack. Hybrid search, reranking, graph retrieval or semantic chunking can improve one corpus and harm another.
+
+### Target concept
+
+Treat retrieval as a replaceable, benchmarked capability rather than a fixed architecture decision.
+
+Registry metadata should include:
+
+- strategy identity/version;
+- corpus/domain class;
+- chunking/structure policy;
+- embedding/reranker identity;
+- thresholds;
+- measured quality;
+- measured latency/cost;
+- known failure modes.
+
+### Acceptance criteria
+
+- no GraphRAG/hybrid/reranker component is promoted by convention alone;
+- corpus-specific winner is selected by measured downstream quality;
+- threshold changes are versioned;
+- retrieval strategy changes trigger regression evaluation;
+- historical results remain reproducible from registry identity.
+
+## IDEA-040 — Parser Shadow Benchmark and Outcome-Based Document Ingestion
+
+Status: `DEFERRED / HIGH-VALUE CANDIDATE`
+Recorded: `2026-09-26`
+Primary target: LUKART WORK
+
+### Problem / motivation
+
+A parser can produce visually clean Markdown while silently damaging tables, headings, coordinates or downstream retrieval. Parser quality should therefore be judged by downstream utility, not aesthetics alone.
+
+### Target concept
+
+Run multiple parsers/paths in shadow benchmark mode against representative document classes:
+
+- native-text extraction;
+- Docling-like structured parsing;
+- Marker/MinerU-class alternatives;
+- OCR/VLM fallback;
+- table/layout-specialized paths.
+
+Measure:
+
+- field accuracy;
+- section/hierarchy preservation;
+- table fidelity;
+- source-coordinate fidelity;
+- downstream retrieval/QA accuracy;
+- latency/cost;
+- failure/abstention behavior.
+
+### Acceptance criteria
+
+- parser selection is document-class aware;
+- no parser becomes global default without evidence;
+- final ingestion preserves provenance coordinates;
+- low-confidence extraction fails closed or escalates;
+- parser changes run downstream regression, not only parser-unit tests.
+
+## IDEA-041 — Synthetic Data Quality Contract v2
+
+Status: `DEFERRED / STRATEGIC HIGH-VALUE CANDIDATE`
+Recorded: `2026-09-26`
+Primary target: Synthetic Test Data Factory
+
+### Problem / motivation
+
+Schema-valid synthetic data can still be unrealistic, low-diversity, privacy-leaking or too easy/hard compared with the real task.
+
+### Target concept
+
+Extend synthetic quality evaluation across:
+
+- validity;
+- fidelity;
+- diversity;
+- privacy leakage risk;
+- downstream difficulty;
+- agent/model ranking stability;
+- outcome/state verification;
+- rare/edge-case coverage.
+
+Where agent tasks are generated, success should be checked against actual sandbox/database/API end state rather than only LLM-as-a-judge prose scoring.
+
+### Acceptance criteria
+
+- privacy-risk tests include membership/identity-style attacks where applicable;
+- synthetic benchmark preserves relative task difficulty within defined tolerance;
+- generated tasks have deterministic or externally verifiable terminal conditions when feasible;
+- quality metrics are versioned and thresholded;
+- generation method changes require fresh validation.
+
+## IDEA-042 — Final-Artifact ATS Re-Parse Gate
+
+Status: `DEFERRED / CROSS-PROJECT CANDIDATE`
+Recorded: `2026-09-26`
+Primary target: LATAM Career OS
+
+### Problem / motivation
+
+A CV may look excellent to a human while the final PDF is parsed poorly by an ATS. Validation must test the rendered artifact, not only source text.
+
+### Target concept
+
+Add a final-artifact pipeline:
+
+```text
+CV source
+→ structural/ATS checks
+→ JD matching
+→ rendering
+→ final PDF
+→ local ATS re-parse
+→ field/section comparison
+→ PASS / repair
+```
+
+Candidate evaluation dimensions:
+
+- name/contact extraction;
+- section recognition;
+- chronology;
+- employer/role parsing;
+- skills extraction;
+- multi-column/sidebar robustness;
+- language handling;
+- final rendered-text fidelity.
+
+### Acceptance criteria
+
+- ATS validation runs on the exact delivered PDF;
+- extraction mismatches feed a repair loop;
+- scoring logic is transparent and versioned;
+- no proprietary ATS score is treated as ground truth without evidence;
+- Colombia/Spanish-specific corpus is added before production claims.
+
 ## External repository disposition from 2026-09-26 review
 
 - `planning-with-files`: `ADOPT CONCEPT / DEEP REVIEW CANDIDATE`;
