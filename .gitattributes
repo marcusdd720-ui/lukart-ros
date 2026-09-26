@@ -1,0 +1,2 @@
+# Raw-byte-hashed quality artifacts must have stable bytes across platforms.
+*.json text eol=lf
