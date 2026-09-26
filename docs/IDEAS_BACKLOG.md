@@ -1673,6 +1673,84 @@ After current project completion, perform a fresh portfolio review against live 
 
 Do not preserve today's implementation ordering as immutable. Preserve the ideas and evidence, then re-rank them with fresh measurements when execution capacity becomes available.
 
+## IDEA-048 — Recursive Legal Authority Discovery
+
+Status: `DEFERRED / HIGH-VALUE CANDIDATE`
+Recorded: `2026-09-26`
+External inspiration: recursive discovery patterns seen in security/recon tooling; no security tool is approved by this entry.
+
+### Problem / motivation
+
+Legal research often begins from one provision, judgment, institution or source and expands through references, amendments, implementing acts, related judgments, procedural rules and jurisdiction-specific dependencies. Manual expansion is slow and model-led discovery can silently miss or over-trust links.
+
+### Target concept
+
+Create a bounded recursive discovery service over verified legal-source adapters. Starting from a seed authority, it may discover typed relationships such as `REFERENCES`, `AMENDS`, `IMPLEMENTS`, `REPEALS`, `INTERPRETS`, `APPLIES_IN` and `PROCEDURALLY_DEPENDS_ON`.
+
+Critical rule: `DISCOVERED != AUTHORITATIVE`. Every discovered node remains untrusted until normal source identity, jurisdiction, temporal-validity, provenance and citation-verification gates succeed.
+
+### Acceptance criteria
+
+- recursion has explicit depth, node and cost limits;
+- cycles and duplicate sources are deterministically detected;
+- every edge records discovery provenance and exact source identity;
+- stale, missing or ambiguous authority state is explicit;
+- discovery cannot promote a source directly into verified legal authority;
+- replay from the same exact inputs produces the same normalized discovery graph.
+
+## IDEA-049 — Legal Authority Path Queries
+
+Status: `DEFERRED / HIGH-VALUE CANDIDATE`
+Recorded: `2026-09-26`
+External inspiration: graph-path analysis patterns used in security relationship tooling; no external graph tool is approved by this entry.
+
+### Problem / motivation
+
+LUKART should be able to explain not only that a legal conclusion passed validation, but which exact chain of authority connects a claim to verified evidence and applicable law.
+
+### Target concept
+
+Add typed path queries over the Canonical Case / Evidence / Legal Authority graphs, for example:
+
+`CLAIM -> SUPPORTED_BY -> EVIDENCE -> ORIGINATES_FROM -> SOURCE -> AUTHORIZED_BY -> LEGAL_RULE -> VALID_IN -> JURISDICTION -> APPLICABLE_AT -> DATE`
+
+The result is an `AuthorityPath` artifact with node/edge identities, temporal and jurisdiction checks, provenance, unresolved gaps and validation status.
+
+### Acceptance criteria
+
+- every path is reproducible from exact graph state;
+- path queries never infer missing edges as facts;
+- invalid temporal or jurisdiction edges fail closed;
+- shortest/strongest-path heuristics never override authority hierarchy;
+- unresolved gaps remain machine-visible;
+- the path artifact can be attached to a Proof-Carrying Execution Receipt.
+
+## IDEA-050 — Template-Based Legal Validation Engine
+
+Status: `DEFERRED / HIGH-VALUE CANDIDATE`
+Recorded: `2026-09-26`
+External inspiration: template-driven validation patterns used in security scanners; no security scanner is approved by this entry.
+
+### Problem / motivation
+
+Many legal validation obligations are repetitive, jurisdiction-specific and suitable for deterministic, versioned checks rather than free-form model judgment.
+
+### Target concept
+
+Introduce versioned `LegalValidationTemplate` definitions grouped by jurisdiction and procedure. Candidate checks include source validity at event date, jurisdiction applicability, repeal/supersession state, citation existence, proposition-to-authority binding, procedural deadline semantics, competent authority, filing route and conflicting-rule resolution.
+
+Templates should be data/contracts interpreted by the Validation Engine, not arbitrary executable scripts. Each template records identity/version, jurisdiction, authority dependencies, effective period, inputs, deterministic checks, severity, fail-closed behavior and regression evidence.
+
+### Acceptance criteria
+
+- template execution is deterministic for the same exact inputs and authority snapshot;
+- unknown template/schema/version fails closed;
+- templates cannot silently fetch or substitute unverified sources;
+- authority dependencies are exact and temporally bounded;
+- PL/CO/BR/EU packs remain separated from the jurisdiction-neutral core;
+- every promoted template has focused, adversarial and regression tests;
+- template PASS never substitutes for independent legal-domain evaluation where human review is required.
+
 ## Backlog capture policy — owner decision
 
 Recorded: `2026-09-26`
