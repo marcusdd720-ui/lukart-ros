@@ -127,3 +127,14 @@ def test_profile_rejects_mixed_derived_and_official_source_classes() -> None:
             ),
             authority_capabilities=(AuthorityCapability.DISCOVERY,),
         )
+
+
+def test_profile_rejects_noncanonical_host_and_uri_userinfo() -> None:
+    with pytest.raises(LegalAuthorityContractError):
+        _profile(allowed_hosts=("bad host",))
+
+    with pytest.raises(LegalAuthorityContractError):
+        _profile(canonical_base_uri="https://user:pass@official.example.test/legal")
+
+    with pytest.raises(LegalAuthorityContractError):
+        _profile(canonical_base_uri=" https://official.example.test/legal")

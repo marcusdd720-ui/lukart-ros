@@ -6,6 +6,7 @@ They do not fetch content and do not promote discovered material to authority.
 
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass
 from enum import StrEnum
 from urllib.parse import urlparse
@@ -68,10 +69,18 @@ def _nonblank(value: str, *, field_name: str) -> str:
     return value
 
 
+_HOST_RE = re.compile(
+    r"^(?=.{1,253}$)(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)*"
+    r"[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$"
+)
+
+
 def _canonical_host(value: str) -> str:
     host = _nonblank(value, field_name="allowed_host").lower()
-    if "://" in host or "/" in host:
-        raise LegalAuthorityContractError("allowed_host must be a hostname only")
+    if not _HOST_RE.fullmatch(host):
+        raise LegalAuthorityContractError(
+            "allowed_host must be a canonical DNS hostname"
+        )
     return host
 
 
@@ -101,11 +110,20 @@ class LegalSourceProfile:
                 _nonblank(getattr(self, field_name), field_name=field_name),
             )
 
-        parsed = urlparse(self.canonical_base_uri)
+        canonical_base_uri = _nonblank(
+            self.canonical_base_uri,
+            field_name="canonical_base_uri",
+        )
+        parsed = urlparse(canonical_base_uri)
         if parsed.scheme != "https" or not parsed.hostname:
             raise LegalAuthorityContractError(
                 "canonical_base_uri must be an absolute https URI"
             )
+        if parsed.username is not None or parsed.password is not None:
+            raise LegalAuthorityContractError(
+                "canonical_base_uri cannot contain userinfo"
+            )
+        object.__setattr__(self, "canonical_base_uri", canonical_base_uri)
 
         source_classes = tuple(self.source_classes)
         if not source_classes or len(source_classes) != len(set(source_classes)):
