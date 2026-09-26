@@ -999,9 +999,13 @@ Every material agent execution should emit a content-addressed receipt binding, 
 - output digest;
 - validation findings;
 - fallback/escalation path;
+- declared versus observed side effects;
+- capability-lease identity for privileged or external actions;
+- external receipt/acknowledgement identity where an action leaves LUKART;
+- precondition and postcondition verification digests where material;
 - human/independent approval references where genuinely present.
 
-The receipt proves execution identity/provenance, not factual or legal truth.
+The receipt proves execution identity/provenance, not factual or legal truth. An agent assertion that an external action succeeded is never sufficient by itself; success requires the evidence class declared by the operation contract and, where applicable, independently verifiable postcondition evidence.
 
 ### Acceptance criteria
 
@@ -1009,6 +1013,7 @@ The receipt proves execution identity/provenance, not factual or legal truth.
 - incomplete identity cannot claim identical replay;
 - receipt verification works offline for stored artifacts where feasible;
 - no executor can self-declare trusted validation evidence;
+- external side-effect success cannot be promoted without the required receipt/postcondition evidence;
 - receipts can survive provider replacement through stable LUKART schemas.
 
 ## IDEA-029 — Capability Certification Matrix and Executor Escrow Corpus
@@ -1141,7 +1146,7 @@ A 15+ year system must assume provider retirement, API deprecation, model disapp
 
 ### Target concept
 
-Maintain recurring exit drills and compatibility fixtures proving that critical bounded workflows can migrate between:
+Maintain recurring exit/extinction drills and compatibility fixtures proving that critical bounded workflows can migrate or degrade safely between:
 
 - remote provider A → remote provider B;
 - remote → local model;
@@ -1149,7 +1154,9 @@ Maintain recurring exit drills and compatibility fixtures proving that critical 
 - one tool protocol/version → another adapter version;
 - current runtime → archived replay mode.
 
-Store stable synthetic fixtures and expected semantic outcomes for these drills.
+Required extinction scenarios should include at least: immediate loss of a named frontier-model vendor; simultaneous loss of all cloud inference for a bounded period; incompatible MCP/A2A revision; primary legal-source API/schema failure; and retirement of a currently approved local serving runtime.
+
+Store stable synthetic fixtures, expected semantic outcomes, allowed degraded modes and explicit non-PASS states for these drills.
 
 ### Acceptance criteria
 
@@ -1705,3 +1712,203 @@ Capture rules:
 Owner decision recorded `2026-09-19`: the proposal to add visible labels such as `REVIEW_REQUIRED`, `REVIEWED`, `AI-generated`, `Wygenerowano przez LukArt RoS`, or visible provenance statements to final legal/client documents is rejected.
 
 This backlog does not authorize such labels. Internal provenance, identity and audit evidence may exist within LUKART system metadata/evidence boundaries, but must not be rendered into final documents merely because an artifact was produced with LUKART assistance.
+
+
+
+## IDEA-048 — PL–CO–BR Source & Authority Registry
+
+Status: `DEFERRED / RESEARCH BASELINE CREATED`
+Recorded: `2026-09-26`
+Scope: Poland + applicable EU layer, Colombia, Brazil.
+
+### Problem / motivation
+
+LUKART needs one explicit registry of legal sources and trust boundaries across jurisdictions. A portal, index, gazette, court repository, process-metadata system and service channel do not provide the same kind of authority and must not be flattened into one ranking.
+
+### Target concept
+
+Create a jurisdiction-neutral Source & Authority Registry. Each source record declares: jurisdiction and level, institution, source role, official/non-official status, proposition classes it may prove, temporal capability, privacy class, machine-access mode, adapter identity, fallback/corroboration chain and fail-closed semantics.
+
+Initial Brazil families include DOU, Planalto, LexML, Câmara, Senado, STF, STJ, DataJud, DJEN and Domicílio Judicial Eletrônico. Colombia retains SUIN-Juriscol as a high-value consolidated/discovery source but not universal highest authority. Poland keeps official publication, ELI/ISAP and court-primary sources distinct.
+
+### Acceptance criteria
+
+- discovery/index sources cannot silently become publication or court-primary authority;
+- process metadata cannot be used as judgment text or holding evidence;
+- authority is proposition-specific and time-aware, not a single numeric rank;
+- every enabled source has explicit fallback and non-PASS semantics;
+- cross-jurisdiction use preserves separate authority identities.
+
+## IDEA-049 — LegalSourceProfile v1
+
+Status: `DEFERRED / IMPLEMENTATION-READY DESIGN CANDIDATE`
+Recorded: `2026-09-26`
+
+### Problem / motivation
+
+Adapters currently risk embedding source semantics in code. LUKART needs a machine-valid contract stating what each source is, what it can prove and when it must abstain.
+
+### Target concept
+
+Define `LegalSourceProfile v1` as a versioned schema with at least: `source_id`, `jurisdiction`, `jurisdiction_level`, `institution`, `source_role`, `official_status`, `authority_for`, `not_authority_for`, temporal fields, privacy fields, machine interface, parser/schema identity, freshness policy, fallback policy and failure semantics.
+
+Core source roles should include `OFFICIAL_PUBLICATION`, `OFFICIAL_CONSOLIDATION`, `COURT_PRIMARY`, `BINDING_PRECEDENT`, `LEGISLATIVE_PROCESS`, `PROCESS_METADATA`, `JUDICIAL_PUBLICATION_EVENT`, `SERVICE_EVENT`, `DISCOVERY_INDEX`, `REGISTER_DATA` and `SECONDARY_INFORMATION`.
+
+### Acceptance criteria
+
+- profiles validate against a strict schema;
+- unknown role/schema/profile version fails closed;
+- adapter output cannot claim authority beyond its profile;
+- `as_of_date` is mandatory where temporal validity matters;
+- profile identity/version becomes part of downstream authority evidence.
+
+## IDEA-050 — Authority Resolver & Fail-Closed Fallback Fabric
+
+Status: `DEFERRED / HIGH-VALUE CANDIDATE`
+Recorded: `2026-09-26`
+
+### Problem / motivation
+
+Finding a document is not the same as proving a legal proposition. Fallbacks may preserve discovery while reducing evidentiary strength; that degradation must be explicit.
+
+### Target concept
+
+Build a resolver that receives jurisdiction, object/proposition class, required authority role and `as_of_date`, then selects an allowed source chain from the registry. Fallback never inherits the authority of the failed primary source.
+
+Canonical non-PASS states should include `NO_OFFICIAL_SOURCE`, `SOURCE_UNAVAILABLE`, `UNKNOWN_SCHEMA`, `STALE_SOURCE`, `TEMPORAL_GAP`, `AUTHORITY_MISMATCH`, `JURISDICTION_MISMATCH`, `PUBLICATION_UNVERIFIED`, `TEXT_VERSION_UNVERIFIED`, `PRECEDENT_STATUS_UNKNOWN`, `SERVICE_UNVERIFIED` and `PRIVACY_RESTRICTED`.
+
+Invariant: `UNKNOWN != FALSE`, `UNVERIFIED != VERIFIED`, `FOUND != AUTHORITATIVE`, `CURRENT != VALID_AT_DATE`.
+
+### Acceptance criteria
+
+- source substitution outside declared fallback policy fails closed;
+- reduced-authority fallback produces a reduced verification state;
+- resolver decisions are deterministic for the same registry/profile versions;
+- resolver emits provenance explaining why a source was selected or rejected;
+- no ordinary web search silently substitutes for an authoritative provider.
+
+## IDEA-051 — Brazil Jurisdiction Pack
+
+Status: `DEFERRED / RESEARCH BASELINE CREATED`
+Recorded: `2026-09-26`
+
+### Problem / motivation
+
+Brazil is federative and source semantics are distributed across publication, consolidation, legislation, courts, process metadata and judicial communication systems. A single `BR` scraper or court ranking would be structurally wrong.
+
+### Target concept
+
+Add Brazil as a jurisdiction package over the shared Legal Authority Fabric, not as a separate product engine. Initial adapter families: `br_dou`, `br_planalto`, `br_lexml`, `br_camara`, `br_senado`, `br_stf`, `br_stj`, `br_datajud`, `br_djen`, `br_domicilio` and a registry-driven local-gazette mechanism for state/DF/municipal sources.
+
+Brazil precedent handling must be typed and temporal. Court identity alone is insufficient; the system must preserve decision type, precedent type, binding scope, binding interval, overruling/limitation relations and publication state.
+
+### Acceptance criteria
+
+- DataJud is restricted to process metadata/movements unless independently corroborated by court-primary text;
+- DOU publication and Planalto consolidation remain separate evidence roles;
+- STF/STJ authority depends on decision/precedent class and temporal state, not a fixed score;
+- state/DF/municipal sources are registry-driven rather than thousands of hard-coded adapters;
+- privacy and secret-case boundaries fail closed.
+
+## Implementation Sequence — Legal Authority Fabric LA-00…LA-14
+
+Status: `PLANNED / NOT IMPLEMENTED`
+Recorded: `2026-09-26`
+
+- `LA-00 — Research Freeze & Matrix`: freeze PL/CO/BR source research and canonical Source & Authority Comparison Matrix v1.
+- `LA-01 — LegalSourceProfile v1`: schema, invariants, enums and contract tests.
+- `LA-02 — Source Registry`: versioned `pl`, `eu`, `co`, `br` registries.
+- `LA-03 — Source Role Model`: closed role taxonomy and proposition-specific authority rules.
+- `LA-04 — Source Resolver v1`: deterministic source selection by jurisdiction, proposition/object class and `as_of_date`.
+- `LA-05 — Fallback Matrix`: explicit primary/fallback/corroboration rules with authority degradation.
+- `LA-06 — Fail-Closed Engine`: canonical non-PASS states and invariant enforcement.
+- `LA-07 — First Vertical Adapters`: PL official publication/ELI, CO Diario Oficial + SUIN, BR DOU + Planalto.
+- `LA-08 — Court Authority Layer`: PL high courts, CO Constitutional/Supreme/Consejo de Estado, BR STF/STJ with typed precedent status.
+- `LA-09 — Process/Publication/Service Events`: DataJud/DJEN/Domicílio and jurisdiction equivalents mapped to Case Ledger events.
+- `LA-10 — LegalAuthoritySnapshot`: immutable source-bound snapshots with raw/normalized hashes, parser/schema versions and temporal metadata.
+- `LA-11 — Citation Verification Gate`: proposition-to-source, quote, jurisdiction and temporal verification.
+- `LA-12 — Adversarial Tests`: stale law, fabricated holding, wrong jurisdiction, schema drift, partial content, unsafe redirect/fallback.
+- `LA-13 — Shadow Mode`: compare LUKART outputs against independently verified legal answers; measure false-authority acceptance, citation precision, temporal accuracy and abstention quality.
+- `LA-14 — Capability Activation`: activate narrowly scoped capabilities, not entire jurisdictions, only after measured validation.
+
+### Promotion rule
+
+Research, registry presence, adapter existence and green engineering CI do not equal legal capability certification. Promotion requires exact-version evidence, adversarial coverage, measured legal-domain performance and explicit capability activation. The sequence is a planning baseline and may be reprioritized by fresh evidence before implementation.
+
+
+## IDEA-052 — Ephemeral Capability Lease & Side-Effect Gateway
+
+Status: `DEFERRED / STRATEGIC SAFETY CANDIDATE`
+Recorded: `2026-09-26`
+
+### Problem / motivation
+
+Long-lived agent permissions create an unnecessary blast radius. A compromised prompt, model, adapter or browser/mobile surface should not inherit durable authority to write files, send messages, submit filings, change records or call privileged external systems.
+
+### Target concept
+
+Introduce short-lived, operation-bound capability leases issued by the LUKART Control Plane. A lease should bind at least: capability/action, case or tenant scope, resource/endpoint scope, operation identity, allowed side effects, maximum calls, resource budget, issuance/expiry time, revocation state and policy/version digest.
+
+Privileged execution flows through a Side-Effect Gateway. Executors may request a capability but may not mint, broaden, renew or delegate their own authority. Default state is no side-effect capability.
+
+### Acceptance criteria
+
+- lease expiry/revocation is enforced independently of model output;
+- capability scope cannot be widened by prompt/tool content;
+- cross-case and cross-tenant use fails closed;
+- external actions require the lease identity in execution evidence;
+- privilege escalation and replay-after-expiry adversarial tests fail closed;
+- high-impact operations can require separate approval/policy gates before lease issuance.
+
+## IDEA-053 — Hierarchical Cognitive Fabric (System 0/1/2/3)
+
+Status: `DEFERRED / RESEARCH + ARCHITECTURE CANDIDATE`
+Recorded: `2026-09-26`
+
+### Problem / motivation
+
+Using one frontier LLM for every task is expensive, difficult to certify and operationally fragile. Using a small/local model for everything is equally unsafe. LUKART needs capability-aware cognitive specialization rather than model-brand-centric orchestration.
+
+### Target concept
+
+Evaluate a four-level cognitive fabric behind the existing CapabilityRouter and certification matrix:
+
+- `SYSTEM_0_DETERMINISTIC` — schemas, hashes, parsers, rule engines, exact calculations and invariant checks;
+- `SYSTEM_1_BOUNDED_DECISION` — small/local classifiers or constrained-choice models for narrow certified decisions;
+- `SYSTEM_2_REASONING` — higher-capability models for synthesis, planning, difficult legal/technical reasoning;
+- `SYSTEM_3_VERIFICATION` — deterministic verification plus heterogeneous reviewer/red-team execution where risk requires it.
+
+The fabric is a routing pattern, not four mandatory model products. A task may skip levels when policy/certification requires a different path.
+
+### Acceptance criteria
+
+- route selection is capability/risk/evidence driven, never based only on cost;
+- bounded System-1 models can choose only from an explicit allowed action/state space;
+- confidence does not override missing certification or legal authority;
+- escalation/de-escalation decisions are recorded in the execution receipt;
+- benchmarked quality/cost/latency must improve versus a frontier-model-only baseline before activation;
+- no cognitive layer gains Product authority.
+
+## IDEA-054 — Semantic Drift Firewall & Contract Conformance Gate
+
+Status: `DEFERRED / STRATEGIC 15+ YEAR CANDIDATE`
+Recorded: `2026-09-26`
+
+### Problem / motivation
+
+The largest long-horizon architecture risk is not a single provider outage; it is gradual semantic drift as models, protocols, adapters, jurisdictions, schemas and agent runtimes accumulate. Two components may both return `PASS` while meaning different things by 2030 or 2040.
+
+### Target concept
+
+Create a Semantic Drift Firewall around persistent and cross-boundary contracts. Every new model adapter, MCP/A2A revision, provider, jurisdiction pack, schema migration and execution runtime must prove semantic conformance against versioned LUKART fixtures before it can replace or interoperate with an existing component.
+
+Conformance should cover: state meanings, non-PASS semantics, authority classes, temporal meaning, side-effect semantics, evidence requirements, replay/idempotency behavior, privacy boundaries and migration equivalence. Unknown semantic mappings fail closed rather than being coerced into the nearest existing enum/state.
+
+### Acceptance criteria
+
+- contract compatibility is tested semantically, not only syntactically;
+- adapters cannot redefine `VERIFIED`, `PASS`, `UNKNOWN`, authority or success locally;
+- schema/protocol/model migrations preserve declared invariants or require a new version/explicit migration;
+- cross-version replay detects meaning-changing transformations;
+- semantic-conformance fixtures survive provider/protocol retirement;
+- architecture admission for a new core dependency requires an explicit exit/migration path and conformance evidence.
