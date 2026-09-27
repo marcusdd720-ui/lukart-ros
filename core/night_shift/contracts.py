@@ -205,11 +205,21 @@ class AutonomyEnvelope:
             raise NightShiftContractError("authority requires at least one risk class")
         if self.max_tasks < 1:
             raise NightShiftContractError("max_tasks must be positive")
+        if RiskClass.R4 in risks:
+            raise NightShiftContractError(
+                "R4 cannot be authorized for unattended execution"
+            )
         if self.promotion_mode is PromotionMode.AUTO and any(
+            risk is not RiskClass.R0 for risk in risks
+        ):
+            raise NightShiftContractError(
+                "AUTO promotion authority is limited to R0"
+            )
+        if self.promotion_mode is PromotionMode.PREAUTHORIZED and any(
             risk not in {RiskClass.R0, RiskClass.R1} for risk in risks
         ):
             raise NightShiftContractError(
-                "automatic promotion authority cannot include R2/R3/R4"
+                "PREAUTHORIZED promotion authority is limited to R0/R1"
             )
         object.__setattr__(self, "repositories", repositories)
         object.__setattr__(self, "allowed_risk_classes", risks)
@@ -246,12 +256,40 @@ class AutonomyEnvelope:
 
 
 @dataclass(frozen=True, slots=True)
+class AuthorityReservation:
+    envelope_digest: str
+    task_id: str
+    ordinal: int
+
+    def __post_init__(self) -> None:
+        object.__setattr__(
+            self,
+            "envelope_digest",
+            _sha(self.envelope_digest, field_name="envelope_digest"),
+        )
+        object.__setattr__(self, "task_id", _nonblank(self.task_id, field_name="task_id"))
+        if self.ordinal < 1:
+            raise NightShiftContractError("authority reservation ordinal must be positive")
+
+    def canonical_dict(self) -> dict[str, object]:
+        return {
+            "envelope_digest": self.envelope_digest,
+            "task_id": self.task_id,
+            "ordinal": self.ordinal,
+        }
+
+    def digest(self) -> str:
+        return content_digest(self.canonical_dict())
+
+
+@dataclass(frozen=True, slots=True)
 class ExecutionDecision:
     decision_id: str
     policy_ref_digest: str
     state_snapshot_digest: str
     task_capsule_digest: str
     autonomy_envelope_digest: str
+    authority_reservation_digest: str
 
     def __post_init__(self) -> None:
         object.__setattr__(
@@ -262,6 +300,7 @@ class ExecutionDecision:
             "state_snapshot_digest",
             "task_capsule_digest",
             "autonomy_envelope_digest",
+            "authority_reservation_digest",
         ):
             object.__setattr__(
                 self,
@@ -276,6 +315,7 @@ class ExecutionDecision:
             "state_snapshot_digest": self.state_snapshot_digest,
             "task_capsule_digest": self.task_capsule_digest,
             "autonomy_envelope_digest": self.autonomy_envelope_digest,
+            "authority_reservation_digest": self.authority_reservation_digest,
         }
 
     def digest(self) -> str:
@@ -288,10 +328,11 @@ def authorize_task(
     state: LiveStateSnapshot,
     task: TaskCapsule,
     envelope: AutonomyEnvelope,
+    reservation: AuthorityReservation,
     now_epoch: int,
     decision_id: str,
 ) -> ExecutionDecision:
-    """Fail closed unless all bound identities and authority checks agree."""
+    """Fail closed unless all bound identities, budget and authority checks agree."""
 
     state.require_fresh(now_epoch=now_epoch)
     envelope.require_authorized(
@@ -305,6 +346,12 @@ def authorize_task(
         raise NightShiftContractError("task is bound to a different state snapshot")
     if task.policy_digest != policy.policy_digest:
         raise NightShiftContractError("task is bound to a different policy digest")
+    if reservation.envelope_digest != envelope.digest():
+        raise NightShiftContractError("authority reservation belongs to a different envelope")
+    if reservation.task_id != task.task_id:
+        raise NightShiftContractError("authority reservation belongs to a different task")
+    if reservation.ordinal > envelope.max_tasks:
+        raise NightShiftContractError("authority reservation exceeds envelope task budget")
 
     return ExecutionDecision(
         decision_id=decision_id,
@@ -312,4 +359,5 @@ def authorize_task(
         state_snapshot_digest=state.digest(),
         task_capsule_digest=task.digest(),
         autonomy_envelope_digest=envelope.digest(),
+        authority_reservation_digest=reservation.digest(),
     )

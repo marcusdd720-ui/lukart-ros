@@ -244,25 +244,42 @@ class LeaseStore:
         fencing_token: int,
         now_epoch: int,
     ) -> TaskState:
-        current = self.require_current(
-            task_id=task_id,
-            lease_id=lease_id,
-            fencing_token=fencing_token,
-            now_epoch=now_epoch,
-        )
+        task_id = self._text(task_id, field_name="task_id")
+        lease_id = self._text(lease_id, field_name="lease_id")
         state = self._text(state, field_name="state")
-        with self._connect() as connection:
+        connection = self._connect()
+        try:
+            connection.execute("BEGIN IMMEDIATE")
+            lease_row = connection.execute(
+                "SELECT * FROM leases WHERE task_id = ?",
+                (task_id,),
+            ).fetchone()
+            if lease_row is None:
+                raise NightShiftContractError("task lease is missing")
+            if (
+                lease_row["lease_id"] != lease_id
+                or int(lease_row["fencing_token"]) != fencing_token
+            ):
+                raise NightShiftContractError("stale lease or fencing token")
+            if now_epoch >= int(lease_row["expires_at_epoch"]):
+                raise NightShiftContractError("task lease expired")
             try:
                 connection.execute(
                     """
                     INSERT INTO task_states(task_id, state, version, fencing_token)
                     VALUES (?, ?, 1, ?)
                     """,
-                    (current.task_id, state, current.fencing_token),
+                    (task_id, state, fencing_token),
                 )
             except sqlite3.IntegrityError as exc:
                 raise NightShiftContractError("task state already initialized") from exc
-        return TaskState(current.task_id, state, 1, current.fencing_token)
+            connection.commit()
+        except Exception:
+            connection.rollback()
+            raise
+        finally:
+            connection.close()
+        return TaskState(task_id, state, 1, fencing_token)
     def compare_and_swap_state(
         self,
         *,
@@ -273,36 +290,49 @@ class LeaseStore:
         fencing_token: int,
         now_epoch: int,
     ) -> TaskState:
-        current_lease = self.require_current(
-            task_id=task_id,
-            lease_id=lease_id,
-            fencing_token=fencing_token,
-            now_epoch=now_epoch,
-        )
+        task_id = self._text(task_id, field_name="task_id")
+        lease_id = self._text(lease_id, field_name="lease_id")
         new_state = self._text(new_state, field_name="new_state")
         if expected_version < 1:
             raise NightShiftContractError("expected_version must be positive")
 
-        with self._connect() as connection:
+        connection = self._connect()
+        try:
+            connection.execute("BEGIN IMMEDIATE")
+            lease_row = connection.execute(
+                "SELECT * FROM leases WHERE task_id = ?",
+                (task_id,),
+            ).fetchone()
+            if lease_row is None:
+                raise NightShiftContractError("task lease is missing")
+            if (
+                lease_row["lease_id"] != lease_id
+                or int(lease_row["fencing_token"]) != fencing_token
+            ):
+                raise NightShiftContractError("stale lease or fencing token")
+            if now_epoch >= int(lease_row["expires_at_epoch"]):
+                raise NightShiftContractError("task lease expired")
+
             updated = connection.execute(
                 """
                 UPDATE task_states
                 SET state = ?, version = version + 1, fencing_token = ?
                 WHERE task_id = ? AND version = ?
                 """,
-                (
-                    new_state,
-                    current_lease.fencing_token,
-                    current_lease.task_id,
-                    expected_version,
-                ),
+                (new_state, fencing_token, task_id, expected_version),
             ).rowcount
             if updated != 1:
                 raise NightShiftContractError("task state CAS conflict")
             row = connection.execute(
                 "SELECT * FROM task_states WHERE task_id = ?",
-                (current_lease.task_id,),
+                (task_id,),
             ).fetchone()
+            connection.commit()
+        except Exception:
+            connection.rollback()
+            raise
+        finally:
+            connection.close()
 
         if row is None:
             raise NightShiftContractError("task state missing after CAS")

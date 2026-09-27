@@ -3,6 +3,7 @@ from __future__ import annotations
 import pytest
 
 from core.night_shift.contracts import (
+    AuthorityReservation,
     AutonomyEnvelope,
     LiveStateSnapshot,
     NightShiftContractError,
@@ -60,6 +61,14 @@ def _envelope() -> AutonomyEnvelope:
     )
 
 
+def _reservation(envelope: AutonomyEnvelope, task_id: str = "task-001") -> AuthorityReservation:
+    return AuthorityReservation(
+        envelope_digest=envelope.digest(),
+        task_id=task_id,
+        ordinal=1,
+    )
+
+
 def test_authorize_task_binds_policy_state_task_and_authority() -> None:
     policy = _policy()
     state = _state()
@@ -71,6 +80,7 @@ def test_authorize_task_binds_policy_state_task_and_authority() -> None:
         state=state,
         task=task,
         envelope=envelope,
+        reservation=_reservation(envelope),
         now_epoch=150,
         decision_id="decision-001",
     )
@@ -89,6 +99,7 @@ def test_stale_state_fails_closed() -> None:
             state=state,
             task=_task(state, policy),
             envelope=_envelope(),
+            reservation=_reservation(_envelope()),
             now_epoch=200,
             decision_id="decision-stale",
         )
@@ -115,6 +126,7 @@ def test_task_bound_to_different_snapshot_fails_closed() -> None:
             state=state,
             task=task,
             envelope=_envelope(),
+            reservation=_reservation(_envelope(), task.task_id),
             now_epoch=150,
             decision_id="decision-stale-binding",
         )
@@ -138,6 +150,7 @@ def test_repository_outside_authority_fails_closed() -> None:
             state=state,
             task=_task(state, policy),
             envelope=envelope,
+            reservation=_reservation(envelope),
             now_epoch=150,
             decision_id="decision-wrong-repo",
         )
@@ -146,7 +159,7 @@ def test_repository_outside_authority_fails_closed() -> None:
 def test_auto_promotion_cannot_include_high_risk_classes() -> None:
     with pytest.raises(
         NightShiftContractError,
-        match="automatic promotion authority cannot include R2/R3/R4",
+        match="AUTO promotion authority is limited to R0",
     ):
         AutonomyEnvelope(
             envelope_id="unsafe-auto",
@@ -198,3 +211,94 @@ def test_canonicalization_is_order_independent_for_set_like_fields() -> None:
     )
 
     assert first.digest() == second.digest()
+
+def test_r4_cannot_enter_unattended_authority_envelope() -> None:
+    with pytest.raises(
+        NightShiftContractError,
+        match="R4 cannot be authorized for unattended execution",
+    ):
+        AutonomyEnvelope(
+            envelope_id="unsafe-r4",
+            issued_at_epoch=10,
+            expires_at_epoch=20,
+            repositories=("marcusdd720-ui/lukart-ros",),
+            allowed_risk_classes=(RiskClass.R4,),
+            max_tasks=1,
+            promotion_mode=PromotionMode.HUMAN,
+        )
+
+
+def test_auto_promotion_is_limited_to_r0() -> None:
+    with pytest.raises(
+        NightShiftContractError,
+        match="AUTO promotion authority is limited to R0",
+    ):
+        AutonomyEnvelope(
+            envelope_id="unsafe-auto-r1",
+            issued_at_epoch=10,
+            expires_at_epoch=20,
+            repositories=("marcusdd720-ui/lukart-ros",),
+            allowed_risk_classes=(RiskClass.R1,),
+            max_tasks=1,
+            promotion_mode=PromotionMode.AUTO,
+        )
+
+def test_preauthorized_promotion_is_limited_to_r0_r1() -> None:
+    with pytest.raises(
+        NightShiftContractError,
+        match="PREAUTHORIZED promotion authority is limited to R0/R1",
+    ):
+        AutonomyEnvelope(
+            envelope_id="unsafe-preauth-r2",
+            issued_at_epoch=10,
+            expires_at_epoch=20,
+            repositories=("marcusdd720-ui/lukart-ros",),
+            allowed_risk_classes=(RiskClass.R2,),
+            max_tasks=1,
+            promotion_mode=PromotionMode.PREAUTHORIZED,
+        )
+
+def test_authorization_rejects_reservation_for_other_task() -> None:
+    policy = _policy()
+    state = _state()
+    task = _task(state, policy)
+    envelope = _envelope()
+    reservation = AuthorityReservation(
+        envelope_digest=envelope.digest(),
+        task_id="task-other",
+        ordinal=1,
+    )
+
+    with pytest.raises(NightShiftContractError, match="different task"):
+        authorize_task(
+            policy=policy,
+            state=state,
+            task=task,
+            envelope=envelope,
+            reservation=reservation,
+            now_epoch=150,
+            decision_id="decision-wrong-reservation",
+        )
+
+
+def test_authorization_rejects_reservation_over_budget() -> None:
+    policy = _policy()
+    state = _state()
+    task = _task(state, policy)
+    envelope = _envelope()
+    reservation = AuthorityReservation(
+        envelope_digest=envelope.digest(),
+        task_id=task.task_id,
+        ordinal=envelope.max_tasks + 1,
+    )
+
+    with pytest.raises(NightShiftContractError, match="exceeds envelope task budget"):
+        authorize_task(
+            policy=policy,
+            state=state,
+            task=task,
+            envelope=envelope,
+            reservation=reservation,
+            now_epoch=150,
+            decision_id="decision-over-budget",
+        )
