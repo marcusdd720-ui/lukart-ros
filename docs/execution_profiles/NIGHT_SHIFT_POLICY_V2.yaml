@@ -1,0 +1,113 @@
+schema_version: night-shift-policy/v2
+status: SHADOW_FIRST
+recorded_at: 2026-09-28
+
+principles:
+  policy_separate_from_live_state: true
+  exact_state_required: true
+  evidence_before_promotion: true
+  provider_neutral_core: true
+  human_root_of_trust_isolated: true
+
+portfolio_limits:
+  technical_active_max: 2
+  local_code_writers_max: 1
+  heavy_local_compute_max: 1
+  full_regression_parallel_max: 1
+  merge_parallelism_max: 1
+authority:
+  autonomy_envelope_required: true
+  default_window_hours: 8
+  default_max_tasks: 8
+  max_scope_expansions_per_task: 1
+  max_remediation_attempts_per_root_cause: 2
+  destructive_actions_default: false
+  paid_actions_default: false
+  external_publication_default: false
+  governance_mutation_default: false
+  human_identity_available_to_workers: false
+
+state:
+  snapshot_required: true
+  snapshot_content_addressed: true
+  stale_snapshot: BLOCKED
+  unknown_critical_state: BLOCKED
+  conflicting_critical_state: BLOCKED
+leases:
+  required_for_mutation: true
+  fencing_tokens: true
+  heartbeat_required: true
+  compare_and_swap_required: true
+  stale_worker_action: BLOCKED
+
+isolation:
+  interactive_worktree_mutation: forbidden
+  dedicated_worktree_or_clone: required
+  persistent_runner_as_coding_workspace: forbidden
+  ephemeral_validation_preferred_for_high_risk: true
+
+risk_classes:
+  R0:
+    unattended_build: true
+    unattended_promotion: true
+  R1:
+    unattended_build: true
+    unattended_promotion: preauthorized_only
+  R2:
+    unattended_build: true
+    unattended_promotion: false
+    target_terminal_state: READY_FOR_HUMAN
+  R3:
+    unattended_build: bounded_only
+    unattended_promotion: false
+    target_terminal_state: READY_FOR_HUMAN
+  R4:
+    unattended_build: false
+    unattended_promotion: false
+    target_terminal_state: HUMAN_REQUIRED
+
+verification:
+  builder_may_self_certify: false
+  exact_sha_required: true
+  focused_tests_required: true
+  static_security_gate_required: true
+  full_regression_policy_driven: true
+  independent_review_required_for_nontrivial_change: true
+evidence:
+  execution_receipt_required: true
+  append_only: true
+  content_addressed: true
+  offline_verification_required: true
+  bind_environment_fingerprint: true
+  bind_policy_hash: true
+  bind_state_snapshot_hash: true
+  bind_task_capsule_hash: true
+  bind_diff_hash: true
+
+routing:
+  deterministic_first: true
+  escalation_requires_evidence: true
+  model_provider_not_core_contract: true
+  durable_engine_not_core_contract: true
+shadow_mode:
+  required_before_autonomous_promotion: true
+  counterfactual_prediction: true
+  autonomy_debt_tracking: true
+  downgrade_on_unexplained_divergence: true
+
+failure_injection:
+  required_before_controlled_pilot: true
+  scenarios:
+    - worker_termination
+    - scheduler_restart
+    - duplicate_event
+    - stale_worker_resume
+    - network_loss_during_push
+    - concurrent_branch_advance
+    - disk_pressure
+    - corrupted_receipt
+    - reviewer_timeout
+
+night_shift:
+  unattended_promotion_enabled: false
+  morning_report_required: true
