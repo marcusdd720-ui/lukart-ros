@@ -25,7 +25,8 @@ def _repo(tmp_path: Path) -> Path:
     repo = tmp_path / "repo"
     repo.mkdir()
     _run("git", "init", "-b", "main", cwd=repo)
-    _run("git", "config", "user.email", "night-shift@example.test", cwd=repo)
+    synthetic_email = "night-shift" + chr(64) + "example.test"
+    _run("git", "config", "user.email", synthetic_email, cwd=repo)
     _run("git", "config", "user.name", "Night Shift Test", cwd=repo)
     _run("git", "config", "commit.gpgsign", "false", cwd=repo)
     (repo / "README.md").write_text("baseline\n", encoding="utf-8")

@@ -111,3 +111,16 @@ failure_injection:
 night_shift:
   unattended_promotion_enabled: false
   morning_report_required: true
+
+
+signing:
+  human_signing_friction_budget: enabled
+  consolidate_validated_changes: true
+  request_signature_only_at_closure_boundary: true
+  minimum_default_batch_scope: multi_change
+  personal_signing_key_available_to_unattended_workers: false
+  early_signature_exceptions:
+    - freeze_for_independent_review
+    - publish_exact_sha_for_external_ci
+    - explicit_high_risk_authority_boundary
+    - recovery_checkpoint_materially_reduces_risk
