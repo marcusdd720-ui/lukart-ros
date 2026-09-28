@@ -1,0 +1,39 @@
+schema_version: night-shift-runtime-matrix/v1
+runtimes:
+  - runtime_id: local_journal
+    adapter: LocalJournalWorkflowEngine
+    evidence: VALIDATED
+    crash_resume: true
+    idempotent_steps: true
+    deterministic_replay: false
+    durable_timers: false
+    distributed_workers: false
+    requires_external_service: false
+    operational_rank: 0
+    source_refs:
+      - test:test_night_shift_engine
+      - test:test_night_shift_failure_injection
+  - runtime_id: dbos
+    adapter: future_dbos_adapter
+    evidence: DOCUMENTED
+    crash_resume: true
+    idempotent_steps: true
+    deterministic_replay: false
+    durable_timers: true
+    distributed_workers: true
+    requires_external_service: false
+    operational_rank: 1
+    source_refs:
+      - docs:DBOS
+  - runtime_id: temporal
+    adapter: future_temporal_adapter
+    evidence: DOCUMENTED
+    crash_resume: true
+    idempotent_steps: true
+    deterministic_replay: true
+    durable_timers: true
+    distributed_workers: true
+    requires_external_service: true
+    operational_rank: 2
+    source_refs:
+      - docs:Temporal

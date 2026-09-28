@@ -17,6 +17,8 @@ class WorkItem:
     risk_class: RiskClass
     requires_local_writer: bool = True
     heavy_compute: bool = False
+    executor_id: str | None = None
+    executor_parallel_limit: int = 1
 
     def __post_init__(self) -> None:
         task_id = self.task_id.strip()
@@ -29,6 +31,10 @@ class WorkItem:
             raise NightShiftContractError("closure_percent must be within 0..100")
         if any(not item for item in blockers):
             raise NightShiftContractError("blocked_by cannot contain blank values")
+        if self.executor_parallel_limit < 1:
+            raise NightShiftContractError("executor_parallel_limit must be positive")
+        if self.executor_id is not None and not self.executor_id.strip():
+            raise NightShiftContractError("executor_id cannot be blank")
         object.__setattr__(self, "task_id", task_id)
         object.__setattr__(self, "blocked_by", blockers)
 
@@ -75,6 +81,7 @@ def select_batch(
     selected: list[WorkItem] = []
     writers = 0
     heavy = 0
+    executor_counts: dict[str, int] = {}
     for item in compile_ready_queue(items):
         if len(selected) >= policy.technical_active_max:
             break
@@ -82,7 +89,13 @@ def select_batch(
             continue
         if item.heavy_compute and heavy >= policy.heavy_local_compute_max:
             continue
+        if item.executor_id is not None:
+            current = executor_counts.get(item.executor_id, 0)
+            if current >= item.executor_parallel_limit:
+                continue
         selected.append(item)
         writers += int(item.requires_local_writer)
         heavy += int(item.heavy_compute)
+        if item.executor_id is not None:
+            executor_counts[item.executor_id] = executor_counts.get(item.executor_id, 0) + 1
     return tuple(selected)

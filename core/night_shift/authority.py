@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import sqlite3
+from contextlib import closing
 from pathlib import Path
 
 from .contracts import AuthorityReservation, AutonomyEnvelope, NightShiftContractError
@@ -23,7 +24,7 @@ class AuthorityBudgetStore:
         connection.execute("PRAGMA synchronous = FULL")
         return connection
     def _initialize(self) -> None:
-        with self._connect() as connection:
+        with closing(self._connect()) as connection:
             connection.executescript(
                 """
                 CREATE TABLE IF NOT EXISTS envelope_usage (
@@ -40,6 +41,7 @@ class AuthorityBudgetStore:
                 );
                 """
             )
+            connection.commit()
 
     @staticmethod
     def _task_id(value: str) -> str:
@@ -124,7 +126,7 @@ class AuthorityBudgetStore:
 
 
     def require_reserved(self, reservation: AuthorityReservation) -> None:
-        with self._connect() as connection:
+        with closing(self._connect()) as connection:
             row = connection.execute(
                 """
                 SELECT ordinal FROM authority_reservations

@@ -41,6 +41,7 @@ MVROS-DATA/
 output/**/snapshots/
 rqm_history.json
 reports/quality_report.md
+reports/night_shift_shadow_latest.json
 
 # --- Optional local env ---
 .env

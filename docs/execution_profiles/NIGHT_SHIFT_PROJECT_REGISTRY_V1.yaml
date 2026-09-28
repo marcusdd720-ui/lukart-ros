@@ -1,0 +1,20 @@
+schema_version: night-shift-project-registry/v1
+projects:
+  - project_id: LUKART_PR313
+    repository: marcusdd720-ui/lukart-ros
+    priority: 0
+    default_risk_class: R3
+    required_capabilities: [bounded_code_remediation, git]
+    mutating: true
+  - project_id: LATAM_I11
+    repository: marcusdd720-ui/Latam-Career-OS
+    priority: 1
+    default_risk_class: R2
+    required_capabilities: [bounded_code_change, git]
+    mutating: true
+  - project_id: SYNTH_V071
+    repository: marcusdd720-ui/synthetic-test-data
+    priority: 2
+    default_risk_class: R1
+    required_capabilities: [bounded_code_change, git]
+    mutating: true
