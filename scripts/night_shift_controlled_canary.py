@@ -35,9 +35,11 @@ from core.night_shift.crypto_identity import (
     sign_verification_bundle,
 )
 from core.night_shift.failure_gate import (
-    load_failure_report,
+    failure_suite_profile_digest,
+    load_failure_suite_max_age_seconds,
     load_required_failure_scenarios,
 )
+from core.night_shift.failure_injection import run_failure_injection_suite
 from core.night_shift.promotion import quorum_from_bundle
 from core.night_shift.shadow import (
     AutonomyDebtLedger,
@@ -56,8 +58,8 @@ from core.night_shift.verification import (
 from core.p3.contracts import content_digest
 
 POLICY_PATH = REPO_ROOT / "docs/execution_profiles/NIGHT_SHIFT_POLICY_V2.yaml"
-EVIDENCE_PATH = (
-    REPO_ROOT / "docs/execution_profiles/NIGHT_SHIFT_FAILURE_EVIDENCE_V1.yaml"
+FAILURE_PROFILE = (
+    REPO_ROOT / "docs/execution_profiles/NIGHT_SHIFT_FAILURE_INJECTION_V2.yaml"
 )
 QUORUM_PROFILE = (
     REPO_ROOT / "docs/execution_profiles/NIGHT_SHIFT_VERIFICATION_QUORUM_V1.yaml"
@@ -80,8 +82,8 @@ def main() -> int:
     required = load_required_failure_scenarios(POLICY_PATH)
     quorum_gates = load_required_verification_gates(QUORUM_PROFILE)
     quorum_max_age = load_verification_max_age_seconds(QUORUM_PROFILE)
-    failure_report = load_failure_report(EVIDENCE_PATH)
-    failure_report.require_passed(required_scenarios=required)
+    failure_profile_digest = failure_suite_profile_digest(FAILURE_PROFILE)
+    failure_max_age = load_failure_suite_max_age_seconds(FAILURE_PROFILE)
 
     with tempfile.TemporaryDirectory(prefix="night-shift-canary-") as temp_dir:
         root = Path(temp_dir)
@@ -125,6 +127,26 @@ def main() -> int:
             acceptance_checks=("controlled-canary",),
             max_files_changed=1,
             max_lines_changed=10,
+        )
+        failure_report = run_failure_injection_suite(
+            root=root / "failure-injection",
+            subject_sha=state.head_sha,
+            state_snapshot_digest=state.digest(),
+            task_capsule_digest=task.digest(),
+            policy_digest=policy.policy_digest,
+            suite_profile_digest=failure_profile_digest,
+            now_epoch=now_epoch,
+            ttl_seconds=failure_max_age,
+        )
+        failure_report.require_passed(
+            required_scenarios=required,
+            expected_subject_sha=state.head_sha,
+            expected_state_snapshot_digest=state.digest(),
+            expected_task_capsule_digest=task.digest(),
+            expected_policy_digest=policy.policy_digest,
+            expected_suite_profile_digest=failure_profile_digest,
+            now_epoch=now_epoch,
+            expected_report_digest=failure_report.digest(),
         )
         envelope = AutonomyEnvelope(
             envelope_id="v207-local-only",
@@ -270,6 +292,8 @@ def main() -> int:
             shadow_clearance=shadow_clearance,
             expected_shadow_ledger_digest=shadow_ledger.digest(),
             failure_report=failure_report,
+            expected_failure_report_digest=failure_report.digest(),
+            expected_failure_suite_profile_digest=failure_profile_digest,
             required_failure_scenarios=required,
             target_path="README.md",
             replacement_text="controlled canary mutation\n",

@@ -1,0 +1,51 @@
+schema_version: night-shift-failure-injection/v2
+status: CONTROLLED
+recorded_at: 2026-09-28
+
+required_outcomes:
+  accepted:
+    - RECOVERED
+    - FAILED_CLOSED
+  rejected:
+    - UNSAFE
+
+freshness:
+  max_report_age_seconds: 3600
+  future_report: BLOCKED
+  expired_report: BLOCKED
+
+identity:
+  subject_sha_required: true
+  state_snapshot_digest_required: true
+  task_capsule_digest_required: true
+  policy_digest_required: true
+  suite_profile_digest_required: true
+  report_digest_required: true
+  stale_or_cross_task_replay: BLOCKED
+  content_addressed_evidence_required: true
+  duplicate_scenario: BLOCKED
+  unexpected_scenario: BLOCKED
+  missing_scenario: BLOCKED
+
+scenarios:
+  - worker_termination_during_edit
+  - worker_termination_during_validation
+  - scheduler_restart_after_dispatch
+  - duplicate_event_delivery
+  - stale_worker_resumption
+  - network_loss_during_push
+  - delayed_ci
+  - concurrent_branch_advance
+  - disk_pressure
+  - corrupted_receipt
+  - reviewer_timeout
+
+publication:
+  external_publication_enabled: false
+  failure_suite_may_expand_authority: false
+
+authority:
+  report_is_evidence_not_policy: true
+  report_must_match_current_policy: true
+  report_must_match_pinned_suite_profile: true
+  stale_or_forged_report: BLOCKED

@@ -121,12 +121,25 @@ shadow_mode:
 
 failure_injection:
   required_before_controlled_pilot: true
+  report_content_addressed: true
+  subject_sha_binding_required: true
+  state_snapshot_digest_binding_required: true
+  task_capsule_digest_binding_required: true
+  stale_or_cross_task_replay: BLOCKED
+  policy_digest_binding_required: true
+  suite_profile_digest_binding_required: true
+  report_digest_authority_required: true
+  max_report_age_seconds: 3600
+  accepted_outcomes: [RECOVERED, FAILED_CLOSED]
+  unsafe_outcome: BLOCKED
   scenarios:
-    - worker_termination
-    - scheduler_restart
-    - duplicate_event
-    - stale_worker_resume
+    - worker_termination_during_edit
+    - worker_termination_during_validation
+    - scheduler_restart_after_dispatch
+    - duplicate_event_delivery
+    - stale_worker_resumption
     - network_loss_during_push
+    - delayed_ci
     - concurrent_branch_advance
     - disk_pressure
     - corrupted_receipt

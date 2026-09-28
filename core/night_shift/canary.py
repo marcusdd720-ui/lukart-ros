@@ -90,6 +90,8 @@ def run_controlled_canary(
     shadow_clearance: ShadowPromotionClearance | None = None,
     expected_shadow_ledger_digest: str | None = None,
     failure_report: FailureInjectionReport,
+    expected_failure_report_digest: str | None = None,
+    expected_failure_suite_profile_digest: str | None = None,
     required_failure_scenarios: tuple[str, ...],
     target_path: str,
     replacement_text: str,
@@ -105,7 +107,24 @@ def run_controlled_canary(
         raise NightShiftContractError(
             "controlled canary requires cryptographic automation identity"
         )
-    failure_report.require_passed(required_scenarios=required_failure_scenarios)
+    if expected_failure_report_digest is None:
+        raise NightShiftContractError(
+            "controlled canary requires failure report digest authority"
+        )
+    if expected_failure_suite_profile_digest is None:
+        raise NightShiftContractError(
+            "controlled canary requires failure suite profile authority"
+        )
+    failure_report.require_passed(
+        required_scenarios=required_failure_scenarios,
+        expected_subject_sha=state.head_sha,
+        expected_state_snapshot_digest=state.digest(),
+        expected_task_capsule_digest=task.digest(),
+        expected_policy_digest=policy.policy_digest,
+        expected_suite_profile_digest=expected_failure_suite_profile_digest,
+        now_epoch=now_epoch,
+        expected_report_digest=expected_failure_report_digest,
+    )
 
     decision = decide_promotion(
         repository=task.repository,
