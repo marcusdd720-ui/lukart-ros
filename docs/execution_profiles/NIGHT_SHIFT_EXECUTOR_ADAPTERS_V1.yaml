@@ -1,0 +1,14 @@
+schema_version: night-shift-executor-adapters/v1
+status: CONTROLLED
+recorded_at: 2026-09-28
+
+bindings:
+  - executor_id: deterministic_local
+    adapter_kind: process_isolation
+    status: VALIDATED
+  - executor_id: codex_adapter
+    adapter_kind: external_provider
+    status: DOCUMENTED_ONLY
+  - executor_id: independent_reviewer
+    adapter_kind: external_review
+    status: DOCUMENTED_ONLY
