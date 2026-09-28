@@ -155,6 +155,14 @@ verification_quorum:
   scope_guard_required: true
   builder_reviewer_identity_required: true
   builder_equals_reviewer: forbidden
+  exact_subject_sha_binding_required: true
+  task_capsule_digest_binding_required: true
+  gate_evidence_digest_required: true
+  independent_review_producer_matches_reviewer: true
+  max_evidence_age_seconds: 3600
+  future_evidence: BLOCKED
+  expired_evidence: BLOCKED
+  promotion_rechecks_evidence_expiry: true
   quorum_digest_required_in_execution_receipt: true
 
 execution_receipt:

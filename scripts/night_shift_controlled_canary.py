@@ -27,12 +27,22 @@ from core.night_shift.failure_gate import (
     load_failure_report,
     load_required_failure_scenarios,
 )
-from core.night_shift.promotion import VerificationQuorum
+from core.night_shift.promotion import quorum_from_bundle
+from core.night_shift.verification import (
+    VerificationBundle,
+    VerificationEvidence,
+    VerificationGate,
+    load_required_verification_gates,
+    load_verification_max_age_seconds,
+)
 from core.p3.contracts import content_digest
 
 POLICY_PATH = REPO_ROOT / "docs/execution_profiles/NIGHT_SHIFT_POLICY_V2.yaml"
 EVIDENCE_PATH = (
     REPO_ROOT / "docs/execution_profiles/NIGHT_SHIFT_FAILURE_EVIDENCE_V1.yaml"
+)
+QUORUM_PROFILE = (
+    REPO_ROOT / "docs/execution_profiles/NIGHT_SHIFT_VERIFICATION_QUORUM_V1.yaml"
 )
 
 
@@ -50,6 +60,8 @@ def _git(cwd: Path, *args: str) -> str:
 def main() -> int:
     now_epoch = int(time())
     required = load_required_failure_scenarios(POLICY_PATH)
+    quorum_gates = load_required_verification_gates(QUORUM_PROFILE)
+    quorum_max_age = load_verification_max_age_seconds(QUORUM_PROFILE)
     failure_report = load_failure_report(EVIDENCE_PATH)
     failure_report.require_passed(required_scenarios=required)
 
@@ -105,16 +117,37 @@ def main() -> int:
             max_tasks=1,
             promotion_mode=PromotionMode.AUTO,
         )
-        quorum = VerificationQuorum(
-            True,
-            True,
-            True,
-            True,
-            True,
-            True,
-            True,
-            "canary-builder",
-            "canary-reviewer",
+        builder_identity = "canary-builder"
+        reviewer_identity = "canary-reviewer"
+        verification_evidence = tuple(
+            VerificationEvidence(
+                gate=gate,
+                passed=True,
+                subject_sha=state.head_sha,
+                task_capsule_digest=task.digest(),
+                producer_identity=(
+                    reviewer_identity
+                    if gate is VerificationGate.INDEPENDENT_REVIEW
+                    else builder_identity
+                ),
+                observed_at_epoch=now_epoch,
+                evidence_digest=content_digest(
+                    {"gate": gate.value, "result": "PASS", "task": task.digest()}
+                ),
+                evidence_refs=(f"canary:{gate.value}:pass",),
+            )
+            for gate in quorum_gates
+        )
+        quorum = quorum_from_bundle(
+            VerificationBundle(
+                subject_sha=state.head_sha,
+                task_capsule_digest=task.digest(),
+                builder_identity=builder_identity,
+                reviewer_identity=reviewer_identity,
+                evidence=verification_evidence,
+            ),
+            now_epoch=now_epoch,
+            max_evidence_age_seconds=quorum_max_age,
         )
         result = run_controlled_canary(
             repository=repo,

@@ -51,7 +51,7 @@ def _repo(tmp_path: Path) -> tuple[Path, str]:
     return repo, _run(repo, "git", "rev-parse", "HEAD")
 
 
-def _quorum() -> VerificationQuorum:
+def _quorum(sha: str, task_digest: str) -> VerificationQuorum:
     return VerificationQuorum(
         True,
         True,
@@ -62,6 +62,10 @@ def _quorum() -> VerificationQuorum:
         True,
         "builder",
         "reviewer",
+        sha,
+        task_digest,
+        "f" * 64,
+        100,
     )
 
 
@@ -133,7 +137,7 @@ def test_controlled_canary_mutates_only_isolated_worktree_and_rolls_back(
         state=state,
         policy=policy,
         envelope=envelope,
-        quorum=_quorum(),
+        quorum=_quorum(state.head_sha, task.digest()),
         failure_report=report,
         required_failure_scenarios=required,
         target_path="README.md",
@@ -184,7 +188,7 @@ def test_controlled_canary_rejects_r2(tmp_path: Path) -> None:
             state=state,
             policy=policy,
             envelope=envelope,
-            quorum=_quorum(),
+            quorum=_quorum(state.head_sha, task.digest()),
             failure_report=report,
             required_failure_scenarios=required,
             target_path="README.md",
@@ -206,7 +210,7 @@ def test_scope_violation_rolls_back_and_cleans_branch(tmp_path: Path) -> None:
             state=state,
             policy=policy,
             envelope=envelope,
-            quorum=_quorum(),
+            quorum=_quorum(state.head_sha, task.digest()),
             failure_report=report,
             required_failure_scenarios=required,
             target_path="OTHER.md",
@@ -234,6 +238,10 @@ def test_reviewer_timeout_blocks_before_mutation(tmp_path: Path) -> None:
         True,
         "builder",
         "reviewer-timeout",
+        state.head_sha,
+        task.digest(),
+        "f" * 64,
+        100,
     )
     with pytest.raises(NightShiftContractError, match="requires ELIGIBLE_AUTO"):
         run_controlled_canary(
@@ -269,7 +277,7 @@ def test_disk_write_failure_cleans_worktree_and_branch(tmp_path: Path) -> None:
             state=state,
             policy=policy,
             envelope=envelope,
-            quorum=_quorum(),
+            quorum=_quorum(state.head_sha, task.digest()),
             failure_report=report,
             required_failure_scenarios=required,
             target_path="README.md",
@@ -304,7 +312,7 @@ def test_concurrent_operator_branch_advance_fails_rollback_verification(
             state=state,
             policy=policy,
             envelope=envelope,
-            quorum=_quorum(),
+            quorum=_quorum(state.head_sha, task.digest()),
             failure_report=report,
             required_failure_scenarios=required,
             target_path="README.md",
