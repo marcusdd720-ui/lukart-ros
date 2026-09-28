@@ -14,6 +14,10 @@ from .contracts import (
     RiskClass,
     require_git_oid,
 )
+from .crypto_identity import (
+    VerificationCryptoContext,
+    verify_verification_bundle_signatures,
+)
 from .verification import VerificationBundle
 
 
@@ -108,6 +112,7 @@ class VerificationQuorum:
 class PromotionDecision:
     state: PromotionState
     reason: str
+    cryptographic_verification_digest: str | None = None
 
 
 def decide_promotion(
@@ -116,6 +121,7 @@ def decide_promotion(
     risk_class: RiskClass,
     envelope: AutonomyEnvelope,
     quorum: VerificationQuorum,
+    crypto_context: VerificationCryptoContext | None = None,
     subject_sha: str,
     task_capsule_digest: str,
     now_epoch: int,
@@ -127,12 +133,14 @@ def decide_promotion(
         )
     except ValueError as exc:
         raise NightShiftContractError(str(exc)) from exc
+
     if quorum.subject_sha != expected_sha:
         raise NightShiftContractError("verification quorum is bound to a different SHA")
     if quorum.task_capsule_digest != expected_task_digest:
         raise NightShiftContractError(
             "verification quorum is bound to a different task capsule"
         )
+
     envelope.require_authorized(
         repository=repository,
         risk_class=risk_class,
@@ -144,18 +152,56 @@ def decide_promotion(
             "verification evidence expired",
         )
     if not quorum.passed():
-        return PromotionDecision(PromotionState.BLOCKED, "verification quorum incomplete")
+        return PromotionDecision(
+            PromotionState.BLOCKED,
+            "verification quorum incomplete",
+        )
+    if crypto_context is None:
+        raise NightShiftContractError(
+            "cryptographic verification context is required for promotion"
+        )
+
+    bundle = crypto_context.bundle
+    if bundle.subject_sha != expected_sha:
+        raise NightShiftContractError(
+            "cryptographic verification bundle is bound to a different SHA"
+        )
+    if bundle.task_capsule_digest != expected_task_digest:
+        raise NightShiftContractError(
+            "cryptographic verification bundle is bound to a different task capsule"
+        )
+    if bundle.digest() != quorum.evidence_digest:
+        raise NightShiftContractError(
+            "cryptographic verification bundle does not match quorum evidence"
+        )
+    if (
+        bundle.builder_identity != quorum.builder_identity
+        or bundle.reviewer_identity != quorum.reviewer_identity
+    ):
+        raise NightShiftContractError(
+            "cryptographic verification identities do not match quorum"
+        )
+
+    verified = verify_verification_bundle_signatures(
+        context=crypto_context,
+        quorum_digest=quorum.digest(),
+        evidence_valid_until_epoch=quorum.evidence_valid_until_epoch,
+        now_epoch=now_epoch,
+    )
+    crypto_digest = verified.digest()
 
     if risk_class in {RiskClass.R2, RiskClass.R3, RiskClass.R4}:
         return PromotionDecision(
             PromotionState.READY_FOR_HUMAN,
             f"{risk_class.value} requires human promotion authority",
+            crypto_digest,
         )
 
     if envelope.promotion_mode is PromotionMode.HUMAN:
         return PromotionDecision(
             PromotionState.READY_FOR_HUMAN,
             "authority envelope requires human promotion",
+            crypto_digest,
         )
 
     if risk_class is RiskClass.R1:
@@ -163,19 +209,26 @@ def decide_promotion(
             return PromotionDecision(
                 PromotionState.ELIGIBLE_AUTO,
                 "R1 pre-authorized and verification quorum passed",
+                crypto_digest,
             )
         return PromotionDecision(
             PromotionState.READY_FOR_HUMAN,
             "R1 lacks pre-authorized promotion authority",
+            crypto_digest,
         )
 
     if risk_class is RiskClass.R0:
         return PromotionDecision(
             PromotionState.ELIGIBLE_AUTO,
             "R0 verification quorum passed under unattended authority",
+            crypto_digest,
         )
 
-    return PromotionDecision(PromotionState.BLOCKED, "unsupported promotion state")
+    return PromotionDecision(
+        PromotionState.BLOCKED,
+        "unsupported promotion state",
+        crypto_digest,
+    )
 
 
 def quorum_from_bundle(

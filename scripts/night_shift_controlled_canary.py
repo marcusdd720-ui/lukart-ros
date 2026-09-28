@@ -14,6 +14,12 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
+from core.crypto_agility_v1 import (
+    CryptoKeyStatus,
+    CryptoTrustKeyV1,
+    CryptoTrustSetV1,
+)
+from core.enterprise.contracts import AttestationPurpose, AttestationSigner
 from core.night_shift.canary import run_controlled_canary
 from core.night_shift.contracts import (
     AutonomyEnvelope,
@@ -22,6 +28,11 @@ from core.night_shift.contracts import (
     PromotionMode,
     RiskClass,
     TaskCapsule,
+)
+from core.night_shift.crypto_identity import (
+    CanaryCryptographicContext,
+    VerificationCryptoContext,
+    sign_verification_bundle,
 )
 from core.night_shift.failure_gate import (
     load_failure_report,
@@ -117,8 +128,28 @@ def main() -> int:
             max_tasks=1,
             promotion_mode=PromotionMode.AUTO,
         )
-        builder_identity = "canary-builder"
-        reviewer_identity = "canary-reviewer"
+        builder_identity = "night-shift-builder-v1"
+        reviewer_identity = "night-shift-reviewer-v1"
+        builder_signer = AttestationSigner.generate(builder_identity)
+        reviewer_signer = AttestationSigner.generate(reviewer_identity)
+        trust_set = CryptoTrustSetV1(
+            keys=(
+                CryptoTrustKeyV1.from_public_key_bytes(
+                    key_id=builder_identity,
+                    public_key=builder_signer.public_key_bytes(),
+                    status=CryptoKeyStatus.ACTIVE,
+                    not_before=now_epoch,
+                    allowed_purposes=(AttestationPurpose.PROVENANCE,),
+                ),
+                CryptoTrustKeyV1.from_public_key_bytes(
+                    key_id=reviewer_identity,
+                    public_key=reviewer_signer.public_key_bytes(),
+                    status=CryptoKeyStatus.ACTIVE,
+                    not_before=now_epoch,
+                    allowed_purposes=(AttestationPurpose.SECURITY_REVIEW,),
+                ),
+            )
+        )
         verification_evidence = tuple(
             VerificationEvidence(
                 gate=gate,
@@ -138,16 +169,38 @@ def main() -> int:
             )
             for gate in quorum_gates
         )
+        bundle = VerificationBundle(
+            subject_sha=state.head_sha,
+            task_capsule_digest=task.digest(),
+            builder_identity=builder_identity,
+            reviewer_identity=reviewer_identity,
+            evidence=verification_evidence,
+        )
         quorum = quorum_from_bundle(
-            VerificationBundle(
-                subject_sha=state.head_sha,
-                task_capsule_digest=task.digest(),
-                builder_identity=builder_identity,
-                reviewer_identity=reviewer_identity,
-                evidence=verification_evidence,
-            ),
+            bundle,
             now_epoch=now_epoch,
             max_evidence_age_seconds=quorum_max_age,
+        )
+        signed_verification = sign_verification_bundle(
+            bundle=bundle,
+            quorum_digest=quorum.digest(),
+            evidence_valid_until_epoch=quorum.evidence_valid_until_epoch,
+            trust_set=trust_set,
+            expected_trust_set_digest=trust_set.trust_set_digest,
+            builder_signer=builder_signer,
+            reviewer_signer=reviewer_signer,
+            issued_at=now_epoch,
+            nonce_prefix=f"{task.task_id}:verification",
+        )
+        cryptographic_context = CanaryCryptographicContext(
+            verification=VerificationCryptoContext(
+                bundle=bundle,
+                signed=signed_verification,
+                trust_set=trust_set,
+                expected_trust_set_digest=trust_set.trust_set_digest,
+            ),
+            receipt_signer=builder_signer,
+            receipt_signer_identity=builder_identity,
         )
         result = run_controlled_canary(
             repository=repo,
@@ -157,6 +210,7 @@ def main() -> int:
             policy=policy,
             envelope=envelope,
             quorum=quorum,
+            cryptographic_context=cryptographic_context,
             failure_report=failure_report,
             required_failure_scenarios=required,
             target_path="README.md",
@@ -171,6 +225,14 @@ def main() -> int:
             "output_sha": result.output_sha,
             "promotion_state": result.promotion_state.value,
             "receipt_digest": result.receipt_digest,
+            "receipt_signature_digest": result.receipt_signature_digest,
+            "receipt_crypto_verification_digest":
+                result.receipt_crypto_verification_digest,
+            "receipt_signer_identity": result.receipt_signer_identity,
+            "verification_signature_bundle_digest": signed_verification.digest(),
+            "crypto_trust_set_digest": trust_set.trust_set_digest,
+            "builder_identity": builder_identity,
+            "reviewer_identity": reviewer_identity,
             "rollback_verified": result.rollback_verified,
             "published": result.published,
             "failure_scenarios": list(required),
