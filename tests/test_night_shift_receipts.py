@@ -3,7 +3,7 @@ from dataclasses import replace
 import pytest
 
 from core.night_shift.contracts import NightShiftContractError
-from core.night_shift.receipts import ExecutionReceipt
+from core.night_shift.receipts import ExecutionReceipt, require_receipt_digest
 
 
 def _receipt() -> ExecutionReceipt:
@@ -80,3 +80,11 @@ def test_receipt_requires_positive_fencing_token() -> None:
     base = _receipt()
     with pytest.raises(NightShiftContractError, match="fencing_token"):
         replace(base, fencing_token=0)
+
+
+def test_corrupted_receipt_digest_is_rejected() -> None:
+    receipt = _receipt()
+    expected = receipt.digest()
+    corrupted = replace(receipt, evidence_refs=("ci:tampered",))
+    with pytest.raises(NightShiftContractError, match="digest mismatch"):
+        require_receipt_digest(corrupted, expected_digest=expected)

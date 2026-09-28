@@ -119,3 +119,12 @@ class ExecutionReceipt:
 
     def digest(self) -> str:
         return content_digest(self.canonical_dict())
+
+
+def require_receipt_digest(receipt: ExecutionReceipt, *, expected_digest: str) -> None:
+    try:
+        expected = require_hex_digest(expected_digest, field_name="expected_digest")
+    except ValueError as exc:
+        raise NightShiftContractError(str(exc)) from exc
+    if receipt.digest() != expected:
+        raise NightShiftContractError("execution receipt digest mismatch")

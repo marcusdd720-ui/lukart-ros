@@ -110,6 +110,8 @@ failure_injection:
 
 night_shift:
   unattended_promotion_enabled: false
+  controlled_local_canary_enabled: true
+  controlled_local_canary_publish_enabled: false
   morning_report_required: true
 
 
