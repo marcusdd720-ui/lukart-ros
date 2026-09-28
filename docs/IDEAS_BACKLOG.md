@@ -1912,3 +1912,27 @@ Conformance should cover: state meanings, non-PASS semantics, authority classes,
 - cross-version replay detects meaning-changing transformations;
 - semantic-conformance fixtures survive provider/protocol retirement;
 - architecture admission for a new core dependency requires an explicit exit/migration path and conformance evidence.
+
+## IDEA-073 — Human Signing Friction Budget / Consolidated Signing Windows
+Status: `HIGH-PRIORITY GOVERNANCE CANDIDATE`
+Recorded: `2026-09-28`
+
+Human cryptographic signing is a scarce authority operation and must not be requested for every small remediation.
+
+Default rule:
+- accumulate multiple internally validated, causally related changes;
+- run focused validation continuously without human interruption;
+- freeze one larger coherent candidate only after the batch reaches a meaningful closure boundary;
+- request one human signing operation for that batch;
+- after signing continue automatically through push, exact-SHA CI, review and promotion gates.
+
+Exceptions that may justify an earlier signing boundary:
+- a candidate must be frozen for independent review;
+- branch/PR identity must be published to unblock external CI;
+- a high-risk authority boundary requires explicit human authorization;
+- preserving a verified recovery checkpoint materially reduces risk.
+
+Target metric:
+human_signing_events / independently_verified_closed_milestones
+
+The system should minimize this ratio without weakening provenance, separation of duties or fail-closed governance.

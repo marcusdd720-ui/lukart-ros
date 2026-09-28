@@ -1,0 +1,355 @@
+from __future__ import annotations
+
+import pytest
+
+from core.night_shift.contracts import (
+    AuthorityReservation,
+    AutonomyEnvelope,
+    LiveStateSnapshot,
+    NightShiftContractError,
+    PolicyRef,
+    PromotionMode,
+    RiskClass,
+    TaskCapsule,
+    authorize_task,
+)
+
+HEX_A = "a" * 64
+HEX_B = "b" * 64
+
+
+class _AllowReservationVerifier:
+    def require_reserved(self, reservation: AuthorityReservation) -> None:
+        del reservation
+
+
+class _DenyReservationVerifier:
+    def require_reserved(self, reservation: AuthorityReservation) -> None:
+        del reservation
+        raise NightShiftContractError("reservation verification failed")
+
+
+def _policy() -> PolicyRef:
+    return PolicyRef(policy_id="NS-POLICY", version="v2", policy_digest=HEX_A)
+
+
+def _state() -> LiveStateSnapshot:
+    return LiveStateSnapshot(
+        snapshot_id="snapshot-001",
+        repository="marcusdd720-ui/lukart-ros",
+        branch="feat/night-shift-kernel-v2",
+        base_sha=HEX_A,
+        head_sha=HEX_B,
+        observed_at_epoch=100,
+        expires_at_epoch=200,
+        evidence_refs=("git:head", "github:pr"),
+    )
+
+
+def _task(state: LiveStateSnapshot, policy: PolicyRef) -> TaskCapsule:
+    return TaskCapsule(
+        task_id="task-001",
+        repository=state.repository,
+        state_snapshot_digest=state.digest(),
+        policy_digest=policy.policy_digest,
+        objective="Implement one bounded contract slice.",
+        risk_class=RiskClass.R2,
+        allowed_paths=("core/night_shift/**", "tests/test_night_shift_contracts.py"),
+        forbidden_paths=(".github/**",),
+        acceptance_checks=("pytest focused", "ruff"),
+    )
+
+
+def _envelope() -> AutonomyEnvelope:
+    return AutonomyEnvelope(
+        envelope_id="night-001",
+        issued_at_epoch=90,
+        expires_at_epoch=300,
+        repositories=("marcusdd720-ui/lukart-ros",),
+        allowed_risk_classes=(RiskClass.R2,),
+        max_tasks=2,
+        promotion_mode=PromotionMode.HUMAN,
+    )
+
+
+def _reservation(envelope: AutonomyEnvelope, task_id: str = "task-001") -> AuthorityReservation:
+    return AuthorityReservation(
+        envelope_digest=envelope.digest(),
+        task_id=task_id,
+        ordinal=1,
+    )
+
+
+def test_authorize_task_binds_policy_state_task_and_authority() -> None:
+    policy = _policy()
+    state = _state()
+    task = _task(state, policy)
+    envelope = _envelope()
+
+    decision = authorize_task(
+        policy=policy,
+        state=state,
+        task=task,
+        envelope=envelope,
+        reservation=_reservation(envelope),
+        reservation_verifier=_AllowReservationVerifier(),
+        now_epoch=150,
+        decision_id="decision-001",
+    )
+
+    assert decision.state_snapshot_digest == state.digest()
+    assert decision.task_capsule_digest == task.digest()
+    assert decision.autonomy_envelope_digest == envelope.digest()
+    assert len(decision.digest()) == 64
+def test_stale_state_fails_closed() -> None:
+    policy = _policy()
+    state = _state()
+
+    with pytest.raises(NightShiftContractError, match="state snapshot is stale"):
+        authorize_task(
+            policy=policy,
+            state=state,
+            task=_task(state, policy),
+            envelope=_envelope(),
+            reservation=_reservation(_envelope()),
+            reservation_verifier=_AllowReservationVerifier(),
+            now_epoch=200,
+            decision_id="decision-stale",
+        )
+
+
+def test_task_bound_to_different_snapshot_fails_closed() -> None:
+    policy = _policy()
+    state = _state()
+    task = TaskCapsule(
+        task_id="task-stale",
+        repository=state.repository,
+        state_snapshot_digest="c" * 64,
+        policy_digest=policy.policy_digest,
+        objective="Attempt stale execution.",
+        risk_class=RiskClass.R2,
+        allowed_paths=("core/night_shift/**",),
+        forbidden_paths=(),
+        acceptance_checks=("pytest focused",),
+    )
+
+    with pytest.raises(NightShiftContractError, match="different state snapshot"):
+        authorize_task(
+            policy=policy,
+            state=state,
+            task=task,
+            envelope=_envelope(),
+            reservation=_reservation(_envelope(), task.task_id),
+            reservation_verifier=_AllowReservationVerifier(),
+            now_epoch=150,
+            decision_id="decision-stale-binding",
+        )
+
+
+def test_repository_outside_authority_fails_closed() -> None:
+    policy = _policy()
+    state = _state()
+    envelope = AutonomyEnvelope(
+        envelope_id="wrong-repo",
+        issued_at_epoch=90,
+        expires_at_epoch=300,
+        repositories=("marcusdd720-ui/other",),
+        allowed_risk_classes=(RiskClass.R2,),
+        max_tasks=1,
+        promotion_mode=PromotionMode.HUMAN,
+    )
+    with pytest.raises(NightShiftContractError, match="outside authority envelope"):
+        authorize_task(
+            policy=policy,
+            state=state,
+            task=_task(state, policy),
+            envelope=envelope,
+            reservation=_reservation(envelope),
+            reservation_verifier=_AllowReservationVerifier(),
+            now_epoch=150,
+            decision_id="decision-wrong-repo",
+        )
+
+
+def test_auto_promotion_cannot_include_high_risk_classes() -> None:
+    with pytest.raises(
+        NightShiftContractError,
+        match="AUTO promotion authority is limited to R0",
+    ):
+        AutonomyEnvelope(
+            envelope_id="unsafe-auto",
+            issued_at_epoch=10,
+            expires_at_epoch=20,
+            repositories=("marcusdd720-ui/lukart-ros",),
+            allowed_risk_classes=(RiskClass.R0, RiskClass.R3),
+            max_tasks=1,
+            promotion_mode=PromotionMode.AUTO,
+        )
+
+
+def test_task_paths_cannot_be_both_allowed_and_forbidden() -> None:
+    policy = _policy()
+    state = _state()
+
+    with pytest.raises(NightShiftContractError, match="paths overlap"):
+        TaskCapsule(
+            task_id="bad-paths",
+            repository=state.repository,
+            state_snapshot_digest=state.digest(),
+            policy_digest=policy.policy_digest,
+            objective="Invalid task.",
+            risk_class=RiskClass.R1,
+            allowed_paths=("core/night_shift/**",),
+            forbidden_paths=("core/night_shift/**",),
+            acceptance_checks=("pytest",),
+        )
+
+
+def test_canonicalization_is_order_independent_for_set_like_fields() -> None:
+    first = AutonomyEnvelope(
+        envelope_id="canonical",
+        issued_at_epoch=1,
+        expires_at_epoch=9,
+        repositories=("repo-b", "repo-a"),
+        allowed_risk_classes=(RiskClass.R1, RiskClass.R0),
+        max_tasks=3,
+        promotion_mode=PromotionMode.PREAUTHORIZED,
+    )
+    second = AutonomyEnvelope(
+        envelope_id="canonical",
+        issued_at_epoch=1,
+        expires_at_epoch=9,
+        repositories=("repo-a", "repo-b"),
+        allowed_risk_classes=(RiskClass.R0, RiskClass.R1),
+        max_tasks=3,
+        promotion_mode=PromotionMode.PREAUTHORIZED,
+    )
+
+    assert first.digest() == second.digest()
+
+def test_r4_cannot_enter_unattended_authority_envelope() -> None:
+    with pytest.raises(
+        NightShiftContractError,
+        match="R4 cannot be authorized for unattended execution",
+    ):
+        AutonomyEnvelope(
+            envelope_id="unsafe-r4",
+            issued_at_epoch=10,
+            expires_at_epoch=20,
+            repositories=("marcusdd720-ui/lukart-ros",),
+            allowed_risk_classes=(RiskClass.R4,),
+            max_tasks=1,
+            promotion_mode=PromotionMode.HUMAN,
+        )
+
+
+def test_auto_promotion_is_limited_to_r0() -> None:
+    with pytest.raises(
+        NightShiftContractError,
+        match="AUTO promotion authority is limited to R0",
+    ):
+        AutonomyEnvelope(
+            envelope_id="unsafe-auto-r1",
+            issued_at_epoch=10,
+            expires_at_epoch=20,
+            repositories=("marcusdd720-ui/lukart-ros",),
+            allowed_risk_classes=(RiskClass.R1,),
+            max_tasks=1,
+            promotion_mode=PromotionMode.AUTO,
+        )
+
+def test_preauthorized_promotion_is_limited_to_r0_r1() -> None:
+    with pytest.raises(
+        NightShiftContractError,
+        match="PREAUTHORIZED promotion authority is limited to R0/R1",
+    ):
+        AutonomyEnvelope(
+            envelope_id="unsafe-preauth-r2",
+            issued_at_epoch=10,
+            expires_at_epoch=20,
+            repositories=("marcusdd720-ui/lukart-ros",),
+            allowed_risk_classes=(RiskClass.R2,),
+            max_tasks=1,
+            promotion_mode=PromotionMode.PREAUTHORIZED,
+        )
+
+def test_authorization_rejects_reservation_for_other_task() -> None:
+    policy = _policy()
+    state = _state()
+    task = _task(state, policy)
+    envelope = _envelope()
+    reservation = AuthorityReservation(
+        envelope_digest=envelope.digest(),
+        task_id="task-other",
+        ordinal=1,
+    )
+
+    with pytest.raises(NightShiftContractError, match="different task"):
+        authorize_task(
+            policy=policy,
+            state=state,
+            task=task,
+            envelope=envelope,
+            reservation=reservation,
+            reservation_verifier=_AllowReservationVerifier(),
+            now_epoch=150,
+            decision_id="decision-wrong-reservation",
+        )
+
+
+def test_authorization_rejects_reservation_over_budget() -> None:
+    policy = _policy()
+    state = _state()
+    task = _task(state, policy)
+    envelope = _envelope()
+    reservation = AuthorityReservation(
+        envelope_digest=envelope.digest(),
+        task_id=task.task_id,
+        ordinal=envelope.max_tasks + 1,
+    )
+
+    with pytest.raises(NightShiftContractError, match="exceeds envelope task budget"):
+        authorize_task(
+            policy=policy,
+            state=state,
+            task=task,
+            envelope=envelope,
+            reservation=reservation,
+            reservation_verifier=_AllowReservationVerifier(),
+            now_epoch=150,
+            decision_id="decision-over-budget",
+        )
+
+
+def test_live_state_accepts_current_git_sha1_oids() -> None:
+    state = LiveStateSnapshot(
+        snapshot_id="snapshot-git-sha1",
+        repository="marcusdd720-ui/lukart-ros",
+        branch="main",
+        base_sha="a" * 40,
+        head_sha="b" * 40,
+        observed_at_epoch=1,
+        expires_at_epoch=2,
+        evidence_refs=("git:head",),
+    )
+    assert len(state.base_sha) == 40
+    assert len(state.head_sha) == 40
+
+
+def test_authorization_requires_durable_reservation_verification() -> None:
+    policy = _policy()
+    state = _state()
+    task = _task(state, policy)
+    envelope = _envelope()
+
+    with pytest.raises(NightShiftContractError, match="reservation verification failed"):
+        authorize_task(
+            policy=policy,
+            state=state,
+            task=task,
+            envelope=envelope,
+            reservation=_reservation(envelope),
+            reservation_verifier=_DenyReservationVerifier(),
+            now_epoch=150,
+            decision_id="decision-unverified-reservation",
+        )
