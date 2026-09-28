@@ -1,0 +1,39 @@
+schema_version: night-shift-canary/v1
+status: LOCAL_ONLY_CONTROLLED_CANARY
+recorded_at: 2026-09-28
+
+scope:
+  allowed_risk_classes: [R0, R1]
+  publish_enabled: false
+  push_enabled: false
+  merge_enabled: false
+  external_publication_enabled: false
+  max_tasks_per_run: 1
+
+isolation:
+  dedicated_worktree_required: true
+  operator_worktree_mutation_forbidden: true
+  exact_base_sha_required: true
+  cleanup_worktree_required: true
+  cleanup_branch_required: true
+  rollback_verification_required: true
+
+authority:
+  autonomy_envelope_required: true
+  authority_budget_required: true
+  lease_required: true
+  fencing_token_required: true
+  verification_quorum_required: true
+  failure_injection_gate_required: true
+
+promotion:
+  eligibility_only: true
+  unattended_publication_enabled: false
+  r0_requires_auto_envelope: true
+  r1_requires_preauthorized_envelope: true
+  r2_plus: blocked
+
+closure:
+  execution_receipt_required: true
+  receipt_digest_required: true
+  morning_report_required: true

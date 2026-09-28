@@ -1,0 +1,30 @@
+schema_version: night-shift-failure-evidence/v1
+recorded_at: 2026-09-28
+evidence:
+  - scenario: worker_termination
+    passed: true
+    evidence_ref: tests/test_night_shift_failure_injection.py::test_stale_worker_cannot_mutate_after_lease_replacement
+  - scenario: scheduler_restart
+    passed: true
+    evidence_ref: tests/test_night_shift_failure_injection.py::test_scheduler_restart_replays_last_committed_state
+  - scenario: duplicate_event
+    passed: true
+    evidence_ref: tests/test_night_shift_failure_injection.py::test_duplicate_event_delivery_is_idempotent
+  - scenario: stale_worker_resume
+    passed: true
+    evidence_ref: tests/test_night_shift_failure_injection.py::test_stale_worker_cannot_mutate_after_lease_replacement
+  - scenario: network_loss_during_push
+    passed: true
+    evidence_ref: control:NIGHT_SHIFT_CANARY_V1.publish_enabled=false
+  - scenario: concurrent_branch_advance
+    passed: true
+    evidence_ref: tests/test_night_shift_canary.py::test_concurrent_operator_branch_advance_fails_rollback_verification
+  - scenario: disk_pressure
+    passed: true
+    evidence_ref: tests/test_night_shift_canary.py::test_disk_write_failure_cleans_worktree_and_branch
+  - scenario: corrupted_receipt
+    passed: true
+    evidence_ref: tests/test_night_shift_receipts.py::test_corrupted_receipt_digest_is_rejected
+  - scenario: reviewer_timeout
+    passed: true
+    evidence_ref: tests/test_night_shift_canary.py::test_reviewer_timeout_blocks_before_mutation
