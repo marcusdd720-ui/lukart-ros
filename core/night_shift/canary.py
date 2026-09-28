@@ -96,6 +96,8 @@ def run_controlled_canary(
         risk_class=task.risk_class,
         envelope=envelope,
         quorum=quorum,
+        subject_sha=state.head_sha,
+        task_capsule_digest=task.digest(),
         now_epoch=now_epoch,
     )
     if decision.state is not PromotionState.ELIGIBLE_AUTO:

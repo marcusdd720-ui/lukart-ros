@@ -1,0 +1,41 @@
+schema_version: night-shift-verification-quorum/v1
+status: CONTROLLED
+recorded_at: 2026-09-28
+
+required_gates:
+  - focused_tests
+  - static_security
+  - scope_guard
+  - required_regression
+  - independent_review
+  - exact_sha_ci
+  - policy_engine
+
+bindings:
+  exact_subject_sha_required: true
+  task_capsule_digest_required: true
+  evidence_digest_required_per_gate: true
+  evidence_refs_required_per_gate: true
+  duplicate_gate_evidence: BLOCKED
+  mixed_subject_sha: BLOCKED
+  mixed_task_capsule: BLOCKED
+
+identity:
+  builder_identity_required: true
+  reviewer_identity_required: true
+  builder_equals_reviewer: BLOCKED
+  independent_review_producer_must_equal_reviewer: true
+
+freshness:
+  max_evidence_age_seconds: 3600
+  future_evidence: BLOCKED
+  expired_evidence: BLOCKED
+  promotion_rechecks_expiry: true
+
+promotion:
+  expected_subject_sha_must_equal_quorum: true
+  expected_task_capsule_must_equal_quorum: true
+  incomplete_or_failed_quorum: BLOCKED
+
+signing:
+  cryptographic_identity_attestation: V2-10
