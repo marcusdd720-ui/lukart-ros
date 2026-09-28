@@ -165,10 +165,29 @@ verification_quorum:
   promotion_rechecks_evidence_expiry: true
   quorum_digest_required_in_execution_receipt: true
 
+cryptographic_identity:
+  required_for_nonblocked_promotion: true
+  pinned_trust_set_digest_required: true
+  builder_signature_required: true
+  reviewer_signature_required: true
+  receipt_signature_required_for_controlled_canary: true
+  private_key_repository_state: forbidden
+  private_key_receipt_state: forbidden
+  builder_key_matches_identity: true
+  reviewer_key_matches_identity: true
+  builder_equals_reviewer_key: BLOCKED
+  signature_expiry_equals_evidence_expiry: true
+  revoked_key: BLOCKED
+  retired_key_for_new_signature: BLOCKED
+  purpose_mismatch: BLOCKED
+  trust_set_mismatch: BLOCKED
+  signature_mismatch: BLOCKED
+
 execution_receipt:
   bind_workflow_id: true
   bind_lease_id: true
   bind_fencing_token: true
   bind_decision_digest: true
   bind_verification_digest: true
+  cryptographic_signature_required_for_controlled_canary: true
   final_state_must_be_reportable_control_or_terminal: true

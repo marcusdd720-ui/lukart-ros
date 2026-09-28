@@ -19,6 +19,11 @@ from .contracts import (
     TaskCapsule,
     authorize_task,
 )
+from .crypto_identity import (
+    CanaryCryptographicContext,
+    sign_execution_receipt,
+    verify_execution_receipt_signature,
+)
 from .failure_gate import FailureInjectionReport
 from .leases import LeaseStore
 from .promotion import PromotionState, VerificationQuorum, decide_promotion
@@ -34,6 +39,9 @@ class ControlledCanaryResult:
     output_sha: str
     promotion_state: PromotionState
     receipt_digest: str
+    receipt_signature_digest: str
+    receipt_crypto_verification_digest: str
+    receipt_signer_identity: str
     rollback_verified: bool
     published: bool = False
 
@@ -77,6 +85,7 @@ def run_controlled_canary(
     policy: PolicyRef,
     envelope: AutonomyEnvelope,
     quorum: VerificationQuorum,
+    cryptographic_context: CanaryCryptographicContext | None = None,
     failure_report: FailureInjectionReport,
     required_failure_scenarios: tuple[str, ...],
     target_path: str,
@@ -89,6 +98,10 @@ def run_controlled_canary(
         raise NightShiftContractError("controlled canary is limited to R0/R1")
     if state.head_sha != state.base_sha:
         raise NightShiftContractError("controlled canary requires exact single-SHA baseline")
+    if cryptographic_context is None:
+        raise NightShiftContractError(
+            "controlled canary requires cryptographic automation identity"
+        )
     failure_report.require_passed(required_scenarios=required_failure_scenarios)
 
     decision = decide_promotion(
@@ -96,6 +109,7 @@ def run_controlled_canary(
         risk_class=task.risk_class,
         envelope=envelope,
         quorum=quorum,
+        crypto_context=cryptographic_context.verification,
         subject_sha=state.head_sha,
         task_capsule_digest=task.digest(),
         now_epoch=now_epoch,
@@ -214,7 +228,13 @@ def run_controlled_canary(
             authority_envelope_digest=envelope.digest(),
             authority_reservation_digest=reservation.digest(),
             environment_digest=environment_digest,
-            verification_digest=quorum.digest(),
+            verification_digest=content_digest(
+                {
+                    "quorum_digest": quorum.digest(),
+                    "cryptographic_verification_digest":
+                        decision.cryptographic_verification_digest,
+                }
+            ),
             input_sha=state.head_sha,
             output_sha=output_sha,
             diff_digest=diff_digest,
@@ -237,12 +257,35 @@ def run_controlled_canary(
     if not rollback_verified or receipt is None:
         raise NightShiftContractError("controlled canary rollback verification failed")
 
+    verification = cryptographic_context.verification
+    signed_receipt = sign_execution_receipt(
+        receipt=receipt,
+        trust_set=verification.trust_set,
+        expected_trust_set_digest=verification.expected_trust_set_digest,
+        signer=cryptographic_context.receipt_signer,
+        signer_identity=cryptographic_context.receipt_signer_identity,
+        issued_at=now_epoch,
+        expires_at=quorum.evidence_valid_until_epoch,
+        nonce=f"{task.task_id}:receipt:{lease.fencing_token}",
+    )
+    receipt_verification = verify_execution_receipt_signature(
+        receipt=receipt,
+        signed_receipt=signed_receipt,
+        trust_set=verification.trust_set,
+        expected_trust_set_digest=verification.expected_trust_set_digest,
+        expected_signer_identity=cryptographic_context.receipt_signer_identity,
+        now_epoch=now_epoch,
+    )
+
     return ControlledCanaryResult(
         task_id=task.task_id,
         input_sha=state.head_sha,
         output_sha=output_sha,
         promotion_state=decision.state,
         receipt_digest=receipt.digest(),
+        receipt_signature_digest=signed_receipt.digest(),
+        receipt_crypto_verification_digest=receipt_verification.verification_digest,
+        receipt_signer_identity=cryptographic_context.receipt_signer_identity,
         rollback_verified=True,
         published=False,
     )

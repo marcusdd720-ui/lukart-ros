@@ -5,6 +5,8 @@ from pathlib import Path
 
 import pytest
 
+from core.crypto_agility_v1 import CryptoKeyStatus, CryptoTrustKeyV1, CryptoTrustSetV1
+from core.enterprise.contracts import AttestationPurpose, AttestationSigner
 from core.night_shift.canary import run_controlled_canary
 from core.night_shift.contracts import (
     AutonomyEnvelope,
@@ -15,12 +17,23 @@ from core.night_shift.contracts import (
     RiskClass,
     TaskCapsule,
 )
+from core.night_shift.crypto_identity import (
+    CanaryCryptographicContext,
+    VerificationCryptoContext,
+    sign_verification_bundle,
+)
 from core.night_shift.failure_gate import (
     FailureInjectionEvidence,
     FailureInjectionReport,
     load_required_failure_scenarios,
 )
-from core.night_shift.promotion import VerificationQuorum
+from core.night_shift.promotion import VerificationQuorum, quorum_from_bundle
+from core.night_shift.verification import (
+    VerificationBundle,
+    VerificationEvidence,
+    VerificationGate,
+)
+from core.p3.contracts import content_digest
 
 POLICY_PATH = Path("docs/execution_profiles/NIGHT_SHIFT_POLICY_V2.yaml")
 
@@ -66,6 +79,86 @@ def _quorum(sha: str, task_digest: str) -> VerificationQuorum:
         task_digest,
         "f" * 64,
         100,
+    )
+
+
+
+
+def _verification(
+    sha: str,
+    task_digest: str,
+) -> tuple[VerificationQuorum, CanaryCryptographicContext]:
+    builder = AttestationSigner.generate("builder")
+    reviewer = AttestationSigner.generate("reviewer")
+    trust_set = CryptoTrustSetV1(
+        keys=(
+            CryptoTrustKeyV1.from_public_key_bytes(
+                key_id=builder.key_id,
+                public_key=builder.public_key_bytes(),
+                status=CryptoKeyStatus.ACTIVE,
+                not_before=1,
+                allowed_purposes=(AttestationPurpose.PROVENANCE,),
+            ),
+            CryptoTrustKeyV1.from_public_key_bytes(
+                key_id=reviewer.key_id,
+                public_key=reviewer.public_key_bytes(),
+                status=CryptoKeyStatus.ACTIVE,
+                not_before=1,
+                allowed_purposes=(AttestationPurpose.SECURITY_REVIEW,),
+            ),
+        )
+    )
+    evidence = tuple(
+        VerificationEvidence(
+            gate=gate,
+            passed=True,
+            subject_sha=sha,
+            task_capsule_digest=task_digest,
+            producer_identity=(
+                reviewer.key_id
+                if gate is VerificationGate.INDEPENDENT_REVIEW
+                else builder.key_id
+            ),
+            observed_at_epoch=10,
+            evidence_digest=content_digest(
+                {"gate": gate.value, "task_digest": task_digest}
+            ),
+            evidence_refs=(f"test:{gate.value}",),
+        )
+        for gate in VerificationGate
+    )
+    bundle = VerificationBundle(
+        subject_sha=sha,
+        task_capsule_digest=task_digest,
+        builder_identity=builder.key_id,
+        reviewer_identity=reviewer.key_id,
+        evidence=evidence,
+    )
+    quorum = quorum_from_bundle(
+        bundle,
+        now_epoch=10,
+        max_evidence_age_seconds=90,
+    )
+    signed = sign_verification_bundle(
+        bundle=bundle,
+        quorum_digest=quorum.digest(),
+        evidence_valid_until_epoch=quorum.evidence_valid_until_epoch,
+        trust_set=trust_set,
+        expected_trust_set_digest=trust_set.trust_set_digest,
+        builder_signer=builder,
+        reviewer_signer=reviewer,
+        issued_at=10,
+        nonce_prefix="canary-test",
+    )
+    return quorum, CanaryCryptographicContext(
+        verification=VerificationCryptoContext(
+            bundle=bundle,
+            signed=signed,
+            trust_set=trust_set,
+            expected_trust_set_digest=trust_set.trust_set_digest,
+        ),
+        receipt_signer=builder,
+        receipt_signer_identity=builder.key_id,
     )
 
 
@@ -129,6 +222,7 @@ def test_controlled_canary_mutates_only_isolated_worktree_and_rolls_back(
     repo, sha = _repo(tmp_path)
     policy, state, task, envelope = _inputs(sha=sha)
     report, required = _failure_report()
+    quorum, crypto = _verification(state.head_sha, task.digest())
 
     result = run_controlled_canary(
         repository=repo,
@@ -137,7 +231,8 @@ def test_controlled_canary_mutates_only_isolated_worktree_and_rolls_back(
         state=state,
         policy=policy,
         envelope=envelope,
-        quorum=_quorum(state.head_sha, task.digest()),
+        quorum=quorum,
+        cryptographic_context=crypto,
         failure_report=report,
         required_failure_scenarios=required,
         target_path="README.md",
@@ -147,6 +242,9 @@ def test_controlled_canary_mutates_only_isolated_worktree_and_rolls_back(
 
     assert result.input_sha == sha
     assert result.output_sha != sha
+    assert result.receipt_signature_digest
+    assert result.receipt_crypto_verification_digest
+    assert result.receipt_signer_identity == "builder"
     assert result.rollback_verified
     assert result.published is False
     assert _run(repo, "git", "rev-parse", "HEAD") == sha
@@ -201,6 +299,7 @@ def test_scope_violation_rolls_back_and_cleans_branch(tmp_path: Path) -> None:
     repo, sha = _repo(tmp_path)
     policy, state, task, envelope = _inputs(sha=sha)
     report, required = _failure_report()
+    quorum, crypto = _verification(state.head_sha, task.digest())
 
     with pytest.raises(NightShiftContractError, match="outside allowed task scope"):
         run_controlled_canary(
@@ -210,7 +309,8 @@ def test_scope_violation_rolls_back_and_cleans_branch(tmp_path: Path) -> None:
             state=state,
             policy=policy,
             envelope=envelope,
-            quorum=_quorum(state.head_sha, task.digest()),
+            quorum=quorum,
+            cryptographic_context=crypto,
             failure_report=report,
             required_failure_scenarios=required,
             target_path="OTHER.md",
@@ -228,6 +328,7 @@ def test_reviewer_timeout_blocks_before_mutation(tmp_path: Path) -> None:
     repo, sha = _repo(tmp_path)
     policy, state, task, envelope = _inputs(sha=sha)
     report, required = _failure_report()
+    _, crypto = _verification(state.head_sha, task.digest())
     quorum = VerificationQuorum(
         True,
         True,
@@ -252,6 +353,7 @@ def test_reviewer_timeout_blocks_before_mutation(tmp_path: Path) -> None:
             policy=policy,
             envelope=envelope,
             quorum=quorum,
+            cryptographic_context=crypto,
             failure_report=report,
             required_failure_scenarios=required,
             target_path="README.md",
@@ -265,6 +367,7 @@ def test_disk_write_failure_cleans_worktree_and_branch(tmp_path: Path) -> None:
     repo, sha = _repo(tmp_path)
     policy, state, task, envelope = _inputs(sha=sha)
     report, required = _failure_report()
+    quorum, crypto = _verification(state.head_sha, task.digest())
 
     def fail_write(_path: Path, _text: str) -> None:
         raise OSError("simulated disk pressure")
@@ -277,7 +380,8 @@ def test_disk_write_failure_cleans_worktree_and_branch(tmp_path: Path) -> None:
             state=state,
             policy=policy,
             envelope=envelope,
-            quorum=_quorum(state.head_sha, task.digest()),
+            quorum=quorum,
+            cryptographic_context=crypto,
             failure_report=report,
             required_failure_scenarios=required,
             target_path="README.md",
@@ -297,6 +401,7 @@ def test_concurrent_operator_branch_advance_fails_rollback_verification(
     repo, sha = _repo(tmp_path)
     policy, state, task, envelope = _inputs(sha=sha)
     report, required = _failure_report()
+    quorum, crypto = _verification(state.head_sha, task.digest())
 
     def advance_operator_then_write(path: Path, text: str) -> None:
         (repo / "OPERATOR.txt").write_text("advance\n", encoding="utf-8")
@@ -312,7 +417,8 @@ def test_concurrent_operator_branch_advance_fails_rollback_verification(
             state=state,
             policy=policy,
             envelope=envelope,
-            quorum=_quorum(state.head_sha, task.digest()),
+            quorum=quorum,
+            cryptographic_context=crypto,
             failure_report=report,
             required_failure_scenarios=required,
             target_path="README.md",

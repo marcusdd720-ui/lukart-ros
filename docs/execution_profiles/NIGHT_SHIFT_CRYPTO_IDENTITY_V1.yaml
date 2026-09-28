@@ -1,0 +1,42 @@
+schema_version: night-shift-crypto-identity/v1
+status: CONTROLLED
+recorded_at: 2026-09-28
+
+trust:
+  provider_neutral: true
+  crypto_fabric: CryptoTrustSetV1
+  algorithm_adapter: ED25519
+  pinned_trust_set_digest_required: true
+  repository_private_key_material: forbidden
+  receipt_private_key_material: forbidden
+
+verification_bundle:
+  cryptographic_identity_required_for_nonblocked_promotion: true
+  builder_signature_required: true
+  reviewer_signature_required: true
+  builder_key_must_match_declared_identity: true
+  reviewer_key_must_match_declared_identity: true
+  builder_equals_reviewer_key: BLOCKED
+  builder_purpose: PROVENANCE
+  reviewer_purpose: SECURITY_REVIEW
+  signature_expiry_must_equal_evidence_expiry: true
+  revoked_key: BLOCKED
+  retired_key_for_new_signature: BLOCKED
+  purpose_mismatch: BLOCKED
+  trust_set_mismatch: BLOCKED
+  signature_mismatch: BLOCKED
+
+execution_receipt:
+  signature_required_for_controlled_canary: true
+  signer_identity_required: true
+  purpose: PROVENANCE
+  canonical_receipt_payload_required: true
+  immediate_signature_reverification_required: true
+  tampered_receipt: BLOCKED
+  trust_set_mismatch: BLOCKED
+  signer_identity_mismatch: BLOCKED
+
+promotion:
+  blocked_outcomes_do_not_require_signature_verification: true
+  ready_or_eligible_outcomes_require_verified_signatures: true
+  unattended_publication_enabled: false
