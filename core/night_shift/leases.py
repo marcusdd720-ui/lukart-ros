@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import sqlite3
+from contextlib import closing
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -42,7 +43,7 @@ class LeaseStore:
         return connection
 
     def _initialize(self) -> None:
-        with self._connect() as connection:
+        with closing(self._connect()) as connection:
             connection.executescript(
                 """
                 CREATE TABLE IF NOT EXISTS lease_counters (
@@ -66,6 +67,7 @@ class LeaseStore:
                 );
                 """
             )
+            connection.commit()
 
     @staticmethod
     def _text(value: str, *, field_name: str) -> str:
@@ -171,7 +173,7 @@ class LeaseStore:
     ) -> TaskLease:
         task_id = self._text(task_id, field_name="task_id")
         lease_id = self._text(lease_id, field_name="lease_id")
-        with self._connect() as connection:
+        with closing(self._connect()) as connection:
             row = connection.execute(
                 "SELECT * FROM leases WHERE task_id = ?",
                 (task_id,),
@@ -212,7 +214,7 @@ class LeaseStore:
         if ttl_seconds < 1:
             raise NightShiftContractError("ttl_seconds must be positive")
         new_expiry = now_epoch + ttl_seconds
-        with self._connect() as connection:
+        with closing(self._connect()) as connection:
             updated = connection.execute(
                 """
                 UPDATE leases
@@ -229,6 +231,7 @@ class LeaseStore:
             ).rowcount
             if updated != 1:
                 raise NightShiftContractError("lease heartbeat CAS conflict")
+            connection.commit()
         return self.require_current(
             task_id=task_id,
             lease_id=lease_id,
@@ -345,7 +348,7 @@ class LeaseStore:
 
     def get_state(self, *, task_id: str) -> TaskState | None:
         task_id = self._text(task_id, field_name="task_id")
-        with self._connect() as connection:
+        with closing(self._connect()) as connection:
             row = connection.execute(
                 "SELECT * FROM task_states WHERE task_id = ?",
                 (task_id,),

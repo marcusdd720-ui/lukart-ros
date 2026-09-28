@@ -1,0 +1,29 @@
+schema_version: night-shift-live-inputs/v1
+ttl_seconds: 900
+projects:
+  - project_id: LUKART_PR313
+    repository: marcusdd720-ui/lukart-ros
+    main_ref: refs/heads/main
+    task_id: LUKART-PR313-CLOSE
+    closure_percent: 95
+    risk_class: R3
+    candidate_ref: refs/pull/313/head
+    candidate_base_sha: 2f81977f64ad7ec550b5dc7a43540a144ac7bc70
+    blockers: []
+    evidence_refs: [github:pr313]
+  - project_id: LATAM_I11
+    repository: marcusdd720-ui/Latam-Career-OS
+    main_ref: refs/heads/main
+    task_id: LATAM-I11
+    closure_percent: 70
+    risk_class: R2
+    blockers: []
+    evidence_refs: [github:main]
+  - project_id: SYNTH_V071
+    repository: marcusdd720-ui/synthetic-test-data
+    main_ref: refs/heads/main
+    task_id: SYNTH-V071
+    closure_percent: 60
+    risk_class: R1
+    blockers: []
+    evidence_refs: [github:main]

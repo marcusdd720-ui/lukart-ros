@@ -5,7 +5,7 @@ from __future__ import annotations
 import json
 import sqlite3
 from collections.abc import Iterator, Mapping
-from contextlib import contextmanager
+from contextlib import closing, contextmanager
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -55,7 +55,7 @@ class DurableEventJournal:
         finally:
             connection.close()
     def _initialize(self) -> None:
-        with self._connect() as connection:
+        with closing(self._connect()) as connection:
             connection.executescript(
                 """
                 CREATE TABLE IF NOT EXISTS events (
@@ -88,6 +88,7 @@ class DurableEventJournal:
                 );
                 """
             )
+            connection.commit()
     @staticmethod
     def _require_text(value: str, *, field_name: str) -> str:
         normalized = value.strip()
@@ -173,7 +174,7 @@ class DurableEventJournal:
         return True
     def events(self, *, workflow_id: str) -> tuple[JournalEvent, ...]:
         workflow_id = self._require_text(workflow_id, field_name="workflow_id")
-        with self._connect() as connection:
+        with closing(self._connect()) as connection:
             rows = connection.execute(
                 """
                 SELECT sequence, event_id, workflow_id, event_type, payload_json,
@@ -292,7 +293,7 @@ class DurableEventJournal:
             )
         return True
     def pending_outbox(self) -> tuple[tuple[str, str, dict[str, object]], ...]:
-        with self._connect() as connection:
+        with closing(self._connect()) as connection:
             rows = connection.execute(
                 """
                 SELECT idempotency_key, action_type, payload_json
