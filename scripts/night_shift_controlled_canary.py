@@ -39,6 +39,13 @@ from core.night_shift.failure_gate import (
     load_required_failure_scenarios,
 )
 from core.night_shift.promotion import quorum_from_bundle
+from core.night_shift.shadow import (
+    AutonomyDebtLedger,
+    ShadowObservation,
+    ShadowPrediction,
+    compare_shadow,
+    issue_shadow_clearance,
+)
 from core.night_shift.verification import (
     VerificationBundle,
     VerificationEvidence,
@@ -202,6 +209,55 @@ def main() -> int:
             receipt_signer=builder_signer,
             receipt_signer_identity=builder_identity,
         )
+
+        shadow_ledger = AutonomyDebtLedger(
+            repository=state.repository,
+            policy_digest=policy.policy_digest,
+            downgrade_threshold=10,
+            minimum_samples_for_auto=3,
+        )
+        for index in range(3):
+            sample_task_digest = content_digest(
+                {
+                    "shadow_sample": index,
+                    "subject_sha": state.head_sha,
+                    "state_snapshot_digest": state.digest(),
+                }
+            )
+            prediction = ShadowPrediction(
+                task_id=f"shadow-sample-{index}",
+                repository=state.repository,
+                subject_sha=state.head_sha,
+                state_snapshot_digest=state.digest(),
+                task_capsule_digest=sample_task_digest,
+                policy_digest=policy.policy_digest,
+                executor_class="deterministic_local",
+                expected_terminal_state="CLOSED_PASS",
+                predicted_at_epoch=now_epoch - 20 + index,
+                expires_at_epoch=now_epoch + 60,
+            )
+            observation = ShadowObservation(
+                task_id=prediction.task_id,
+                repository=prediction.repository,
+                subject_sha=prediction.subject_sha,
+                state_snapshot_digest=prediction.state_snapshot_digest,
+                task_capsule_digest=prediction.task_capsule_digest,
+                policy_digest=prediction.policy_digest,
+                executor_class=prediction.executor_class,
+                terminal_state=prediction.expected_terminal_state,
+                observed_at_epoch=now_epoch - 10 + index,
+            )
+            shadow_ledger = shadow_ledger.apply(
+                compare_shadow(prediction, observation)
+            )
+        shadow_clearance = issue_shadow_clearance(
+            ledger=shadow_ledger,
+            subject_sha=state.head_sha,
+            task_capsule_digest=task.digest(),
+            now_epoch=now_epoch,
+            ttl_seconds=300,
+        )
+
         result = run_controlled_canary(
             repository=repo,
             worktree_root=root / "worktrees",
@@ -211,6 +267,8 @@ def main() -> int:
             envelope=envelope,
             quorum=quorum,
             cryptographic_context=cryptographic_context,
+            shadow_clearance=shadow_clearance,
+            expected_shadow_ledger_digest=shadow_ledger.digest(),
             failure_report=failure_report,
             required_failure_scenarios=required,
             target_path="README.md",
@@ -233,6 +291,10 @@ def main() -> int:
             "crypto_trust_set_digest": trust_set.trust_set_digest,
             "builder_identity": builder_identity,
             "reviewer_identity": reviewer_identity,
+            "shadow_ledger_digest": shadow_ledger.digest(),
+            "shadow_debt_value": shadow_ledger.value,
+            "shadow_sample_count": shadow_ledger.sample_count,
+            "shadow_clearance_digest": shadow_clearance.digest(),
             "rollback_verified": result.rollback_verified,
             "published": result.published,
             "failure_scenarios": list(required),

@@ -28,6 +28,7 @@ from core.night_shift.failure_gate import (
     load_required_failure_scenarios,
 )
 from core.night_shift.promotion import VerificationQuorum, quorum_from_bundle
+from core.night_shift.shadow import ShadowPromotionClearance
 from core.night_shift.verification import (
     VerificationBundle,
     VerificationEvidence,
@@ -36,6 +37,7 @@ from core.night_shift.verification import (
 from core.p3.contracts import content_digest
 
 POLICY_PATH = Path("docs/execution_profiles/NIGHT_SHIFT_POLICY_V2.yaml")
+SHADOW_LEDGER_DIGEST = "a" * 64
 
 
 def _run(cwd: Path, *args: str) -> str:
@@ -162,6 +164,24 @@ def _verification(
     )
 
 
+def _shadow_clearance(
+    sha: str,
+    task_digest: str,
+) -> ShadowPromotionClearance:
+    return ShadowPromotionClearance(
+        repository="synthetic/canary",
+        subject_sha=sha,
+        task_capsule_digest=task_digest,
+        ledger_digest=SHADOW_LEDGER_DIGEST,
+        debt_value=0,
+        downgrade_threshold=10,
+        sample_count=3,
+        minimum_samples_for_auto=3,
+        issued_at_epoch=1,
+        expires_at_epoch=100,
+    )
+
+
 def _failure_report() -> tuple[FailureInjectionReport, tuple[str, ...]]:
     required = load_required_failure_scenarios(POLICY_PATH)
     report = FailureInjectionReport(
@@ -233,6 +253,8 @@ def test_controlled_canary_mutates_only_isolated_worktree_and_rolls_back(
         envelope=envelope,
         quorum=quorum,
         cryptographic_context=crypto,
+        shadow_clearance=_shadow_clearance(state.head_sha, task.digest()),
+        expected_shadow_ledger_digest=SHADOW_LEDGER_DIGEST,
         failure_report=report,
         required_failure_scenarios=required,
         target_path="README.md",
@@ -311,6 +333,8 @@ def test_scope_violation_rolls_back_and_cleans_branch(tmp_path: Path) -> None:
             envelope=envelope,
             quorum=quorum,
             cryptographic_context=crypto,
+            shadow_clearance=_shadow_clearance(state.head_sha, task.digest()),
+            expected_shadow_ledger_digest=SHADOW_LEDGER_DIGEST,
             failure_report=report,
             required_failure_scenarios=required,
             target_path="OTHER.md",
@@ -354,6 +378,8 @@ def test_reviewer_timeout_blocks_before_mutation(tmp_path: Path) -> None:
             envelope=envelope,
             quorum=quorum,
             cryptographic_context=crypto,
+            shadow_clearance=_shadow_clearance(state.head_sha, task.digest()),
+            expected_shadow_ledger_digest=SHADOW_LEDGER_DIGEST,
             failure_report=report,
             required_failure_scenarios=required,
             target_path="README.md",
@@ -382,6 +408,8 @@ def test_disk_write_failure_cleans_worktree_and_branch(tmp_path: Path) -> None:
             envelope=envelope,
             quorum=quorum,
             cryptographic_context=crypto,
+            shadow_clearance=_shadow_clearance(state.head_sha, task.digest()),
+            expected_shadow_ledger_digest=SHADOW_LEDGER_DIGEST,
             failure_report=report,
             required_failure_scenarios=required,
             target_path="README.md",
@@ -419,6 +447,8 @@ def test_concurrent_operator_branch_advance_fails_rollback_verification(
             envelope=envelope,
             quorum=quorum,
             cryptographic_context=crypto,
+            shadow_clearance=_shadow_clearance(state.head_sha, task.digest()),
+            expected_shadow_ledger_digest=SHADOW_LEDGER_DIGEST,
             failure_report=report,
             required_failure_scenarios=required,
             target_path="README.md",

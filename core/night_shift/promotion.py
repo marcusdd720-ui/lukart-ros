@@ -18,6 +18,7 @@ from .crypto_identity import (
     VerificationCryptoContext,
     verify_verification_bundle_signatures,
 )
+from .shadow import ShadowPromotionClearance
 from .verification import VerificationBundle
 
 
@@ -113,6 +114,68 @@ class PromotionDecision:
     state: PromotionState
     reason: str
     cryptographic_verification_digest: str | None = None
+    shadow_clearance_digest: str | None = None
+
+
+def _shadow_auto_gate(
+    *,
+    clearance: ShadowPromotionClearance | None,
+    expected_ledger_digest: str | None,
+    repository: str,
+    subject_sha: str,
+    task_capsule_digest: str,
+    now_epoch: int,
+    crypto_digest: str,
+) -> PromotionDecision | None:
+    if clearance is None:
+        return PromotionDecision(
+            PromotionState.READY_FOR_HUMAN,
+            "shadow promotion clearance required",
+            crypto_digest,
+        )
+    clearance.require_fresh(now_epoch=now_epoch)
+    if expected_ledger_digest is None:
+        raise NightShiftContractError(
+            "shadow ledger digest authority is required for auto promotion"
+        )
+    try:
+        expected_ledger = require_hex_digest(
+            expected_ledger_digest,
+            field_name="expected_shadow_ledger_digest",
+        )
+    except ValueError as exc:
+        raise NightShiftContractError(str(exc)) from exc
+    if clearance.ledger_digest != expected_ledger:
+        raise NightShiftContractError(
+            "shadow clearance does not match expected autonomy debt ledger"
+        )
+    if clearance.repository != repository:
+        raise NightShiftContractError(
+            "shadow clearance belongs to a different repository"
+        )
+    if clearance.subject_sha != subject_sha:
+        raise NightShiftContractError(
+            "shadow clearance is bound to a different SHA"
+        )
+    if clearance.task_capsule_digest != task_capsule_digest:
+        raise NightShiftContractError(
+            "shadow clearance is bound to a different task capsule"
+        )
+    if clearance.sample_count < clearance.minimum_samples_for_auto:
+        return PromotionDecision(
+            PromotionState.READY_FOR_HUMAN,
+            "insufficient shadow calibration samples",
+            crypto_digest,
+            clearance.digest(),
+        )
+    if clearance.debt_value >= clearance.downgrade_threshold:
+        return PromotionDecision(
+            PromotionState.READY_FOR_HUMAN,
+            "autonomy debt threshold reached",
+            crypto_digest,
+            clearance.digest(),
+        )
+    return None
 
 
 def decide_promotion(
@@ -122,6 +185,8 @@ def decide_promotion(
     envelope: AutonomyEnvelope,
     quorum: VerificationQuorum,
     crypto_context: VerificationCryptoContext | None = None,
+    shadow_clearance: ShadowPromotionClearance | None = None,
+    expected_shadow_ledger_digest: str | None = None,
     subject_sha: str,
     task_capsule_digest: str,
     now_epoch: int,
@@ -206,10 +271,26 @@ def decide_promotion(
 
     if risk_class is RiskClass.R1:
         if envelope.promotion_mode is PromotionMode.PREAUTHORIZED:
+            shadow_gate = _shadow_auto_gate(
+                clearance=shadow_clearance,
+                expected_ledger_digest=expected_shadow_ledger_digest,
+                repository=repository,
+                subject_sha=expected_sha,
+                task_capsule_digest=expected_task_digest,
+                now_epoch=now_epoch,
+                crypto_digest=crypto_digest,
+            )
+            if shadow_gate is not None:
+                return shadow_gate
+            if shadow_clearance is None:
+                raise NightShiftContractError(
+                    "shadow gate invariant allowed auto without clearance"
+                )
             return PromotionDecision(
                 PromotionState.ELIGIBLE_AUTO,
-                "R1 pre-authorized and verification quorum passed",
+                "R1 pre-authorized with verification and shadow clearance",
                 crypto_digest,
+                shadow_clearance.digest(),
             )
         return PromotionDecision(
             PromotionState.READY_FOR_HUMAN,
@@ -218,10 +299,26 @@ def decide_promotion(
         )
 
     if risk_class is RiskClass.R0:
+        shadow_gate = _shadow_auto_gate(
+            clearance=shadow_clearance,
+            expected_ledger_digest=expected_shadow_ledger_digest,
+            repository=repository,
+            subject_sha=expected_sha,
+            task_capsule_digest=expected_task_digest,
+            now_epoch=now_epoch,
+            crypto_digest=crypto_digest,
+        )
+        if shadow_gate is not None:
+            return shadow_gate
+        if shadow_clearance is None:
+            raise NightShiftContractError(
+                "shadow gate invariant allowed auto without clearance"
+            )
         return PromotionDecision(
             PromotionState.ELIGIBLE_AUTO,
-            "R0 verification quorum passed under unattended authority",
+            "R0 verification and shadow clearance passed under unattended authority",
             crypto_digest,
+            shadow_clearance.digest(),
         )
 
     return PromotionDecision(

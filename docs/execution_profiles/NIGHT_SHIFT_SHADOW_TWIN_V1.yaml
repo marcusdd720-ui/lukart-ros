@@ -1,0 +1,54 @@
+schema_version: night-shift-shadow-twin/v1
+status: CONTROLLED
+recorded_at: 2026-09-28
+
+prediction:
+  counterfactual_required: true
+  exact_subject_sha_required: true
+  state_snapshot_digest_required: true
+  task_capsule_digest_required: true
+  policy_digest_required: true
+  executor_class_required: true
+  expected_terminal_state_required: true
+  expiry_required: true
+
+observation:
+  exact_identity_match_required: true
+  observation_before_prediction: BLOCKED
+  observation_after_prediction_expiry: BLOCKED
+
+divergence:
+  exact_match_debt_delta: -1
+  executor_divergence_debt_delta: 1
+  terminal_divergence_debt_delta: 2
+  executor_and_terminal_divergence_debt_delta: 3
+
+autonomy_debt:
+  minimum_value: 0
+  default_downgrade_threshold: 10
+  minimum_samples_for_auto: 3
+  duplicate_calibration: BLOCKED
+  foreign_repository_calibration: BLOCKED
+  foreign_policy_calibration: BLOCKED
+  content_addressed_ledger_required: true
+
+promotion_clearance:
+  ledger_digest_required: true
+  expected_ledger_digest_authority_required: true
+  forged_or_mismatched_ledger_digest: BLOCKED
+  exact_repository_required: true
+  exact_subject_sha_required: true
+  exact_task_capsule_digest_required: true
+  expiry_required: true
+  below_minimum_samples: READY_FOR_HUMAN
+  debt_at_or_above_threshold: READY_FOR_HUMAN
+
+publication:
+  unattended_publication_enabled: false
+  controlled_canary_publication_enabled: false
+
+authority:
+  shadow_twin_is_evidence_not_policy: true
+  shadow_clearance_may_not_expand_task_scope: true
+  shadow_clearance_may_not_override_autonomy_envelope: true
+  durable_external_ledger_authority_certification: not_claimed
