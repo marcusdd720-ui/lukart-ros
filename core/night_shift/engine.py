@@ -8,6 +8,7 @@ from typing import Protocol
 
 from .contracts import NightShiftContractError
 from .journal import DurableEventJournal
+from .state_machine import require_initial_phase, require_transition
 
 
 @dataclass(frozen=True, slots=True)
@@ -60,10 +61,19 @@ class LocalJournalWorkflowEngine:
     ) -> WorkflowState:
         workflow_id = self._text(workflow_id, field_name="workflow_id")
         initial_state = self._text(initial_state, field_name="initial_state")
+        require_initial_phase(initial_state)
         event_id = f"{workflow_id}:start"
 
         existing = self.journal.events(workflow_id=workflow_id)
         if existing:
+            first = existing[0]
+            if (
+                first.event_type != "STATE_TRANSITION"
+                or first.payload.get("to_state") != initial_state
+            ):
+                raise NightShiftContractError(
+                    "workflow restart conflicts with original initial state"
+                )
             state = self.journal.replay_state(
                 workflow_id=workflow_id,
                 initial_state=initial_state,
@@ -91,6 +101,9 @@ class LocalJournalWorkflowEngine:
         to_state = self._text(to_state, field_name="to_state")
         if not self.journal.events(workflow_id=workflow_id):
             raise NightShiftContractError("workflow has not been started")
+
+        current_state = self.journal.replay_state(workflow_id=workflow_id)
+        require_transition(from_state=current_state, to_state=to_state)
 
         self.journal.append_event(
             event_id=event_id,

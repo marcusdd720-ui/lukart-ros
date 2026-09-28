@@ -121,3 +121,18 @@ class AuthorityBudgetStore:
             raise
         finally:
             connection.close()
+
+
+    def require_reserved(self, reservation: AuthorityReservation) -> None:
+        with self._connect() as connection:
+            row = connection.execute(
+                """
+                SELECT ordinal FROM authority_reservations
+                WHERE envelope_digest = ? AND task_id = ?
+                """,
+                (reservation.envelope_digest, reservation.task_id),
+            ).fetchone()
+        if row is None or int(row["ordinal"]) != reservation.ordinal:
+            raise NightShiftContractError(
+                "authority reservation is not present in the durable budget store"
+            )

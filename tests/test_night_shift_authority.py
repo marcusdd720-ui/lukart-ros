@@ -6,6 +6,7 @@ import pytest
 
 from core.night_shift.authority import AuthorityBudgetStore
 from core.night_shift.contracts import (
+    AuthorityReservation,
     AutonomyEnvelope,
     NightShiftContractError,
     PromotionMode,
@@ -79,3 +80,25 @@ def test_expired_envelope_cannot_reserve_task(tmp_path: Path) -> None:
             task_id="task-1",
             now_epoch=100,
         )
+
+
+def test_forged_reservation_is_rejected(tmp_path: Path) -> None:
+    store = _store(tmp_path)
+    envelope = _envelope(max_tasks=2)
+    real = store.reserve_task(
+        envelope=envelope,
+        task_id="task-1",
+        now_epoch=20,
+    )
+    store.require_reserved(real)
+
+    forged = AuthorityReservation(
+        envelope_digest=real.envelope_digest,
+        task_id=real.task_id,
+        ordinal=real.ordinal + 1,
+    )
+    with pytest.raises(
+        NightShiftContractError,
+        match="not present in the durable budget store",
+    ):
+        store.require_reserved(forged)

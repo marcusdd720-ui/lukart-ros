@@ -5,7 +5,14 @@ from __future__ import annotations
 from dataclasses import dataclass
 from enum import StrEnum
 
-from .contracts import AutonomyEnvelope, PromotionMode, RiskClass
+from core.p3.contracts import content_digest
+
+from .contracts import (
+    AutonomyEnvelope,
+    NightShiftContractError,
+    PromotionMode,
+    RiskClass,
+)
 
 
 class PromotionState(StrEnum):
@@ -18,22 +25,56 @@ class PromotionState(StrEnum):
 class VerificationQuorum:
     focused_tests_pass: bool
     static_security_pass: bool
+    scope_guard_pass: bool
     required_regression_pass: bool
     independent_review_pass: bool
     exact_sha_ci_pass: bool
     policy_engine_pass: bool
+    builder_identity: str
+    reviewer_identity: str
+
+    def __post_init__(self) -> None:
+        builder = self.builder_identity.strip()
+        reviewer = self.reviewer_identity.strip()
+        if not builder or not reviewer:
+            raise NightShiftContractError(
+                "builder and reviewer identities are required"
+            )
+        if builder == reviewer:
+            raise NightShiftContractError(
+                "builder and reviewer identities must be different"
+            )
+        object.__setattr__(self, "builder_identity", builder)
+        object.__setattr__(self, "reviewer_identity", reviewer)
 
     def passed(self) -> bool:
         return all(
             (
                 self.focused_tests_pass,
                 self.static_security_pass,
+                self.scope_guard_pass,
                 self.required_regression_pass,
                 self.independent_review_pass,
                 self.exact_sha_ci_pass,
                 self.policy_engine_pass,
             )
         )
+
+    def canonical_dict(self) -> dict[str, object]:
+        return {
+            "focused_tests_pass": self.focused_tests_pass,
+            "static_security_pass": self.static_security_pass,
+            "scope_guard_pass": self.scope_guard_pass,
+            "required_regression_pass": self.required_regression_pass,
+            "independent_review_pass": self.independent_review_pass,
+            "exact_sha_ci_pass": self.exact_sha_ci_pass,
+            "policy_engine_pass": self.policy_engine_pass,
+            "builder_identity": self.builder_identity,
+            "reviewer_identity": self.reviewer_identity,
+        }
+
+    def digest(self) -> str:
+        return content_digest(self.canonical_dict())
 
 
 @dataclass(frozen=True, slots=True)

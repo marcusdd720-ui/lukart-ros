@@ -6,7 +6,7 @@ import subprocess
 from dataclasses import dataclass
 from pathlib import Path
 
-from .contracts import NightShiftContractError
+from .contracts import NightShiftContractError, require_git_oid
 
 
 @dataclass(frozen=True, slots=True)
@@ -59,15 +59,16 @@ class WorktreeManager:
         *,
         task_id: str,
         branch: str,
-        base_ref: str,
+        base_sha: str,
     ) -> WorktreeHandle:
         task_segment = self._segment(task_id, field_name="task_id")
         branch = branch.strip()
-        base_ref = base_ref.strip()
-        if not branch or not base_ref:
-            raise NightShiftContractError("branch and base_ref are required")
+        if not branch:
+            raise NightShiftContractError("branch is required")
         if not branch.startswith("night-shift/"):
             raise NightShiftContractError("night worktree branch must use night-shift/ prefix")
+        self._git("check-ref-format", "--branch", branch)
+        base_sha = require_git_oid(base_sha, field_name="base_sha")
 
         target = (self.root / task_segment).resolve()
         if target.parent != self.root:
@@ -75,7 +76,9 @@ class WorktreeManager:
         if target.exists():
             raise NightShiftContractError("task worktree path already exists")
 
-        base_sha = self._git("rev-parse", f"{base_ref}^{{commit}}")
+        resolved_sha = self._git("rev-parse", f"{base_sha}^{{commit}}")
+        if resolved_sha != base_sha:
+            raise NightShiftContractError("base_sha must be a full exact Git object id")
         self._git("worktree", "add", "-b", branch, str(target), base_sha)
         head_sha = self._git("rev-parse", "HEAD", cwd=target)
         if head_sha != base_sha:

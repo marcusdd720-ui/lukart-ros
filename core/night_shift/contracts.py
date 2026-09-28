@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from enum import StrEnum
+from typing import Protocol
 
 from core.p3.contracts import content_digest, require_hex_digest
 
@@ -41,6 +42,13 @@ def _sorted_nonblank(values: tuple[str, ...], *, field_name: str) -> tuple[str, 
 def _sha(value: str, *, field_name: str) -> str:
     try:
         return require_hex_digest(value, field_name=field_name)
+    except ValueError as exc:
+        raise NightShiftContractError(str(exc)) from exc
+
+
+def require_git_oid(value: str, *, field_name: str) -> str:
+    try:
+        return require_hex_digest(value, field_name=field_name, lengths=(40, 64))
     except ValueError as exc:
         raise NightShiftContractError(str(exc)) from exc
 
@@ -89,8 +97,16 @@ class LiveStateSnapshot:
             self, "repository", _nonblank(self.repository, field_name="repository")
         )
         object.__setattr__(self, "branch", _nonblank(self.branch, field_name="branch"))
-        object.__setattr__(self, "base_sha", _sha(self.base_sha, field_name="base_sha"))
-        object.__setattr__(self, "head_sha", _sha(self.head_sha, field_name="head_sha"))
+        object.__setattr__(
+            self,
+            "base_sha",
+            require_git_oid(self.base_sha, field_name="base_sha"),
+        )
+        object.__setattr__(
+            self,
+            "head_sha",
+            require_git_oid(self.head_sha, field_name="head_sha"),
+        )
         if self.observed_at_epoch < 0:
             raise NightShiftContractError("observed_at_epoch cannot be negative")
         if self.expires_at_epoch <= self.observed_at_epoch:
@@ -132,6 +148,10 @@ class TaskCapsule:
     allowed_paths: tuple[str, ...]
     forbidden_paths: tuple[str, ...]
     acceptance_checks: tuple[str, ...]
+    max_files_changed: int = 20
+    max_lines_changed: int = 2000
+    allow_binary_changes: bool = False
+
     def __post_init__(self) -> None:
         object.__setattr__(self, "task_id", _nonblank(self.task_id, field_name="task_id"))
         object.__setattr__(
@@ -155,6 +175,10 @@ class TaskCapsule:
             raise NightShiftContractError("task requires at least one allowed path")
         if not checks:
             raise NightShiftContractError("task requires acceptance checks")
+        if self.max_files_changed < 1:
+            raise NightShiftContractError("max_files_changed must be positive")
+        if self.max_lines_changed < 1:
+            raise NightShiftContractError("max_lines_changed must be positive")
         overlap = set(allowed) & set(forbidden)
         if overlap:
             raise NightShiftContractError("allowed and forbidden paths overlap")
@@ -173,6 +197,9 @@ class TaskCapsule:
             "allowed_paths": list(self.allowed_paths),
             "forbidden_paths": list(self.forbidden_paths),
             "acceptance_checks": list(self.acceptance_checks),
+            "max_files_changed": self.max_files_changed,
+            "max_lines_changed": self.max_lines_changed,
+            "allow_binary_changes": self.allow_binary_changes,
         }
 
     def digest(self) -> str:
@@ -282,6 +309,13 @@ class AuthorityReservation:
         return content_digest(self.canonical_dict())
 
 
+
+
+class AuthorityReservationVerifier(Protocol):
+    def require_reserved(self, reservation: AuthorityReservation) -> None:
+        ...
+
+
 @dataclass(frozen=True, slots=True)
 class ExecutionDecision:
     decision_id: str
@@ -329,6 +363,7 @@ def authorize_task(
     task: TaskCapsule,
     envelope: AutonomyEnvelope,
     reservation: AuthorityReservation,
+    reservation_verifier: AuthorityReservationVerifier,
     now_epoch: int,
     decision_id: str,
 ) -> ExecutionDecision:
@@ -346,6 +381,7 @@ def authorize_task(
         raise NightShiftContractError("task is bound to a different state snapshot")
     if task.policy_digest != policy.policy_digest:
         raise NightShiftContractError("task is bound to a different policy digest")
+    reservation_verifier.require_reserved(reservation)
     if reservation.envelope_digest != envelope.digest():
         raise NightShiftContractError("authority reservation belongs to a different envelope")
     if reservation.task_id != task.task_id:

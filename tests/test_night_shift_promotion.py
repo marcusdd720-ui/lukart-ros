@@ -18,7 +18,17 @@ REPO = "repo"
 
 
 def _quorum(value: bool = True) -> VerificationQuorum:
-    return VerificationQuorum(value, value, value, value, value, value)
+    return VerificationQuorum(
+        value,
+        value,
+        value,
+        value,
+        value,
+        value,
+        value,
+        "builder-a",
+        "reviewer-b",
+    )
 
 
 def _envelope(mode: PromotionMode, risks: tuple[RiskClass, ...]) -> AutonomyEnvelope:
@@ -86,3 +96,43 @@ def test_promotion_rechecks_envelope_expiry() -> None:
             quorum=_quorum(),
             now_epoch=100,
         )
+
+
+def test_builder_cannot_self_certify() -> None:
+    with pytest.raises(
+        NightShiftContractError,
+        match="builder and reviewer identities must be different",
+    ):
+        VerificationQuorum(
+            True,
+            True,
+            True,
+            True,
+            True,
+            True,
+            True,
+            "same-agent",
+            "same-agent",
+        )
+
+
+def test_scope_gate_is_part_of_quorum() -> None:
+    quorum = VerificationQuorum(
+        True,
+        True,
+        False,
+        True,
+        True,
+        True,
+        True,
+        "builder-a",
+        "reviewer-b",
+    )
+    decision = decide_promotion(
+        repository=REPO,
+        risk_class=RiskClass.R0,
+        envelope=_envelope(PromotionMode.AUTO, (RiskClass.R0,)),
+        quorum=quorum,
+        now_epoch=10,
+    )
+    assert decision.state is PromotionState.BLOCKED

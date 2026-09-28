@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import json
 import sqlite3
-from collections.abc import Iterator
+from collections.abc import Iterator, Mapping
 from contextlib import contextmanager
 from dataclasses import dataclass
 from pathlib import Path
@@ -101,7 +101,7 @@ class DurableEventJournal:
         event_id: str,
         workflow_id: str,
         event_type: str,
-        payload: dict[str, object],
+        payload: Mapping[str, object],
         created_at_epoch: int,
     ) -> bool:
         """Append once. Return False for an exact duplicate; reject conflicting reuse."""
@@ -240,7 +240,7 @@ class DurableEventJournal:
         *,
         idempotency_key: str,
         source: str,
-        payload: dict[str, object],
+        payload: Mapping[str, object],
     ) -> bool:
         key = self._require_text(idempotency_key, field_name="idempotency_key")
         source = self._require_text(source, field_name="source")
@@ -264,7 +264,7 @@ class DurableEventJournal:
         *,
         idempotency_key: str,
         action_type: str,
-        payload: dict[str, object],
+        payload: Mapping[str, object],
     ) -> bool:
         key = self._require_text(idempotency_key, field_name="idempotency_key")
         action_type = self._require_text(action_type, field_name="action_type")

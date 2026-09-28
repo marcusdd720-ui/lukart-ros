@@ -42,7 +42,7 @@ def test_create_worktree_is_isolated_from_operator_tree(tmp_path: Path) -> None:
     handle = manager.create(
         task_id="task-001",
         branch="night-shift/task-001",
-        base_ref=operator_head,
+        base_sha=operator_head,
     )
 
     assert handle.path != repo
@@ -56,10 +56,11 @@ def test_create_worktree_is_isolated_from_operator_tree(tmp_path: Path) -> None:
 def test_dirty_task_worktree_fails_clean_gate(tmp_path: Path) -> None:
     repo = _repo(tmp_path)
     manager = WorktreeManager(repository=repo, root=tmp_path / "night-worktrees")
+    base_sha = _run("git", "rev-parse", "HEAD", cwd=repo)
     handle = manager.create(
         task_id="task-001",
         branch="night-shift/task-001",
-        base_ref="HEAD",
+        base_sha=base_sha,
     )
     (handle.path / "README.md").write_text("changed\n", encoding="utf-8")
 
@@ -83,7 +84,7 @@ def test_unsafe_task_identifier_is_rejected(tmp_path: Path) -> None:
         manager.create(
             task_id="../escape",
             branch="night-shift/escape",
-            base_ref="HEAD",
+            base_sha=_run("git", "rev-parse", "HEAD", cwd=repo),
         )
 
 
@@ -95,5 +96,17 @@ def test_branch_requires_night_shift_namespace(tmp_path: Path) -> None:
         manager.create(
             task_id="task-001",
             branch="feature/task-001",
-            base_ref="HEAD",
+            base_sha=_run("git", "rev-parse", "HEAD", cwd=repo),
+        )
+
+
+def test_symbolic_base_ref_is_rejected(tmp_path: Path) -> None:
+    repo = _repo(tmp_path)
+    manager = WorktreeManager(repository=repo, root=tmp_path / "night-worktrees")
+
+    with pytest.raises(NightShiftContractError, match="40/64-character hex digest"):
+        manager.create(
+            task_id="task-symbolic",
+            branch="night-shift/task-symbolic",
+            base_sha="HEAD",
         )

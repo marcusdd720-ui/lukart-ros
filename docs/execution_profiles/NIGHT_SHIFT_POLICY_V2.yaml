@@ -124,3 +124,38 @@ signing:
     - publish_exact_sha_for_external_ci
     - explicit_high_risk_authority_boundary
     - recovery_checkpoint_materially_reduces_risk
+
+
+git_identity:
+  full_object_id_required: true
+  accepted_oid_lengths: [40, 64]
+  symbolic_ref_for_autonomous_worktree: forbidden
+
+mutation_scope:
+  validation_required_before_freeze: true
+  validation_required_before_promotion: true
+  allowed_paths_enforced: true
+  forbidden_paths_enforced: true
+  file_budget_enforced: true
+  line_budget_enforced: true
+  binary_changes_default: false
+
+workflow_state_machine:
+  explicit_transition_graph_required: true
+  skip_to_closed_pass: forbidden
+  terminal_transition: forbidden
+  allowed_initial_states: [DISCOVERED, READY]
+
+verification_quorum:
+  scope_guard_required: true
+  builder_reviewer_identity_required: true
+  builder_equals_reviewer: forbidden
+  quorum_digest_required_in_execution_receipt: true
+
+execution_receipt:
+  bind_workflow_id: true
+  bind_lease_id: true
+  bind_fencing_token: true
+  bind_decision_digest: true
+  bind_verification_digest: true
+  final_state_must_be_reportable_control_or_terminal: true

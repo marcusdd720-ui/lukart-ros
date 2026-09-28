@@ -1,4 +1,6 @@
-from core.night_shift.contracts import RiskClass
+import pytest
+
+from core.night_shift.contracts import NightShiftContractError, RiskClass
 from core.night_shift.scheduler import ResourcePolicy, WorkItem, compile_ready_queue, select_batch
 
 
@@ -26,3 +28,13 @@ def test_resource_governor_limits_writer_and_heavy_work() -> None:
         ),
     )
     assert [item.task_id for item in selected] == ["heavy-a", "light-c"]
+
+
+def test_invalid_closure_percent_fails_closed() -> None:
+    with pytest.raises(NightShiftContractError, match="closure_percent"):
+        WorkItem("bad", 1, 101, True, (), RiskClass.R0)
+
+
+def test_invalid_resource_policy_fails_closed() -> None:
+    with pytest.raises(NightShiftContractError, match="technical_active_max"):
+        ResourcePolicy(technical_active_max=0)

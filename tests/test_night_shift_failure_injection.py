@@ -35,9 +35,15 @@ def test_scheduler_restart_replays_last_committed_state(tmp_path: Path) -> None:
     first.start(workflow_id="wf", initial_state="READY", created_at_epoch=1)
     first.transition(
         workflow_id="wf",
+        event_id="wf:leased",
+        to_state="LEASED",
+        created_at_epoch=2,
+    )
+    first.transition(
+        workflow_id="wf",
         event_id="wf:running",
         to_state="RUNNING",
-        created_at_epoch=2,
+        created_at_epoch=3,
     )
 
     restarted = LocalJournalWorkflowEngine(db)

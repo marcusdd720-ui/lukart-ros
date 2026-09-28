@@ -18,6 +18,17 @@ HEX_A = "a" * 64
 HEX_B = "b" * 64
 
 
+class _AllowReservationVerifier:
+    def require_reserved(self, reservation: AuthorityReservation) -> None:
+        del reservation
+
+
+class _DenyReservationVerifier:
+    def require_reserved(self, reservation: AuthorityReservation) -> None:
+        del reservation
+        raise NightShiftContractError("reservation verification failed")
+
+
 def _policy() -> PolicyRef:
     return PolicyRef(policy_id="NS-POLICY", version="v2", policy_digest=HEX_A)
 
@@ -81,6 +92,7 @@ def test_authorize_task_binds_policy_state_task_and_authority() -> None:
         task=task,
         envelope=envelope,
         reservation=_reservation(envelope),
+        reservation_verifier=_AllowReservationVerifier(),
         now_epoch=150,
         decision_id="decision-001",
     )
@@ -100,6 +112,7 @@ def test_stale_state_fails_closed() -> None:
             task=_task(state, policy),
             envelope=_envelope(),
             reservation=_reservation(_envelope()),
+            reservation_verifier=_AllowReservationVerifier(),
             now_epoch=200,
             decision_id="decision-stale",
         )
@@ -127,6 +140,7 @@ def test_task_bound_to_different_snapshot_fails_closed() -> None:
             task=task,
             envelope=_envelope(),
             reservation=_reservation(_envelope(), task.task_id),
+            reservation_verifier=_AllowReservationVerifier(),
             now_epoch=150,
             decision_id="decision-stale-binding",
         )
@@ -151,6 +165,7 @@ def test_repository_outside_authority_fails_closed() -> None:
             task=_task(state, policy),
             envelope=envelope,
             reservation=_reservation(envelope),
+            reservation_verifier=_AllowReservationVerifier(),
             now_epoch=150,
             decision_id="decision-wrong-repo",
         )
@@ -276,6 +291,7 @@ def test_authorization_rejects_reservation_for_other_task() -> None:
             task=task,
             envelope=envelope,
             reservation=reservation,
+            reservation_verifier=_AllowReservationVerifier(),
             now_epoch=150,
             decision_id="decision-wrong-reservation",
         )
@@ -299,6 +315,41 @@ def test_authorization_rejects_reservation_over_budget() -> None:
             task=task,
             envelope=envelope,
             reservation=reservation,
+            reservation_verifier=_AllowReservationVerifier(),
             now_epoch=150,
             decision_id="decision-over-budget",
+        )
+
+
+def test_live_state_accepts_current_git_sha1_oids() -> None:
+    state = LiveStateSnapshot(
+        snapshot_id="snapshot-git-sha1",
+        repository="marcusdd720-ui/lukart-ros",
+        branch="main",
+        base_sha="a" * 40,
+        head_sha="b" * 40,
+        observed_at_epoch=1,
+        expires_at_epoch=2,
+        evidence_refs=("git:head",),
+    )
+    assert len(state.base_sha) == 40
+    assert len(state.head_sha) == 40
+
+
+def test_authorization_requires_durable_reservation_verification() -> None:
+    policy = _policy()
+    state = _state()
+    task = _task(state, policy)
+    envelope = _envelope()
+
+    with pytest.raises(NightShiftContractError, match="reservation verification failed"):
+        authorize_task(
+            policy=policy,
+            state=state,
+            task=task,
+            envelope=envelope,
+            reservation=_reservation(envelope),
+            reservation_verifier=_DenyReservationVerifier(),
+            now_epoch=150,
+            decision_id="decision-unverified-reservation",
         )
