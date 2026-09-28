@@ -89,6 +89,9 @@ routing:
   escalation_requires_evidence: true
   model_provider_not_core_contract: true
   durable_engine_not_core_contract: true
+  executor_adapter_binding_required: true
+  documented_only_executor: BLOCKED
+  validated_adapter_required_for_execution: true
 shadow_mode:
   required_before_autonomous_promotion: true
   counterfactual_prediction: true
