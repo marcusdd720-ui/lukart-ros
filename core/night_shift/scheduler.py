@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
+from .causal import CausalRemediationPlan, GateResult, build_remediation_plan
 from .contracts import NightShiftContractError, RiskClass
 
 
@@ -99,3 +100,65 @@ def select_batch(
         if item.executor_id is not None:
             executor_counts[item.executor_id] = executor_counts.get(item.executor_id, 0) + 1
     return tuple(selected)
+
+
+def compile_root_cause_remediation_queue(
+    items: tuple[WorkItem, ...],
+    *,
+    gate_results: tuple[GateResult, ...],
+    state_snapshot_digest: str,
+) -> tuple[WorkItem, ...]:
+    """Schedule only root-cause work bound to an exact state snapshot."""
+    plan = build_remediation_plan(
+        gate_results,
+        state_snapshot_digest=state_snapshot_digest,
+    )
+    by_task: dict[str, WorkItem] = {}
+    for item in items:
+        if item.task_id in by_task:
+            raise NightShiftContractError(
+                "duplicate task_id in causal remediation scheduler input"
+            )
+        by_task[item.task_id] = item
+
+    missing = [
+        root_id for root_id in plan.actionable_root_ids if root_id not in by_task
+    ]
+    if missing:
+        raise NightShiftContractError(
+            "causal root failure has no matching remediation task: "
+            + ",".join(sorted(missing))
+        )
+
+    selected = tuple(by_task[root_id] for root_id in plan.actionable_root_ids)
+    for item in selected:
+        if not item.ready:
+            raise NightShiftContractError(
+                "causal root remediation task must be ready"
+            )
+        if item.blocked_by:
+            raise NightShiftContractError(
+                "causal root remediation task cannot itself be blocked"
+            )
+    return tuple(
+        sorted(
+            selected,
+            key=lambda item: (
+                item.priority,
+                -item.closure_percent,
+                item.risk_class.value,
+                item.task_id,
+            ),
+        )
+    )
+
+
+def causal_remediation_plan(
+    *,
+    gate_results: tuple[GateResult, ...],
+    state_snapshot_digest: str,
+) -> CausalRemediationPlan:
+    return build_remediation_plan(
+        gate_results,
+        state_snapshot_digest=state_snapshot_digest,
+    )

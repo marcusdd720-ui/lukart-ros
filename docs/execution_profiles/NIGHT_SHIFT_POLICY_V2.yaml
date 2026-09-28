@@ -92,6 +92,20 @@ routing:
   executor_adapter_binding_required: true
   documented_only_executor: BLOCKED
   validated_adapter_required_for_execution: true
+causal_gate_graph:
+  required_for_dependency_failures: true
+  root_cause_state: FAIL_LOCAL
+  downstream_state: BLOCKED_BY
+  root_cause_first_remediation: true
+  duplicate_gate_id: BLOCKED
+  missing_root_cause: BLOCKED
+  self_reference: BLOCKED
+  downstream_symptom_actionable: false
+  content_addressed_graph_required: true
+  content_addressed_remediation_plan_required: true
+  state_snapshot_digest_required: true
+  stale_causal_graph_replay: BLOCKED
+
 shadow_mode:
   required_before_autonomous_promotion: true
   counterfactual_prediction: true

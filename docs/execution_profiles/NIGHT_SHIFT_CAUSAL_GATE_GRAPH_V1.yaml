@@ -1,0 +1,31 @@
+schema_version: night-shift-causal-gate-graph/v1
+status: CONTROLLED
+recorded_at: 2026-09-28
+
+identity:
+  content_addressed_graph_required: true
+  content_addressed_remediation_plan_required: true
+  state_snapshot_digest_required: true
+  stale_causal_graph_replay: BLOCKED
+  unique_gate_id_required: true
+
+root_cause:
+  root_state: FAIL_LOCAL
+  blocked_state: BLOCKED_BY
+  blocked_root_must_exist: true
+  blocked_root_must_be_local_failure: true
+  self_reference: BLOCKED
+  downstream_symptom_is_actionable: false
+
+scheduler:
+  root_cause_first: true
+  downstream_symptom_scheduling: BLOCKED
+  matching_root_remediation_task_required: true
+  root_remediation_task_ready_required: true
+  root_remediation_task_may_be_blocked: false
+  deterministic_ordering: true
+
+authority:
+  graph_is_evidence_not_policy: true
+  graph_may_not_expand_task_scope: true
+  graph_may_not_promote_candidate: true
