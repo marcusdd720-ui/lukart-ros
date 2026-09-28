@@ -109,7 +109,14 @@ causal_gate_graph:
 shadow_mode:
   required_before_autonomous_promotion: true
   counterfactual_prediction: true
+  exact_sha_state_task_policy_binding: true
   autonomy_debt_tracking: true
+  autonomy_debt_ledger_content_addressed: true
+  promotion_clearance_ledger_digest_required: true
+  expected_ledger_digest_authority_required: true
+  forged_or_mismatched_ledger_digest: BLOCKED
+  minimum_samples_for_auto: 3
+  downgrade_threshold_default: 10
   downgrade_on_unexplained_divergence: true
 
 failure_injection:

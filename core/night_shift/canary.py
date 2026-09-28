@@ -29,6 +29,7 @@ from .leases import LeaseStore
 from .promotion import PromotionState, VerificationQuorum, decide_promotion
 from .receipts import ExecutionReceipt
 from .scope import ChangedFile, validate_mutation_scope
+from .shadow import ShadowPromotionClearance
 from .worktrees import WorktreeManager
 
 
@@ -86,6 +87,8 @@ def run_controlled_canary(
     envelope: AutonomyEnvelope,
     quorum: VerificationQuorum,
     cryptographic_context: CanaryCryptographicContext | None = None,
+    shadow_clearance: ShadowPromotionClearance | None = None,
+    expected_shadow_ledger_digest: str | None = None,
     failure_report: FailureInjectionReport,
     required_failure_scenarios: tuple[str, ...],
     target_path: str,
@@ -110,6 +113,8 @@ def run_controlled_canary(
         envelope=envelope,
         quorum=quorum,
         crypto_context=cryptographic_context.verification,
+        shadow_clearance=shadow_clearance,
+        expected_shadow_ledger_digest=expected_shadow_ledger_digest,
         subject_sha=state.head_sha,
         task_capsule_digest=task.digest(),
         now_epoch=now_epoch,
@@ -233,6 +238,8 @@ def run_controlled_canary(
                     "quorum_digest": quorum.digest(),
                     "cryptographic_verification_digest":
                         decision.cryptographic_verification_digest,
+                    "shadow_clearance_digest":
+                        decision.shadow_clearance_digest,
                 }
             ),
             input_sha=state.head_sha,

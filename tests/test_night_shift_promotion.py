@@ -20,6 +20,7 @@ from core.night_shift.promotion import (
     decide_promotion,
     quorum_from_bundle,
 )
+from core.night_shift.shadow import ShadowPromotionClearance
 from core.night_shift.verification import (
     VerificationBundle,
     VerificationEvidence,
@@ -30,6 +31,31 @@ REPO = "repo"
 SHA = "d" * 40
 TASK_DIGEST = "e" * 64
 EVIDENCE_DIGEST = "f" * 64
+LEDGER_DIGEST = "a" * 64
+
+
+def _clearance(
+    *,
+    debt_value: int = 0,
+    sample_count: int = 3,
+    minimum_samples_for_auto: int = 3,
+    repository: str = REPO,
+    subject_sha: str = SHA,
+    task_capsule_digest: str = TASK_DIGEST,
+    expires_at_epoch: int = 100,
+) -> ShadowPromotionClearance:
+    return ShadowPromotionClearance(
+        repository=repository,
+        subject_sha=subject_sha,
+        task_capsule_digest=task_capsule_digest,
+        ledger_digest=LEDGER_DIGEST,
+        debt_value=debt_value,
+        downgrade_threshold=10,
+        sample_count=sample_count,
+        minimum_samples_for_auto=minimum_samples_for_auto,
+        issued_at_epoch=1,
+        expires_at_epoch=expires_at_epoch,
+    )
 
 
 def _quorum(value: bool = True) -> VerificationQuorum:
@@ -154,12 +180,15 @@ def test_r1_requires_preauthorization_for_auto() -> None:
         envelope=_envelope(PromotionMode.PREAUTHORIZED, (RiskClass.R1,)),
         quorum=quorum,
         crypto_context=crypto,
+        shadow_clearance=_clearance(),
+        expected_shadow_ledger_digest=LEDGER_DIGEST,
         subject_sha=SHA,
         task_capsule_digest=TASK_DIGEST,
         now_epoch=10,
     )
     assert decision.state is PromotionState.ELIGIBLE_AUTO
     assert decision.cryptographic_verification_digest is not None
+    assert decision.shadow_clearance_digest == _clearance().digest()
 
 
 def test_r2_stops_ready_for_human() -> None:
@@ -320,6 +349,169 @@ def test_passing_quorum_without_crypto_context_fails_closed() -> None:
             risk_class=RiskClass.R0,
             envelope=_envelope(PromotionMode.AUTO, (RiskClass.R0,)),
             quorum=quorum,
+            subject_sha=SHA,
+            task_capsule_digest=TASK_DIGEST,
+            now_epoch=10,
+        )
+
+
+def test_r0_without_shadow_clearance_downgrades_to_human() -> None:
+    quorum, crypto = _signed_quorum()
+    decision = decide_promotion(
+        repository=REPO,
+        risk_class=RiskClass.R0,
+        envelope=_envelope(PromotionMode.AUTO, (RiskClass.R0,)),
+        quorum=quorum,
+        crypto_context=crypto,
+        subject_sha=SHA,
+        task_capsule_digest=TASK_DIGEST,
+        now_epoch=10,
+    )
+    assert decision.state is PromotionState.READY_FOR_HUMAN
+    assert decision.reason == "shadow promotion clearance required"
+    assert decision.shadow_clearance_digest is None
+
+
+def test_r0_with_shadow_clearance_is_eligible_auto() -> None:
+    quorum, crypto = _signed_quorum()
+    clearance = _clearance()
+    decision = decide_promotion(
+        repository=REPO,
+        risk_class=RiskClass.R0,
+        envelope=_envelope(PromotionMode.AUTO, (RiskClass.R0,)),
+        quorum=quorum,
+        crypto_context=crypto,
+        shadow_clearance=clearance,
+        expected_shadow_ledger_digest=LEDGER_DIGEST,
+        subject_sha=SHA,
+        task_capsule_digest=TASK_DIGEST,
+        now_epoch=10,
+    )
+    assert decision.state is PromotionState.ELIGIBLE_AUTO
+    assert decision.shadow_clearance_digest == clearance.digest()
+
+
+def test_shadow_clearance_with_insufficient_samples_downgrades_to_human() -> None:
+    quorum, crypto = _signed_quorum()
+    clearance = _clearance(sample_count=2)
+    decision = decide_promotion(
+        repository=REPO,
+        risk_class=RiskClass.R0,
+        envelope=_envelope(PromotionMode.AUTO, (RiskClass.R0,)),
+        quorum=quorum,
+        crypto_context=crypto,
+        shadow_clearance=clearance,
+        expected_shadow_ledger_digest=LEDGER_DIGEST,
+        subject_sha=SHA,
+        task_capsule_digest=TASK_DIGEST,
+        now_epoch=10,
+    )
+    assert decision.state is PromotionState.READY_FOR_HUMAN
+    assert decision.reason == "insufficient shadow calibration samples"
+    assert decision.shadow_clearance_digest == clearance.digest()
+
+
+def test_shadow_debt_threshold_downgrades_to_human() -> None:
+    quorum, crypto = _signed_quorum()
+    clearance = _clearance(debt_value=10)
+    decision = decide_promotion(
+        repository=REPO,
+        risk_class=RiskClass.R0,
+        envelope=_envelope(PromotionMode.AUTO, (RiskClass.R0,)),
+        quorum=quorum,
+        crypto_context=crypto,
+        shadow_clearance=clearance,
+        expected_shadow_ledger_digest=LEDGER_DIGEST,
+        subject_sha=SHA,
+        task_capsule_digest=TASK_DIGEST,
+        now_epoch=10,
+    )
+    assert decision.state is PromotionState.READY_FOR_HUMAN
+    assert decision.reason == "autonomy debt threshold reached"
+    assert decision.shadow_clearance_digest == clearance.digest()
+
+
+@pytest.mark.parametrize(
+    ("clearance", "match"),
+    (
+        (_clearance(repository="other"), "different repository"),
+        (_clearance(subject_sha="c" * 40), "different SHA"),
+        (
+            _clearance(task_capsule_digest="c" * 64),
+            "different task capsule",
+        ),
+    ),
+)
+def test_shadow_clearance_identity_mismatch_fails_closed(
+    clearance: ShadowPromotionClearance,
+    match: str,
+) -> None:
+    quorum, crypto = _signed_quorum()
+    with pytest.raises(NightShiftContractError, match=match):
+        decide_promotion(
+            repository=REPO,
+            risk_class=RiskClass.R0,
+            envelope=_envelope(PromotionMode.AUTO, (RiskClass.R0,)),
+            quorum=quorum,
+            crypto_context=crypto,
+            shadow_clearance=clearance,
+            expected_shadow_ledger_digest=LEDGER_DIGEST,
+            subject_sha=SHA,
+            task_capsule_digest=TASK_DIGEST,
+            now_epoch=10,
+        )
+
+
+def test_expired_shadow_clearance_fails_closed() -> None:
+    quorum, crypto = _signed_quorum()
+    with pytest.raises(NightShiftContractError, match="clearance expired"):
+        decide_promotion(
+            repository=REPO,
+            risk_class=RiskClass.R0,
+            envelope=_envelope(PromotionMode.AUTO, (RiskClass.R0,)),
+            quorum=quorum,
+            crypto_context=crypto,
+            shadow_clearance=_clearance(expires_at_epoch=10),
+            expected_shadow_ledger_digest=LEDGER_DIGEST,
+            subject_sha=SHA,
+            task_capsule_digest=TASK_DIGEST,
+            now_epoch=10,
+        )
+
+
+def test_auto_promotion_requires_shadow_ledger_authority() -> None:
+    quorum, crypto = _signed_quorum()
+    with pytest.raises(
+        NightShiftContractError,
+        match="shadow ledger digest authority is required",
+    ):
+        decide_promotion(
+            repository=REPO,
+            risk_class=RiskClass.R0,
+            envelope=_envelope(PromotionMode.AUTO, (RiskClass.R0,)),
+            quorum=quorum,
+            crypto_context=crypto,
+            shadow_clearance=_clearance(),
+            subject_sha=SHA,
+            task_capsule_digest=TASK_DIGEST,
+            now_epoch=10,
+        )
+
+
+def test_forged_shadow_clearance_ledger_digest_fails_closed() -> None:
+    quorum, crypto = _signed_quorum()
+    with pytest.raises(
+        NightShiftContractError,
+        match="does not match expected autonomy debt ledger",
+    ):
+        decide_promotion(
+            repository=REPO,
+            risk_class=RiskClass.R0,
+            envelope=_envelope(PromotionMode.AUTO, (RiskClass.R0,)),
+            quorum=quorum,
+            crypto_context=crypto,
+            shadow_clearance=_clearance(),
+            expected_shadow_ledger_digest="b" * 64,
             subject_sha=SHA,
             task_capsule_digest=TASK_DIGEST,
             now_epoch=10,
