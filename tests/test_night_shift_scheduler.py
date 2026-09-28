@@ -1,7 +1,16 @@
 import pytest
 
+from core.night_shift.causal import GateResult, GateState
 from core.night_shift.contracts import NightShiftContractError, RiskClass
-from core.night_shift.scheduler import ResourcePolicy, WorkItem, compile_ready_queue, select_batch
+from core.night_shift.scheduler import (
+    ResourcePolicy,
+    WorkItem,
+    compile_ready_queue,
+    compile_root_cause_remediation_queue,
+    select_batch,
+)
+
+STATE = "a" * 64
 
 
 def test_queue_is_deterministic_and_closure_first_within_priority() -> None:
@@ -55,3 +64,57 @@ def test_executor_parallel_capacity_is_enforced() -> None:
         ),
     )
     assert [item.task_id for item in selected] == ["a", "b"]
+
+
+def test_causal_remediation_queue_schedules_root_only() -> None:
+    items = (
+        WorkItem("ROOT", 1, 80, True, (), RiskClass.R1),
+        WorkItem("SYM-A", 0, 99, True, ("ROOT",), RiskClass.R0),
+        WorkItem("SYM-B", 0, 98, True, ("ROOT",), RiskClass.R0),
+        WorkItem("UNRELATED", 2, 90, True, (), RiskClass.R0),
+    )
+    gates = (
+        GateResult("ROOT", GateState.FAIL_LOCAL),
+        GateResult("SYM-A", GateState.BLOCKED_BY, "ROOT"),
+        GateResult("SYM-B", GateState.BLOCKED_BY, "ROOT"),
+        GateResult("UNRELATED", GateState.PASS),
+    )
+    selected = compile_root_cause_remediation_queue(
+        items,
+        gate_results=gates,
+        state_snapshot_digest=STATE,
+    )
+    assert [item.task_id for item in selected] == ["ROOT"]
+
+
+def test_causal_remediation_queue_requires_root_task() -> None:
+    gates = (
+        GateResult("ROOT", GateState.FAIL_LOCAL),
+        GateResult("SYM", GateState.BLOCKED_BY, "ROOT"),
+    )
+    with pytest.raises(NightShiftContractError, match="no matching remediation task"):
+        compile_root_cause_remediation_queue(
+            (WorkItem("SYM", 0, 90, True, ("ROOT",), RiskClass.R0),),
+            gate_results=gates,
+            state_snapshot_digest=STATE,
+        )
+
+
+def test_causal_root_task_cannot_itself_be_blocked() -> None:
+    gates = (GateResult("ROOT", GateState.FAIL_LOCAL),)
+    with pytest.raises(NightShiftContractError, match="cannot itself be blocked"):
+        compile_root_cause_remediation_queue(
+            (WorkItem("ROOT", 0, 80, True, ("OTHER",), RiskClass.R1),),
+            gate_results=gates,
+            state_snapshot_digest=STATE,
+        )
+
+
+def test_causal_scheduler_rejects_invalid_state_snapshot_digest() -> None:
+    gates = (GateResult("ROOT", GateState.FAIL_LOCAL),)
+    with pytest.raises(NightShiftContractError, match="state_snapshot_digest"):
+        compile_root_cause_remediation_queue(
+            (WorkItem("ROOT", 0, 80, True, (), RiskClass.R1),),
+            gate_results=gates,
+            state_snapshot_digest="not-a-digest",
+        )
