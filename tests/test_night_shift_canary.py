@@ -25,6 +25,7 @@ from core.night_shift.crypto_identity import (
 from core.night_shift.failure_gate import (
     FailureInjectionEvidence,
     FailureInjectionReport,
+    FailureOutcome,
     load_required_failure_scenarios,
 )
 from core.night_shift.promotion import VerificationQuorum, quorum_from_bundle
@@ -38,6 +39,7 @@ from core.p3.contracts import content_digest
 
 POLICY_PATH = Path("docs/execution_profiles/NIGHT_SHIFT_POLICY_V2.yaml")
 SHADOW_LEDGER_DIGEST = "a" * 64
+FAILURE_SUITE_DIGEST = "b" * 64
 
 
 def _run(cwd: Path, *args: str) -> str:
@@ -182,13 +184,31 @@ def _shadow_clearance(
     )
 
 
-def _failure_report() -> tuple[FailureInjectionReport, tuple[str, ...]]:
+def _failure_report(
+    *,
+    subject_sha: str,
+    state_snapshot_digest: str,
+    task_capsule_digest: str,
+    policy_digest: str,
+) -> tuple[FailureInjectionReport, tuple[str, ...]]:
     required = load_required_failure_scenarios(POLICY_PATH)
     report = FailureInjectionReport(
-        tuple(
-            FailureInjectionEvidence(item, True, f"test:{item}")
+        subject_sha=subject_sha,
+        state_snapshot_digest=state_snapshot_digest,
+        task_capsule_digest=task_capsule_digest,
+        policy_digest=policy_digest,
+        suite_profile_digest=FAILURE_SUITE_DIGEST,
+        generated_at_epoch=1,
+        expires_at_epoch=100,
+        evidence=tuple(
+            FailureInjectionEvidence(
+                scenario=item,
+                outcome=FailureOutcome.RECOVERED,
+                evidence_ref=f"test:{item}",
+                evidence_digest=content_digest({"scenario": item}),
+            )
             for item in required
-        )
+        ),
     )
     return report, required
 
@@ -241,7 +261,12 @@ def test_controlled_canary_mutates_only_isolated_worktree_and_rolls_back(
 ) -> None:
     repo, sha = _repo(tmp_path)
     policy, state, task, envelope = _inputs(sha=sha)
-    report, required = _failure_report()
+    report, required = _failure_report(
+        subject_sha=state.head_sha,
+        state_snapshot_digest=state.digest(),
+        task_capsule_digest=task.digest(),
+        policy_digest=policy.policy_digest,
+    )
     quorum, crypto = _verification(state.head_sha, task.digest())
 
     result = run_controlled_canary(
@@ -256,6 +281,8 @@ def test_controlled_canary_mutates_only_isolated_worktree_and_rolls_back(
         shadow_clearance=_shadow_clearance(state.head_sha, task.digest()),
         expected_shadow_ledger_digest=SHADOW_LEDGER_DIGEST,
         failure_report=report,
+        expected_failure_report_digest=report.digest(),
+        expected_failure_suite_profile_digest=FAILURE_SUITE_DIGEST,
         required_failure_scenarios=required,
         target_path="README.md",
         replacement_text="canary\n",
@@ -299,7 +326,12 @@ def test_controlled_canary_rejects_r2(tmp_path: Path) -> None:
         max_tasks=1,
         promotion_mode=PromotionMode.HUMAN,
     )
-    report, required = _failure_report()
+    report, required = _failure_report(
+        subject_sha=state.head_sha,
+        state_snapshot_digest=state.digest(),
+        task_capsule_digest=task.digest(),
+        policy_digest=policy.policy_digest,
+    )
     with pytest.raises(NightShiftContractError, match="limited to R0/R1"):
         run_controlled_canary(
             repository=repo,
@@ -310,6 +342,8 @@ def test_controlled_canary_rejects_r2(tmp_path: Path) -> None:
             envelope=envelope,
             quorum=_quorum(state.head_sha, task.digest()),
             failure_report=report,
+            expected_failure_report_digest=report.digest(),
+            expected_failure_suite_profile_digest=FAILURE_SUITE_DIGEST,
             required_failure_scenarios=required,
             target_path="README.md",
             replacement_text="blocked\n",
@@ -320,7 +354,12 @@ def test_controlled_canary_rejects_r2(tmp_path: Path) -> None:
 def test_scope_violation_rolls_back_and_cleans_branch(tmp_path: Path) -> None:
     repo, sha = _repo(tmp_path)
     policy, state, task, envelope = _inputs(sha=sha)
-    report, required = _failure_report()
+    report, required = _failure_report(
+        subject_sha=state.head_sha,
+        state_snapshot_digest=state.digest(),
+        task_capsule_digest=task.digest(),
+        policy_digest=policy.policy_digest,
+    )
     quorum, crypto = _verification(state.head_sha, task.digest())
 
     with pytest.raises(NightShiftContractError, match="outside allowed task scope"):
@@ -336,6 +375,8 @@ def test_scope_violation_rolls_back_and_cleans_branch(tmp_path: Path) -> None:
             shadow_clearance=_shadow_clearance(state.head_sha, task.digest()),
             expected_shadow_ledger_digest=SHADOW_LEDGER_DIGEST,
             failure_report=report,
+            expected_failure_report_digest=report.digest(),
+            expected_failure_suite_profile_digest=FAILURE_SUITE_DIGEST,
             required_failure_scenarios=required,
             target_path="OTHER.md",
             replacement_text="not allowed\n",
@@ -351,7 +392,12 @@ def test_scope_violation_rolls_back_and_cleans_branch(tmp_path: Path) -> None:
 def test_reviewer_timeout_blocks_before_mutation(tmp_path: Path) -> None:
     repo, sha = _repo(tmp_path)
     policy, state, task, envelope = _inputs(sha=sha)
-    report, required = _failure_report()
+    report, required = _failure_report(
+        subject_sha=state.head_sha,
+        state_snapshot_digest=state.digest(),
+        task_capsule_digest=task.digest(),
+        policy_digest=policy.policy_digest,
+    )
     _, crypto = _verification(state.head_sha, task.digest())
     quorum = VerificationQuorum(
         True,
@@ -381,6 +427,8 @@ def test_reviewer_timeout_blocks_before_mutation(tmp_path: Path) -> None:
             shadow_clearance=_shadow_clearance(state.head_sha, task.digest()),
             expected_shadow_ledger_digest=SHADOW_LEDGER_DIGEST,
             failure_report=report,
+            expected_failure_report_digest=report.digest(),
+            expected_failure_suite_profile_digest=FAILURE_SUITE_DIGEST,
             required_failure_scenarios=required,
             target_path="README.md",
             replacement_text="blocked\n",
@@ -392,7 +440,12 @@ def test_reviewer_timeout_blocks_before_mutation(tmp_path: Path) -> None:
 def test_disk_write_failure_cleans_worktree_and_branch(tmp_path: Path) -> None:
     repo, sha = _repo(tmp_path)
     policy, state, task, envelope = _inputs(sha=sha)
-    report, required = _failure_report()
+    report, required = _failure_report(
+        subject_sha=state.head_sha,
+        state_snapshot_digest=state.digest(),
+        task_capsule_digest=task.digest(),
+        policy_digest=policy.policy_digest,
+    )
     quorum, crypto = _verification(state.head_sha, task.digest())
 
     def fail_write(_path: Path, _text: str) -> None:
@@ -411,6 +464,8 @@ def test_disk_write_failure_cleans_worktree_and_branch(tmp_path: Path) -> None:
             shadow_clearance=_shadow_clearance(state.head_sha, task.digest()),
             expected_shadow_ledger_digest=SHADOW_LEDGER_DIGEST,
             failure_report=report,
+            expected_failure_report_digest=report.digest(),
+            expected_failure_suite_profile_digest=FAILURE_SUITE_DIGEST,
             required_failure_scenarios=required,
             target_path="README.md",
             replacement_text="canary\n",
@@ -428,7 +483,12 @@ def test_concurrent_operator_branch_advance_fails_rollback_verification(
 ) -> None:
     repo, sha = _repo(tmp_path)
     policy, state, task, envelope = _inputs(sha=sha)
-    report, required = _failure_report()
+    report, required = _failure_report(
+        subject_sha=state.head_sha,
+        state_snapshot_digest=state.digest(),
+        task_capsule_digest=task.digest(),
+        policy_digest=policy.policy_digest,
+    )
     quorum, crypto = _verification(state.head_sha, task.digest())
 
     def advance_operator_then_write(path: Path, text: str) -> None:
@@ -450,6 +510,8 @@ def test_concurrent_operator_branch_advance_fails_rollback_verification(
             shadow_clearance=_shadow_clearance(state.head_sha, task.digest()),
             expected_shadow_ledger_digest=SHADOW_LEDGER_DIGEST,
             failure_report=report,
+            expected_failure_report_digest=report.digest(),
+            expected_failure_suite_profile_digest=FAILURE_SUITE_DIGEST,
             required_failure_scenarios=required,
             target_path="README.md",
             replacement_text="canary\n",

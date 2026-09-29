@@ -1,30 +1,48 @@
-schema_version: night-shift-failure-evidence/v1
+schema_version: night-shift-failure-evidence/v2
 recorded_at: 2026-09-28
+authority: REFERENCE_ONLY
 evidence:
-  - scenario: worker_termination
-    passed: true
+  - scenario: worker_termination_during_edit
+    outcome: FAILED_CLOSED
     evidence_ref: tests/test_night_shift_failure_injection.py::test_stale_worker_cannot_mutate_after_lease_replacement
-  - scenario: scheduler_restart
-    passed: true
+    evidence_digest: "1111111111111111111111111111111111111111111111111111111111111111"
+  - scenario: worker_termination_during_validation
+    outcome: RECOVERED
+    evidence_ref: tests/test_night_shift_failure_injection.py::test_worker_termination_during_validation_replays_validation_state
+    evidence_digest: "2222222222222222222222222222222222222222222222222222222222222222"
+  - scenario: scheduler_restart_after_dispatch
+    outcome: RECOVERED
     evidence_ref: tests/test_night_shift_failure_injection.py::test_scheduler_restart_replays_last_committed_state
-  - scenario: duplicate_event
-    passed: true
+    evidence_digest: "3333333333333333333333333333333333333333333333333333333333333333"
+  - scenario: duplicate_event_delivery
+    outcome: RECOVERED
     evidence_ref: tests/test_night_shift_failure_injection.py::test_duplicate_event_delivery_is_idempotent
-  - scenario: stale_worker_resume
-    passed: true
-    evidence_ref: tests/test_night_shift_failure_injection.py::test_stale_worker_cannot_mutate_after_lease_replacement
+    evidence_digest: "4444444444444444444444444444444444444444444444444444444444444444"
+  - scenario: stale_worker_resumption
+    outcome: FAILED_CLOSED
+    evidence_ref: tests/test_night_shift_failure_injection.py::test_stale_worker_resume_is_rejected
+    evidence_digest: "5555555555555555555555555555555555555555555555555555555555555555"
   - scenario: network_loss_during_push
-    passed: true
-    evidence_ref: control:NIGHT_SHIFT_CANARY_V1.publish_enabled=false
+    outcome: RECOVERED
+    evidence_ref: tests/test_night_shift_failure_injection.py::test_network_loss_preserves_single_pending_outbox_action
+    evidence_digest: "6666666666666666666666666666666666666666666666666666666666666666"
+  - scenario: delayed_ci
+    outcome: FAILED_CLOSED
+    evidence_ref: tests/test_night_shift_failure_injection.py::test_delayed_ci_enters_waiting_external_without_promotion
+    evidence_digest: "7777777777777777777777777777777777777777777777777777777777777777"
   - scenario: concurrent_branch_advance
-    passed: true
+    outcome: FAILED_CLOSED
     evidence_ref: tests/test_night_shift_canary.py::test_concurrent_operator_branch_advance_fails_rollback_verification
+    evidence_digest: "8888888888888888888888888888888888888888888888888888888888888888"
   - scenario: disk_pressure
-    passed: true
+    outcome: FAILED_CLOSED
     evidence_ref: tests/test_night_shift_canary.py::test_disk_write_failure_cleans_worktree_and_branch
+    evidence_digest: "9999999999999999999999999999999999999999999999999999999999999999"
   - scenario: corrupted_receipt
-    passed: true
+    outcome: FAILED_CLOSED
     evidence_ref: tests/test_night_shift_receipts.py::test_corrupted_receipt_digest_is_rejected
+    evidence_digest: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
   - scenario: reviewer_timeout
-    passed: true
+    outcome: FAILED_CLOSED
     evidence_ref: tests/test_night_shift_canary.py::test_reviewer_timeout_blocks_before_mutation
+    evidence_digest: "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
