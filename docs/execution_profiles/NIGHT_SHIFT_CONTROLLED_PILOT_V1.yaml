@@ -1,0 +1,35 @@
+schema_version: night-shift-controlled-pilot/v1
+status: CONTROLLED
+recorded_at: 2026-09-29
+
+scope:
+  max_dispatches: 1
+  allowed_risk_classes:
+    - R0
+    - R1
+  require_mutating_project: true
+  require_single_sha_baseline: true
+  require_single_task_autonomy_envelope: true
+  require_single_repository_autonomy_envelope: true
+  require_exact_envelope_risk_match: true
+
+evidence:
+  require_current_portfolio_snapshot: true
+  rollback_only_pilot_may_close_task: false
+  require_exact_project_main_sha: true
+  require_task_capsule_binding: true
+  require_verification_quorum: true
+  require_cryptographic_identity: true
+  require_shadow_clearance: true
+  require_failure_injection_report: true
+  require_signed_execution_receipt: true
+  require_verified_rollback: true
+
+publication:
+  external_publication_enabled: false
+  unattended_production_publication_enabled: false
+
+authority:
+  pilot_may_expand_authority: false
+  pilot_evidence_is_not_policy_authority: true
+  stale_or_mismatched_identity: BLOCKED
