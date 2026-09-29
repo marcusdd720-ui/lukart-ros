@@ -1,0 +1,30 @@
+schema_version: night-shift-runtime-evidence-acquisition/v1
+status: CONTROLLED
+recorded_at: 2026-09-29
+
+candidates:
+  runtime_ids:
+    - dbos
+    - temporal
+  require_concrete_adapter: true
+  require_exact_profile_digest_binding: true
+  require_exact_benchmark_sample_binding: true
+
+sampling:
+  min_runs_per_runtime: 3
+  minimum_is_non_decreasing: true
+  require_unique_run_ids: true
+  require_distinct_sample_digests: true
+  require_distinct_artifact_digests: true
+
+evidence:
+  require_adapter_version: true
+  require_environment_digest: true
+  require_artifact_digest: true
+  digest_algorithm: sha256
+  require_lowercase_hex_digest: true
+  synthetic_evidence_allowed: false
+  forbidden_ref_prefixes:
+    - "test:"
+    - "synthetic:"
+    - "demo:"
