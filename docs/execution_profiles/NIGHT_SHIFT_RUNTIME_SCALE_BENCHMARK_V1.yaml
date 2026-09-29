@@ -1,0 +1,33 @@
+schema_version: night-shift-runtime-scale-benchmark/v1
+status: CONTROLLED
+recorded_at: 2026-09-29
+
+candidates:
+  runtime_ids:
+    - dbos
+    - temporal
+  require_exact_profile_digest_binding: true
+  require_concrete_adapter: true
+  require_validated_profile_evidence: true
+
+sampling:
+  min_samples_per_runtime: 3
+  require_unique_sample_ids: true
+  reject_stale_or_unknown_profile: true
+
+requirements:
+  crash_resume: true
+  idempotent_steps: true
+  deterministic_replay: configurable
+  durable_timers: configurable
+  distributed_workers: configurable
+
+authority:
+  automatic_scale_promotion_enabled: false
+  ready_for_human_is_not_runtime_selection: true
+  benchmark_evidence_is_not_policy_authority: true
+  benchmark_evidence_is_not_production_certification: true
+
+publication:
+  external_publication_enabled: false
+  unattended_production_publication_enabled: false
