@@ -1,0 +1,39 @@
+schema_version: night-shift-runtime-evidence-validation/v1
+status: CONTROLLED
+recorded_at: 2026-09-29
+
+candidates:
+  runtime_ids:
+    - dbos
+    - temporal
+  source_evidence_required: DOCUMENTED
+  target_evidence_proposal: VALIDATED
+  require_complete_v216_acquisition: true
+
+identity:
+  require_exact_acquisition_digest: true
+  require_exact_candidate_digest: true
+  require_exact_profile_digest: true
+  require_exact_repository_sha: true
+  repository_sha_format: git-sha1-lowercase-40
+  require_pinned_trust_set: true
+
+review:
+  purpose: SECURITY_REVIEW
+  require_builder_identity: true
+  require_reviewer_distinct_from_builder: true
+  min_distinct_review_keys_per_runtime: 2
+  minimum_is_non_decreasing: true
+  duplicate_review_keys_count_once: false
+  require_unexpired_attestation: true
+  reject_tampered_attestation: true
+
+authority:
+  automatic_matrix_mutation_enabled: false
+  ready_for_signed_matrix_change_is_not_validation: true
+  runtime_selection_enabled: false
+  runtime_promotion_enabled: false
+
+publication:
+  external_publication_enabled: false
+  unattended_production_publication_enabled: false
