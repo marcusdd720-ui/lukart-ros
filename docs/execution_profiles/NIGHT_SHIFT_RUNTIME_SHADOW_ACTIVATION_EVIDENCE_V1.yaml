@@ -1,0 +1,22 @@
+schema_version: night-shift-runtime-shadow-activation-evidence/v1
+status: CONTROLLED
+recorded_at: 2026-09-29
+
+evidence:
+  runtime_ids:
+    - dbos
+    - temporal
+  min_runs_per_runtime: 3
+  require_unique_run_ids: true
+  require_unique_evidence_digests: true
+  require_side_effect_free: true
+  require_rollback_verified: true
+  require_deterministic_replay_pass: true
+  require_task_budget_respected: true
+  reject_test_synthetic_demo_evidence: true
+
+authority:
+  production_mutation_enabled: false
+  external_publication_enabled: false
+  automatic_promotion_enabled: false
+  ready_for_promotion_review_is_not_promotion: true

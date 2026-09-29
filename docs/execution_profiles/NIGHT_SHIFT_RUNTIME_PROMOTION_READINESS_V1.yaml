@@ -1,0 +1,21 @@
+schema_version: night-shift-runtime-promotion-readiness/v1
+status: CONTROLLED
+recorded_at: 2026-09-29
+
+review:
+  runtime_ids:
+    - dbos
+    - temporal
+  min_distinct_reviewers_per_runtime: 2
+  require_pinned_trust_set: true
+  signature_purpose: SECURITY_REVIEW
+  require_reviewer_distinct_from_builder: true
+  require_explicit_approval: true
+  reject_unsigned_reviews: true
+
+authority:
+  automatic_promotion_enabled: false
+  registry_mutation_enabled: false
+  matrix_mutation_enabled: false
+  production_publication_enabled: false
+  ready_for_human_promotion_decision_is_not_promotion: true

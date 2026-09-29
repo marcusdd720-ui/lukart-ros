@@ -1,0 +1,23 @@
+schema_version: night-shift-runtime-binding-proposal/v1
+status: CONTROLLED
+recorded_at: 2026-09-29
+
+candidates:
+  runtime_ids:
+    - dbos
+    - temporal
+  require_exact_admission_binding: true
+  require_exact_profile_digest: true
+  require_concrete_artifact_digest: true
+  require_pinned_trust_set_signature: true
+  signature_purpose: SECURITY_REVIEW
+
+authority:
+  automatic_registry_mutation_enabled: false
+  automatic_matrix_mutation_enabled: false
+  automatic_activation_enabled: false
+  ready_for_human_signature_is_not_activation: true
+
+publication:
+  external_publication_enabled: false
+  unattended_production_publication_enabled: false
