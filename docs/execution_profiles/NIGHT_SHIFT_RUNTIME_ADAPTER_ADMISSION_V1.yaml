@@ -1,0 +1,37 @@
+schema_version: night-shift-runtime-adapter-admission/v1
+status: CONTROLLED
+recorded_at: 2026-09-29
+
+candidates:
+  runtime_ids:
+    - dbos
+    - temporal
+  reject_placeholder_adapter_prefix: "future_"
+
+identity:
+  require_exact_source_digest: true
+  require_exact_dependency_lock_digest: true
+  digest_algorithm: sha256
+  require_exact_repository_sha: true
+  repository_sha_format: git-sha1-lowercase-40
+
+conformance:
+  min_runs_per_runtime: 3
+  minimum_is_non_decreasing: true
+  require_unique_run_ids: true
+  require_unique_evidence_digests: true
+  reject_test_synthetic_demo_evidence: true
+  require_conformance_evidence_refs: true
+  require_strict_boolean_pass_flags: true
+  require_profile_capability_pass: true
+
+authority:
+  automatic_registry_mutation_enabled: false
+  automatic_matrix_mutation_enabled: false
+  ready_for_signed_adapter_binding_change_is_not_validation: true
+  runtime_selection_enabled: false
+  runtime_promotion_enabled: false
+
+publication:
+  external_publication_enabled: false
+  unattended_production_publication_enabled: false
