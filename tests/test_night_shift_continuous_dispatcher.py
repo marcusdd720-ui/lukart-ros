@@ -12,6 +12,10 @@ from core.night_shift.continuous_dispatcher import (
     executable_tasks,
     is_transient_tool_path,
     normalize_legacy_result,
+    notification_suppressed,
+    path_change_action,
+    provider_benchmark_allowed,
+    provider_unavailability_state,
     select_next_task,
     select_zero_cost_provider,
 )
@@ -177,7 +181,15 @@ def test_private_data_requires_privacy_eligibility() -> None:
         ProviderCandidate(
             "external", ProviderState.AVAILABLE, frozenset({"code"}), False, True, 100
         ),
-        ProviderCandidate("private", ProviderState.AVAILABLE, frozenset({"code"}), True, True, 10),
+        ProviderCandidate(
+            "private",
+            ProviderState.AVAILABLE,
+            frozenset({"code"}),
+            True,
+            True,
+            10,
+            external=False,
+        ),
     )
     assert (
         select_zero_cost_provider(
@@ -190,3 +202,54 @@ def test_private_data_requires_privacy_eligibility() -> None:
 def test_invalid_attempts_fail_closed() -> None:
     with pytest.raises(NightShiftContractError, match="attempts"):
         DispatchTask("a", 0, attempts=-1)
+
+
+def test_quiet_hours_only_suppress_notifications() -> None:
+    assert notification_suppressed(hour=23)
+    assert not notification_suppressed(hour=12)
+    assert select_next_task((DispatchTask("night", 0),), now_epoch=23 * 3600) is not None
+
+
+def test_transient_cache_does_not_quarantine() -> None:
+    assert path_change_action(".aider.tags.cache.v4/index") == "IGNORE_TRANSIENT"
+
+
+def test_protected_path_fails_closed_to_quarantine() -> None:
+    assert path_change_action(".github/workflows/ci.yml") == "QUARANTINE"
+    assert path_change_action("config/worker.json") == "QUARANTINE"
+
+
+def test_all_providers_unavailable_waits_then_blocks_at_budget() -> None:
+    assert provider_unavailability_state(attempts=1, max_attempts=3) is ExecutionState.WAITING_RETRY
+    assert (
+        provider_unavailability_state(attempts=3, max_attempts=3)
+        is ExecutionState.BLOCKED_TECHNICAL
+    )
+
+
+def test_external_provider_never_receives_private_customer_data() -> None:
+    providers = (
+        ProviderCandidate(
+            "external",
+            ProviderState.AVAILABLE,
+            frozenset({"code"}),
+            True,
+            True,
+            100,
+            external=True,
+        ),
+    )
+    assert (
+        select_zero_cost_provider(
+            providers,
+            required_capability="code",
+            private_data=True,
+        )
+        is None
+    )
+
+
+def test_provider_benchmark_requires_synthetic_data() -> None:
+    assert provider_benchmark_allowed("SYNTHETIC")
+    assert not provider_benchmark_allowed("CUSTOMER")
+    assert not provider_benchmark_allowed("PRIVATE")

@@ -79,6 +79,7 @@ class ProviderCandidate:
     privacy_eligible: bool
     zero_cost_verified: bool
     score: int = 0
+    external: bool = True
 
 
 @dataclass(frozen=True, slots=True)
@@ -104,6 +105,40 @@ def is_transient_tool_path(path: str) -> bool:
         normalized == prefix.rstrip("/") or normalized.startswith(prefix)
         for prefix in _TRANSIENT_PREFIXES
     )
+
+
+def path_change_action(path: str) -> str:
+    normalized = path.replace("\\", "/")
+    while normalized.startswith("./"):
+        normalized = normalized[2:]
+    if is_transient_tool_path(normalized):
+        return "IGNORE_TRANSIENT"
+    protected_prefixes = (".github/", "config/", "policy/", "security/")
+    if normalized == ".gitignore" or normalized.startswith(protected_prefixes):
+        return "QUARANTINE"
+    return "REVIEW_PRODUCT_DIFF"
+
+
+def provider_unavailability_state(*, attempts: int, max_attempts: int) -> ExecutionState:
+    if attempts < 0 or max_attempts < 1:
+        raise NightShiftContractError("invalid provider retry budget")
+    if attempts < max_attempts:
+        return ExecutionState.WAITING_RETRY
+    return ExecutionState.BLOCKED_TECHNICAL
+
+
+def provider_benchmark_allowed(data_class: str) -> bool:
+    return data_class.strip().upper() == "SYNTHETIC"
+
+
+def notification_suppressed(*, hour: int, start_hour: int = 22, end_hour: int = 7) -> bool:
+    if not 0 <= hour <= 23:
+        raise NightShiftContractError("hour must be within 0..23")
+    if start_hour == end_hour:
+        return False
+    if start_hour < end_hour:
+        return start_hour <= hour < end_hour
+    return hour >= start_hour or hour < end_hour
 
 
 def validate_attempt_budget(task: DispatchTask) -> DispatchTask:
@@ -204,7 +239,7 @@ def select_zero_cost_provider(
         if p.state in {ProviderState.AVAILABLE, ProviderState.DEGRADED}
         and p.zero_cost_verified
         and required_capability in p.capabilities
-        and (not private_data or p.privacy_eligible)
+        and (not private_data or (p.privacy_eligible and not p.external))
     ]
     if not eligible:
         return None
