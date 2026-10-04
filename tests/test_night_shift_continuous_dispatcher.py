@@ -23,12 +23,16 @@ from core.night_shift.contracts import NightShiftContractError
 
 
 def test_ready_task_dispatches() -> None:
-    assert select_next_task((DispatchTask("a", 0),), now_epoch=10).task_id == "a"
+    selected = select_next_task((DispatchTask("a", 0),), now_epoch=10)
+    assert selected is not None
+    assert selected.task_id == "a"
 
 
 def test_done_dependency_unlocks_next_task() -> None:
     tasks = (DispatchTask("a", 0, status="DONE"), DispatchTask("b", 1, depends_on=("a",)))
-    assert select_next_task(tasks, now_epoch=10).task_id == "b"
+    selected = select_next_task(tasks, now_epoch=10)
+    assert selected is not None
+    assert selected.task_id == "b"
 
 
 def test_unfinished_dependency_blocks() -> None:
@@ -37,7 +41,9 @@ def test_unfinished_dependency_blocks() -> None:
 
 
 def test_quiet_hours_are_not_execution_input() -> None:
-    assert select_next_task((DispatchTask("night", 0),), now_epoch=23 * 3600).task_id == "night"
+    selected = select_next_task((DispatchTask("night", 0),), now_epoch=23 * 3600)
+    assert selected is not None
+    assert selected.task_id == "night"
 
 
 def test_no_work_is_idle_no_work() -> None:
@@ -136,20 +142,23 @@ def test_retry_future_not_selected() -> None:
 
 def test_human_gate_only_blocks_that_task() -> None:
     tasks = (DispatchTask("a", 0, human_gate=True), DispatchTask("b", 1))
-    assert select_next_task(tasks, now_epoch=10).task_id == "b"
+    selected = select_next_task(tasks, now_epoch=10)
+    assert selected is not None
+    assert selected.task_id == "b"
 
 
 def test_external_gate_only_blocks_that_task() -> None:
     tasks = (DispatchTask("a", 0, external_gate=True), DispatchTask("b", 1))
-    assert select_next_task(tasks, now_epoch=10).task_id == "b"
+    selected = select_next_task(tasks, now_epoch=10)
+    assert selected is not None
+    assert selected.task_id == "b"
 
 
 def test_write_worktree_collision_rejected() -> None:
     tasks = (DispatchTask("a", 0, worktree="x", write_task=True), DispatchTask("b", 1))
-    assert (
-        select_next_task(tasks, now_epoch=10, active_write_worktrees=frozenset({"x"})).task_id
-        == "b"
-    )
+    selected = select_next_task(tasks, now_epoch=10, active_write_worktrees=frozenset({"x"}))
+    assert selected is not None
+    assert selected.task_id == "b"
 
 
 def test_zero_cost_provider_fallback() -> None:
@@ -159,12 +168,9 @@ def test_zero_cost_provider_fallback() -> None:
         ),
         ProviderCandidate("free", ProviderState.AVAILABLE, frozenset({"code"}), True, True, 50),
     )
-    assert (
-        select_zero_cost_provider(
-            providers, required_capability="code", private_data=False
-        ).provider_id
-        == "free"
-    )
+    selected = select_zero_cost_provider(providers, required_capability="code", private_data=False)
+    assert selected is not None
+    assert selected.provider_id == "free"
 
 
 def test_unverified_free_provider_rejected() -> None:
@@ -191,12 +197,9 @@ def test_private_data_requires_privacy_eligibility() -> None:
             external=False,
         ),
     )
-    assert (
-        select_zero_cost_provider(
-            providers, required_capability="code", private_data=True
-        ).provider_id
-        == "private"
-    )
+    selected = select_zero_cost_provider(providers, required_capability="code", private_data=True)
+    assert selected is not None
+    assert selected.provider_id == "private"
 
 
 def test_invalid_attempts_fail_closed() -> None:
