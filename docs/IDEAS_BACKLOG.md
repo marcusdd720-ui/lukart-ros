@@ -2115,3 +2115,27 @@ Potential LUKART relevance:
 
 No production integration is authorized by this entry.
 
+### LUKART MEDIA / test-budget use case
+
+If an official/live check confirms that the promotional token pool is genuinely usable through Muse/Muse Spark or another authorized Meta endpoint at 0 PLN, treat it as an **ephemeral experimental compute budget**, not as durable infrastructure.
+
+Priority uses:
+- prompt/shot/storyboard generation for LUKART MEDIA;
+- creative brief expansion, negative prompts and variant generation;
+- caption/script/voiceover text work;
+- multimodal QA/reviewer tasks when supported;
+- synthetic benchmark generation;
+- program/agent testing against public or synthetic fixtures;
+- provider comparison and repeatability tests;
+- coding/support tasks that would otherwise consume scarce primary-builder allowance.
+
+Do not assume LLM/agent tokens can pay for image/video generation. Media endpoints may use a separate credit/quota system. Verify the exact billing unit and endpoint before any test.
+
+When the quota is temporary, optimize for high-information experiments:
+1. establish benchmark corpus;
+2. run representative tests, not bulk low-value generations;
+3. log token/credit consumption and output quality;
+4. preserve outputs/evidence for later comparison;
+5. stop before any paid fallback/top-up.
+
+
