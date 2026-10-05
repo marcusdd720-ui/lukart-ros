@@ -230,10 +230,9 @@ A lightweight **Document Integrity Manifest** SHOULD be maintained as a determin
 - topology/consolidation safety;
 - privacy/minimization;
 - current date and contact details;
-- rendered-artifact verification of the first-page identity/address block, recipient, reference/sygnatura, date, signature area and attachment list against the approved draft;
 - no critical `UNKNOWN/UNRESOLVED` hidden from the filing.
 
-Text-level preflight alone is insufficient for a rendered filing. Missing or mismatched required sender/recipient identity or address data, or a rendered artifact that drops/truncates an approved material field, is a **Critical FAIL**.
+G7 validates the approved content and filing inputs before rendering. Missing or mismatched required sender/recipient identity or address data is a **Critical FAIL** at this stage. Render-specific loss or corruption is tested separately by G7.5 `FINISH`.
 
 Critical FAIL → `NOT_READY`. Critical UNKNOWN → `ABSTAIN` / `REVIEW_REQUIRED`. Passing G7 permits rendering, **not** `SEND_READY`.
 
