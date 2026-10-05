@@ -138,3 +138,10 @@ epics:
   - id: LSAF-E35
     name: executable_governance_conformance
     priority: P1
+
+  - id: LSAF-E36
+    name: sovereign_compute_mesh
+    priority: P1
+  - id: LSAF-E37
+    name: project_virtual_cells
+    priority: P1
