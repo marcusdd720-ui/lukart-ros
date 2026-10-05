@@ -33,10 +33,18 @@ A mapped idea is not promoted merely because it appears in the LSAF plan.
 | IDEA-053 Hierarchical Cognitive Fabric | capability/risk-based routing |
 | IDEA-054 Semantic Drift Firewall | semantic conformance / long-horizon compatibility |
 | IDEA-074 LUKART WORK → LUKART ROS Modular-Monorepo Consolidation | product-adapter migration / ROS–WORK consolidation program |
+| IDEA-076 LSAF Sovereign Trust Kernel | capability admission + execution truth convergence across Evidence Ledger, Capability Genome, Memory Firewall, Side-Effect Gateway and Anti-Entropy Reconciler |
 
 ## LSAF additions not intended to overwrite backlog concepts
 
 The current LSAF plan adds or sharpens:
+
+- Sovereign Trust Kernel convergence layer;
+- Capability Passport with security/provenance/benchmark/expiry evidence;
+- transactional attempt ledger + fencing-token leases;
+- first-class UNCERTAIN side-effect state;
+- Evidence-Carrying Memory and bitemporal legal knowledge;
+- semantic documentation drift gate;
 - Execution Truth Contract;
 - Anti-Entropy Reconciler;
 - Trust Decay;
