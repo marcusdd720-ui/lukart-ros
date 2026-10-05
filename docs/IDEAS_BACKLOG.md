@@ -2387,6 +2387,28 @@ Sparse MoE models (e.g. 125B total / ~6B active) prove why active compute and re
 
 Add a **Hardware Acquisition Gate**: no hardware purchase recommendation until observed workload, privacy/offline need, benchmark quality, energy/thermal limits and amortized TCO beat the available remote/free lanes.
 
+
+
+### Sovereign Compute Mesh extension
+
+Reject static `4 clouds × 2 permanent agents × every project` topology. Use four independent compute domains plus logical per-project cells.
+
+Each active project gets:
+- one PRIMARY EXECUTOR role;
+- one independent VERIFIER/REPAIR/RESEARCH role;
+- its own queue/resource/privacy/evidence bindings.
+
+Physical workers are leased from shared pools and may move between projects.
+
+Initial candidate domains:
+- Ollama Cloud Free/starter model lane;
+- Kaggle T4x2 GPU burst;
+- Lightning AI free/starter CPU/GPU burst;
+- Colab Free overflow;
+with GitHub/Codespaces/Actions, ChatGPT Work and future providers as orthogonal lanes.
+
+Critical capability must have at least two certified routes before claiming resilient autonomy. Provider loss must degrade throughput, not destroy task/evidence continuity.
+
 No production integration is authorized by this entry.
 
 ## IDEA-078 — Intent Provenance Firewall + Agentic Security Certification Fabric
