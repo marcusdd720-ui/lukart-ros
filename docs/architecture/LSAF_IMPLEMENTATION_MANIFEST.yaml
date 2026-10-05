@@ -118,3 +118,10 @@ epics:
   - id: LSAF-E29
     name: provider_credential_broker
     priority: P1
+
+  - id: LSAF-E30
+    name: cloud_burst_pool
+    priority: P1
+  - id: LSAF-E31
+    name: human_authority_budget_and_signing_tiers
+    priority: P1
