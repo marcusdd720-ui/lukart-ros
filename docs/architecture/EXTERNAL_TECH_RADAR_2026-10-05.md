@@ -785,3 +785,23 @@ No production installation is authorized by this research report. The report aut
 - synthetic/read-only tests;
 - preparation of isolated pilots after higher P0 gates close.
 
+### Ollama Cloud live-test checkpoint — 2026-10-05
+
+Owner confirmed creation of an Ollama API key from the official settings page and named the worker context `UAOS-Zero-Cost-Worker-Ollama`.
+
+Current state:
+- official Ollama Free plan existence: VERIFIED;
+- API key created by owner: OWNER_CONFIRMED;
+- direct cloud API authentication: PENDING;
+- inference: NOT YET RUN;
+- zero-cost runtime classification: NOT YET VERIFIED;
+- paid fallback/top-up: BLOCKED.
+
+Next gate:
+1. local secure capture of the key without posting it to chat or repository;
+2. auth-only `GET https://ollama.com/api/tags`;
+3. verify Free usage/balance and starter-model eligibility;
+4. one synthetic inference request;
+5. capture latency/token/evidence and confirm no purchased-credit consumption;
+6. classify `VERIFIED_FREE`, `LIMITED_FREE`, or `BLOCKED`.
+
