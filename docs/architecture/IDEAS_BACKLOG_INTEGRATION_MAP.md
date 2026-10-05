@@ -35,10 +35,15 @@ A mapped idea is not promoted merely because it appears in the LSAF plan.
 | IDEA-074 LUKART WORK → LUKART ROS Modular-Monorepo Consolidation | product-adapter migration / ROS–WORK consolidation program |
 | IDEA-076 LSAF Sovereign Trust Kernel | capability admission + execution truth convergence across Evidence Ledger, Capability Genome, Memory Firewall, Side-Effect Gateway and Anti-Entropy Reconciler |
 | IDEA-077 Resource-Aware Autonomous Work Fabric | resource governor + work stealing + lock/lease recovery + repair lane + heavy/light executor routing |
+| IDEA-078 Intent Provenance Firewall + Agentic Security Certification Fabric | trusted-intent provenance + taint-preserving context + side-effect intent proof + adversarial security corpus/certification |
 
 ## LSAF additions not intended to overwrite backlog concepts
 
 The current LSAF plan adds or sharpens:
+- Executable Governance Conformance: critical policy is not IMPLEMENTED until machine-enforced;
+- Intent Provenance Firewall + taint-preserving authority boundaries;
+- Agentic Security Certification Fabric and threat-driven corpus compiler;
+- Compute Placement Planner separating resident-memory fit from active-parameter compute;
 
 - Sovereign Trust Kernel convergence layer;
 - Capability Passport with security/provenance/benchmark/expiry evidence;
