@@ -442,6 +442,9 @@ Introduce a provider-neutral **CloudBurstPort** with ephemeral workers. A cloud 
 ### Candidate lanes
 
 #### Kaggle Notebooks — T4 x2
+
+**Current disposition (2026-10-05): WATCH / BLOCKED_BY_OWNER_PRIVACY_POLICY.** The live account path requires phone verification; owner does not authorize providing a phone number. Do not bypass this requirement. Re-evaluate only if Kaggle policy changes.
+
 Current official Kaggle documentation/product announcements expose a **T4 x2** accelerator:
 - 2 × NVIDIA T4;
 - 16 GB VRAM per GPU;
