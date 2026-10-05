@@ -808,3 +808,21 @@ Next gate:
 5. capture latency/token/evidence and confirm no purchased-credit consumption;
 6. classify `VERIFIED_FREE`, `LIMITED_FREE`, or `BLOCKED`.
 
+#### Account/usage evidence — 2026-10-05
+
+Owner supplied live Ollama account screenshots showing:
+- plan: **Free**;
+- included/free cloud models explicitly listed: `gemma4:31b`, `gpt-oss:120b`, `gpt-oss:20b`, `nemotron-3-nano:30b`, `nemotron-3-super`, `nemotron-3-ultra`;
+- Free usage meter: **0% used** at screenshot time;
+- reset: **in 4 weeks**;
+- purchased usage credits balance: **$0**;
+- auto-reload: **Off**;
+- billing: **no invoices yet**;
+- account UI shows two earlier `gemma4:31b` requests at `<$0.01` each while included Free usage still displays 0% used.
+
+Interpretation:
+- zero-cost guardrails are favorable: no purchased balance and auto-reload is off;
+- the listed starter models are explicitly eligible for included Free usage;
+- prior requests are not treated as LUKART benchmark evidence because they predate this controlled test;
+- one controlled synthetic inference request is still required before classifying the worker as inference-verified / zero-cost-verified.
+
