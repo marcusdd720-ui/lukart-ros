@@ -2075,3 +2075,43 @@ After successful cutover, the strategic backlog should converge on `lukart-ros/d
 - do not use consolidation to bypass current P0 gates;
 - do not treat monorepo location as evidence that Product/Platform boundaries are correct.
 
+## IDEA-075 — Meta Muse / Muse Spark as External Agent & Zero-Cost Research Candidate
+
+Status: `RESEARCH / BUILD-vs-ADOPT CANDIDATE`
+Recorded: `2026-10-05`
+Source signal: YouTube tutorial `dkNbsWNRySI` ("How to Create a Muse AI Account & Get 1 Billion Free Tokens")
+
+### Why it may matter
+
+Meta Muse is a personal agent that runs in a dedicated secure VM with browser/tool access, while Muse Spark is exposed separately through Meta's developer/model API. The agent and the developer model/API must be evaluated as distinct surfaces.
+
+Potential LUKART relevance:
+- independent non-OpenAI reviewer/executor candidate;
+- long-horizon agent/computer-use benchmark target;
+- external execution backend candidate behind LSAF adapters;
+- zero-cost/limited-free provider discovery candidate;
+- reference architecture for secure VM + sentinel/approval/audit patterns;
+- optional media/multimodal capability research.
+
+### Critical boundaries
+
+- A referral/YouTube claim of "1B free tokens" is not sufficient evidence for `VERIFIED_FREE`.
+- Official availability, geographic eligibility, terms, token expiry, API applicability and commercial-use limits must be verified live.
+- Muse personal-agent tokens must not be assumed to equal Meta Model API tokens/credits.
+- Region workarounds/VPN-based signup must not be treated as an approved LUKART production path unless terms explicitly permit it.
+- Muse must remain a replaceable executor/provider; it cannot become LUKART authority or SSOT.
+- Real client/legal data is prohibited until privacy, retention, data-use, jurisdiction and credential boundaries are independently reviewed.
+- Any integration must pass BUILD-vs-ADOPT, synthetic benchmark, cost gate and exact evidence capture.
+
+### Acceptance criteria for promotion
+
+1. verify official Meta product/API availability for Poland/EU or approved target jurisdiction;
+2. verify current pricing/free-tier/referral terms from official sources;
+3. distinguish Muse personal agent vs Muse Spark / Meta Model API vs Muse Code;
+4. run synthetic coding/agent/computer-use benchmarks against current primary builder/reviewer baselines;
+5. measure reliability, tool-use, latency, context, structured output and failure behavior;
+6. review privacy, retention, training opt-out, secrets/credential model and regional legal constraints;
+7. classify final disposition as `ADOPT_ADAPTER`, `REVIEWER_ONLY`, `RESEARCH_ONLY`, `WATCH`, or `REJECT`.
+
+No production integration is authorized by this entry.
+
