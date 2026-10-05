@@ -2131,6 +2131,12 @@ Current classification:
 - zero-cost API execution without payment method: `BLOCKED_BY_BILLING_SETUP`;
 - paid use: `BLOCKED_BY_POLICY`.
 
+Additional live UI observation:
+- Model API Chat surface rendered example prompts, but no successful inference was obtained without billing activation;
+- navigation subsequently reached the Meta Global AI Developer Hackathon notification page, which is unrelated to free model execution;
+- therefore Chat UI availability must not be treated as proof of free inference.
+
+
 Next research step: verify whether any official promotional-credit/referral path applies to Model API without requiring paid activation, and separately whether Chat/Image surfaces expose any free UI quota.
 
 
