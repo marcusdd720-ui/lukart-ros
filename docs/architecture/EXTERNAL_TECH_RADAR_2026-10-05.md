@@ -921,3 +921,22 @@ Official current evidence:
 - Free Plan currently lists high-throughput limits including `openai/gpt-oss-120b` and `openai/gpt-oss-20b` at 30 RPM / 1,000 requests per day / 8K TPM / 200K tokens per day;
 - exact account-specific limits must still be live-verified before certification.
 
+#### GroqCloud Free live-test checkpoint — 2026-10-05
+
+Owner supplied a live GroqCloud dashboard screenshot showing:
+- authenticated account/project access: **PASS**;
+- Playground / API Keys / Dashboard surfaces available;
+- visible model families include `GPT OSS 120B`, `GPT OSS 20B`, `Qwen 3.8 27B`, Whisper and Orpheus;
+- dashboard exposes an upgrade path to Dev Plan, but no upgrade is authorized;
+- account has historical token usage visible; this is not part of the controlled LUKART benchmark.
+
+Official current Free-plan documentation lists, among others:
+- `openai/gpt-oss-120b`: 30 RPM, 1K RPD, 8K TPM, 200K TPD;
+- `openai/gpt-oss-20b`: 30 RPM, 1K RPD, 8K TPM, 200K TPD;
+- `qwen/qwen3.8-27b`: 30 RPM, 1K RPD, 8K TPM, 200K TPD.
+
+State:
+`ACCOUNT_LIVE / API_KEY_PENDING / CONTROLLED_INFERENCE_PENDING / ZERO_COST_ACCOUNT_GUARDRAIL_PENDING`.
+
+Do not upgrade to Developer or attach paid fallback during certification.
+
