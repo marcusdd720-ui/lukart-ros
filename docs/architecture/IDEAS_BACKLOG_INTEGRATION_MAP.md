@@ -34,6 +34,7 @@ A mapped idea is not promoted merely because it appears in the LSAF plan.
 | IDEA-054 Semantic Drift Firewall | semantic conformance / long-horizon compatibility |
 | IDEA-074 LUKART WORK → LUKART ROS Modular-Monorepo Consolidation | product-adapter migration / ROS–WORK consolidation program |
 | IDEA-076 LSAF Sovereign Trust Kernel | capability admission + execution truth convergence across Evidence Ledger, Capability Genome, Memory Firewall, Side-Effect Gateway and Anti-Entropy Reconciler |
+| IDEA-077 Resource-Aware Autonomous Work Fabric | resource governor + work stealing + lock/lease recovery + repair lane + heavy/light executor routing |
 
 ## LSAF additions not intended to overwrite backlog concepts
 
