@@ -86,6 +86,129 @@ Aktualizacje są informacyjne, nie checkpointem. Po closure raportuj `STATUS`, `
 
 Improvement Review: `evidence → weaknesses → alternatives → trade-offs → improvements`. Wdrażaj tylko materialne ulepszenia w scope; reszta → ordered follow-up bez scope creep. Po closure nowe zmiany mają nowe SHA/evidence.
 
-## 11. NORTH STAR
+
+
+## 11. AUTONOMOUS EXECUTION / RESOURCE-AWARE ORCHESTRATION
+
+LUKART ma działać jako autonomiczny system wykonawczy, nie jako zbiór agentów oczekujących na ciągłe ręczne decyzje operatora.
+
+### 11.1 Automatic idea capture
+
+Materialne pomysły, nowe technologie, filmy/research i usprawnienia:
+- automatycznie deduplikuj;
+- weryfikuj źródła;
+- klasyfikuj `ADOPT / PILOT / WATCH / REJECT`;
+- zapisuj do właściwego backlogu/manifestu;
+- commituj atomowo na odpowiednim branchu dokumentacyjnym;
+- nie wymagaj osobnego polecenia "zapisz to".
+
+Zapis/commit dokumentacyjny NIE oznacza implementacji, merge, promocji ani certyfikacji.
+
+### 11.2 Resource-aware scheduling
+
+Celem jest maksymalny użyteczny throughput przy bezpiecznych zasobach, nie maksymalna liczba procesów.
+
+Przed lokalnym spawn:
+- sprawdź RAM/commit/paging/CPU/WSL/process load;
+- oceń ResourceEnvelope zadania;
+- nie uruchamiaj ciężkiego workera, jeśli grozi swap/thrash;
+- ciężkie zadania routuj do Work/remote/cloud-burst lane;
+- lekkie zadania routuj do deterministic/local/live-verified zero-cost providers;
+- task, który nie mieści się w zasobach, nie może blokować całej kolejki.
+
+### 11.3 Role separation
+
+Utrzymuj odrębne role:
+- SUPERVISOR/WATCHDOG;
+- DISPATCHER;
+- BUILDER;
+- REPAIR/RECOVERY;
+- VERIFIER;
+- RESEARCH/SCOUT;
+- INTEGRATOR.
+
+Builder ≠ verifier ≠ promoter. Repair agent nie może osłabiać testów, zmieniać wymagań ani promować.
+
+### 11.4 Lease/fencing instead of permanent locks
+
+Nie używaj długowiecznych blokad plików jako mechanizmu koordynacji.
+
+Ownership = lease:
+`task_id + run_id + agent_id + worktree_id + path_scope + lease_id + fencing_token + heartbeat + expires_at`.
+
+STALE/ORPHANED/DEAD_OWNER może być odzyskany po deterministycznym evidence. AMBIGUOUS → QUARANTINE + reconciliation.
+
+Nowy fencing token unieważnia starego workera.
+
+### 11.5 Meaningful progress
+
+Heartbeat bez realnego postępu != WORKING.
+
+Mierz:
+- last meaningful tool call;
+- diff/hash progress;
+- test progress;
+- artifact/log progress;
+- provider response progress.
+
+Brak postępu:
+`WORKING → SUSPECTED_STALL → STALLED → bounded recovery`.
+
+Recovery:
+`inspect → one safe resume/restart → alternate executor → REPAIR queue → HUMAN_REQUIRED`.
+
+Bez nieskończonych restartów.
+
+### 11.6 Durable runtime truth
+
+Mutable JSON/Markdown/dashboard nie są execution authority.
+
+Docelowo transactional attempt/event ledger + leases/fencing. Projekcje mogą być JSON/Markdown/UI.
+
+### 11.7 Heavy/light execution lanes
+
+Preferowane routing:
+- T0 deterministic → local scripts/tools;
+- T1 light AI → local/light/VERIFIED_FREE;
+- T2 focused engineering → strong builder;
+- T3/T4 heavy cross-repo/long-context → ChatGPT Work/remote/cloud executor;
+- GPU batch/benchmarks → Cloud Burst Pool.
+
+Kandydaci Cloud Burst: Kaggle T4x2, Lightning AI, Colab, przyszłe remote CPU/GPU. Każdy lane musi być live-verified, checkpointable, content-addressed i 0-PLN, jeśli polityka wymaga zero-cost.
+
+### 11.8 Human authority budget
+
+Człowiek nie może być schedulerem systemu.
+
+Nie proś o podpis po każdym małym fixie. Grupuj causally-related validated changes do meaningful closure boundary.
+
+Rozróżniaj:
+- `AUTOMATION_CHECKPOINT` — niski poziom authority, nie daje prawa merge/release;
+- `HUMAN_CANDIDATE_FREEZE` — jeden podpis spójnego kandydata;
+- `HUMAN_PROMOTION` — osobna jawna decyzja dla promocji/release, jeśli governance tego wymaga.
+
+Cel: minimalizować `human_signing_events / independently_verified_closed_milestones` bez osłabiania provenance i separation of duties.
+
+### 11.9 Credential isolation
+
+Raw provider/API secrets nie trafiają do promptów, contextu ani logów.
+
+Docelowo Provider Credential Broker:
+- secret lookup tylko wewnątrz adaptera;
+- rotation/revocation;
+- per-provider restrictions;
+- cost ceiling;
+- evidence z credential identity/version bez sekretu.
+
+### 11.10 Human absence must not stop safe work
+
+Gdy operator jest offline:
+- kompatybilne safe tasks nadal pracują;
+- jeden HUMAN gate nie blokuje niezależnych lane'ów;
+- system buduje signing/decision queue;
+- HUMAN_REQUIRED tylko gdy naprawdę przekroczono authority boundary, a nie dlatego, że agent nie umie kontynuować technicznie.
+
+
+## 12. NORTH STAR
 
 Każdy etap ma zwiększać correctness, epistemic safety, determinism, security, provenance/replay, resilience, observability, recovery, auditability i evolvability bez nieuzasadnionej złożoności.
