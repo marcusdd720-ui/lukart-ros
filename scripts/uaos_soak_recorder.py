@@ -194,9 +194,11 @@ def record(
 
     output.parent.mkdir(parents=True, exist_ok=True)
     summary.parent.mkdir(parents=True, exist_ok=True)
+    if output.exists() and output.stat().st_size:
+        raise ValueError("output evidence file must be new or empty")
     start: int | None = None
 
-    with output.open("a", encoding="utf-8") as handle:
+    with output.open("w", encoding="utf-8") as handle:
         while True:
             sample = capture_sample(state_dir)
             if start is None:
