@@ -848,3 +848,22 @@ Interpretation:
 State:
 `INFERENCE_TRANSPORT_PASS / OUTPUT_ASSERTION_RETEST_REQUIRED / ZERO_COST_PENDING_USAGE_RECHECK`.
 
+#### Controlled Ollama inference attempt #2 — 2026-10-05
+
+Model: `gpt-oss:20b`.
+
+Observed result:
+- output assertion: **PASS** — exact final response `LUKART_OLLAMA_PASS`;
+- `done = true`;
+- `done_reason = stop`;
+- `total_duration = 2,961,638,583 ns` (~2.96 s);
+- `prompt_eval_count = 73`;
+- `eval_count = 58`;
+- reasoning/thinking text was still returned alongside the final response despite the request including `think = false`; treat this as provider/model behavior to benchmark separately rather than as a failure of the final-output assertion.
+
+State:
+`AUTH_VERIFIED / FREE_PLAN_VERIFIED / FREE_MODEL_ELIGIBILITY_VERIFIED / INFERENCE_VERIFIED / OUTPUT_ASSERTION_PASS / ZERO_COST_PENDING_USAGE_RECHECK`.
+
+Remaining zero-cost gate:
+Refresh Ollama Usage and verify that the controlled request consumed only included Free usage while purchased credits remain `$0`, auto-reload remains Off, and no invoice/paid balance appears.
+
