@@ -2115,6 +2115,25 @@ Potential LUKART relevance:
 
 No production integration is authorized by this entry.
 
+### Live verification — 2026-10-05
+
+Observed on the user's real Meta Model API account from Poland:
+- account creation and Model API dashboard access: PASS;
+- Muse Spark 1.3 Contributor surfaced in the dashboard: PASS;
+- Billing page displayed: "No payment method on file. Add one to make API requests.";
+- no promotional/free credit balance was visible on the Billing overview at this checkpoint;
+- no API request was made and no payment method was added.
+
+Current classification:
+- Meta Model API Poland access: `LIVE_VERIFIED`;
+- Muse Spark availability in dashboard: `LIVE_VERIFIED`;
+- 1B-token promotion for Model API: `NOT_VERIFIED`;
+- zero-cost API execution without payment method: `BLOCKED_BY_BILLING_SETUP`;
+- paid use: `BLOCKED_BY_POLICY`.
+
+Next research step: verify whether any official promotional-credit/referral path applies to Model API without requiring paid activation, and separately whether Chat/Image surfaces expose any free UI quota.
+
+
 ### LUKART MEDIA / test-budget use case
 
 If an official/live check confirms that the promotional token pool is genuinely usable through Muse/Muse Spark or another authorized Meta endpoint at 0 PLN, treat it as an **ephemeral experimental compute budget**, not as durable infrastructure.
