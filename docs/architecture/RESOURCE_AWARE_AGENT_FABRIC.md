@@ -432,3 +432,127 @@ Do not derail current P0.
 - no paid fallback;
 - no automatic merge/promotion;
 - no claim of autonomous Work execution until an actual supported executor interface exists.
+
+## 17. Cloud Burst Pool — heavy compute without local RAM pressure
+
+The user's workstation must not be treated as the only heavy execution substrate.
+
+Introduce a provider-neutral **CloudBurstPort** with ephemeral workers. A cloud burst worker is disposable compute; it is never an authority and never owns canonical state.
+
+### Candidate lanes
+
+#### Kaggle Notebooks — T4 x2
+Current official Kaggle documentation/product announcements expose a **T4 x2** accelerator:
+- 2 × NVIDIA T4;
+- 16 GB VRAM per GPU;
+- approximately 29 GB system RAM;
+- notebook sessions are bounded (official docs describe up to 12 h execution for CPU/GPU sessions);
+- free GPU availability is quota/queue constrained.
+
+Best fit:
+- GPU-heavy synthetic benchmarks;
+- embeddings/reranking/model evaluation;
+- local-model experimentation;
+- media/model inference experiments;
+- batch jobs that checkpoint frequently.
+
+Not suitable as:
+- permanent 24/7 scheduler;
+- canonical task ledger;
+- sole worker for an irreversible long-running operation.
+
+#### Lightning AI free/start credits
+Current public pricing advertises free starter GPU hours/credits, a free Studio and up to two concurrent GPUs on the free tier, with restart/session constraints.
+
+Best fit:
+- burst jobs requiring persistent-ish Studio ergonomics;
+- GPU experimentation;
+- temporary remote engineering worker.
+
+Treat starter credits as ephemeral capacity, not durable 0-PLN infrastructure.
+
+#### Google Colab free
+Free GPU/TPU access exists, but GPU type, runtime lifetime and quotas are explicitly dynamic and not guaranteed.
+
+Best fit:
+- opportunistic experiments and overflow;
+- never a hard dependency for P0 completion.
+
+### Burst scheduling rules
+
+1. provider must be live-verified at dispatch time;
+2. job must have a checkpoint/restart contract;
+3. no canonical state lives only on the ephemeral worker;
+4. input bundle is content-addressed;
+5. output/evidence bundle is pulled back and hash-verified;
+6. worker can disappear without corrupting the task;
+7. no real client/legal data goes to a cloud/free worker until privacy/terms/certification explicitly allow it;
+8. no paid fallback/top-up;
+9. if provider disappears, task returns to queue as DEFERRED/RETRY_ELIGIBLE rather than BLOCKED_FOREVER.
+
+### Burst Worker Packet
+
+```
+task_id
+run_id
+exact_input_hashes
+repo/ref/SHA
+container/env manifest
+resource envelope
+checkpoint interval
+expected outputs
+validation command
+cost ceiling = 0
+privacy class
+timeout
+artifact return target
+```
+
+The worker returns a signed/content-addressed Execution Receipt. Results are untrusted until local/independent validation accepts them.
+
+## 18. Human Authority Budget — stop signature spam
+
+Human authority is scarce and must be spent at meaningful boundaries.
+
+### Signature tiers
+
+**Tier A — Autonomous checkpoint**
+- agent/worktree checkpoint;
+- no human interruption;
+- may use a dedicated automation identity/key if approved;
+- has provenance value only;
+- cannot promote/merge/release.
+
+**Tier B — Candidate freeze**
+- one coherent bounded batch;
+- validation passed;
+- exact candidate SHA frozen;
+- human signature may be requested here when policy requires it.
+
+**Tier C — Promotion/release**
+- separate high-authority approval/signature when required;
+- cannot be inferred from Tier A or B.
+
+### Consolidation rule
+
+Do not ask the human to sign every small repair.
+
+Accumulate causally related validated changes until:
+- closure boundary;
+- independent-review boundary;
+- high-risk checkpoint;
+- or branch/CI publication genuinely requires a signed identity.
+
+Target:
+`human_signing_events / independently_verified_closed_milestones` should trend toward 1 or below, never toward one signature per task.
+
+### Automation signing identity
+
+Long-term preferred model:
+- a dedicated LUKART automation signing identity for low-authority checkpoint provenance;
+- human personal key reserved for candidate/promotion boundaries;
+- automation signature must be distinguishable from human authority in evidence;
+- automation key cannot authorize merge/release merely because its signature is cryptographically valid.
+
+This preserves provenance while avoiding a system that stops every few minutes waiting for the owner.
+
