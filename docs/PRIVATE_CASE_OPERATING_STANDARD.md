@@ -1,8 +1,8 @@
 # LUKART ROS — Private Case Operating Standard
 
-Version: **1.0.1**  
+Version: **1.3.0**  
 Status: **ACTIVE OPERATOR STANDARD**  
-Effective: **2026-09-13**  
+Effective: **2026-10-05**  
 Scope: **all private real-world CASE work**
 
 ## 1. Authority and role
@@ -54,7 +54,7 @@ Before new conclusions, reconstruct the current CASE state from authorized evide
 
 Every private CASE follows this sequence unless a step is genuinely not applicable and that non-applicability is explicit:
 
-`Scope → Decision Need → Inventory → Evidence Ceiling → Epistemic Model → Timeline → Contradictions → Deadlines → Standing/Authority → Procedural Map → Current-Law Research → Remedy/Strategy → Filing Topology → Draft A → Red Team → Hardcore Preflight → Draft B / SEND READY → Render → Human/Operator Approval where required → Send/File → Receipt → Response Delta → Replay → Next Action / Closure`
+`Scope → Decision Need → Inventory → Evidence Ceiling → Epistemic Model → Timeline → Contradictions → Deadlines → Standing/Authority → Procedural Map → Current-Law Research → Remedy/Strategy → Filing Topology → Draft A → Red Team → Draft B → Hardcore Preflight → Render → FINISH Gate → SEND READY → Human/Operator Approval where required → Send/File → Receipt → Response Delta → Replay → Next Action / Closure`
 
 Document generation is downstream. A request such as “write a letter” does not authorize skipping upstream evidence/procedure gates.
 
@@ -167,7 +167,30 @@ Statuses include `RECOMMENDED`, `DECISION_REQUIRED`, `NEEDS_EVIDENCE`, `NO_SAFE_
 
 ### G7 — Draft / Red Team / Hardcore Preflight
 
-Final professional documents are produced in two passes.
+Final professional documents are produced through a controlled integrity chain. No stage may silently drop or mutate material content from an approved earlier stage.
+
+**Continuous Document Integrity invariant — ZERO SILENT LOSS**
+
+From `Draft A` onward, every document-producing transformation MUST compare the candidate artifact against both:
+1. the current authoritative CASE state / approved filing plan; and
+2. the immediately preceding approved document stage.
+
+The comparison is semantic, not merely textual. Critical items include at least:
+- filer/sender identity and address;
+- all parties and their roles;
+- recipient/authority and filing address;
+- case/reference/sygnatura identifiers;
+- operative requests/petitum;
+- material facts/claims and their evidence links;
+- material legal grounds/citations;
+- dates/deadlines that affect the filing;
+- attachments/evidence list;
+- signature/representation/copy requirements;
+- privacy/minimization decisions.
+
+For each material removal, change or addition, the stage MUST classify the delta as `INTENTIONAL_APPROVED`, `DERIVED_FORMATTING_ONLY`, or `UNEXPLAINED_REGRESSION`. `UNEXPLAINED_REGRESSION` is a Critical FAIL. Critical-content loss budget is **zero**.
+
+A lightweight **Document Integrity Manifest** SHOULD be maintained as a deterministic, non-authoritative projection of the approved CASE/filing state. It records required fields/sections, their provenance, criticality and expected presence. It is a validation aid, never a new source of truth.
 
 **Pass A — Legal/Evidence Draft**
 - operative request;
@@ -193,8 +216,10 @@ Final professional documents are produced in two passes.
 
 **Hardcore Preflight** must check at least:
 - identity of filer/represented person;
+- complete filer/sender identity block required for the destination and filing type, including full name/entity name and current postal/registered address; required party identifiers and contact fields when legally or operationally required;
+- provenance and freshness of sender/recipient address and contact data against the latest authorized CASE source; stale, conflicting or unverified material values remain `UNKNOWN/UNRESOLVED`;
 - standing/authority;
-- recipient and filing route;
+- recipient, complete recipient address and filing route;
 - deadline status;
 - explicit requests;
 - factual/evidence mapping;
@@ -207,13 +232,49 @@ Final professional documents are produced in two passes.
 - current date and contact details;
 - no critical `UNKNOWN/UNRESOLVED` hidden from the filing.
 
-Critical FAIL → `NOT_READY`. Critical UNKNOWN → `ABSTAIN` / `REVIEW_REQUIRED`. Only all-critical-PASS may become `FILING_READY` / `SEND READY`.
+G7 validates the approved content and filing inputs before rendering. Missing or mismatched required sender/recipient identity or address data is a **Critical FAIL** at this stage. Render-specific loss or corruption is tested separately by G7.5 `FINISH`.
+
+Critical FAIL → `NOT_READY`. Critical UNKNOWN → `ABSTAIN` / `REVIEW_REQUIRED`. Passing G7 permits rendering, **not** `SEND_READY`.
+
+### G7.5 — FINISH Gate — Final Artifact Integrity & Regression Gate
+
+`FINISH` is the last mandatory quality gate after rendering and before `SEND_READY`. It exists to catch defects introduced by drafting, editing, templating, conversion, rendering or last-minute cleanup even when all earlier stages passed.
+
+FINISH MUST re-read the final human-visible artifact as a fresh candidate and compare it with:
+- the approved `Draft B` / filing plan;
+- the Document Integrity Manifest where used;
+- the immediately preceding approved artifact/version;
+- the current CASE state for identity, authority, dates and filing route.
+
+FINISH checks at least:
+- **Identity parity:** filer/sender, address, parties, roles, representation;
+- **Recipient parity:** authority, department, address, channel;
+- **Reference parity:** sygnatura, case/reference numbers, dates;
+- **Request parity:** no request/petitum weakened, broadened, duplicated or lost;
+- **Factual parity:** no material fact/claim/evidence link silently removed or promoted beyond its evidence status;
+- **Legal parity:** no material legal basis/citation silently removed, stale-substituted or materially altered;
+- **Attachment parity:** every referenced attachment exists in the list and every required attachment remains present;
+- **Signature/copy parity:** signature area, signer capacity, copies/odpisy and formal execution requirements remain intact;
+- **Privacy parity:** no accidental disclosure introduced during rendering;
+- **Render parity:** no clipping, pagination loss, hidden text, broken glyphs, blank pages, orphan headings, missing footer/page number where required, or malformed first/last page;
+- **Cross-version regression:** no critical field present in an approved earlier stage disappears without an explicit approved reason;
+- **Final-date/contact freshness:** current date and material contact/address data remain the latest authorized values.
+
+Where technically feasible, FINISH SHOULD combine:
+1. machine assertions over extracted DOCX/PDF text and expected critical fields;
+2. semantic diff against the approved prior stage;
+3. visual inspection of the rendered first page, operative-request pages, attachment/signature area and any page where a diff occurred;
+4. artifact version/digest binding so the bytes validated by FINISH are the same bytes promoted to `SEND_READY`.
+
+Any modification after `FINISH_PASS` invalidates that PASS and requires a fresh FINISH run on the new bytes. `SEND_READY` is therefore a property of an exact validated artifact/version, not of a draft concept.
+
+Only `FINISH_PASS` with all critical controls PASS may promote the exact artifact to `SEND_READY`.
 
 ### G8 — Execution / receipt / replay
 
 Artifact state is explicit:
 
-`DRAFT → PREFLIGHTED → SEND_READY → APPROVED → SENT/FILED → RECEIVED/DELIVERED → RESPONDED → ASSESSED → CLOSED/ARCHIVED`
+`DRAFT_A → RED_TEAMED → DRAFT_B → PREFLIGHTED → RENDERED → FINISH_PASS → SEND_READY → APPROVED → SENT/FILED → RECEIVED/DELIVERED → RESPONDED → ASSESSED → CLOSED/ARCHIVED`
 
 `PREPARED != SENT != RECEIVED != EFFECTIVE`.
 
@@ -240,14 +301,222 @@ Unless the destination imposes another format, the renderer SHOULD produce:
 - stable paragraph hierarchy;
 - adequate left margin for physical filing/binder where relevant;
 - pagination;
-- correct sender/recipient blocks;
+- correct sender block, including the complete current postal/registered address when appropriate for the filing;
+- correct recipient block, including the complete filing address;
 - current date;
+- case/reference/sygnatura where applicable;
 - signature block;
 - ordered attachments;
 - no internal CASE commentary, debug text, speculative labels or unused placeholders;
 - DOCX and/or PDF when requested/appropriate.
 
+Rendering never promotes an artifact directly to `SEND_READY`. The rendered DOCX/PDF MUST pass G7.5 `FINISH` on the exact bytes/version that will be delivered. The inspection must confirm that the approved identity/address blocks, parties, recipient, date, reference/sygnatura, operative request, material factual/legal content, signature area and attachment list are present, legible and not clipped, substituted or omitted. Any mismatch returns the artifact upstream to the earliest affected stage and invalidates any prior FINISH/SEND_READY status.
+
 Templates define presentation, not truth. The renderer MUST NOT invent facts, fix contradictions or change strategy. If rendering discovers a missing material input, return upstream to the appropriate gate.
+
+### 6.1 Legal drafting doctrine — procedural voice by default
+
+Unless the destination, jurisdiction or user instruction materially requires another style, professional CASE filings MUST use a **procedural, court-facing legal voice** rather than conversational, emotional or decorative prose.
+
+Default drafting characteristics:
+- professional legal Polish appropriate to the recipient and procedural posture;
+- firm, restrained and precise tone — **assertive, never needlessly aggressive**;
+- operative language first: the recipient should immediately understand what is requested, on what basis and what action is expected;
+- concise factual narrative limited to facts material to the requested procedural/legal consequence;
+- explicit party roles, authority, reference/sygnatura and procedural posture;
+- clear separation between established facts, party assertions, interpretation and unresolved matters;
+- no rhetoric, indignation, moralising, threats, sarcasm or unnecessary adjectives;
+- no internal CASE labels, debug language or epistemic tags in the final outward-facing document unless legally useful.
+
+### 6.2 Petitum-first / decision-useful structure
+
+The document is optimized for the decision-maker, not for the drafter.
+
+Preferred order when legally appropriate:
+1. identity / parties / authority / reference;
+2. precise title matching the requested procedural act;
+3. numbered **petitum / operative requests**;
+4. shortest sufficient factual basis;
+5. legal basis and procedural consequence;
+6. evidence/attachments where needed;
+7. signature/execution block.
+
+Each request MUST be:
+- within the recipient's competence;
+- legally/procedurally available to the best verified understanding;
+- specific enough to execute or adjudicate;
+- consistent with the evidence ceiling and filing topology;
+- free from hidden alternative requests unless the strategy intentionally includes them.
+
+A long justification MUST NOT obscure the operative request.
+
+### 6.3 Authority economy — law must do work
+
+Legal authorities are used for function, not decoration.
+
+Prefer the smallest sufficient set of current, authoritative provisions and decisions that materially support:
+- admissibility / standing / competence;
+- the requested procedural act;
+- the substantive rule actually in dispute;
+- the relevant burden, deadline or consequence.
+
+Do not add provisions merely to make a filing look more legal. Citation volume is not quality.
+
+For every cited provision or authority, the drafter SHOULD be able to answer:
+- **What proposition does this authority support?**
+- **Is that proposition material to the recipient's decision?**
+- **Is the authority current, controlling/authoritative at the claimed level, and accurately characterized?**
+
+Case law is added only when it changes, clarifies or materially strengthens the argument. Holdings must be described narrowly and faithfully.
+
+### 6.4 Evidence-calibrated language
+
+Wording strength MUST track evidentiary strength.
+
+Examples of calibrated forms:
+- strong evidence: “z dokumentu wynika…”, “Sąd ustalił…”, “akta wskazują…”;
+- party assertion: “powód wskazuje/twierdzi…”, “według oświadczenia…”;
+- inference: “okoliczność ta przemawia za…”, “może wskazywać…”;
+- unresolved matter: do not convert it into a categorical statement.
+
+Never use stronger procedural language merely for rhetorical effect when the evidence does not support it.
+
+### 6.5 Adversarial sentence test
+
+Every material sentence in Draft B SHOULD survive four questions:
+1. **Evidence:** what evidence or verified source supports it?
+2. **Relevance:** why does the recipient need this sentence to decide the requested act?
+3. **Authority:** if legal, what rule/authority supports the proposition?
+4. **Remedy link:** how does it advance, protect or delimit the operative request?
+
+If a sentence fails all four, delete it. If it partially fails, narrow or qualify it.
+
+This is a drafting-quality gate, not a requirement to make every filing long. The best filing is the shortest filing that safely proves and requests what is necessary.
+
+### 6.6 Procedural firmness calibration
+
+“Firm” means:
+- unambiguous requests;
+- precise identification of legal/procedural consequences;
+- explicit reservation of rights when strategically justified;
+- clear response/follow-up expectation when appropriate;
+- no dilution of a justified position through vague or apologetic wording.
+
+“Firm” does **not** mean:
+- accusations unsupported by evidence;
+- threats outside the available remedy;
+- insulting or adversarial adjectives;
+- speculative allegations;
+- excessive quotation of law;
+- unnecessary escalation.
+
+The target is **maximum credible force with minimum unnecessary friction**.
+
+### 6.7 Document-stage preservation
+
+Draft A may contain explanatory scaffolding that is later compressed, but Draft B and the final artifact MUST preserve every material element required by the approved filing plan.
+
+Compression is allowed only when meaning, party identity/role, request scope, evidence link and legal effect remain intact.
+
+A field/section present in an earlier approved stage may be removed only if the delta is explicitly classified under the ZERO SILENT LOSS invariant. Material omission by simplification is an `UNEXPLAINED_REGRESSION`.
+
+### 6.8 Argument Architecture — issue-to-remedy chain
+
+For material filings, the drafting process SHOULD maintain an internal argument map before or during Draft A:
+
+`Problem → Issue → Fact/Evidence → Rule/Authority → Application → Counterargument → Rebuttal → Request`
+
+This structure is a control model, not a mandatory outward-facing section layout. The final filing may compress or reorder the presentation when that improves procedural readability, but the internal chain MUST remain traceable.
+
+For each material issue:
+- identify the precise legal/procedural question;
+- bind only supported facts/claims to that issue;
+- identify the governing current rule and authority;
+- explain the application without overstating the evidence;
+- identify the strongest material counterargument when one reasonably exists;
+- answer it narrowly and accurately;
+- connect the conclusion to a concrete requested act/remedy.
+
+A filing MUST NOT contain an argument that cannot be connected to a concrete issue or requested outcome.
+
+### 6.9 Recipient Decision Model
+
+Every filing MUST be designed around the decision-maker's next lawful action.
+
+Before drafting, answer internally:
+- Who is the actual decision-maker or executing official?
+- What exact decision, order, action, correction, disclosure or response is requested?
+- What jurisdiction/competence does that recipient have?
+- What minimum facts and legal predicates must be clear for that recipient to act?
+- What must the recipient be able to find within 30–60 seconds?
+
+If the recipient cannot quickly identify **who is asking, in what matter, for what exact act, on what minimum factual/legal basis, and what should happen next**, the document requires redesign.
+
+### 6.10 Burden & Proof Map
+
+For material disputed propositions, the drafting process SHOULD maintain an internal burden/proof map:
+
+`Proposition → Evidence status → Who must establish it → Applicable burden/standard if verified → Current evidence → Missing evidence → Consequence if unproven`
+
+This map is especially important where the outcome depends on:
+- payment/non-payment;
+- service/receipt;
+- authority/representation;
+- employment/income;
+- causation/damage;
+- limitation/prescription;
+- administrative eligibility;
+- execution/accounting;
+- fraud, bad faith or other state-of-mind allegations.
+
+The final filing MUST NOT silently convert a weakly supported proposition into a categorical fact merely because stronger wording sounds more persuasive.
+
+### 6.11 Authority hierarchy and source discipline
+
+Authority selection follows this preference order, adjusted to the jurisdiction and issue:
+
+1. current binding constitutional/statutory/regulatory text;
+2. controlling or materially authoritative higher-court decisions;
+3. relevant appellate/first-instance case law where appropriate;
+4. official institutional guidance or published procedural information;
+5. respected commentary/doctrine as secondary support.
+
+Primary authority is preferred over secondary summaries for material propositions.
+
+A lower-authority source MUST NOT be presented as if it were binding. Commentary MUST NOT substitute for an available primary source on a material current-law question.
+
+### 6.12 Court / authority readability standard
+
+A professional filing SHOULD allow a busy judge, referendary, clerk, enforcement officer, administrative officer or institutional decision-maker to identify within the first 30–60 seconds:
+- parties / filer and role;
+- recipient/authority;
+- case/reference;
+- procedural posture;
+- exact operative request;
+- the 2–4 decisive facts or predicates;
+- the core legal basis;
+- the evidence/attachments that matter;
+- the next action expected from the recipient.
+
+Readability is substantive quality. Dense legal language, excessive quotations, repetition or ornamental formality that obscures the decision path is a defect.
+
+**Legal precision != unnecessary complexity.**
+
+### 6.13 Living strengthening rule
+
+This drafting doctrine is a living standard. It MUST be strengthened when real CASE evidence reveals a recurring or material failure mode.
+
+Improvement loop:
+`Observed defect → root cause → smallest generalizable rule/control → update this living standard → validate on the affected workflow → preserve change history`.
+
+Do not create competing whole-standard V2/V3 files for normal evolution.
+
+New controls SHOULD be added only when they:
+- prevent a demonstrated or reasonably foreseeable material failure;
+- improve correctness, evidentiary discipline, procedural safety, integrity, readability or replay;
+- do not create disproportionate bureaucracy for simple matters.
+
+The standard MUST evolve by evidence, not by stylistic preference alone.
 
 ## 7. Evidence-to-assertion traceability
 
@@ -327,5 +596,7 @@ For every NEW CASE or CONTINUE request:
 - keep CASE data isolated;
 - continue end-to-end to the current evidence/authority ceiling;
 - do not render final filings before G7 preflight;
+- never promote a rendered filing directly to `SEND_READY`; require exact-artifact `FINISH_PASS` first;
+- at every document-production stage enforce ZERO SILENT LOSS by comparing the candidate with the approved CASE/filing state and prior approved document stage;
 - do not stop at a repairable drafting/research problem;
 - report blockers precisely rather than manufacture certainty.
