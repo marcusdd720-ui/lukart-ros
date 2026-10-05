@@ -826,3 +826,25 @@ Interpretation:
 - prior requests are not treated as LUKART benchmark evidence because they predate this controlled test;
 - one controlled synthetic inference request is still required before classifying the worker as inference-verified / zero-cost-verified.
 
+#### Controlled Ollama inference attempt #1 — 2026-10-05
+
+Model: `gpt-oss:20b` (explicitly listed by the account UI as included Free usage).
+
+Observed result:
+- HTTP/API generation completed: **PASS**;
+- `done = true`;
+- `total_duration = 2,097,195,736 ns` (~2.10 s);
+- `prompt_eval_count = 78`;
+- `eval_count = 16`;
+- requested output assertion `LUKART_OLLAMA_PASS`: **NOT OBSERVED** because `response` was empty.
+
+Interpretation:
+- cloud inference path itself is live;
+- this is not yet an application-output PASS;
+- the test used `num_predict = 16`; `eval_count = 16` exactly, so the output budget was exhausted;
+- `gpt-oss` is a thinking-capable model and Ollama's Generate API exposes thinking separately from response. A bounded retest with `think = false`, a slightly larger output cap, and `done_reason`/thinking diagnostics is required.
+- zero-cost classification remains pending until the account Usage view is refreshed after the controlled inference and confirms included-Free consumption with purchased balance still `$0` and auto-reload Off.
+
+State:
+`INFERENCE_TRANSPORT_PASS / OUTPUT_ASSERTION_RETEST_REQUIRED / ZERO_COST_PENDING_USAGE_RECHECK`.
+
