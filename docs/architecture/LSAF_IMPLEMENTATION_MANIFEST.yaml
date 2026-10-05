@@ -145,3 +145,16 @@ epics:
   - id: LSAF-E37
     name: project_virtual_cells
     priority: P1
+
+  - id: LSAF-E38
+    name: execution_exchange_registry
+    priority: P1
+  - id: LSAF-E39
+    name: live_capacity_ledger_and_reset_calendar
+    priority: P1
+  - id: LSAF-E40
+    name: quota_reservation_and_circuit_breakers
+    priority: P1
+  - id: LSAF-E41
+    name: earliest_useful_completion_router
+    priority: P1
