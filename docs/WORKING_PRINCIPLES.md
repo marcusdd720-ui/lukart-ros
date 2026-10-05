@@ -267,6 +267,24 @@ Octop, Hermes, Codex, Work, cloud providers, MCP/ACP and future frameworks are r
 
 Duplicate external functionality requires an explicit justification proving why adaptation is inferior to custom build.
 
+
+### 11.14 Dynamic capacity registry before dispatch
+
+Before any non-trivial agent/provider/cloud dispatch, consult the canonical machine-readable Execution Exchange registry and refresh every decision-critical field that is stale.
+
+Do not conflate:
+- compute substrate;
+- inference provider;
+- model route;
+- agent executor;
+- project cell.
+
+Selection is based on hard eligibility gates followed by Earliest Useful Completion and expected validated utility. Public pricing/limit pages are fallback evidence only; exact account telemetry and response headers win.
+
+Treat free quota as finite inventory. Reserve quota before dispatch and reconcile actual usage after completion. Never overbook one remaining quota across concurrent agents.
+
+Provider/model reset time, health, remaining capacity, deprecation and circuit-breaker state are first-class routing inputs. UNKNOWN or stale capacity cannot be treated as READY for heavy work.
+
 ## 12. NORTH STAR
 
 Każdy etap ma zwiększać correctness, epistemic safety, determinism, security, provenance/replay, resilience, observability, recovery, auditability i evolvability bez nieuzasadnionej złożoności.
