@@ -867,3 +867,35 @@ State:
 Remaining zero-cost gate:
 Refresh Ollama Usage and verify that the controlled request consumed only included Free usage while purchased credits remain `$0`, auto-reload remains Off, and no invoice/paid balance appears.
 
+#### Ollama Cloud zero-cost billing gate — PASS (2026-10-05)
+
+Post-inference account screenshot confirms:
+- `gpt-oss:20b` now shows **2 requests** in the monthly included-usage section;
+- the two controlled requests appear under Recent requests;
+- each request is shown as `<$0.01` accounting value;
+- included Free usage display remains `0% used` (likely rounded at this tiny volume);
+- purchased Usage credits balance remains **$0**;
+- Auto-reload remains **Off**;
+- no paid balance or invoice is present.
+
+Classification:
+`UAOS-Zero-Cost-Worker-Ollama = LIVE_VERIFIED_FREE_BOUNDED`.
+
+Meaning:
+- real authenticated cloud inference works;
+- real included-Free accounting works;
+- current out-of-pocket cost is 0 PLN / $0;
+- this is **not unlimited**: it is bounded monthly included usage with current Free-plan concurrency limits and provider-policy dependency.
+
+Certified-for-now scope:
+- synthetic/public light-to-medium inference;
+- zero-cost provider benchmarks;
+- overflow/review/classification lanes after capability-specific benchmarks.
+
+Not yet certified:
+- client/legal private data;
+- production legal reasoning;
+- autonomous destructive/write authority;
+- guaranteed 24/7 capacity;
+- parallel two-agent execution on Ollama Free by itself.
+
