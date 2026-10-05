@@ -556,3 +556,148 @@ Long-term preferred model:
 
 This preserves provenance while avoiding a system that stops every few minutes waiting for the owner.
 
+## 19. Sovereign Compute Mesh — federated multi-cloud execution
+
+A fixed mapping such as "two permanent agents per project per cloud" is explicitly rejected. It wastes quota, increases idle RAM/process pressure and couples project throughput to provider topology.
+
+Use a shared **Sovereign Compute Mesh (SCM)**.
+
+### 19.1 Four independent compute domains
+
+Initial 0-PLN / bounded-free candidate domains:
+
+1. **MODEL CLOUD** — Ollama Cloud Free/starter pool; API/coding-agent inference, currently Free plan has one concurrent request.
+2. **GPU BURST A** — Kaggle T4x2; batch GPU workloads, two 16 GB T4 GPUs, ephemeral.
+3. **GPU/CPU BURST B** — Lightning AI free/starter credits and free CPU Studio; ephemeral and quota constrained.
+4. **OVERFLOW BURST** — Colab Free; opportunistic GPU/TPU only, no guaranteed resources.
+
+Additional orthogonal lanes:
+- GitHub/Codespaces/Actions for CPU build/test where allowance permits;
+- ChatGPT Work for heavyweight reasoning;
+- Codex/Claude/Gemini/Hermes/Octop adapters;
+- future verified-free providers.
+
+These are **failure domains**, not authorities.
+
+### 19.2 Project Virtual Cells
+
+Each active project receives a logical cell, not dedicated hardware:
+
+```
+PROJECT CELL
+├── PRIMARY EXECUTOR
+├── INDEPENDENT VERIFIER / REPAIR
+├── task queue
+├── resource envelope
+├── privacy/risk policy
+├── exact-SHA/worktree bindings
+└── evidence stream
+```
+
+Default concurrency target is two independent active roles per project **when capacity and task graph justify it**:
+- one builder/executor;
+- one verifier/repair/research role.
+
+The dispatcher may temporarily allocate more or fewer workers.
+
+### 19.3 Global worker pool
+
+Workers are leased from pools:
+
+```
+STRONG_BUILDER_POOL
+LIGHT_FREE_POOL
+GPU_BURST_POOL
+REPAIR_POOL
+VERIFIER_POOL
+RESEARCH_POOL
+WORK_HEAVY_POOL
+```
+
+No provider is permanently assigned to one project.
+
+Work stealing occurs across compatible projects after priority, privacy, capability and resource checks.
+
+### 19.4 Anti-fragility
+
+A project must continue when any one provider disappears.
+
+Required:
+- at least two certified executor routes for every critical capability;
+- no canonical state held only by a provider;
+- checkpoint/restart bundle for ephemeral workers;
+- provider health and quota telemetry;
+- automatic route decay when free quota or availability changes;
+- no silent paid fallback;
+- quarterly provider-extinction drills.
+
+### 19.5 Two-agent rule is separation-of-duties, not process count
+
+For material engineering work:
+- Role A builds.
+- Role B independently verifies, repairs infrastructure, or adversarially reviews.
+
+Role B cannot simply be another session of the same process claiming independence. Where risk warrants it, use a different model/provider/runtime.
+
+Two-agent semantics survive even when only one physical cloud request can run at once: roles can execute sequentially on different certified lanes while preserving independence.
+
+### 19.6 Ollama Cloud placement
+
+Ollama Free currently provides starter monthly usage and one concurrent request. Therefore it is **not** a two-agent parallel cloud by itself.
+
+Use it as:
+- one light/medium inference lane;
+- overflow coding/review;
+- Codex/OpenCode/Claude gateway candidate;
+- model benchmark source.
+
+Do not plan project throughput assuming unlimited/free parallelism.
+
+### 19.7 Control plane
+
+The SCM control plane remains lightweight and provider-neutral:
+- transactional task/attempt ledger;
+- leases/fencing;
+- scheduler;
+- resource/quota telemetry;
+- Intent Provenance Firewall;
+- Capability Passport;
+- Credential Broker;
+- receipts/reconciliation.
+
+Heavy compute lives outside the control plane.
+
+### 19.8 Universum scheduling objective
+
+Optimize:
+
+```
+USEFUL_VALIDATED_PROGRESS
+-----------------------------------------------
+cost × risk × queue_delay × resource_pressure
+```
+
+Subject to hard constraints:
+- correctness/evidence;
+- authority;
+- privacy;
+- zero-paid-fallback policy;
+- capability certification;
+- blast-radius budget.
+
+The objective is not agent count, GPU count or token volume.
+
+### 19.9 Capacity target
+
+Do not require four clouds to each run two agents permanently.
+
+Target instead:
+- 4 independent compute domains available;
+- 2 independent logical roles per active priority project;
+- enough global capacity for at least 4 concurrent useful lanes under normal conditions;
+- graceful degradation to 1–2 lanes during provider/quota failures;
+- queue remains live through work stealing.
+
+Scale concurrency only after telemetry proves that higher concurrency increases closed validated milestones per hour.
+
+
