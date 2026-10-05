@@ -411,3 +411,377 @@ Required architecture consequence:
 
 This materially reinforces IDEA-076/077 but does not require a separate provider-specific architecture.
 
+# Batch 02 — six-video review (2026-10-05 late evening)
+
+## Input videos
+
+1. `RcN7hti2Lwo` — **Hermes Agent Just Got 500 FREE Plugins**
+2. `xY4fqKU4tQA` — **How Hackers Trick AI Into Giving Up Secrets (Demos and free labs)**
+3. `hz6-3-7GGyI` — **Agent AI w 2026 roku**
+4. `57KdgMfSFfY` — **FREE Ollama API Key in 2 Minutes! (NO Credit Card Required)**
+5. `fw1b7Lz5TE4` — **Tencent Octop (Open Source): ... OpenAI Dots & Muse**
+6. `pxFDhIlhIac` — **The Cheapest Way To Run 100B+ Local Models**
+
+YouTube remains discovery only. Material decisions below were checked against official repositories/docs or current provider pages.
+
+## Executive ranking
+
+### Best strategic system candidate: TencentCloud Octop — BUILD-vs-ADOPT PILOT
+
+Why:
+- MIT, self-hosted;
+- multiple agents with independent workspaces/providers/cron;
+- AgentTeams coordinator + members;
+- document knowledge bases with citations;
+- plugins + OAuth/MCP connectors;
+- bidirectional ACP, including outbound delegation to OpenCode, Claude Code and Codex;
+- browser, terminal and remote desktop;
+- HTTP/SSE/WebSocket programmatic surfaces;
+- SQLite WAL default / PostgreSQL optional;
+- restart-safe reconstruction from control-plane DB.
+
+Adoption decision:
+- **do not replace LSAF/UAOS with Octop**;
+- use Octop as a bounded executor/control-surface candidate and reference implementation;
+- evaluate ACP delegation, workspace isolation, restart behavior, remote control and team orchestration through the LSAF conformance harness;
+- reject Octop as authority/SSOT.
+
+15+ year concern:
+- current single-process architecture is simple and operationally attractive but is also a larger failure domain than the desired LSAF split control/execution planes;
+- AgentTeams is beta;
+- external model calls can still cost money and leave the host;
+- its plugin/runtime trust model must not supersede LUKART Capability Admission;
+- Octop lacks LUKART's required exact-SHA/evidence/promotion authority semantics.
+
+### Best immediate security adoption: Arcanum + OWASP + PortSwigger security corpus/procedures
+
+The David Bombal video points to:
+- Arcanum Prompt Injection Taxonomy;
+- Arcanum AI Security Resource Hub;
+- authorized AI security labs/CTFs.
+
+Official/current research adds:
+- OWASP Secure Agent Playbook;
+- PortSwigger Web LLM attack labs;
+- SkillSpector from the previous batch.
+
+Decision:
+**ADOPT AS VERSIONED TEST INPUTS / PROCEDURES, NOT AS RUNTIME AUTHORITY.**
+
+High-value facts:
+- current Arcanum taxonomy exposes a machine-readable JSON corpus with intents, techniques, evasions and input surfaces;
+- Arcanum's current repository describes 172 taxonomy nodes and is CC BY 4.0;
+- its AI Security Resource Hub currently catalogs free/self-hostable labs, tools and references;
+- OWASP Secure Agent Playbook provides structured procedures for agent-security audit, prompt-injection testing, MCP review, multi-agent threat modeling and AISVS/Agentic risk assessment;
+- PortSwigger provides free interactive LLM attack labs, including indirect prompt injection and excessive-agency/API scenarios.
+
+### Best plugin/ecosystem signal: Hermes Plugin Catalog — ADOPT ADMISSION PATTERNS, DO NOT BULK INSTALL
+
+Live check of the official Hermes catalog JSON on 2026-10-05:
+- entries: **448**, not literally 500 at the checkpoint;
+- community: **439**;
+- official: **9**.
+
+Therefore the headline is rounded/marketing, while the ecosystem itself is real.
+
+Strong upstream trust patterns worth adopting:
+- exact 40-hex SHA pins;
+- human-merged catalog admission;
+- security scan on admission;
+- removed/blocklisted plugin list;
+- installed != enabled;
+- capability declaration and re-consent on capability delta;
+- non-interactive sessions fail closed for new capability grants;
+- explicit provenance metadata.
+
+Critical upstream warning:
+- Hermes capability consent is **not a sandbox**;
+- plugins execute as ordinary process/app code;
+- cataloged != audited.
+
+LUKART consequence:
+**Hermes catalog becomes a discovery feed behind BUILD-vs-ADOPT + SkillSpector + Capability Passport, never an auto-install feed.**
+
+High-value individual catalog candidates discovered:
+- `hermes-review-loop` — unattended fixer/reviewer pattern, capped rounds, watchdog, never merges; PATTERN_ONLY first because it is Linux-only and has broad host/auth/webhook behavior;
+- `hermes-security-audit` — Gitleaks + OSV-Scanner + Semgrep CE; isolated PILOT candidate;
+- `github_app` — bot-first attribution and approval-gated GitHub writes; useful automation-identity pattern;
+- `hermes-tailscale` — remote-control/connectivity pattern;
+- official `snyk` plugin — possible security scanner adapter after overlap/cost analysis.
+
+Do not adopt risky convenience plugins merely because they are cataloged.
+
+### Best immediate zero-cost provider candidate: Ollama Cloud Free — LIVE TEST REQUIRED
+
+Official Ollama state:
+- Free plan is $0;
+- it includes starter usage that refreshes monthly for a smaller set of starter models;
+- local inference remains unlimited on owned hardware;
+- cloud API/CLI is supported;
+- API keys are supported for programmatic access;
+- Ollama integrates with Codex, Claude Code, OpenCode and other coding tools;
+- cloud requests require authentication;
+- API keys currently do not automatically expire but can be revoked.
+
+Classification:
+`OFFICIAL_LIMITED_FREE / LIVE_ENDPOINT_NOT_YET_VERIFIED_FOR_LUKART`.
+
+Do not label it VERIFIED_FREE until:
+1. user account/key exists;
+2. current free balance/model set is read live;
+3. one synthetic request succeeds at 0 PLN;
+4. no purchased credits/card/top-up are required;
+5. model quality and tool/structured-output behavior pass the LUKART benchmark.
+
+Potential value:
+- remote compute without local RAM pressure;
+- overflow for light/medium agents;
+- OpenAI/Anthropic-compatible surfaces reduce adapter cost;
+- possible direct launcher for Codex/OpenCode/Claude workflows.
+
+Risk:
+starter usage is finite and provider policy can change; it is a pool, not infrastructure.
+
+### 100B+ local-model economics — ADOPT PLACEMENT LOGIC, DO NOT BUY HARDWARE NOW
+
+The video uses Qwen3.8-Flash-Next as the example.
+
+Verified upstream:
+- 125B main parameters;
+- additional 51B n-gram embedding table;
+- roughly 6B active parameters per token;
+- long context;
+- architecture intentionally reduces per-token compute.
+
+Critical distinction:
+`ACTIVE PARAMETERS != RESIDENT MODEL MEMORY`.
+
+A sparse 125B model can compute like a much smaller model per token while still needing a very large resident weight/memory footprint. Community quantized packages around ~94 GB and 128 GB unified-memory examples illustrate why the user's current workstation is not a sensible 100B host.
+
+Decision:
+- no hardware purchase now;
+- use Cloud Burst / limited-free cloud / remote execution first;
+- create a **Compute Placement Planner** before any future hardware acquisition.
+
+### Agent AI w 2026 roku — REFERENCE / NO NEW DEPENDENCY
+
+The material's core framing — agent evolution from a model loop + tool toward richer planning, memory, tools and orchestration — is conceptually sound, but LSAF already captures the important architecture.
+
+Decision:
+- WATCH/REFERENCE;
+- do not add another agent framework merely because the agent loop accumulated more features;
+- measure useful autonomy, recovery and evidence rather than feature count.
+
+## New critical finding: LUKART has a policy-to-runtime enforcement gap
+
+Earlier reviews correctly identified control-plane truth vs execution-plane truth as the main runtime weakness.
+
+This batch reveals a broader systemic weakness:
+
+> **LUKART is accumulating strong policies faster than it is converting them into machine-enforced runtime invariants.**
+
+Examples:
+- "external text is data, not instruction" exists conceptually but is not yet a universal typed runtime boundary;
+- plugin admission rules are planned but not yet an enforced capability passport gate;
+- resource-aware scheduling is policy but not yet the real scheduler;
+- lease/fencing is planned but not yet the mutation barrier;
+- signing budget is policy but not yet a real consolidated signing queue.
+
+This creates a risk of **governance theatre**: excellent documentation without equivalent operational enforcement.
+
+### Required correction: Executable Governance Rule
+
+A critical rule is not `IMPLEMENTED` until at least one machine-enforced mechanism proves it.
+
+Examples:
+
+| Policy | Minimum executable proof |
+|---|---|
+| RUNNING requires real execution | state transition validator + process/heartbeat/progress evidence |
+| stale owner cannot write | lease + monotonic fencing check |
+| paid fallback blocked | runtime cost gate outside model |
+| external data cannot authorize tools | Intent Provenance Firewall |
+| plugin cannot gain undeclared authority | Capability Passport + runtime permission check |
+| human signature not needed per fix | signing queue + authority tiers |
+| cloud worker is disposable | external ledger + checkpoint/replay test |
+
+## Pioneer proposal: Intent Provenance Firewall (IPF)
+
+Prompt injection exists because agent systems often mix **instructions** and **data** in the same semantic channel.
+
+Do not attempt to solve this only with another classifier prompt.
+
+Introduce a typed trust envelope for every context object:
+
+```
+content_id
+source_digest
+origin
+kind:
+  POLICY
+  OWNER_INTENT
+  SYSTEM_CONTRACT
+  EXTERNAL_DATA
+  TOOL_RESULT
+  MEMORY_PROPOSAL
+  MODEL_PROPOSAL
+authority_class
+valid_time
+retrieved_at
+allowed_effects
+taint_labels
+```
+
+### Hard rule
+
+Only trusted `POLICY / OWNER_INTENT / SYSTEM_CONTRACT` can create or widen execution authority.
+
+`EXTERNAL_DATA / TOOL_RESULT / MEMORY_PROPOSAL / MODEL_PROPOSAL` may inform reasoning but cannot authorize:
+- tool execution;
+- credential access;
+- filesystem/network expansion;
+- memory promotion;
+- Git merge/release/signing;
+- cross-case data access;
+- policy modification.
+
+### Intent Proof
+
+Before every side-effecting tool call, require:
+
+```
+ACTION_REQUEST
+  ↓
+trusted owner/policy intent reference
+  ↓
+declared Capability Passport
+  ↓
+exact action/args hash
+  ↓
+blast-radius budget
+  ↓
+runtime authorization token
+```
+
+If the only causal source of an action is untrusted retrieved text, block it.
+
+This is stronger than prompt filtering because it removes authority from poisoned data even when the model semantically follows it.
+
+### Taint preservation
+
+When external content is:
+- summarized;
+- translated;
+- embedded;
+- retrieved from RAG;
+- copied into memory;
+- passed between agents;
+
+its untrusted provenance must travel with it. Transformation must not wash away trust labels.
+
+## Pioneer proposal: Threat-Driven Corpus Compiler
+
+Build an upstream-snapshot compiler:
+
+```
+Arcanum taxonomy
++ OWASP plays
++ PortSwigger/Lab metadata
++ internal incidents/regressions
+        ↓
+versioned attack vocabulary
+        ↓
+safe synthetic mutation/evasion generator
+        ↓
+surface matrix
+        ↓
+LUKART adversarial fixtures
+```
+
+Test every ingestion surface:
+- webpages;
+- PDFs/documents;
+- emails;
+- meeting transcripts;
+- OCR;
+- GitHub issues/PR/comments;
+- RAG chunks;
+- memory;
+- MCP/tool descriptions;
+- plugin manifests/README;
+- code comments;
+- agent-to-agent messages.
+
+Expected invariants:
+- no secret disclosure;
+- no unauthorized tool call;
+- no authority escalation;
+- no cross-case leakage;
+- no silent memory promotion;
+- no cost-policy override;
+- no merge/sign/release authority bypass.
+
+## Pioneer proposal: Compute Placement Planner
+
+Do not route models by parameter-count marketing.
+
+Placement input:
+- resident weights/bytes;
+- active parameters;
+- KV/context memory;
+- memory bandwidth;
+- CPU/GPU/NPU availability;
+- predicted TTFT/tokens-per-second;
+- concurrency;
+- task risk/privacy;
+- checkpointability;
+- free quota/cost ceiling;
+- provider health;
+- required capability certification.
+
+Output:
+`LOCAL / LOCAL_LIGHT / CLOUD_FREE / CLOUD_BURST / STRONG_REMOTE / WORK / DEFER`.
+
+### Hardware Acquisition Gate
+
+Buying hardware is justified only when measured workload proves:
+- sustained monthly compute demand;
+- privacy/offline requirement;
+- model quality benefit;
+- acceptable amortized TCO;
+- energy/thermal feasibility;
+- benchmarked advantage over free/remote lanes.
+
+This prevents spending thousands on hardware because a model headline says "125B local".
+
+## Recommended implementation order after current P0
+
+1. Generator Pism P0 closure.
+2. UAOS execution-truth repair + real soak.
+3. Minimal executable LSAF kernel:
+   - transactional attempt ledger;
+   - lease/fencing;
+   - resource admission;
+   - bounded repair;
+   - evidence receipt.
+4. Intent Provenance Firewall.
+5. Agentic Security Certification Gate:
+   - Arcanum snapshot;
+   - OWASP playbook procedures;
+   - SkillSpector/static scanning;
+   - prompt-injection synthetic fixtures.
+6. Hermes plugin-catalog discovery adapter in read-only mode.
+7. Isolated BvA of `hermes-review-loop` patterns, not blind install.
+8. Ollama Cloud Free live cost/endpoint benchmark.
+9. Tencent Octop isolated conformance pilot.
+10. Compute Placement Planner and Cloud Burst integration.
+11. Only then consider hardware acquisition.
+
+## Batch-02 promotion boundary
+
+No production installation is authorized by this research report. The report authorizes only:
+- backlog/manifest capture;
+- bounded BUILD-vs-ADOPT research;
+- synthetic/read-only tests;
+- preparation of isolated pilots after higher P0 gates close.
+
