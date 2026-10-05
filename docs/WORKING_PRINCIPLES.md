@@ -234,6 +234,39 @@ Side-effecting actions must be causally bound to trusted `POLICY / OWNER_INTENT 
 
 Summarization, translation, chunking, embedding/RAG and agent handoff must not erase untrusted provenance.
 
+
+### 11.13 Adopt-first / build-only-the-delta
+
+LUKART MUST NOT rebuild mature non-authoritative agent-shell capabilities merely to own them.
+
+For orchestration, browser/desktop control, agent teams, connectors, coding-runner delegation, schedulers, plugin catalogs and generic memory/executor plumbing:
+
+```
+DISCOVER
+→ BUILD-vs-ADOPT
+→ CONFORMANCE / SECURITY / EXIT TEST
+→ ADOPT BEHIND LUKART PORT
+→ BUILD ONLY THE MISSING DELTA
+```
+
+Prefer adoption when an external component covers most required non-authoritative behavior and passes LUKART contracts. Never adopt its authority semantics merely because its execution features are strong.
+
+The LUKART-owned long-horizon moat is the sovereign microkernel:
+- authority;
+- Execution Truth;
+- Evidence Ledger;
+- Intent Provenance;
+- Capability Passport/admission;
+- resource/cost/privacy policy;
+- Credential Broker;
+- validation/certification;
+- human authority/signing;
+- anti-entropy/replay.
+
+Octop, Hermes, Codex, Work, cloud providers, MCP/ACP and future frameworks are replaceable drivers/executors around this kernel.
+
+Duplicate external functionality requires an explicit justification proving why adaptation is inferior to custom build.
+
 ## 12. NORTH STAR
 
 Każdy etap ma zwiększać correctness, epistemic safety, determinism, security, provenance/replay, resilience, observability, recovery, auditability i evolvability bez nieuzasadnionej złożoności.
