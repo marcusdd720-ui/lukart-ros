@@ -1936,3 +1936,142 @@ Target metric:
 human_signing_events / independently_verified_closed_milestones
 
 The system should minimize this ratio without weakening provenance, separation of duties or fail-closed governance.
+
+## IDEA-074 — LUKART WORK → LUKART ROS Modular-Monorepo Consolidation
+
+Status: `OWNER STRATEGY / PLANNED AFTER GENERATOR P0 CLOSURE`
+Recorded: `2026-10-05`
+Priority: `P1 AFTER CURRENT P0`
+
+### Owner decision
+
+`lukart-work` is transitional. The long-term target is one sovereign LUKART platform repository, `lukart-ros`, with Generator Pism preserved as an explicitly bounded product inside that repository rather than as a separate peer platform.
+
+The target is a **modular monorepo, not a monolithic application**.
+
+Proposed product boundary:
+
+```text
+lukart-ros/
+├── core/
+├── agents/
+├── evidence/
+├── validation/
+├── reasoning/
+├── knowledge/
+├── factory/
+├── platform/
+│   └── ... LSAF/control-plane capabilities ...
+├── products/
+│   └── generator-pism/
+│       ├── src/
+│       ├── contracts/
+│       ├── schemas/
+│       ├── tests/
+│       ├── docs/
+│       └── AGENTS.md
+├── jurisdictions/
+│   ├── pl/
+│   ├── eu/
+│   └── co/
+└── docs/
+```
+
+### Architectural intent
+
+- `lukart-ros` becomes the long-horizon platform / control-plane / shared-core repository.
+- Generator Pism remains a separately bounded Product context under `products/generator-pism`.
+- Product code consumes stable public platform contracts/ports rather than provider-specific or internal implementation details.
+- LSAF/provider/model/executor implementations remain below stable contracts and remain replaceable.
+- A shared repository does not erase Product != Platform or Factory != Product boundaries.
+- Cross-product and platform boundaries must be enforceable by tests/CI rather than by convention alone.
+- Hierarchical `AGENTS.md` may specialize Product/subtree execution instructions while root invariants remain non-negotiable.
+
+### Migration rule
+
+Do **not** begin the consolidation while Generator Pism P0/product closure is still active. Repository migration, architecture migration and product closure must not be mixed into one uncontrolled change.
+
+Required order:
+
+1. close Generator Pism P0 to a real usable path;
+2. freeze the migration source and inventory;
+3. define ROS↔WORK integration/contracts;
+4. run migration pre-audit and dependency mapping;
+5. define dependency firewall / allowed import directions;
+6. perform history-preserving import into `products/generator-pism`;
+7. run dual/shadow validation and exact-SHA compatibility tests;
+8. perform controlled cutover;
+9. archive `lukart-work` as read-only provenance/history; do not delete it.
+
+### ROS–WORK Consolidation Program gates
+
+- `C0 — Inventory`: code, contracts, schemas, docs, tests, evidence, CI, history, unresolved gates.
+- `C1 — Contract Mapping`: classify what becomes shared platform contract, Product-local contract, jurisdiction package or legacy-only artifact.
+- `C2 — Dependency Firewall`: define and test allowed dependency directions; forbid Product imports from private platform internals.
+- `C3 — History-Preserving Import`: preserve source commit/PR/provenance mapping and migration manifest.
+- `C4 — Dual Validation`: old and new paths are compared on controlled fixtures; semantic and artifact equivalence/deviation is explicit.
+- `C5 — Cutover + Archive`: new Product path becomes active only after required exact-SHA CI/review; old repository is retained read-only.
+
+### Dependency direction
+
+Preferred rule:
+
+```text
+PRODUCT
+  ↓
+PUBLIC PLATFORM CONTRACTS / PORTS
+  ↓
+SHARED CORE / LSAF IMPLEMENTATIONS
+```
+
+Forbidden pattern:
+
+```text
+Product → private scheduler/provider/storage implementation internals
+```
+
+Candidate stable ports include:
+
+- `ExecutionPort`
+- `EvidencePort`
+- `CapabilityPort`
+- `MemoryPort`
+- `ValidationPort`
+- `LegalAuthorityPort`
+- `ArtifactPort`
+
+Exact names remain subject to C1 contract mapping and BUILD-vs-ADOPT/architecture review.
+
+### CI / repository model
+
+Use path-aware hierarchical validation:
+
+- Product-only changes run Generator-focused checks + shared contract/invariant checks.
+- Shared-core/platform changes run the affected Product compatibility suites.
+- Boundary tests fail when forbidden imports or authority leaks are introduced.
+- Nested `AGENTS.md` files may optimize executor instructions but must never redefine root governance semantics.
+
+### Backlog and governance after cutover
+
+After successful cutover, the strategic backlog should converge on `lukart-ros/docs/IDEAS_BACKLOG.md` as the primary portfolio backlog. Product-local roadmaps may remain local, but strategic ideas must carry explicit scope such as `platform`, `products/generator-pism`, or `jurisdiction/pl` rather than creating competing portfolio SSOTs.
+
+### Acceptance criteria
+
+- Generator Pism functionality is preserved or intentionally version-migrated with explicit evidence;
+- no Product authority semantics are lost during import;
+- historical WORK SHA/PR/CI provenance remains traceable after cutover;
+- `lukart-work` can be archived without losing required evidence/history;
+- Product boundaries are enforced by machine-verifiable dependency/contract tests;
+- provider/executor replacement does not require Generator Pism business-logic rewrites;
+- one repository does not become one undifferentiated dependency graph;
+- rollback/cutback path exists until C5 closure;
+- migration is not declared complete until post-cutover validation on exact `main` SHA passes.
+
+### Non-goals
+
+- do not delete `lukart-work`;
+- do not flatten Generator Pism into ROS internals;
+- do not rewrite historical Git provenance;
+- do not use consolidation to bypass current P0 gates;
+- do not treat monorepo location as evidence that Product/Platform boundaries are correct.
+
