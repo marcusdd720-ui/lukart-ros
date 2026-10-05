@@ -899,3 +899,25 @@ Not yet certified:
 - guaranteed 24/7 capacity;
 - parallel two-agent execution on Ollama Free by itself.
 
+#### Kaggle T4x2 live-test disposition — 2026-10-05
+
+Live Kaggle notebook UI exposed `GPU T4 x2` and `TPU v5e-8` but both accelerators were disabled for the current account. Kaggle GPU access requires account/phone verification in this path.
+
+Owner policy: **do not provide a phone number for this provider**.
+
+Classification:
+`KAGGLE_T4X2 = BLOCKED_BY_OWNER_PRIVACY_POLICY / DO_NOT_BYPASS`.
+
+Consequence:
+- do not attempt alternate-account, VPN, identity, phone-number or verification bypasses;
+- keep Kaggle as WATCH-only until its access policy changes;
+- replace it in the near-term Compute Mesh with providers whose free tier can be activated without this owner constraint.
+
+Next preferred candidate: **GroqCloud Free**.
+Official current evidence:
+- Free Plan exists;
+- signup/login supports Google, GitHub or email;
+- payment method is required only when upgrading to Developer tier;
+- Free Plan currently lists high-throughput limits including `openai/gpt-oss-120b` and `openai/gpt-oss-20b` at 30 RPM / 1,000 requests per day / 8K TPM / 200K tokens per day;
+- exact account-specific limits must still be live-verified before certification.
+
