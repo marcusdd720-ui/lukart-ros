@@ -1,6 +1,6 @@
 # LUKART ROS — Private Case Operating Standard
 
-Version: **1.1.0**  
+Version: **1.2.0**  
 Status: **ACTIVE OPERATOR STANDARD**  
 Effective: **2026-10-05**  
 Scope: **all private real-world CASE work**
@@ -313,6 +313,112 @@ Unless the destination imposes another format, the renderer SHOULD produce:
 Rendering never promotes an artifact directly to `SEND_READY`. The rendered DOCX/PDF MUST pass G7.5 `FINISH` on the exact bytes/version that will be delivered. The inspection must confirm that the approved identity/address blocks, parties, recipient, date, reference/sygnatura, operative request, material factual/legal content, signature area and attachment list are present, legible and not clipped, substituted or omitted. Any mismatch returns the artifact upstream to the earliest affected stage and invalidates any prior FINISH/SEND_READY status.
 
 Templates define presentation, not truth. The renderer MUST NOT invent facts, fix contradictions or change strategy. If rendering discovers a missing material input, return upstream to the appropriate gate.
+
+### 6.1 Legal drafting doctrine — procedural voice by default
+
+Unless the destination, jurisdiction or user instruction materially requires another style, professional CASE filings MUST use a **procedural, court-facing legal voice** rather than conversational, emotional or decorative prose.
+
+Default drafting characteristics:
+- professional legal Polish appropriate to the recipient and procedural posture;
+- firm, restrained and precise tone — **assertive, never needlessly aggressive**;
+- operative language first: the recipient should immediately understand what is requested, on what basis and what action is expected;
+- concise factual narrative limited to facts material to the requested procedural/legal consequence;
+- explicit party roles, authority, reference/sygnatura and procedural posture;
+- clear separation between established facts, party assertions, interpretation and unresolved matters;
+- no rhetoric, indignation, moralising, threats, sarcasm or unnecessary adjectives;
+- no internal CASE labels, debug language or epistemic tags in the final outward-facing document unless legally useful.
+
+### 6.2 Petitum-first / decision-useful structure
+
+The document is optimized for the decision-maker, not for the drafter.
+
+Preferred order when legally appropriate:
+1. identity / parties / authority / reference;
+2. precise title matching the requested procedural act;
+3. numbered **petitum / operative requests**;
+4. shortest sufficient factual basis;
+5. legal basis and procedural consequence;
+6. evidence/attachments where needed;
+7. signature/execution block.
+
+Each request MUST be:
+- within the recipient's competence;
+- legally/procedurally available to the best verified understanding;
+- specific enough to execute or adjudicate;
+- consistent with the evidence ceiling and filing topology;
+- free from hidden alternative requests unless the strategy intentionally includes them.
+
+A long justification MUST NOT obscure the operative request.
+
+### 6.3 Authority economy — law must do work
+
+Legal authorities are used for function, not decoration.
+
+Prefer the smallest sufficient set of current, authoritative provisions and decisions that materially support:
+- admissibility / standing / competence;
+- the requested procedural act;
+- the substantive rule actually in dispute;
+- the relevant burden, deadline or consequence.
+
+Do not add provisions merely to make a filing look more legal. Citation volume is not quality.
+
+For every cited provision or authority, the drafter SHOULD be able to answer:
+- **What proposition does this authority support?**
+- **Is that proposition material to the recipient's decision?**
+- **Is the authority current, controlling/authoritative at the claimed level, and accurately characterized?**
+
+Case law is added only when it changes, clarifies or materially strengthens the argument. Holdings must be described narrowly and faithfully.
+
+### 6.4 Evidence-calibrated language
+
+Wording strength MUST track evidentiary strength.
+
+Examples of calibrated forms:
+- strong evidence: “z dokumentu wynika…”, “Sąd ustalił…”, “akta wskazują…”;
+- party assertion: “powód wskazuje/twierdzi…”, “według oświadczenia…”;
+- inference: “okoliczność ta przemawia za…”, “może wskazywać…”;
+- unresolved matter: do not convert it into a categorical statement.
+
+Never use stronger procedural language merely for rhetorical effect when the evidence does not support it.
+
+### 6.5 Adversarial sentence test
+
+Every material sentence in Draft B SHOULD survive four questions:
+1. **Evidence:** what evidence or verified source supports it?
+2. **Relevance:** why does the recipient need this sentence to decide the requested act?
+3. **Authority:** if legal, what rule/authority supports the proposition?
+4. **Remedy link:** how does it advance, protect or delimit the operative request?
+
+If a sentence fails all four, delete it. If it partially fails, narrow or qualify it.
+
+This is a drafting-quality gate, not a requirement to make every filing long. The best filing is the shortest filing that safely proves and requests what is necessary.
+
+### 6.6 Procedural firmness calibration
+
+“Firm” means:
+- unambiguous requests;
+- precise identification of legal/procedural consequences;
+- explicit reservation of rights when strategically justified;
+- clear response/follow-up expectation when appropriate;
+- no dilution of a justified position through vague or apologetic wording.
+
+“Firm” does **not** mean:
+- accusations unsupported by evidence;
+- threats outside the available remedy;
+- insulting or adversarial adjectives;
+- speculative allegations;
+- excessive quotation of law;
+- unnecessary escalation.
+
+The target is **maximum credible force with minimum unnecessary friction**.
+
+### 6.7 Document-stage preservation
+
+Draft A may contain explanatory scaffolding that is later compressed, but Draft B and the final artifact MUST preserve every material element required by the approved filing plan.
+
+Compression is allowed only when meaning, party identity/role, request scope, evidence link and legal effect remain intact.
+
+A field/section present in an earlier approved stage may be removed only if the delta is explicitly classified under the ZERO SILENT LOSS invariant. Material omission by simplification is an `UNEXPLAINED_REGRESSION`.
 
 ## 7. Evidence-to-assertion traceability
 
