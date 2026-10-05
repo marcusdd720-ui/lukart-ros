@@ -2361,5 +2361,186 @@ Rules:
 - client/legal data prohibited until privacy/certification allows it;
 - provider loss returns task to queue instead of freezing the whole pipeline.
 
+
+
+### Model/compute placement extension
+
+Add a provider-neutral **Compute Placement Planner**. Route by measured fit rather than parameter-count marketing.
+
+Inputs:
+- resident model bytes;
+- active parameters;
+- KV/context memory;
+- memory bandwidth;
+- CPU/GPU/NPU availability;
+- expected TTFT/tokens-per-second;
+- concurrency;
+- privacy/risk class;
+- checkpointability;
+- provider quota/cost;
+- required capability certification.
+
+Outputs:
+`LOCAL / LOCAL_LIGHT / CLOUD_FREE / CLOUD_BURST / STRONG_REMOTE / WORK / DEFER`.
+
+Sparse MoE models (e.g. 125B total / ~6B active) prove why active compute and resident memory must be modeled separately.
+
+Add a **Hardware Acquisition Gate**: no hardware purchase recommendation until observed workload, privacy/offline need, benchmark quality, energy/thermal limits and amortized TCO beat the available remote/free lanes.
+
 No production integration is authorized by this entry.
+
+## IDEA-078 — Intent Provenance Firewall + Agentic Security Certification Fabric
+
+**Status:** BACKLOG / STRATEGIC SECURITY CANDIDATE  
+**Priority:** P1 AFTER EXECUTION-TRUTH MINIMAL KERNEL  
+**Recorded:** 2026-10-05  
+**Source:** six-video batch-02 research; Arcanum Prompt Injection Taxonomy; OWASP Secure Agent Playbook; PortSwigger Web LLM labs; prior SkillSpector research  
+**Extends:** IDEA-015, IDEA-028, IDEA-031, IDEA-052, IDEA-054, IDEA-076  
+**Research report:** `docs/architecture/EXTERNAL_TECH_RADAR_2026-10-05.md`
+
+### Problem
+
+Current LUKART principles correctly treat retrieved/public content as untrusted data, but that boundary is not yet universally machine-enforced across every context surface.
+
+Agentic systems are uniquely exposed because webpages, PDFs, emails, meeting transcripts, RAG chunks, memory, MCP/tool metadata, plugin manifests, code comments and inter-agent messages can contain instructions that a model may mistake for authority.
+
+Prompt filtering alone is insufficient because a successful semantic bypass can still cause an authorized tool to execute an unauthorized intent.
+
+### A. Intent Provenance Firewall (IPF)
+
+Every context item must carry a typed trust envelope:
+
+```
+content_id
+source_digest
+origin
+kind:
+  POLICY
+  OWNER_INTENT
+  SYSTEM_CONTRACT
+  EXTERNAL_DATA
+  TOOL_RESULT
+  MEMORY_PROPOSAL
+  MODEL_PROPOSAL
+authority_class
+valid_time
+retrieved_at
+allowed_effects
+taint_labels
+```
+
+Hard rule:
+
+Only `POLICY / OWNER_INTENT / SYSTEM_CONTRACT` may create or widen execution authority.
+
+`EXTERNAL_DATA / TOOL_RESULT / MEMORY_PROPOSAL / MODEL_PROPOSAL` can inform reasoning, but cannot independently authorize:
+- side-effecting tools;
+- credential access;
+- filesystem/network scope expansion;
+- memory promotion;
+- cross-case access;
+- merge/sign/release;
+- policy/config authority changes.
+
+### B. Intent Proof for every side effect
+
+A privileged action must bind:
+
+```
+trusted_intent_ref
+capability_passport_id
+run_id
+exact_action_hash
+exact_argument_hash
+blast_radius_budget
+credential_ref
+expiry
+one_time_use
+```
+
+If the action's causal justification can only be traced to untrusted retrieved content, deny it.
+
+### C. Taint-preserving context transformations
+
+Untrusted provenance must survive:
+- summarization;
+- translation;
+- chunking;
+- embedding/RAG;
+- agent handoff;
+- memory proposal;
+- code/comment extraction.
+
+A transformation may change representation, but it cannot silently upgrade authority.
+
+### D. Threat-Driven Corpus Compiler
+
+Version/pin upstream security inputs:
+- Arcanum Prompt Injection Taxonomy;
+- OWASP Secure Agent Playbook procedures;
+- selected PortSwigger/authorized lab patterns and metadata;
+- SkillSpector/static-scan classes;
+- internal LUKART incidents/regressions.
+
+Compile them into synthetic, non-destructive fixtures for every LUKART ingestion surface:
+- web;
+- documents/PDF/OCR;
+- email;
+- meeting transcript;
+- GitHub issue/PR/comment;
+- RAG;
+- memory;
+- MCP/tool description;
+- plugin manifest/README;
+- code comments;
+- inter-agent messages.
+
+Expected invariants:
+- no secret disclosure;
+- no unauthorized side effect;
+- no capability escalation;
+- no cross-case leakage;
+- no memory poisoning/promotion;
+- no cost-policy bypass;
+- no merge/sign/release bypass.
+
+### E. Agentic Security Certification Gate
+
+Certification packet should include:
+- exact application/runtime SHA;
+- policy/config digest;
+- model/provider identity;
+- tool/plugin/skill passports;
+- upstream taxonomy/playbook snapshot IDs;
+- attack-fixture set digest;
+- findings;
+- mitigations;
+- independent reviewer;
+- expiry/revalidation trigger.
+
+Security state:
+`UNASSESSED → SHADOW_TESTED → REMEDIATING → SECURITY_VALIDATED → DECAYED / REVOKED`.
+
+No model/provider/runtime inherits certification after a material version change without declared compatibility evidence.
+
+### Acceptance criteria
+
+1. trust labels are typed and machine-enforced, not prompt conventions;
+2. side effects require Intent Proof independent of model self-assertion;
+3. untrusted provenance survives transformations;
+4. at least one indirect-injection test traverses each active ingestion surface;
+5. tool authorization fails closed when intent provenance is missing/ambiguous;
+6. memory promotion cannot erase source trust;
+7. test corpus is versioned, attributable and replayable;
+8. security validation is exact-SHA/config-bound;
+9. security procedures remain defensive and authorized;
+10. no security scanner/playbook becomes LUKART authority by itself.
+
+### Non-goals
+
+- do not solve prompt injection only with another LLM classifier;
+- do not paste hostile payload libraries into production prompts;
+- do not execute destructive lab steps outside isolated authorized fixtures;
+- do not treat a clean scan as proof of safety;
+- do not weaken least privilege or human promotion gates.
 
