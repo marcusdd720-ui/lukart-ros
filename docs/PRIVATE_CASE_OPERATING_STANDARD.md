@@ -1,8 +1,8 @@
 # LUKART ROS — Private Case Operating Standard
 
-Version: **1.0.1**  
+Version: **1.0.2**  
 Status: **ACTIVE OPERATOR STANDARD**  
-Effective: **2026-09-13**  
+Effective: **2026-10-05**  
 Scope: **all private real-world CASE work**
 
 ## 1. Authority and role
@@ -193,8 +193,10 @@ Final professional documents are produced in two passes.
 
 **Hardcore Preflight** must check at least:
 - identity of filer/represented person;
+- complete filer/sender identity block required for the destination and filing type, including full name/entity name and current postal/registered address; required party identifiers and contact fields when legally or operationally required;
+- provenance and freshness of sender/recipient address and contact data against the latest authorized CASE source; stale, conflicting or unverified material values remain `UNKNOWN/UNRESOLVED`;
 - standing/authority;
-- recipient and filing route;
+- recipient, complete recipient address and filing route;
 - deadline status;
 - explicit requests;
 - factual/evidence mapping;
@@ -205,7 +207,10 @@ Final professional documents are produced in two passes.
 - topology/consolidation safety;
 - privacy/minimization;
 - current date and contact details;
+- rendered-artifact verification of the first-page identity/address block, recipient, reference/sygnatura, date, signature area and attachment list against the approved draft;
 - no critical `UNKNOWN/UNRESOLVED` hidden from the filing.
+
+Text-level preflight alone is insufficient for a rendered filing. Missing or mismatched required sender/recipient identity or address data, or a rendered artifact that drops/truncates an approved material field, is a **Critical FAIL**.
 
 Critical FAIL → `NOT_READY`. Critical UNKNOWN → `ABSTAIN` / `REVIEW_REQUIRED`. Only all-critical-PASS may become `FILING_READY` / `SEND READY`.
 
@@ -240,12 +245,16 @@ Unless the destination imposes another format, the renderer SHOULD produce:
 - stable paragraph hierarchy;
 - adequate left margin for physical filing/binder where relevant;
 - pagination;
-- correct sender/recipient blocks;
+- correct sender block, including the complete current postal/registered address when appropriate for the filing;
+- correct recipient block, including the complete filing address;
 - current date;
+- case/reference/sygnatura where applicable;
 - signature block;
 - ordered attachments;
 - no internal CASE commentary, debug text, speculative labels or unused placeholders;
 - DOCX and/or PDF when requested/appropriate.
+
+Before promotion to `SEND_READY`, the final rendered artifact MUST be visually inspected, not merely generated. The inspection must confirm that the approved identity/address blocks, recipient, date, reference/sygnatura, operative request, signature area and attachment list are present, legible and not clipped, substituted or omitted. Any mismatch returns the artifact to G7 and invalidates the prior `SEND_READY` decision.
 
 Templates define presentation, not truth. The renderer MUST NOT invent facts, fix contradictions or change strategy. If rendering discovers a missing material input, return upstream to the appropriate gate.
 
