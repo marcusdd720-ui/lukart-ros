@@ -2566,3 +2566,61 @@ No model/provider/runtime inherits certification after a material version change
 - do not treat a clean scan as proof of safety;
 - do not weaken least privilege or human promotion gates.
 
+## IDEA-079 — LUKART Execution Exchange (LEX): Dynamic Provider / Agent / Cloud Capacity Broker
+
+**Status:** BACKLOG / PARTIALLY ACTIVATED CONTROL POLICY  
+**Priority:** P1 AFTER CURRENT EXECUTION-TRUTH P0  
+**Recorded:** 2026-10-05  
+**Extends:** IDEA-023, IDEA-027, IDEA-073, IDEA-076, IDEA-077  
+**Architecture:** `docs/architecture/LUKART_EXECUTION_EXCHANGE.md`  
+**Registry:** `docs/architecture/LEX_REGISTRY.yaml`
+
+### Problem
+
+The portfolio currently spans heterogeneous resources that are easy to conflate: inference providers, model routes, agent executors, cloud/CPU/GPU substrates, local RAM/WSL, GitHub Actions/Codespaces, ChatGPT Work and project queues. Static lists become stale and cannot safely answer which route should receive the next task.
+
+### Proposal
+
+Create one provider-neutral Execution Exchange with:
+- separate registries for compute substrates, inference providers, agent executors, model routes and project cells;
+- Live Capacity Ledger;
+- normalized multi-window quotas and reset calendar;
+- provider/account telemetry adapters;
+- quota reservations before dispatch;
+- circuit breakers;
+- Earliest Useful Completion (EUC) routing;
+- quota shadow price for scarce free capacity;
+- independent builder/verifier routing;
+- project-level quota budgets and emergency reserves;
+- exact dispatch receipts for replay/audit.
+
+### Novel scheduling rule
+
+"Free" capacity receives an internal scarcity price even when cash cost is 0 PLN. The scheduler preserves scarce high-quality quota for tasks where it changes expected outcome, while deterministic and cheap lanes consume routine work.
+
+### Hard invariants
+
+1. public-plan documentation never overrides exact account limits;
+2. stale quota can never authorize heavy dispatch;
+3. UNKNOWN != AVAILABLE;
+4. quota is reserved transactionally before worker dispatch;
+5. two tasks cannot spend the same logical remaining quota;
+6. reset time is first-class scheduling data;
+7. paid fallback is impossible outside policy;
+8. builder/verifier independence is measured by route diversity, not process count;
+9. every dispatch is explainable from a registry snapshot and evidence;
+10. provider/model deprecation automatically removes the route until revalidated.
+
+### Initial live state
+
+- Groq Free: `LIVE_VERIFIED_FREE`; prior real auth/inference/benchmark evidence; response headers expose remaining/reset telemetry.
+- Ollama Cloud Free: `LIVE_VERIFIED_FREE_BOUNDED`; real controlled inference and post-request zero-cost evidence.
+- Kaggle T4x2: blocked pending legitimate owner verification; no bypass.
+- Cloudflare Workers AI: official free candidate; live account certification pending.
+- GitHub Actions/Codespaces: public allowance known; exact account plan/remaining usage must be verified.
+- ChatGPT Work: heavy lane, but `HUMAN_START_REQUIRED` until supported autonomous launch exists.
+
+### Definition of Done
+
+LEX becomes IMPLEMENTED only when the runtime scheduler consumes the machine-readable registry, at least two adapters expose live quota/reset data, quota reservations prevent overbooking, provider failure triggers safe reroute, reset restores eligibility, and dispatch receipts prove why each route was chosen.
+
