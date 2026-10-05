@@ -376,3 +376,38 @@ Nothing here authorizes:
 
 Every adoption remains subject to:
 BUILD-vs-ADOPT → isolated branch/worktree → focused tests → regression → independent review → exact-SHA CI → explicit promotion gate.
+
+## Additional input — 2026-10-05 evening
+
+### Duplicate: Tev1 video
+
+The supplied video `HzkljQI9T40` is the same Tev1 material already included in this radar. No duplicate backlog item is created. Existing disposition remains **BENCHMARKED PILOT / DecisionPort only**.
+
+### Google AI Studio security upgrade
+
+Video:
+- https://www.youtube.com/watch?v=cjJbo3iv45Y
+- title observed live: **Google AI Studio Just Got A Huge Security Upgrade**
+- channel: Julian Goldie SEO
+
+Official-source verification:
+- Google is transitioning Gemini API access from standard keys to authorization keys;
+- new AI Studio keys are authorization keys by default;
+- auth keys are bound to a Google Cloud service account, enabling more granular identity/access control;
+- auth keys are restricted to Gemini API by default and Google documents faster leaked-key enforcement;
+- unrestricted standard keys are rejected and the documented 2026 migration deadline has passed;
+- Google explicitly recommends keeping keys out of source control/client-side code, using backend/secret storage, restrictions, rotation and usage/billing monitoring.
+
+LUKART decision: **ADOPT SECURITY PATTERN, NOT PROVIDER LOCK-IN**.
+
+Required architecture consequence:
+- add a provider-neutral **Provider Credential Broker**;
+- raw long-lived credentials never enter planner/model context;
+- credential lookup occurs only inside the approved provider adapter;
+- record credential identity/version in evidence, never secret material;
+- support per-provider restrictions, rotation, revocation and leak response;
+- paid-fallback and cost ceilings remain enforced outside the model;
+- Google Auth Key/service-account semantics are one adapter implementation, not a LUKART-wide credential format.
+
+This materially reinforces IDEA-076/077 but does not require a separate provider-specific architecture.
+
