@@ -2140,6 +2140,23 @@ Additional live UI observation:
 Next research step: verify whether any official promotional-credit/referral path applies to Model API without requiring paid activation, and separately whether Chat/Image surfaces expose any free UI quota.
 
 
+
+### Live Muse admission experiment — 2026-10-05
+
+Observed on the user's real Meta/Muse account:
+- a fresh Incogniton browser session using Incogniton's free proxy progressed beyond the prior waitlist state into Muse onboarding/disclosure;
+- Meta Accounts Center subsequently showed a Muse login located in the United States, while the user's ordinary Windows Meta sessions remained in Poland;
+- the Muse flow reached age verification, offering credit-card verification or linking an existing Instagram/Facebook account;
+- the account's Meta Accounts Center now lists both Muse and Model API under managed Meta products;
+- Muse Code appears as a separate paid subscription product (USD 5/15/50 tiers observed) and must not be conflated with consumer Muse referral tokens;
+- no paid subscription or payment method was activated during this checkpoint;
+- referral/invite credit and any 1B-token grant remain NOT VERIFIED.
+
+Interpretation:
+- region/admission behavior changed when the Muse session was established through a US-located proxy exit;
+- this is evidence of geo-sensitive admission, not proof of an officially supported non-US onboarding path;
+- next safe validation step is completing age verification only with the user's real linked Meta/Facebook/Instagram identity, then checking whether consumer Muse exposes Invite/referral UI.
+
 ### LUKART MEDIA / test-budget use case
 
 If an official/live check confirms that the promotional token pool is genuinely usable through Muse/Muse Spark or another authorized Meta endpoint at 0 PLN, treat it as an **ephemeral experimental compute budget**, not as durable infrastructure.
