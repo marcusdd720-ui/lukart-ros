@@ -2180,4 +2180,101 @@ When the quota is temporary, optimize for high-information experiments:
 4. preserve outputs/evidence for later comparison;
 5. stop before any paid fallback/top-up.
 
+## IDEA-076 — LSAF Sovereign Trust Kernel: Capability Admission + Runtime Truth Convergence
+
+**Status:** BACKLOG / ARCHITECTURE CANDIDATE  
+**Priority:** P1 AFTER CURRENT P0 CLOSURE  
+**Source:** 2026-10-05 six-video external technology review + official repo/docs verification  
+**Extends:** IDEA-027, IDEA-028, IDEA-029, IDEA-031, IDEA-052, IDEA-054  
+**Research report:** `docs/architecture/EXTERNAL_TECH_RADAR_2026-10-05.md`
+
+### Problem
+
+LUKART already has strong individual concepts for Execution Truth, evidence, capability certification, memory boundaries, blast-radius limits and semantic drift. The missing layer is one universally enforced runtime boundary that makes all of those contracts mandatory for every executor, skill, provider, memory write and side effect.
+
+The current UAOS soak failure is empirical evidence of the core failure class: control-plane intent can diverge from runtime reality and durable evidence.
+
+### Proposed convergence
+
+Create a provider-neutral **Sovereign Trust Kernel** enforcing:
+
+1. **Capability Admission / Capability Passport**
+   - exact upstream source + SHA/content hash;
+   - provenance/license/SBOM;
+   - permissions and secret requirements;
+   - static/security scan evidence (SkillSpector is a candidate scanner, not authority);
+   - benchmark/certification result;
+   - expiry/trust-decay state.
+
+2. **Durable Execution Ledger**
+   - transactional attempt/event ledger as execution truth;
+   - mutable JSON/Markdown/dashboard state becomes derived projection only;
+   - run/job/attempt IDs, PID/process fingerprint, heartbeats, evidence hashes and immutable terminal outcomes.
+
+3. **Lease + fencing token**
+   - stale/zombie worker cannot finalize an execution after ownership moves elsewhere.
+
+4. **First-class UNCERTAIN state**
+   - uncertain external side effect is never silently retried;
+   - read-back/reconciliation or human review resolves it.
+
+5. **Exact-action authorization**
+   - one-time, expiring, action-bound approval token;
+   - planner proposes but cannot mint authority;
+   - capability/passport/run/blast-radius bound into approval.
+
+6. **Evidence-Carrying Memory**
+   - durable claims require source/evidence, authority class, valid_time, transaction_time, contradiction/revalidation metadata;
+   - agents propose memory; canonical memory service validates it;
+   - Obsidian/Markdown is a projection/view, not canonical truth.
+
+7. **Semantic Documentation Firewall**
+   - one fact → one canonical home;
+   - seiso-style drift/lint checks in report-only mode first;
+   - derived docs are generated/referenced, not duplicated manually.
+
+8. **DecisionPort**
+   - deterministic rules first;
+   - Tev1/local model only as low-risk advisory adapter after LUKART holdout benchmark;
+   - strong/quorum review for high-risk decisions.
+
+9. **Anti-Entropy Reconciliation**
+   - desired state vs ledger vs process/heartbeat vs Git/worktree vs CI/artifacts vs external receipts;
+   - mismatch maps to STALE/ORPHANED/UNCERTAIN/QUARANTINED, never fabricated RUNNING/DONE.
+
+10. **Trust decay + vendor-extinction drills**
+    - upstream/model/dependency changes decay certification;
+    - periodic alternate-executor replay proves provider portability.
+
+### External candidates discovered
+
+- NVIDIA SkillSpector → immediate shadow pilot candidate for capability/skill supply-chain scanning.
+- CopilotKit OpenMuse / tahodev OpenMuse → source of durable-task, SQL-lease, exact-action approval, receipt and no-hidden-retry patterns.
+- seiso → shadow documentation-drift gate.
+- Claude Mods Brain → provenance/date/version/drift knowledge-pack pattern.
+- Hermes Agent OS → persistent execution ledger, UNKNOWN semantics, atomic storage and profile isolation.
+- Hermes Obsidian → human-readable projection/adapter only; not shared writable authority.
+- Tev1 → optional low-risk DecisionPort adapter after benchmark.
+- TileLang → WATCH for future local inference/kernel optimization.
+- QDuo/DroidDeck → no strategic implementation case now.
+
+### Acceptance criteria before implementation
+
+1. map every proposed kernel responsibility to existing LSAF ideas/epics and eliminate duplicates;
+2. define stable public contracts before selecting dependencies;
+3. prove a deterministic baseline implementation without external vendor lock-in;
+4. run SkillSpector/seiso/OpenMuse/Hermes/Tev1 through BUILD-vs-ADOPT separately;
+5. define migration from current UAOS task state without losing historical evidence;
+6. establish crash/restart/stale-worker/uncertain-side-effect adversarial tests;
+7. require exact-SHA CI + independent reviewer for every promoted component;
+8. preserve current priority: Generator Pism > UAOS execution truth/soak > BUILD-vs-ADOPT > LSAF foundation.
+
+### Non-goals
+
+- no wholesale adoption of Hermes/OpenMuse/Claude/Obsidian as LUKART control plane;
+- no second brain as SSOT;
+- no model confidence treated as authorization;
+- no automatic paid provider fallback;
+- no production merge authorized by this backlog entry.
+
 
