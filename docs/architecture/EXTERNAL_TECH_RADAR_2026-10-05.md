@@ -921,22 +921,23 @@ Official current evidence:
 - Free Plan currently lists high-throughput limits including `openai/gpt-oss-120b` and `openai/gpt-oss-20b` at 30 RPM / 1,000 requests per day / 8K TPM / 200K tokens per day;
 - exact account-specific limits must still be live-verified before certification.
 
-#### GroqCloud Free live-test checkpoint — 2026-10-05
+#### GroqCloud Free — corrected consolidated live state (2026-10-05)
 
-Owner supplied a live GroqCloud dashboard screenshot showing:
-- authenticated account/project access: **PASS**;
-- Playground / API Keys / Dashboard surfaces available;
-- visible model families include `GPT OSS 120B`, `GPT OSS 20B`, `Qwen 3.8 27B`, Whisper and Orpheus;
-- dashboard exposes an upgrade path to Dev Plan, but no upgrade is authorized;
-- account has historical token usage visible; this is not part of the controlled LUKART benchmark.
+The earlier checkpoint in this report was incomplete. Prior controlled LUKART testing from 2026-10-04/05 already established:
+- API key stored locally via Windows DPAPI;
+- authenticated `GET /models`: HTTP 200;
+- controlled inference: HTTP 200 on `qwen/qwen3.8-27b`;
+- expected response `UAOS_GROQ_OK`: PASS;
+- structured JSON: PASS;
+- repeatability: 3/3 PASS;
+- coding repair and Legal adversarial benchmark: PASS;
+- synthetic ZUS hardened follow-up on `openai/gpt-oss-120b`: PASS;
+- zero-cost lane classification: VERIFIED_FREE;
+- observed response/account quota evidence included request limit ~1000 and token-per-minute limit ~8000 in the tested window.
 
-Official current Free-plan documentation lists, among others:
-- `openai/gpt-oss-120b`: 30 RPM, 1K RPD, 8K TPM, 200K TPD;
-- `openai/gpt-oss-20b`: 30 RPM, 1K RPD, 8K TPM, 200K TPD;
-- `qwen/qwen3.8-27b`: 30 RPM, 1K RPD, 8K TPM, 200K TPD.
+Current official Free Plan baseline for `openai/gpt-oss-120b` and `openai/gpt-oss-20b` is 30 RPM / 1,000 RPD / 8,000 TPM / 200,000 TPD. Live response headers and exact account Limits are authoritative for remaining capacity and reset.
 
 State:
-`ACCOUNT_LIVE / API_KEY_PENDING / CONTROLLED_INFERENCE_PENDING / ZERO_COST_ACCOUNT_GUARDRAIL_PENDING`.
+`GROQ_FREE = LIVE_VERIFIED_FREE / LEX_READY_WITH_FRESHNESS_CHECK`.
 
-Do not upgrade to Developer or attach paid fallback during certification.
-
+Do not repeat account/key setup. Refresh live remaining/reset telemetry at dispatch time.
