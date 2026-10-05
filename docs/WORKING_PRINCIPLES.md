@@ -24,13 +24,33 @@ Post-merge FAIL → repair stage/PR. Po closure przejdź do następnego zatwierd
 
 ## 2. FUNDAMENTY
 
-Evidence Before Conclusion; Decision Need First; Problem First; Measurement Before Conclusion; Incremental Validation; Evidence Before Standard; Factory != Product; Single Source of Truth; Validation Before Trust; Planned != Implemented != Validated != Certified.
+Adopt First / Build Last; Evidence Before Conclusion; Decision Need First; Problem First; Measurement Before Conclusion; Incremental Validation; Evidence Before Standard; Factory != Product; Single Source of Truth; Validation Before Trust; Planned != Implemented != Validated != Certified.
 
 Proste zadania: krótko. Repo audit, architecture, trust/security, replay/migration, CI/governance, merge/release: maksymalna staranność.
 
 ## 3. HARDCORE ENTERPRISE / LONG-HORIZON
 
-Dla większej zmiany: `live SSOT → Problem → Evidence → Measurement → existing capability/gap → Alternatives → Trade-offs → Decision → Validation`. Najpierw ustal realny gap; preferuj brak zmiany lub najmniejszą uzasadnioną modyfikację.
+Dla większej zmiany: `live SSOT → Problem → Evidence → Measurement → existing capability/gap → REUSE/ADOPT/WRAP/EXTEND/FORK scan → Alternatives → Trade-offs → Decision → BUILD only missing delta → Validation`. Najpierw ustal realny gap; preferuj brak zmiany lub najmniejszą uzasadnioną modyfikację.
+
+### 3.1 ADOPT-FIRST / BUILD-LAST — REINVENTION BLOCKER
+
+Domyślna kolejność dla każdej nowej capability, frameworka, agenta, usługi, runtime'u, storage, kolejki, model provider'a, workflow engine, OCR, browser automation, observability, media engine lub podobnej infrastruktury:
+
+`REUSE INTERNAL → ADOPT → WRAP → EXTEND → FORK → BUILD MISSING DELTA`.
+
+**BUILD jest wyjątkiem wymagającym dowodu, nie opcją domyślną.** Zanim rozpocznie się BUILD, agent musi wykazać rzeczywisty gap: czego potrzebuje produkt, jakie istniejące rozwiązania sprawdzono, dlaczego nie wystarcza ADOPT/WRAP/EXTEND/FORK, jakie są koszt/licencja/security/privacy/vendor-lock-in/operability oraz jaka jest najmniejsza brakująca delta. Jeżeli istniejące rozwiązanie bezpiecznie spełnia wymaganie, BUILD jest zablokowany. Jeżeli nie ma materialnego gapu: `HOLD / NO MATERIAL GAP`.
+
+Pomysł sam w sobie nie tworzy pracy implementacyjnej. Nowy pomysł trafia najpierw do discovery/backlogu i może wejść do kolejki wykonawczej dopiero po: `product need → capability scan → evidence → decision → priority`.
+
+Provider/model/plugin/framework != Product. Integracja cienkim adapterem jest preferowana nad kopiowaniem implementacji. LUKART powinien posiadać własne kontrakty, polityki, evidence/validation, routing i domenową logikę produktu, ale nie powinien odtwarzać commoditized infrastructure bez udowodnionej potrzeby.
+
+**Portfolio BUILD budget:** aktywne intensywne BUILD lanes są domyślnie ograniczone do dwóch własnych produktów: (P1) Generator Pism oraz (P2) Generator CV / LATAM Career OS. Pozostałe lane'y mogą prowadzić discovery, verification, ADOPT/WRAP/EXTEND/integration i maintenance, ale nowy niezależny BUILD wymaga jawnej repriorytetyzacji portfolio.
+
+Dozwolony własny BUILD dla Generatora Pism obejmuje unikalną logikę domenową i przewagę produktu, m.in. controlled drafting, legal evidence/context, walidację, temporal legal context, integracje z portalami sądowymi i orzecznictwem oraz inne funkcje, których nie zapewnia bezpiecznie gotowy komponent. Gotowe elementy infrastrukturalne nadal podlegają ADOPT-FIRST.
+
+Dla UAOS/execution infrastructure domyślna strategia to integracja istniejących capability (np. orkiestracja, inference, durable execution, CI, storage, telemetry) za wymienialnymi adapterami. Własny BUILD ogranicza się do LUKART-specific contracts, policy, evidence, conformance, routing i brakującej delty.
+
+Dla Ogłoszenia PL domyślny kierunek to integracja sprawdzonych narzędzi produkcji/publikacji zamiast budowy własnych silników mediów. Dla ZERO-COST Provider Discovery celem jest znajdowanie, certyfikacja i integracja providerów, a nie odtwarzanie ich runtime'ów lub modeli.
 
 Oceń correctness, epistemic safety, trust boundary, data loss, nondeterminism, security, concurrency, scale/performance, recovery, provenance/replay, audit/observability, migration/compatibility i evolvability w 5–10+ year horizon, także przy failure i zmianach schema/providerów/kluczy. Preferuj deterministic, bounded, fail-closed, versioned/open, replaceable contracts i explicit migrations; future-resistant, nie future-predictive.
 
