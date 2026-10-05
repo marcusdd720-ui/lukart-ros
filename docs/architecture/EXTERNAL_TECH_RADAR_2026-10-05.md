@@ -792,10 +792,13 @@ Owner confirmed creation of an Ollama API key from the official settings page an
 Current state:
 - official Ollama Free plan existence: VERIFIED;
 - API key created by owner: OWNER_CONFIRMED;
-- direct cloud API authentication: PENDING;
+- direct cloud API authentication: **PASS** on 2026-10-05 via authenticated `GET /api/tags`;
+- cloud model catalog response: **PASS**;
 - inference: NOT YET RUN;
 - zero-cost runtime classification: NOT YET VERIFIED;
 - paid fallback/top-up: BLOCKED.
+
+Observed model names in the authenticated response included `gemma4:31b`, `kimi-k2.6`, `kimi-k2.7-code`, `deepseek-v4.1-flash`, `gpt-oss:120b`, `nemotron-3-nano:30b`, `nemotron-3-super`, `nemotron-3-ultra`, `glm-5.3`, `kimi-k3`, `glm-5.2`, `minimax-m2.7`, `glm-5.3-flash`, `deepseek-v4-pro:0813` and `gpt-oss:20b`. Presence in `/api/tags` proves catalog/auth visibility, not Free-plan entitlement for every listed model.
 
 Next gate:
 1. local secure capture of the key without posting it to chat or repository;
