@@ -108,3 +108,13 @@ epics:
   - id: LSAF-E26
     name: vendor_extinction_drill
     priority: P2
+
+  - id: LSAF-E27
+    name: resource_aware_agent_scheduler
+    priority: P1
+  - id: LSAF-E28
+    name: lease_fencing_lock_recovery
+    priority: P1
+  - id: LSAF-E29
+    name: provider_credential_broker
+    priority: P1
