@@ -1937,6 +1937,17 @@ human_signing_events / independently_verified_closed_milestones
 
 The system should minimize this ratio without weakening provenance, separation of duties or fail-closed governance.
 
+### Authority-tier refinement — 2026-10-05
+
+To prevent autonomous lanes from stalling on constant signatures, split signatures by authority:
+
+- `AUTOMATION_CHECKPOINT`: dedicated machine/automation signing identity may sign low-authority checkpoint commits/evidence; never sufficient for merge/release/promotion.
+- `HUMAN_CANDIDATE_FREEZE`: one human signing event for a coherent independently validated candidate where policy requires a personal signature.
+- `HUMAN_PROMOTION`: separate explicit promotion/release authority only where governance requires it.
+
+Agents must batch causally related fixes and avoid requesting a human signature per file/task. The automation key and human key must remain distinguishable in provenance and policy.
+
+
 ## IDEA-074 — LUKART WORK → LUKART ROS Modular-Monorepo Consolidation
 
 Status: `OWNER STRATEGY / PLANNED AFTER GENERATOR P0 CLOSURE`
@@ -2328,6 +2339,27 @@ Adversarial soak must include:
 - overlapping path claims;
 - uncertain external write;
 - restart-loop budget exhaustion.
+
+
+
+### Cloud-burst extension
+
+Heavy work must not be coupled to the owner's workstation RAM. Add a provider-neutral `CloudBurstPort` for ephemeral remote workers.
+
+Initial BUILD-vs-ADOPT candidates:
+- Kaggle T4 x2 (officially 2 × T4, 16 GB VRAM each; bounded notebook sessions);
+- Lightning AI free/starter GPU capacity;
+- Google Colab free as opportunistic/non-guaranteed overflow;
+- future Codespaces/remote CPU workers for non-GPU engineering.
+
+Rules:
+- live-verify quota/cost before dispatch;
+- checkpointable/restartable jobs only;
+- canonical ledger/evidence remains outside ephemeral worker;
+- content-addressed input/output bundles;
+- paid fallback blocked;
+- client/legal data prohibited until privacy/certification allows it;
+- provider loss returns task to queue instead of freezing the whole pipeline.
 
 No production integration is authorized by this entry.
 
