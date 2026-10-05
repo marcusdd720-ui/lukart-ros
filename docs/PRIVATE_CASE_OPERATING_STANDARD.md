@@ -1,6 +1,6 @@
 # LUKART ROS — Private Case Operating Standard
 
-Version: **1.2.0**  
+Version: **1.3.0**  
 Status: **ACTIVE OPERATOR STANDARD**  
 Effective: **2026-10-05**  
 Scope: **all private real-world CASE work**
@@ -419,6 +419,104 @@ Draft A may contain explanatory scaffolding that is later compressed, but Draft 
 Compression is allowed only when meaning, party identity/role, request scope, evidence link and legal effect remain intact.
 
 A field/section present in an earlier approved stage may be removed only if the delta is explicitly classified under the ZERO SILENT LOSS invariant. Material omission by simplification is an `UNEXPLAINED_REGRESSION`.
+
+### 6.8 Argument Architecture — issue-to-remedy chain
+
+For material filings, the drafting process SHOULD maintain an internal argument map before or during Draft A:
+
+`Problem → Issue → Fact/Evidence → Rule/Authority → Application → Counterargument → Rebuttal → Request`
+
+This structure is a control model, not a mandatory outward-facing section layout. The final filing may compress or reorder the presentation when that improves procedural readability, but the internal chain MUST remain traceable.
+
+For each material issue:
+- identify the precise legal/procedural question;
+- bind only supported facts/claims to that issue;
+- identify the governing current rule and authority;
+- explain the application without overstating the evidence;
+- identify the strongest material counterargument when one reasonably exists;
+- answer it narrowly and accurately;
+- connect the conclusion to a concrete requested act/remedy.
+
+A filing MUST NOT contain an argument that cannot be connected to a concrete issue or requested outcome.
+
+### 6.9 Recipient Decision Model
+
+Every filing MUST be designed around the decision-maker's next lawful action.
+
+Before drafting, answer internally:
+- Who is the actual decision-maker or executing official?
+- What exact decision, order, action, correction, disclosure or response is requested?
+- What jurisdiction/competence does that recipient have?
+- What minimum facts and legal predicates must be clear for that recipient to act?
+- What must the recipient be able to find within 30–60 seconds?
+
+If the recipient cannot quickly identify **who is asking, in what matter, for what exact act, on what minimum factual/legal basis, and what should happen next**, the document requires redesign.
+
+### 6.10 Burden & Proof Map
+
+For material disputed propositions, the drafting process SHOULD maintain an internal burden/proof map:
+
+`Proposition → Evidence status → Who must establish it → Applicable burden/standard if verified → Current evidence → Missing evidence → Consequence if unproven`
+
+This map is especially important where the outcome depends on:
+- payment/non-payment;
+- service/receipt;
+- authority/representation;
+- employment/income;
+- causation/damage;
+- limitation/prescription;
+- administrative eligibility;
+- execution/accounting;
+- fraud, bad faith or other state-of-mind allegations.
+
+The final filing MUST NOT silently convert a weakly supported proposition into a categorical fact merely because stronger wording sounds more persuasive.
+
+### 6.11 Authority hierarchy and source discipline
+
+Authority selection follows this preference order, adjusted to the jurisdiction and issue:
+
+1. current binding constitutional/statutory/regulatory text;
+2. controlling or materially authoritative higher-court decisions;
+3. relevant appellate/first-instance case law where appropriate;
+4. official institutional guidance or published procedural information;
+5. respected commentary/doctrine as secondary support.
+
+Primary authority is preferred over secondary summaries for material propositions.
+
+A lower-authority source MUST NOT be presented as if it were binding. Commentary MUST NOT substitute for an available primary source on a material current-law question.
+
+### 6.12 Court / authority readability standard
+
+A professional filing SHOULD allow a busy judge, referendary, clerk, enforcement officer, administrative officer or institutional decision-maker to identify within the first 30–60 seconds:
+- parties / filer and role;
+- recipient/authority;
+- case/reference;
+- procedural posture;
+- exact operative request;
+- the 2–4 decisive facts or predicates;
+- the core legal basis;
+- the evidence/attachments that matter;
+- the next action expected from the recipient.
+
+Readability is substantive quality. Dense legal language, excessive quotations, repetition or ornamental formality that obscures the decision path is a defect.
+
+**Legal precision != unnecessary complexity.**
+
+### 6.13 Living strengthening rule
+
+This drafting doctrine is a living standard. It MUST be strengthened when real CASE evidence reveals a recurring or material failure mode.
+
+Improvement loop:
+`Observed defect → root cause → smallest generalizable rule/control → update this living standard → validate on the affected workflow → preserve change history`.
+
+Do not create competing whole-standard V2/V3 files for normal evolution.
+
+New controls SHOULD be added only when they:
+- prevent a demonstrated or reasonably foreseeable material failure;
+- improve correctness, evidentiary discipline, procedural safety, integrity, readability or replay;
+- do not create disproportionate bureaucracy for simple matters.
+
+The standard MUST evolve by evidence, not by stylistic preference alone.
 
 ## 7. Evidence-to-assertion traceability
 
