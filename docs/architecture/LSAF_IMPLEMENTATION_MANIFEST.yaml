@@ -125,3 +125,16 @@ epics:
   - id: LSAF-E31
     name: human_authority_budget_and_signing_tiers
     priority: P1
+
+  - id: LSAF-E32
+    name: intent_provenance_firewall
+    priority: P1
+  - id: LSAF-E33
+    name: agentic_security_certification_fabric
+    priority: P1
+  - id: LSAF-E34
+    name: compute_placement_planner
+    priority: P1
+  - id: LSAF-E35
+    name: executable_governance_conformance
+    priority: P1
