@@ -2277,4 +2277,57 @@ Create a provider-neutral **Sovereign Trust Kernel** enforcing:
 - no automatic paid provider fallback;
 - no production merge authorized by this backlog entry.
 
+## IDEA-077 — Resource-Aware Autonomous Work Fabric / Lock-Recovery Plane
+
+**Status:** BACKLOG / ARCHITECTURE CANDIDATE  
+**Priority:** P1 AFTER CURRENT P0 CLOSURE  
+**Source:** 2026-10-05 owner requirement: prevent RAM pressure, unnecessary file blocking, stalled agents and end-to-end execution gaps  
+**Design:** `docs/architecture/RESOURCE_AWARE_AGENT_FABRIC.md`
+
+### Problem
+
+Local agents can consume too much RAM, hold path/file ownership after progress stops, block unrelated work, and leave queues stalled while no independent supervisor proves whether the owner is alive or the lock is still justified. "Always working" currently risks becoming "always spawning", which reduces throughput under memory pressure.
+
+### Proposal
+
+Introduce a resource-aware execution plane with:
+- typed ResourceEnvelope per task;
+- RAM/CPU/browser/provider quota tokens and admission control;
+- capability/resource-aware work stealing;
+- dedicated SUPERVISOR, DISPATCHER, BUILDER, REPAIR, VERIFIER, RESEARCH and INTEGRATOR roles;
+- isolated Git worktrees instead of long-lived shared file locks;
+- TTL leases + heartbeat + monotonic fencing tokens;
+- independent Lock Reaper;
+- progress-aware watchdog (heartbeat alone is insufficient);
+- bounded repair/restart budgets;
+- transactional attempt ledger as execution truth;
+- light-task routing to deterministic/local/live-verified zero-cost lanes;
+- heavy-task Work Packet routing to ChatGPT Work/remote executor, with HUMAN_START_WORK until a real automatable Work interface exists;
+- Provider Credential Broker so agents do not receive long-lived raw keys in prompt/context.
+
+### Hard invariants
+
+1. expired/dead ownership must not block forever;
+2. stale worker cannot finalize newer work;
+3. no local spawn may exceed the resource governor's safe envelope;
+4. head-of-line task that cannot fit resources cannot block compatible light work;
+5. agent heartbeat without meaningful progress is not WORKING;
+6. repair agents cannot weaken tests, expand product scope, merge or promote;
+7. paid fallback remains blocked;
+8. local RAM pressure must cause routing/degradation, not uncontrolled swap thrash.
+
+### Validation
+
+Adversarial soak must include:
+- low-RAM pressure;
+- killed builder;
+- stale lease/lock;
+- PID reuse;
+- malformed projection state;
+- provider outage/rate limit;
+- overlapping path claims;
+- uncertain external write;
+- restart-loop budget exhaustion.
+
+No production integration is authorized by this entry.
 
