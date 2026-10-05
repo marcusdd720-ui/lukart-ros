@@ -1,6 +1,6 @@
 # LUKART ROS — Private Case Operating Standard
 
-Version: **1.0.2**  
+Version: **1.1.0**  
 Status: **ACTIVE OPERATOR STANDARD**  
 Effective: **2026-10-05**  
 Scope: **all private real-world CASE work**
@@ -54,7 +54,7 @@ Before new conclusions, reconstruct the current CASE state from authorized evide
 
 Every private CASE follows this sequence unless a step is genuinely not applicable and that non-applicability is explicit:
 
-`Scope → Decision Need → Inventory → Evidence Ceiling → Epistemic Model → Timeline → Contradictions → Deadlines → Standing/Authority → Procedural Map → Current-Law Research → Remedy/Strategy → Filing Topology → Draft A → Red Team → Hardcore Preflight → Draft B / SEND READY → Render → Human/Operator Approval where required → Send/File → Receipt → Response Delta → Replay → Next Action / Closure`
+`Scope → Decision Need → Inventory → Evidence Ceiling → Epistemic Model → Timeline → Contradictions → Deadlines → Standing/Authority → Procedural Map → Current-Law Research → Remedy/Strategy → Filing Topology → Draft A → Red Team → Draft B → Hardcore Preflight → Render → FINISH Gate → SEND READY → Human/Operator Approval where required → Send/File → Receipt → Response Delta → Replay → Next Action / Closure`
 
 Document generation is downstream. A request such as “write a letter” does not authorize skipping upstream evidence/procedure gates.
 
@@ -167,7 +167,30 @@ Statuses include `RECOMMENDED`, `DECISION_REQUIRED`, `NEEDS_EVIDENCE`, `NO_SAFE_
 
 ### G7 — Draft / Red Team / Hardcore Preflight
 
-Final professional documents are produced in two passes.
+Final professional documents are produced through a controlled integrity chain. No stage may silently drop or mutate material content from an approved earlier stage.
+
+**Continuous Document Integrity invariant — ZERO SILENT LOSS**
+
+From `Draft A` onward, every document-producing transformation MUST compare the candidate artifact against both:
+1. the current authoritative CASE state / approved filing plan; and
+2. the immediately preceding approved document stage.
+
+The comparison is semantic, not merely textual. Critical items include at least:
+- filer/sender identity and address;
+- all parties and their roles;
+- recipient/authority and filing address;
+- case/reference/sygnatura identifiers;
+- operative requests/petitum;
+- material facts/claims and their evidence links;
+- material legal grounds/citations;
+- dates/deadlines that affect the filing;
+- attachments/evidence list;
+- signature/representation/copy requirements;
+- privacy/minimization decisions.
+
+For each material removal, change or addition, the stage MUST classify the delta as `INTENTIONAL_APPROVED`, `DERIVED_FORMATTING_ONLY`, or `UNEXPLAINED_REGRESSION`. `UNEXPLAINED_REGRESSION` is a Critical FAIL. Critical-content loss budget is **zero**.
+
+A lightweight **Document Integrity Manifest** SHOULD be maintained as a deterministic, non-authoritative projection of the approved CASE/filing state. It records required fields/sections, their provenance, criticality and expected presence. It is a validation aid, never a new source of truth.
 
 **Pass A — Legal/Evidence Draft**
 - operative request;
@@ -212,13 +235,47 @@ Final professional documents are produced in two passes.
 
 Text-level preflight alone is insufficient for a rendered filing. Missing or mismatched required sender/recipient identity or address data, or a rendered artifact that drops/truncates an approved material field, is a **Critical FAIL**.
 
-Critical FAIL → `NOT_READY`. Critical UNKNOWN → `ABSTAIN` / `REVIEW_REQUIRED`. Only all-critical-PASS may become `FILING_READY` / `SEND READY`.
+Critical FAIL → `NOT_READY`. Critical UNKNOWN → `ABSTAIN` / `REVIEW_REQUIRED`. Passing G7 permits rendering, **not** `SEND_READY`.
+
+### G7.5 — FINISH Gate — Final Artifact Integrity & Regression Gate
+
+`FINISH` is the last mandatory quality gate after rendering and before `SEND_READY`. It exists to catch defects introduced by drafting, editing, templating, conversion, rendering or last-minute cleanup even when all earlier stages passed.
+
+FINISH MUST re-read the final human-visible artifact as a fresh candidate and compare it with:
+- the approved `Draft B` / filing plan;
+- the Document Integrity Manifest where used;
+- the immediately preceding approved artifact/version;
+- the current CASE state for identity, authority, dates and filing route.
+
+FINISH checks at least:
+- **Identity parity:** filer/sender, address, parties, roles, representation;
+- **Recipient parity:** authority, department, address, channel;
+- **Reference parity:** sygnatura, case/reference numbers, dates;
+- **Request parity:** no request/petitum weakened, broadened, duplicated or lost;
+- **Factual parity:** no material fact/claim/evidence link silently removed or promoted beyond its evidence status;
+- **Legal parity:** no material legal basis/citation silently removed, stale-substituted or materially altered;
+- **Attachment parity:** every referenced attachment exists in the list and every required attachment remains present;
+- **Signature/copy parity:** signature area, signer capacity, copies/odpisy and formal execution requirements remain intact;
+- **Privacy parity:** no accidental disclosure introduced during rendering;
+- **Render parity:** no clipping, pagination loss, hidden text, broken glyphs, blank pages, orphan headings, missing footer/page number where required, or malformed first/last page;
+- **Cross-version regression:** no critical field present in an approved earlier stage disappears without an explicit approved reason;
+- **Final-date/contact freshness:** current date and material contact/address data remain the latest authorized values.
+
+Where technically feasible, FINISH SHOULD combine:
+1. machine assertions over extracted DOCX/PDF text and expected critical fields;
+2. semantic diff against the approved prior stage;
+3. visual inspection of the rendered first page, operative-request pages, attachment/signature area and any page where a diff occurred;
+4. artifact version/digest binding so the bytes validated by FINISH are the same bytes promoted to `SEND_READY`.
+
+Any modification after `FINISH_PASS` invalidates that PASS and requires a fresh FINISH run on the new bytes. `SEND_READY` is therefore a property of an exact validated artifact/version, not of a draft concept.
+
+Only `FINISH_PASS` with all critical controls PASS may promote the exact artifact to `SEND_READY`.
 
 ### G8 — Execution / receipt / replay
 
 Artifact state is explicit:
 
-`DRAFT → PREFLIGHTED → SEND_READY → APPROVED → SENT/FILED → RECEIVED/DELIVERED → RESPONDED → ASSESSED → CLOSED/ARCHIVED`
+`DRAFT_A → RED_TEAMED → DRAFT_B → PREFLIGHTED → RENDERED → FINISH_PASS → SEND_READY → APPROVED → SENT/FILED → RECEIVED/DELIVERED → RESPONDED → ASSESSED → CLOSED/ARCHIVED`
 
 `PREPARED != SENT != RECEIVED != EFFECTIVE`.
 
@@ -254,7 +311,7 @@ Unless the destination imposes another format, the renderer SHOULD produce:
 - no internal CASE commentary, debug text, speculative labels or unused placeholders;
 - DOCX and/or PDF when requested/appropriate.
 
-Before promotion to `SEND_READY`, the final rendered artifact MUST be visually inspected, not merely generated. The inspection must confirm that the approved identity/address blocks, recipient, date, reference/sygnatura, operative request, signature area and attachment list are present, legible and not clipped, substituted or omitted. Any mismatch returns the artifact to G7 and invalidates the prior `SEND_READY` decision.
+Rendering never promotes an artifact directly to `SEND_READY`. The rendered DOCX/PDF MUST pass G7.5 `FINISH` on the exact bytes/version that will be delivered. The inspection must confirm that the approved identity/address blocks, parties, recipient, date, reference/sygnatura, operative request, material factual/legal content, signature area and attachment list are present, legible and not clipped, substituted or omitted. Any mismatch returns the artifact upstream to the earliest affected stage and invalidates any prior FINISH/SEND_READY status.
 
 Templates define presentation, not truth. The renderer MUST NOT invent facts, fix contradictions or change strategy. If rendering discovers a missing material input, return upstream to the appropriate gate.
 
@@ -336,5 +393,7 @@ For every NEW CASE or CONTINUE request:
 - keep CASE data isolated;
 - continue end-to-end to the current evidence/authority ceiling;
 - do not render final filings before G7 preflight;
+- never promote a rendered filing directly to `SEND_READY`; require exact-artifact `FINISH_PASS` first;
+- at every document-production stage enforce ZERO SILENT LOSS by comparing the candidate with the approved CASE/filing state and prior approved document stage;
 - do not stop at a repairable drafting/research problem;
 - report blockers precisely rather than manufacture certainty.
