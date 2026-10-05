@@ -32,6 +32,7 @@ A mapped idea is not promoted merely because it appears in the LSAF plan.
 | IDEA-052 Ephemeral Capability Lease & Side-Effect Gateway | blast-radius budget / capability lease |
 | IDEA-053 Hierarchical Cognitive Fabric | capability/risk-based routing |
 | IDEA-054 Semantic Drift Firewall | semantic conformance / long-horizon compatibility |
+| IDEA-074 LUKART WORK → LUKART ROS Modular-Monorepo Consolidation | product-adapter migration / ROS–WORK consolidation program |
 
 ## LSAF additions not intended to overwrite backlog concepts
 
