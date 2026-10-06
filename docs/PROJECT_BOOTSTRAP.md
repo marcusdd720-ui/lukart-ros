@@ -16,6 +16,28 @@ Ten tekst służy uruchomieniu pracy. Nie jest drugim standardem inżynierskim.
 
 GitHub jest SSOT stanu prac inżynierskich. Nie zastępuje źródłowych dowodów sprawy ani Canonical Case Ledger; granice authority określa kanon.
 
+## Aktualny kontekst użycia i licencji
+
+Stan deklarowany przez właściciela projektu na 2026-10-06; jest to zmienny kontekst operacyjny, a nie certyfikacja prawna ani drugi standard inżynierski.
+
+- LUKART jest obecnie prywatnym, osobistym i niekomercyjnym środowiskiem badawczo-testowym.
+- Właściciel nie prowadzi obecnie LUKART jako firmy ani działalności pobierającej opłaty za produkty lub usługi LUKART; brak płacących klientów LUKART.
+- Przy ocenie providerów, programów, usług, free tierów, triali i licencji należy oceniać aktualną kwalifikowalność także dla kategorii `personal`, `non-commercial`, `hobby`, `individual`, `research/testing` i podobnych. Nie wolno odrzucać takiej opcji wyłącznie dlatego, że LUKART może w przyszłości zostać skomercjalizowany albo jest projektowany na poziomie produkcyjnym.
+- Jeżeli aktualne warunki providera zezwalają na prywatne/niekomercyjne testowanie, rozwiązanie może być klasyfikowane jako kandydat `ADOPT / TEST / POC` w granicach tych warunków, polityki prywatności, bezpieczeństwa i zasady 0 PLN właściwej dla danego lane'u.
+- Kwalifikowalność należy zweryfikować ponownie przed dalszym użyciem, gdy zmieni się stan faktyczny lub warunki usługi, w szczególności przy utworzeniu firmy/działalności wykorzystującej LUKART, pierwszym płatnym kliencie lub pobraniu opłaty za usługę/produkt LUKART, wdrożeniu komercyjnym, biznesowym użyciu przez pracowników/kontraktorów albo materialnej zmianie ToS/licencji/pricingu providera.
+- Ten kontekst nie zastępuje aktualnych warunków providera, prawa, ograniczeń prywatności ani security/trust boundaries. W przypadku niejasności kwalifikowalność pozostaje `UNKNOWN / VERIFY_TERMS`, a nie automatycznie `ALLOWED` lub `REJECTED`.
+
+## Human signing gate — operator UX
+
+Gdy polityka repozytorium wymaga zweryfikowanego podpisu i potrzebny jest lokalny klucz/passphrase, traktuj podpis jako jawny HUMAN gate bez osłabiania reguł repozytorium.
+
+- Najpierw przygotuj exact candidate, expected parent/base, expected tree/content identity oraz gotowy skrypt podpisu.
+- Jeżeli dostępny jest autoryzowany kanał sterowania lokalnym komputerem, domyślnie uruchom widoczne okno PowerShell z gotowym procesem podpisu zamiast wymagać od operatora ręcznego kopiowania długiego skryptu.
+- Operatorowi podaj tylko, które okno otwarto, że passphrase ma wpisać wyłącznie lokalnie, że sekretu nie wolno wklejać do czatu oraz że po komunikacie sukcesu ma odpowiedzieć krótkim `podpisane`.
+- Jeżeli lokalne uruchomienie okna jest niedostępne, użyj minimalnego jawnego fallbacku manualnego i podaj przyczynę.
+- Odpowiedź `podpisane` jest wyłącznie sygnałem do weryfikacji, nie evidence sukcesu. Przed dalszym użyciem niezależnie potwierdź na GitHub verified signature/attestation, exact parent/base, tree/content identity, właściwy ref/PR head i fresh exact-SHA CI.
+- Nie proś o passphrase, prywatny klucz ani inny sekret w czacie i nie zapisuj ich w logach/evidence.
+
 ## Start pracy
 
 Przed materialną pracą ustal live main SHA. Przeczytaj WORKING_PRINCIPLES, profil, AGENTS, MASTER_PLAN i aktywny roadmap z tego samego SHA. Sprawdź właściwe implementation, tests i dependencies. Osobno pobierz dynamiczny stan PR, head/base, candidate SHA i wymaganych CI/checks.
