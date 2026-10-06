@@ -1,0 +1,160 @@
+schema_version: 1
+manifest_id: LSAF-PLAN-2026-10-05
+status: PLANNED
+authority: documentation_only
+rules:
+  - evidence_before_conclusion
+  - fail_closed
+  - exact_sha
+  - builder_ne_reviewer
+  - planned_ne_implemented_ne_validated_ne_certified
+  - paid_fallback_blocked
+priority_order:
+  - generator_pism
+  - uaos_execution_truth_and_soak
+  - build_vs_adopt
+  - lsaf_foundation
+pipeline:
+  - IDEA_INTAKE
+  - CLASSIFY
+  - BUILD_VS_ADOPT_PRE_AUDIT
+  - DEPENDENCY_MAP
+  - DESIGN_CONTRACT
+  - BRANCH_WORKTREE
+  - IMPLEMENT
+  - FOCUSED_TEST
+  - REGRESSION
+  - INDEPENDENT_REVIEW
+  - EXACT_SHA_CI
+  - PROMOTION_GATE
+  - POST_MERGE_VERIFICATION
+  - CLOSURE_RECEIPT
+epics:
+  - id: LSAF-E01
+    name: execution_truth_contract
+    priority: P0
+  - id: LSAF-E02
+    name: evidence_ledger
+    priority: P0
+  - id: LSAF-E03
+    name: provider_abstraction_contract
+    priority: P1
+  - id: LSAF-E04
+    name: agent_skills_compatibility
+    priority: P1
+  - id: LSAF-E05
+    name: workspace_isolation_adapter
+    priority: P1
+  - id: LSAF-E06
+    name: layered_memory_m0_m6
+    priority: P1
+  - id: LSAF-E07
+    name: capability_genome
+    priority: P1
+  - id: LSAF-E08
+    name: execution_quorum
+    priority: P1
+  - id: LSAF-E09
+    name: provider_darwinism
+    priority: P1
+  - id: LSAF-E10
+    name: model_intelligence_registry
+    priority: P1
+  - id: LSAF-E11
+    name: autonomous_build_vs_adopt_scanner
+    priority: P1
+  - id: LSAF-E12
+    name: self_hosted_project_intake
+    priority: P1
+  - id: LSAF-E13
+    name: long_duration_soak_evidence
+    priority: P0
+  - id: LSAF-E14
+    name: capability_benchmark_harness
+    priority: P1
+  - id: LSAF-E15
+    name: cross_provider_failover
+    priority: P1
+  - id: LSAF-E16
+    name: security_permission_manifest
+    priority: P1
+  - id: LSAF-E17
+    name: evidence_derived_trust_score
+    priority: P1
+  - id: LSAF-E18
+    name: control_plane_integration
+    priority: P1
+  - id: LSAF-E19
+    name: product_adapter_migration
+    priority: P2
+  - id: LSAF-E20
+    name: baseline_red_team_preflight_exact_sha
+    priority: P1
+  - id: LSAF-E21
+    name: anti_entropy_reconciler
+    priority: P1
+  - id: LSAF-E22
+    name: time_travel_execution_replay
+    priority: P1
+  - id: LSAF-E23
+    name: trust_decay
+    priority: P1
+  - id: LSAF-E24
+    name: blast_radius_budget
+    priority: P1
+  - id: LSAF-E25
+    name: degradation_ladder
+    priority: P1
+  - id: LSAF-E26
+    name: vendor_extinction_drill
+    priority: P2
+
+  - id: LSAF-E27
+    name: resource_aware_agent_scheduler
+    priority: P1
+  - id: LSAF-E28
+    name: lease_fencing_lock_recovery
+    priority: P1
+  - id: LSAF-E29
+    name: provider_credential_broker
+    priority: P1
+
+  - id: LSAF-E30
+    name: cloud_burst_pool
+    priority: P1
+  - id: LSAF-E31
+    name: human_authority_budget_and_signing_tiers
+    priority: P1
+
+  - id: LSAF-E32
+    name: intent_provenance_firewall
+    priority: P1
+  - id: LSAF-E33
+    name: agentic_security_certification_fabric
+    priority: P1
+  - id: LSAF-E34
+    name: compute_placement_planner
+    priority: P1
+  - id: LSAF-E35
+    name: executable_governance_conformance
+    priority: P1
+
+  - id: LSAF-E36
+    name: sovereign_compute_mesh
+    priority: P1
+  - id: LSAF-E37
+    name: project_virtual_cells
+    priority: P1
+
+  - id: LSAF-E38
+    name: execution_exchange_registry
+    priority: P1
+  - id: LSAF-E39
+    name: live_capacity_ledger_and_reset_calendar
+    priority: P1
+  - id: LSAF-E40
+    name: quota_reservation_and_circuit_breakers
+    priority: P1
+  - id: LSAF-E41
+    name: earliest_useful_completion_router
+    priority: P1

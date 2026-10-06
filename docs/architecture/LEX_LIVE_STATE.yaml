@@ -1,0 +1,117 @@
+schema_version: 1
+snapshot_id: LEX-LIVE-2026-10-06T05:22-Europe-Warsaw
+status: PARTIAL_LIVE
+generated_by: LUKART_Provider_Capacity_Sentinel
+rules:
+  unknown_is_available: false
+  paid_fallback: BLOCKED
+  stale_heavy_dispatch: BLOCKED
+
+routes:
+  groq-free:
+    status: READY
+    certification: LIVE_VERIFIED_FREE
+    credential_state: OWNER_CONFIRMED_DPAPI
+    telemetry:
+      source: response_headers_plus_account_limits
+      current_remaining: VERIFY_ON_NEXT_REQUEST
+      reset: HEADER_RELATIVE
+    official_limits:
+      openai/gpt-oss-120b:
+        rpm: 30
+        rpd: 1000
+        tpm: 8000
+        tpd: 200000
+      openai/gpt-oss-20b:
+        rpm: 30
+        rpd: 1000
+        tpm: 8000
+        tpd: 200000
+    last_known_evidence:
+      models_http: 200
+      inference_http: 200
+      qwen_response: UAOS_GROQ_OK
+      structured_json: PASS
+      repeatability: "3/3 PASS"
+      gpt_oss_120b_hardened: PASS
+      observed_requests_limit: 1000
+      observed_requests_remaining: 999
+      observed_tokens_limit: 8000
+      observed_tokens_remaining: 7886
+    freshness: STALE_UNTIL_NEXT_LIVE_REQUEST
+
+  ollama-cloud-free:
+    status: READY
+    certification: LIVE_VERIFIED_FREE_BOUNDED
+    credential_state: OWNER_CONFIRMED_DPAPI
+    concurrency_limit: 1
+    telemetry:
+      source: account_usage_dashboard
+      purchased_balance_usd: 0
+      auto_reload: false
+      included_usage_percent_displayed: 0
+      recent_controlled_requests_gpt_oss_20b: 2
+      reset_display: "in 4 weeks at observation"
+    freshness: ACCOUNT_EVIDENCE_2026-10-05
+
+  kaggle-t4x2:
+    status: BLOCKED_PENDING_OWNER_VERIFICATION
+    certification: NOT_CERTIFIED
+    resources:
+      gpu_count: 2
+      gpu_model: NVIDIA_T4
+      vram_gb_each: 16
+    reason: phone_verification_required
+
+  cloudflare-workers-ai-free:
+    status: VERIFY_ACCOUNT
+    certification: OFFICIAL_FREE_CANDIDATE
+    official_quota:
+      free_neurons_per_day: 10000
+      reset: "00:00 UTC"
+    blocked_paid_models:
+      - "@cf/moonshotai/kimi-k2.6"
+      - "@cf/moonshotai/kimi-k2.7-code"
+      - "@cf/zai-org/glm-5.2"
+    free_plan_examples_official:
+      - "@cf/zai-org/glm-4.7-flash"
+      - "@cf/google/gemma-4-26b-a4b-it"
+      - "@cf/nvidia/nemotron-3-120b-a12b"
+    account_remaining: UNKNOWN
+    routing_signal: UNKNOWN
+    notes: "Official free allocation verified; account-level synthetic certification/remaining still required before READY."
+
+  github-actions:
+    status: VERIFY_ACCOUNT_PLAN_AND_REMAINING
+    public_allowance:
+      free_minutes_month: 2000
+      pro_minutes_month: 3000
+
+  github-codespaces:
+    status: VERIFY_ACCOUNT_PLAN_AND_REMAINING
+    public_allowance:
+      free_core_hours_month: 120
+      pro_core_hours_month: 180
+
+  chatgpt-work:
+    status: HUMAN_START_REQUIRED
+    class: HEAVY_REASONING
+
+  codex:
+    status: VERIFY_ALLOWANCE_ON_DISPATCH
+    class: CODING_EXECUTOR
+
+  hermes:
+    status: VERIFY_RUNTIME
+    class: AGENT_EXECUTOR
+
+  tencent-octop:
+    status: PILOT_CANDIDATE
+    class: AGENT_ORCHESTRATOR
+
+next_actions:
+  - refresh Groq live response headers on next controlled request
+  - verify exact GitHub account plan and remaining Actions/Codespaces allowance
+  - certify Cloudflare Workers AI Free with synthetic request
+  - verify Hermes/WSL live runtime when remote telemetry is available
+  - run Kaggle T4x2 only after legitimate owner account verification
