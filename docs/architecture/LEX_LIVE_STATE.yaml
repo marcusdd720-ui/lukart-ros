@@ -1,7 +1,7 @@
 schema_version: 1
-snapshot_id: LEX-LIVE-2026-10-05T23:xx-Europe-Warsaw
+snapshot_id: LEX-LIVE-2026-10-06T05:22-Europe-Warsaw
 status: PARTIAL_LIVE
-generated_by: initial_manual_consolidation
+generated_by: LUKART_Provider_Capacity_Sentinel
 rules:
   unknown_is_available: false
   paid_fallback: BLOCKED
@@ -69,7 +69,17 @@ routes:
     official_quota:
       free_neurons_per_day: 10000
       reset: "00:00 UTC"
-    notes: "Some frontier models require paid plan; free-model allowlist must be live checked."
+    blocked_paid_models:
+      - "@cf/moonshotai/kimi-k2.6"
+      - "@cf/moonshotai/kimi-k2.7-code"
+      - "@cf/zai-org/glm-5.2"
+    free_plan_examples_official:
+      - "@cf/zai-org/glm-4.7-flash"
+      - "@cf/google/gemma-4-26b-a4b-it"
+      - "@cf/nvidia/nemotron-3-120b-a12b"
+    account_remaining: UNKNOWN
+    routing_signal: UNKNOWN
+    notes: "Official free allocation verified; account-level synthetic certification/remaining still required before READY."
 
   github-actions:
     status: VERIFY_ACCOUNT_PLAN_AND_REMAINING
