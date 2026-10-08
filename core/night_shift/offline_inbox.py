@@ -26,7 +26,10 @@ _TASK_FIELDS = frozenset(DispatchTask.__dataclass_fields__)
 
 
 def _canonical(value: dict) -> str:
-    return json.dumps(value, sort_keys=True, ensure_ascii=False, separators=(",", ":"), allow_nan=False)
+    return json.dumps(
+        value, sort_keys=True, ensure_ascii=False,
+        separators=(",", ":"), allow_nan=False,
+    )
 
 
 def _no_duplicate_keys(pairs: list[tuple[str, object]]) -> dict:
@@ -94,7 +97,7 @@ class InboxCapsule:
         return hashlib.sha256(self.serialized().encode("utf-8")).hexdigest()
 
     @classmethod
-    def parse(cls, raw: str) -> "InboxCapsule":
+    def parse(cls, raw: str) -> InboxCapsule:
         try:
             value = json.loads(raw, object_pairs_hook=_no_duplicate_keys)
             if not isinstance(value, dict) or set(value) != {
@@ -141,18 +144,25 @@ class OfflineTaskInbox:
 
     def enqueue(self, capsule: InboxCapsule, *, now_epoch: int) -> str:
         """Immutable/idempotent ingestion; caller must verify GitHub authorization."""
-        if type(now_epoch) is not int or not 0 <= now_epoch - capsule.observed_at_epoch <= capsule.max_age_seconds:
+        if (
+            type(now_epoch) is not int
+            or not 0 <= now_epoch - capsule.observed_at_epoch <= capsule.max_age_seconds
+        ):
             raise NightShiftContractError("task source snapshot is stale or future-dated")
         raw = capsule.serialized()
         sha = capsule.digest()
         with closing(self._connect()) as con:
             try:
                 con.execute("BEGIN IMMEDIATE")
-                row = con.execute("SELECT capsule_sha256 FROM offline_task_capsules WHERE task_id=?",
-                                  (capsule.task.task_id,)).fetchone()
+                row = con.execute(
+                    "SELECT capsule_sha256 FROM offline_task_capsules WHERE task_id=?",
+                    (capsule.task.task_id,),
+                ).fetchone()
                 if row is not None:
                     if row["capsule_sha256"] != sha:
-                        raise NightShiftContractError("task identity conflict: new task ID required")
+                        raise NightShiftContractError(
+                            "task identity conflict: new task ID required"
+                        )
                 else:
                     con.execute("""INSERT INTO offline_task_capsules (
                         task_id, capsule_json, capsule_sha256, recorded_at_epoch
