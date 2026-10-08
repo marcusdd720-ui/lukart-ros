@@ -22,5 +22,5 @@ jobs:
         run: pytest -q tests/test_night_shift_continuous_dispatcher.py tests/test_night_shift_leases.py tests/test_night_shift_receipts.py
       - name: Quality
         run: |
-          ruff check core/night_shift/process_agent_executor.py core/night_shift/_real_agent_fixture.py tests/test_night_shift_real_process_agents.py
+          ruff check --diff core/night_shift/process_agent_executor.py core/night_shift/_real_agent_fixture.py tests/test_night_shift_real_process_agents.py
           git diff --check
