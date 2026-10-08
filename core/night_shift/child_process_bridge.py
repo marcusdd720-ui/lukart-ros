@@ -216,12 +216,14 @@ class ChildProcessBridge:
             raise NightShiftContractError("old progress marker must be reconciled")
 
         now = int(time.time())
-        self.leases.require_current(
+        claimed = self.leases.require_current(
             task_id=plan.task_id,
             lease_id=plan.lease_id,
             fencing_token=plan.fencing_token,
             now_epoch=now,
         )
+        if claimed.worker_id != plan.worker_id:
+            raise NightShiftContractError("worker identity differs from lease owner")
         # One immutable intent blocks blind restart after crash, timeout, or
         # ambiguous exit. Recovery requires an external reconciliation decision.
         event_id = f"child-bridge:{plan.task_id}:intent"
@@ -237,12 +239,14 @@ class ChildProcessBridge:
 
         # Close the lease-loss race across intent persistence and POSIX spawn.
         # An intent with a lost lease stays blocked for explicit reconciliation.
-        self.leases.require_current(
+        claimed = self.leases.require_current(
             task_id=plan.task_id,
             lease_id=plan.lease_id,
             fencing_token=plan.fencing_token,
             now_epoch=int(time.time()),
         )
+        if claimed.worker_id != plan.worker_id:
+            raise NightShiftContractError("worker identity differs from lease owner")
 
         child: subprocess.Popen[bytes] | None = None
         last_progress: str | None = None
@@ -304,12 +308,14 @@ class ChildProcessBridge:
             # cannot attest independent, kernel-enforced process isolation.
             self._kill_group(child)
             # Completion is NOT test PASS, review approval, or promotion.
-            self.leases.require_current(
+            claimed = self.leases.require_current(
                 task_id=plan.task_id,
                 lease_id=plan.lease_id,
                 fencing_token=plan.fencing_token,
                 now_epoch=int(time.time()),
             )
+            if claimed.worker_id != plan.worker_id:
+                raise NightShiftContractError("worker identity differs from lease owner")
             evidence = ChildExitEvidence(
                 task_id=plan.task_id,
                 role=plan.role,
