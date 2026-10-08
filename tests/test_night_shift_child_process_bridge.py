@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import hashlib
 import os
+import sqlite3
 import subprocess
 import sys
 import time
@@ -291,3 +292,25 @@ def test_refuses_head_drift(rig):
     )
     with pytest.raises(NightShiftContractError, match="SHA drift"):
         bridge(rig).execute(plan)
+
+
+def test_lease_loss_between_intent_and_spawn_blocks_child(rig, monkeypatch):
+    leases, journal, plan = rig
+    real_append = journal.append_event
+
+    def expire_after_intent(**kwargs):
+        accepted = real_append(**kwargs)
+        if kwargs["event_type"] == "CHILD_LAUNCH_INTENT":
+            with sqlite3.connect(leases.path) as con:
+                con.execute(
+                    "UPDATE leases SET expires_at_epoch=0 WHERE task_id=?",
+                    (plan.task_id,),
+                )
+        return accepted
+
+    monkeypatch.setattr(journal, "append_event", expire_after_intent)
+    with pytest.raises(NightShiftContractError, match="expired"):
+        bridge(rig).execute(plan)
+    assert not (plan.worktree / "result.txt").exists()
+    events = journal.events(workflow_id=f"child-bridge:{plan.task_id}")
+    assert [e.event_type for e in events] == ["CHILD_LAUNCH_INTENT"]
