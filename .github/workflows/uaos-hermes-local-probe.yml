@@ -1,0 +1,23 @@
+name: UAOS Hermes Local Probe
+on:
+  push:
+    branches: [ops/autonomy-recovery-2026-10-08]
+permissions:
+  contents: read
+jobs:
+  probe:
+    runs-on: [self-hosted, Linux, X64, lukart-stage11]
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+      - name: Probe local Hermes installation
+        shell: bash
+        run: |
+          set -euo pipefail
+          command -v hermes
+          hermes --version
+          hermes auth status || true
+          echo "HERMES_LOCAL_PROBE=PASS"
