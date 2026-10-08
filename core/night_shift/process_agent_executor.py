@@ -94,9 +94,19 @@ class BoundedProcessAgentExecutor:
     ) -> None:
         executor_id = executor_id.strip()
         root = Path(workspace_root).resolve(strict=False)
-        allowed = tuple(sorted({Path(item).name.lower() for item in allowed_executables if item.strip()}))
+        allowed = tuple(
+            sorted(
+                {
+                    Path(item).name.lower()
+                    for item in allowed_executables
+                    if item.strip()
+                }
+            )
+        )
         if not executor_id or not allowed:
-            raise NightShiftContractError("process-agent executor identity/allowlist is invalid")
+            raise NightShiftContractError(
+                "process-agent executor identity/allowlist is invalid"
+            )
         if tail_lines < 1:
             raise NightShiftContractError("tail_lines must be positive")
         self.executor_id = executor_id
