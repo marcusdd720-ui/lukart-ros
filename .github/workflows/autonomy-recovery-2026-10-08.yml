@@ -1,0 +1,54 @@
+name: ROS UAOS Autonomy Recovery Evidence
+on:
+  push:
+    branches: [ops/autonomy-recovery-2026-10-08]
+permissions:
+  contents: read
+jobs:
+  autonomy-evidence:
+    runs-on: ubuntu-latest
+    env:
+      SUBJECT_SHA: 7900bea704669c73e01c167b807a242f2e28d9cb
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.SUBJECT_SHA }}
+          fetch-depth: 0
+      - name: Exact SHA
+        run: test "$(git rev-parse HEAD)" = "$SUBJECT_SHA"
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install
+        run: python -m pip install -e '.[dev]'
+      - name: Night Shift autonomy regression
+        run: |
+          pytest -q \
+            tests/test_night_shift_continuous_dispatcher.py \
+            tests/test_night_shift_scheduler.py \
+            tests/test_night_shift_engine.py \
+            tests/test_night_shift_shadow_e2e.py \
+            tests/test_night_shift_controlled_pilot.py \
+            tests/test_night_shift_failure_injection.py \
+            tests/test_night_shift_verification.py \
+            tests/test_night_shift_runtime_pilot.py \
+            tests/test_night_shift_runtime_promotion_readiness.py
+      - name: Controlled local canary
+        run: |
+          mkdir -p reports
+          python scripts/night_shift_controlled_canary.py | tee reports/autonomy_canary_2026-10-08.json
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          p=json.loads(Path("reports/autonomy_canary_2026-10-08.json").read_text())
+          assert p["mode"]=="CONTROLLED_LOCAL_CANARY"
+          assert p["rollback_verified"] is True
+          assert p["published"] is False
+          assert p["shadow_debt_value"] < 10
+          assert p["shadow_sample_count"] >= 3
+          print("AUTONOMY_RECOVERY_EVIDENCE=PASS")
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ros-uaos-autonomy-evidence-7900bea
+          path: reports/autonomy_canary_2026-10-08.json
