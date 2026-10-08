@@ -12,7 +12,6 @@ from core.night_shift.process_agent_executor import (
     ProcessAgentRequest,
 )
 
-
 FIXTURE = (
     Path(__file__).resolve().parents[1]
     / "core"
