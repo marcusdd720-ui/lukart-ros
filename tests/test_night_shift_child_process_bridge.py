@@ -314,3 +314,12 @@ def test_lease_loss_between_intent_and_spawn_blocks_child(rig, monkeypatch):
     assert not (plan.worktree / "result.txt").exists()
     events = journal.events(workflow_id=f"child-bridge:{plan.task_id}")
     assert [e.event_type for e in events] == ["CHILD_LAUNCH_INTENT"]
+
+
+def test_worker_identity_mismatch_cannot_impersonate_owner(rig):
+    _, journal, plan = rig
+    forged = replace(plan, worker_id="impersonator")
+    with pytest.raises(NightShiftContractError, match="worker identity"):
+        bridge(rig).execute(forged)
+    assert journal.events(workflow_id=f"child-bridge:{plan.task_id}") == ()
+    assert not (plan.worktree / "result.txt").exists()
