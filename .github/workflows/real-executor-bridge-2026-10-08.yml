@@ -1,0 +1,26 @@
+name: ROS UAOS Real Executor Bridge
+on:
+  push:
+    branches: [ops/real-executor-bridge-2026-10-08]
+  pull_request:
+    branches: [main]
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: python -m pip install -e '.[dev]'
+      - name: Real process builder/reviewer handoff
+        run: pytest -q tests/test_night_shift_real_process_agents.py
+      - name: Dispatcher liveness regression
+        run: pytest -q tests/test_night_shift_continuous_dispatcher.py tests/test_night_shift_leases.py tests/test_night_shift_receipts.py
+      - name: Quality
+        run: |
+          ruff check core/night_shift/process_agent_executor.py core/night_shift/_real_agent_fixture.py tests/test_night_shift_real_process_agents.py
+          git diff --check
