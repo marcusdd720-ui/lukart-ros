@@ -134,18 +134,30 @@ class ChildProcessBridge:
         self.reviewer_isolation_checker = reviewer_isolation_checker
 
     @staticmethod
-    def _git_head(path: Path) -> str:
+    def _require_task_worktree(path: Path, expected_sha: str) -> None:
+        """Never launch against main, detached HEAD, or a dirty shared worktree."""
         try:
-            result = subprocess.run(
-                ["git", "-C", str(path), "rev-parse", "HEAD"],
-                check=True,
-                capture_output=True,
-                text=True,
-                timeout=5,
-            )
+            def git(*args: str) -> str:
+                return subprocess.run(
+                    ["git", "-C", str(path), *args],
+                    check=True,
+                    capture_output=True,
+                    text=True,
+                    timeout=5,
+                ).stdout.strip()
+
+            head = git("rev-parse", "HEAD")
+            root = git("rev-parse", "--show-toplevel")
+            branch = git("symbolic-ref", "--quiet", "--short", "HEAD")
+            status = git("status", "--porcelain", "--untracked-files=all")
         except (OSError, subprocess.SubprocessError) as exc:
-            raise NightShiftContractError("worktree HEAD cannot be verified") from exc
-        return result.stdout.strip()
+            raise NightShiftContractError("task worktree cannot be verified") from exc
+        if Path(root).resolve() != path or not branch.startswith("night-shift/"):
+            raise NightShiftContractError("dedicated night-shift worktree required")
+        if head != expected_sha:
+            raise NightShiftContractError("worktree SHA drift")
+        if status:
+            raise NightShiftContractError("task worktree is not clean")
 
     @staticmethod
     def _hash_executable(path: Path) -> str:
@@ -192,8 +204,12 @@ class ChildProcessBridge:
             raise NightShiftContractError("invalid child executable/worktree")
         if self._hash_executable(executable) != plan.executable_sha256:
             raise NightShiftContractError("executable identity mismatch")
-        if self._git_head(worktree) != plan.base_sha:
-            raise NightShiftContractError("worktree SHA drift")
+        if any(
+            item.event_type == "CHILD_LAUNCH_INTENT"
+            for item in self.journal.events(workflow_id=f"child-bridge:{plan.task_id}")
+        ):
+            raise NightShiftContractError("launch already recorded; reconcile first")
+        self._require_task_worktree(worktree, plan.base_sha)
 
         progress_path = worktree / plan.progress_name
         if progress_path.exists() or progress_path.is_symlink():
