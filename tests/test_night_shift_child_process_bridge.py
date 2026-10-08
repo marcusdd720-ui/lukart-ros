@@ -40,6 +40,10 @@ def rig(tmp_path: Path):
         ],
         check=True,
     )
+    subprocess.run(
+        ["git", "-C", str(root), "checkout", "-qb", "night-shift/bridge-fixture"],
+        check=True,
+    )
     head = subprocess.check_output(
         ["git", "-C", str(root), "rev-parse", "HEAD"], text=True
     ).strip()
@@ -250,3 +254,40 @@ def test_parallel_claim_same_task_creates_at_most_one_child(rig):
     assert sorted(results) == ["BLOCKED", "EXITED_ZERO"]
     events = rig[1].events(workflow_id=f"child-bridge:{plan.task_id}")
     assert sum(e.event_type == "CHILD_STARTED" for e in events) == 1
+
+
+def test_refuses_non_task_branch_even_at_same_sha(rig):
+    plan = rig[2]
+    subprocess.run(
+        ["git", "-C", str(plan.worktree), "checkout", "-qb", "main"],
+        check=True,
+    )
+    with pytest.raises(NightShiftContractError, match="dedicated night-shift"):
+        bridge(rig).execute(plan)
+    assert rig[1].events(workflow_id=f"child-bridge:{plan.task_id}") == ()
+
+
+def test_refuses_dirty_task_worktree_without_launch(rig):
+    plan = rig[2]
+    (plan.worktree / "unowned.txt").write_text("other work")
+    with pytest.raises(NightShiftContractError, match="not clean"):
+        bridge(rig).execute(plan)
+    assert not (plan.worktree / "result.txt").exists()
+
+
+def test_refuses_head_drift(rig):
+    plan = rig[2]
+    (plan.worktree / "fresh.txt").write_text("new revision")
+    subprocess.run(
+        ["git", "-C", str(plan.worktree), "add", "."], check=True
+    )
+    subprocess.run(
+        [
+            "git", "-C", str(plan.worktree),
+            "-c", "user.name=Test", "-c", "user.email=synthetic.invalid",
+            "commit", "-qm", "candidate drift",
+        ],
+        check=True,
+    )
+    with pytest.raises(NightShiftContractError, match="SHA drift"):
+        bridge(rig).execute(plan)
