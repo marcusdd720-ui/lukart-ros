@@ -32,7 +32,9 @@ def test_restart_recovers_intact_queue(tmp_path: Path):
     digest = first.enqueue(c, now_epoch=110)
     assert OfflineTaskInbox(path).snapshot() == (c,)
     assert OfflineTaskInbox(path).enqueue(c, now_epoch=120) == digest
-    assert first.next_safe_local_probe(now_epoch=120).task_id == "T1"
+    selected = first.next_safe_local_probe(now_epoch=120)
+    assert selected is not None
+    assert selected.task_id == "T1"
 
 
 def test_enqueued_task_cannot_be_silently_redefined(tmp_path: Path):
@@ -120,4 +122,6 @@ def test_verified_lease_state_unlocks_readonly_dependent_probe(tmp_path: Path):
         lease_id=lease.lease_id, fencing_token=lease.fencing_token,
         now_epoch=113,
     )
-    assert inbox.next_safe_local_probe(now_epoch=120).task_id == "T2"
+    selected = inbox.next_safe_local_probe(now_epoch=120)
+    assert selected is not None
+    assert selected.task_id == "T2"
