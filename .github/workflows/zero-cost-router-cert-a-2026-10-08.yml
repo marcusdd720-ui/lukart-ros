@@ -1,0 +1,76 @@
+name: Zero-Cost Router Certification A
+on:
+  push:
+    branches:
+      - ops/zero-cost-router-cert-2026-10-08
+permissions:
+  contents: read
+jobs:
+  certification-a:
+    runs-on: ubuntu-latest
+    env:
+      SUBJECT_SHA: 7900bea704669c73e01c167b807a242f2e28d9cb
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.SUBJECT_SHA }}
+      - name: Assert exact source
+        run: test "$(git rev-parse HEAD)" = "$SUBJECT_SHA"
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: python -m pip install -e '.[dev]'
+      - name: Deterministic router regression
+        run: pytest -q tests/test_night_shift_continuous_dispatcher.py
+      - name: Live public zero-price discovery
+        run: |
+          mkdir -p reports
+          python - <<'PY'
+          import json, urllib.request
+          from datetime import datetime, timezone
+          from pathlib import Path
+
+          url="https://openrouter.ai/api/v1/models"
+          req=urllib.request.Request(url,headers={"User-Agent":"LUKART-ZeroCost-Cert/1.0"})
+          with urllib.request.urlopen(req,timeout=30) as resp:
+              data=json.load(resp)
+          zero=[]
+          for m in data.get("data",[]):
+              p=m.get("pricing") or {}
+              try:
+                  prompt=float(p.get("prompt"))
+                  completion=float(p.get("completion"))
+              except (TypeError,ValueError):
+                  continue
+              if prompt==0.0 and completion==0.0:
+                  zero.append({
+                      "id":m.get("id"),
+                      "name":m.get("name"),
+                      "context_length":m.get("context_length"),
+                      "prompt_price":p.get("prompt"),
+                      "completion_price":p.get("completion"),
+                  })
+          zero=sorted(zero,key=lambda x:x["id"] or "")
+          assert len(zero)>=2, f"need >=2 zero-price candidates, got {len(zero)}"
+          report={
+              "contract":"urn:lukart:zero-cost-router:discovery-evidence:1.0.0",
+              "subject_sha":"7900bea704669c73e01c167b807a242f2e28d9cb",
+              "observed_at":datetime.now(timezone.utc).isoformat(),
+              "source":url,
+              "zero_price_candidate_count":len(zero),
+              "candidates":zero,
+              "inference_executed":False,
+              "paid_fallback_authorized":False,
+              "phase":"A_PUBLIC_DISCOVERY",
+              "result":"PASS",
+          }
+          Path("reports/zero_cost_router_phase_a.json").write_text(
+              json.dumps(report,indent=2,sort_keys=True)+"\n",encoding="utf-8"
+          )
+          print(f"ZERO_COST_CANDIDATES={len(zero)}")
+          print("ZERO_COST_ROUTER_PHASE_A=PASS")
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: zero-cost-router-phase-a-7900bea
+          path: reports/zero_cost_router_phase_a.json
