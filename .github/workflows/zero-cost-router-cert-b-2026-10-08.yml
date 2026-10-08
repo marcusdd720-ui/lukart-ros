@@ -1,0 +1,135 @@
+name: Zero-Cost Router Certification B
+on:
+  push:
+    branches:
+      - ops/zero-cost-router-cert-2026-10-08
+permissions:
+  contents: read
+jobs:
+  certification-b:
+    runs-on: ubuntu-latest
+    env:
+      SUBJECT_SHA: 7900bea704669c73e01c167b807a242f2e28d9cb
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.SUBJECT_SHA }}
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: python -m pip install -e '.[dev]'
+      - name: Failover and paid-route fail-closed regression
+        run: |
+          pytest -q tests/test_night_shift_continuous_dispatcher.py
+      - name: Live zero-price multi-candidate route evidence
+        run: |
+          mkdir -p reports
+          python - <<'PY'
+          import json
+          import urllib.request
+          from datetime import datetime, timezone
+          from pathlib import Path
+          from core.night_shift.continuous_dispatcher import (
+              ProviderCandidate,
+              ProviderState,
+              select_zero_cost_provider,
+          )
+
+          url="https://openrouter.ai/api/v1/models"
+          req=urllib.request.Request(url,headers={"User-Agent":"LUKART-ZeroCost-Cert-B/1.0"})
+          with urllib.request.urlopen(req,timeout=30) as resp:
+              payload=json.load(resp)
+
+          zero=[]
+          for model in payload.get("data",[]):
+              price=model.get("pricing") or {}
+              try:
+                  prompt=float(price.get("prompt"))
+                  completion=float(price.get("completion"))
+              except (TypeError,ValueError):
+                  continue
+              if prompt==0.0 and completion==0.0 and model.get("id"):
+                  zero.append(model["id"])
+          zero=sorted(set(zero))
+          assert len(zero)>=2
+
+          # Simulate first verified-free route exhausted and prove fallback to
+          # a second independently identified zero-price route.
+          candidates=(
+              ProviderCandidate(
+                  zero[0],
+                  ProviderState.QUOTA_EXHAUSTED,
+                  frozenset({"code"}),
+                  True,
+                  True,
+                  100,
+              ),
+              ProviderCandidate(
+                  zero[1],
+                  ProviderState.AVAILABLE,
+                  frozenset({"code"}),
+                  True,
+                  True,
+                  90,
+              ),
+              ProviderCandidate(
+                  "paid-or-unknown-route",
+                  ProviderState.AVAILABLE,
+                  frozenset({"code"}),
+                  True,
+                  False,
+                  1000,
+              ),
+          )
+          selected=select_zero_cost_provider(
+              candidates,
+              required_capability="code",
+              private_data=False,
+          )
+          assert selected is not None
+          assert selected.provider_id==zero[1]
+          assert selected.zero_cost_verified is True
+
+          # Exhaust all verified-free routes: fail closed, never select the
+          # higher-scored paid/unknown route.
+          exhausted=(
+              ProviderCandidate(
+                  zero[0], ProviderState.QUOTA_EXHAUSTED, frozenset({"code"}), True, True, 100
+              ),
+              ProviderCandidate(
+                  zero[1], ProviderState.RATE_LIMITED, frozenset({"code"}), True, True, 90
+              ),
+              ProviderCandidate(
+                  "paid-or-unknown-route", ProviderState.AVAILABLE, frozenset({"code"}), True, False, 1000
+              ),
+          )
+          assert select_zero_cost_provider(
+              exhausted,
+              required_capability="code",
+              private_data=False,
+          ) is None
+
+          report={
+              "contract":"urn:lukart:zero-cost-router:phase-b-evidence:1.0.0",
+              "subject_sha":"7900bea704669c73e01c167b807a242f2e28d9cb",
+              "observed_at":datetime.now(timezone.utc).isoformat(),
+              "live_zero_price_candidates":len(zero),
+              "fallback_from":zero[0],
+              "fallback_to":zero[1],
+              "unverified_paid_route_selected":False,
+              "all_free_unavailable_result":"FAIL_CLOSED",
+              "live_inference_executed":False,
+              "result":"PASS",
+          }
+          Path("reports/zero_cost_router_phase_b.json").write_text(
+              json.dumps(report,indent=2,sort_keys=True)+"\n",
+              encoding="utf-8",
+          )
+          print(f"ZERO_COST_LIVE_CANDIDATES={len(zero)}")
+          print(f"ZERO_COST_FALLBACK={zero[0]} -> {zero[1]}")
+          print("ZERO_COST_ROUTER_PHASE_B=PASS")
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: zero-cost-router-phase-b-7900bea
+          path: reports/zero_cost_router_phase_b.json
