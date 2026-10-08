@@ -88,7 +88,8 @@ def assess_legal_os_readonly(
             work_reader(capability, tenant, work_case, candidate, type_id),
             "native_work_snapshot",
         )
-        exact_keys(native, _SNAPSHOT_FIELDS, "native_work_snapshot")
+        if set(native) != _SNAPSHOT_FIELDS:
+            raise OperationContractError("LEGAL_OS_NATIVE_SCHEMA_INVALID")
         if (
             native["tenant_id"] != tenant
             or native["case_id"] != work_case
