@@ -177,8 +177,8 @@ class ChildProcessBridge:
 
     @staticmethod
     def _kill_group(child: subprocess.Popen[bytes]) -> None:
-        if child.poll() is not None:
-            return
+        # The leader may have exited while descendants remain in its session.
+        # Do not interpret leader exit as proof that the entire group stopped.
         try:
             os.killpg(child.pid, signal.SIGKILL)
         except ProcessLookupError:
@@ -234,6 +234,15 @@ class ChildProcessBridge:
         )
         if not inserted:
             raise NightShiftContractError("launch already recorded; reconcile first")
+
+        # Close the lease-loss race across intent persistence and POSIX spawn.
+        # An intent with a lost lease stays blocked for explicit reconciliation.
+        self.leases.require_current(
+            task_id=plan.task_id,
+            lease_id=plan.lease_id,
+            fencing_token=plan.fencing_token,
+            now_epoch=int(time.time()),
+        )
 
         child: subprocess.Popen[bytes] | None = None
         last_progress: str | None = None
@@ -291,6 +300,9 @@ class ChildProcessBridge:
                     )
                     last_beat_at = time.monotonic()
 
+            # Reap any remaining same-session descendants. An exit code alone
+            # cannot attest independent, kernel-enforced process isolation.
+            self._kill_group(child)
             # Completion is NOT test PASS, review approval, or promotion.
             self.leases.require_current(
                 task_id=plan.task_id,
