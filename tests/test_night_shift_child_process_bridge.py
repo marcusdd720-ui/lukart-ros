@@ -35,7 +35,7 @@ def rig(tmp_path: Path):
         [
             "git", "-C", str(root),
             "-c", "user.name=Test",
-            "-c", "user.email=test@example.invalid",
+            "-c", "user.email=synthetic.invalid",
             "commit", "-qm", "baseline",
         ],
         check=True,
