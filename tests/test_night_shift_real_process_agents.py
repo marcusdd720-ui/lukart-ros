@@ -13,7 +13,12 @@ from core.night_shift.process_agent_executor import (
 )
 
 
-FIXTURE = Path(__file__).resolve().parents[1] / "core" / "night_shift" / "_real_agent_fixture.py"
+FIXTURE = (
+    Path(__file__).resolve().parents[1]
+    / "core"
+    / "night_shift"
+    / "_real_agent_fixture.py"
+)
 
 
 def test_real_mutating_builder_then_distinct_reviewer_handoff(tmp_path: Path) -> None:
