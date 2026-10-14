@@ -1,8 +1,8 @@
 # LUKART ROS — Standard operacyjny spraw prywatnych
 
-Wersja: **1.4.0**  
-Status: **AKTYWNY STANDARD OPERATORA**  
-Obowiązuje od: **2026-10-05**  
+Wersja: **1.5.0**  
+Status: **AKTYWNY STANDARD OPERATORA — po zatwierdzonym scaleniu do `main`**  
+Obowiązuje od: **2026-10-14, od chwili zatwierdzonego scalenia do `main`**  
 Zakres: **wszystkie rzeczywiste sprawy prywatne CASE**
 
 ## 1. Hierarchia źródeł nadrzędnych i rola dokumentu
@@ -352,7 +352,7 @@ Obszerne uzasadnienie NIE MOŻE przesłaniać żądania.
 
 ### 6.3 Oszczędność powoływania źródeł prawa — przepisy mają pełnić funkcję
 
-Źródła prawne służą argumentacji, a nie dekoracji.
+Źródła prawne służą argumentacji, a nie dekoracji. **Weryfikacja właściwych aktualnych przepisów i adekwatnego orzecznictwa jest obowiązkowa dla istotnego zagadnienia prawnego niezależnie od długości pisma; cytowanie jest selektywne i musi realnie wspierać żądanie.** Obowiązuje jeden próg jakości określony w § 8.1–8.2.
 
 Należy preferować najmniejszy wystarczający zbiór aktualnych i autorytatywnych przepisów oraz orzeczeń, które istotnie potwierdzają:
 - dopuszczalność, legitymację i kompetencję;
@@ -528,15 +528,61 @@ Preferowany schemat dla spraw złożonych:
 
 Gdy jest to praktyczne, należy zachowywać skróty i wersje artefaktów wystarczające do odtworzenia przyczyn sporządzenia konkretnej wersji pisma.
 
-## 8. Skalowanie stopnia szczegółowości do złożoności sprawy
+## 8. Adaptacyjny przebieg CASE — minimum powtórzeń, pełne kontrole krytyczne
 
-Standard nie może być słabszy w prostych sprawach ani bez powodu nadmiernie biurokratyczny.
+### 8.1 Jeden niezmienny standard jakości — LUKART HARDCORE ENTERPRISE / UNIVERSUM
 
-- Prosta sprawa: skrócony przebieg czynności przy zachowaniu tych samych niezmienników.
-- Istotna sprawa prawna lub finansowa: pełne kontrole.
-- Sprawa wysokiego ryzyka, wielostronna lub prowadzona przed wieloma organami: pełne kontrole, analiza kontradyktoryjna, jawna mapa zależności oraz silniejsze potwierdzenie pochodzenia dowodów i odtwarzalności.
+**Każda rzeczywista sprawa CASE i każde pismo mają jeden, najwyższy poziom wymaganej staranności prawnej, dowodowej, procesowej i redakcyjnej.** Nie ustanawia się klas jakości, poziomów usług ani uproszczonego standardu poprawności zależnego od długości pisma, liczby dokumentów, wartości sporu lub liczby postępowań. Krótkie pismo może spełniać ten sam standard co obszerne pismo procesowe: o jakości decydują trafność żądania, prawo, dowody i skuteczność, a nie długość, liczba cytatów lub czas analizy.
 
-**Najlepiej uzasadnione rozwiązanie != najbardziej skomplikowane rozwiązanie.**
+Dziewięć etapów (§ 13.2) jest mapą kontroli i nawigacji, a **nie** obowiązkiem wykonania dziewięciu odrębnych analiz, wyszukiwań, raportów lub rund pytań do operatora. G0–G8 i G7.5 pozostają obowiązującymi granicami bezpieczeństwa tam, gdzie mają zastosowanie; ich wynik może powstawać w jednym przebiegu lub zostać odziedziczony z wcześniej zweryfikowanego, wciąż aktualnego stanu CASE z jawnie zachowaną proweniencją. Brak rzeczywistej kontroli nigdy nie staje się `PASS`.
+
+Interfejs operatora przedstawia domyślnie trzy **obszary pracy, a nie poziomy jakości**: **ANALIZA → PISMO → FINALIZACJA I WYKONANIE**. Pełna mapa dziewięciu etapów i statusy poszczególnych kontroli pozostają dostępne na żądanie. Nie należy tworzyć dodatkowych ekranów i raportów, gdy nie wpływają na decyzję lub bezpieczeństwo.
+
+### 8.2 Uniwersalne kryteria jakości i proporcjonalność nakładu
+
+Każde pismo musi przed `SEND_READY` przejść te same **kryteria jakości**, a zakres wykonanych czynności ma odpowiadać rzeczywistemu ryzyku i potrzebie decyzyjnej:
+
+1. **Cel i dopuszczalność:** jednoznaczny adresat, strona i umocowanie, właściwość organu, etap postępowania, właściwy środek ochrony i droga wniesienia; petitum możliwe do rozpoznania i wykonania.
+2. **Dowody:** każda istotna okoliczność ma źródło i właściwy status `FACT/CLAIM/INTERPRETATION/UNKNOWN/UNRESOLVED`; sprzeczności i luki są ujawnione, a nie rozstrzygane domysłem.
+3. **Aktualne przepisy:** sprawdzić istotne podstawy materialne i procesowe w oficjalnych źródłach odpowiednich dla jurysdykcji i właściwej daty, w tym brzmienie oraz zastosowanie konkretnych artykułów. W piśmie wskazać przepisy realnie wspierające żądanie; jeśli przytoczenie artykułu byłoby nieadekwatne dla czynności o charakterze wyłącznie faktycznym albo formularzowym, odnotować uzasadnione `N/A` w kontroli wewnętrznej, nie dopisywać pozornej podstawy.
+4. **Orzecznictwo:** dla istotnego zagadnienia prawnego sprawdzić adekwatne i przeciwne orzeczenia właściwych sądów, w pierwszej kolejności źródła pierwotne; weryfikować sygnaturę, datę, tezę, stan faktyczny i aktualność. W piśmie przywołać rzeczywiste orzeczenie, jeśli istotnie wspiera lub ogranicza argumentację; brak relewantnego orzeczenia oznaczyć wewnętrznie, nigdy nie tworzyć sygnatur ani dekoracyjnych cytatów.
+5. **Argumentacja i siła procesowa:** stanowczy, profesjonalny język prawniczy, związek `żądanie → fakt/dowód → norma → zastosowanie`, właściwy ciężar dowodu oraz odpowiedź na najważniejszy realny kontrargument. Mocne petitum nie może wykraczać poza dowody ani kompetencję adresata.
+6. **Terminy i wykonanie:** każda istotna data, doręczenie, termin, sygnatura, ścieżka wniesienia, podpis, załącznik i dane stron muszą mieć właściwy status weryfikacyjny; krytyczny brak blokuje zależną czynność, nie jest uzupełniany domysłem.
+7. **Kontrola kontradyktoryjna i integralność:** faktyczny Red Team, Hardcore Preflight, ZERO SILENT LOSS, kontrola prywatności oraz G7.5 `FINISH` końcowego artefaktu są obowiązkowe; stopień rozbudowania testu jest proporcjonalny do ryzyka, **ale żaden krytyczny warunek dopuszczenia nie jest obniżany**. Zmiana po `FINISH_PASS` unieważnia ten wynik.
+8. **Decyzja o gotowości:** `SEND_READY` tylko przy kompletnych kontrolach krytycznych, właściwych źródłach i braku blockerów; wysłanie/złożenie wyłącznie po odrębnej autoryzacji. Nie obiecywać skutku procesowego ani wyniku sprawy.
+
+**Adaptacyjny jest tylko nakład pracy, nigdy jakość:** jedno zagadnienie i jeden komplet dowodów mogą być zweryfikowane oraz opracowane w jednym przebiegu bez mnożenia raportów. Przy wielu organach, spornych doręczeniach, rachunkach, tytułach wykonawczych, przedawnieniu, sprzecznościach lub istotnym ryzyku rozszerzyć analizę i oddzielić postępowania w sub-CASE. Oceny dokonuje się na podstawie ryzyka terminu, liczby niezależnych procedur, zależności dowodowych, rozliczeń, konfliktów i skutku możliwego błędu, a nie przez nadanie sprawie etykiety jakościowej. Krytyczny brak blokuje tylko czynności od niego zależne; reszta prac toczy się bez resetu.
+
+### 8.3 Struktura spraw wielowątkowych
+
+Dla spraw obejmujących kilka autonomicznych postępowań lub istotne zależności prowadzić poniższe widoki jako projekcje z Canonical Case Ledger, a nie alternatywne źródła prawdy:
+
+1. **CASE MASTER** — wspólny cel, stan nadrzędny, mapa powiązań, priorytety i najbliższe nieodwracalne terminy; bez wielokrotnego kopiowania pełnych analiz sub-CASE.
+2. **Sub-CASE** — każde odrębne postępowanie/środek ochrony ma własne żądania, termin, stronę uprawnioną, organ, drogę wniesienia, status i plan pisma. Powiązania między sprawami są jawne i autoryzowane; materiał z jednej nie przechodzi automatycznie do drugiej.
+3. **Evidence Index** — pojedyncza rejestracja oryginału z identyfikatorem, źródłem, datą, skrótem/deduplikacją, zakresem i odnośnikami do wszystkich zagadnień, których dotyczy. Oryginały niezmienione; przeszukiwanie selektywne. Kopia, skan i wcześniejsze streszczenie nie stają się nowymi faktami przez samo powtórzenie.
+4. **Event/Deadline Ledger** — daty czynności, doręczeń i dowodów odbioru; osobne wyzwalacze i reguły prawne dla każdego terminu oraz ich statusy VERIFIED/PROVISIONAL/UNKNOWN.
+5. **Financial/Enforcement Ledger**, gdy dotyczy — każdą transakcję i czynność egzekucyjną powiązać z dowodem; rozdzielić wpłatę od jej zaksięgowania, a należność główną od odsetek i kosztów. Rozliczać według funduszu, okresu, tytułu, daty i rodzaju alokacji; stosować obliczenia deterministyczne z uzgodnieniem sald i kontrolą duplikatów. Nie wnioskować o podwójnej zapłacie ani przedawnieniu jedynie z podobieństwa kwot, tytułów lub dat.
+6. **Issue/Dependency Map** — dla każdego zagadnienia: dowody, sporne twierdzenia, norma, istotne orzecznictwo, brak, zależne decyzje i pisma. Wzajemne powiązanie jest relacją dowodową, nie automatycznym połączeniem postępowań.
+
+Dane rzeczywistych klientów, ich liczby, nazwiska, sygnatury i dokumenty pozostają lokalnie/prywatnie. Repozytorium publiczne przechowuje tylko ogólne reguły i dane syntetyczne.
+
+### 8.4 Obsługa nowego materiału bez resetu
+
+Domyślny mechanizm kontynuacji:
+
+`NEW DOCUMENT → SOURCE INTAKE → DEDUP/IDENTITY → FACT/CLAIM CLASSIFICATION → DELTA → DEPENDENCY IMPACT → DEADLINE/RISK PRIORITY → ONLY AFFECTED RECHECK → NEXT ACTION`.
+
+**Zgodność z CIRP:** nowy materialny dokument lub zmienione krytyczne wejście wymaga nowego przebiegu CIRP z własną tożsamością wejść (`CIRPRunIdentity`); nie nadpisuje to wcześniejszego przebiegu i nie resetuje CASE. Ponowne wykorzystanie wcześniejszej kontroli jest dozwolone wyłącznie po potwierdzeniu zgodności zakresu CASE, dowodów i ich pochodzenia, identyfikatorów reguł, aktualności źródeł oraz braku wpływu nowego materiału na kontrolowany wynik. Każdy odziedziczony wynik musi zachować identyfikator przebiegu źródłowego i nowego przebiegu CIRP, zakres kontroli, pochodzenie dowodów oraz jawną decyzję o aktualności; `PASS` wolno odziedziczyć wyłącznie po spełnieniu tych warunków. Stosować istniejące mechanizmy selekcji zweryfikowanych dowodów, projekcji i replay CIRP; nowa tożsamość przebiegu nie uprawnia do deklarowania `IDENTICAL` replay starego wyniku ani do odziedziczenia nieaktualnego `PASS`.
+
+W pierwszej kolejności sprawdzić, czy nowe pismo uruchamia pilny termin albo zmienia status doręczenia. Następnie porównać je z istniejącym indeksem i ustaleniami. Nie czytać ponownie wszystkich historycznych materiałów, jeżeli nie występuje konkretna sprzeczność, brak pochodzenia, zmiana normy, brak integralności lub zależność wymagająca ponownej oceny. Nowy dowód może ponownie otworzyć zatwierdzoną kontrolę tylko gdy podważa jej przesłankę; pozostałe wyniki zachowują historię, ważność i proweniencję.
+
+Nie wykonywać ponownie tego samego researchu prawnego przy każdej czynności, jeśli aktualność normy, stan faktyczny i zakres zastosowania są nadal zweryfikowane. **Każde nowe istotne twierdzenie prawne i każdą potencjalnie zmienioną regułę trzeba jednak zweryfikować w źródłach aktualnych dla danej daty; przegląd adekwatnego orzecznictwa jest obowiązkowy, lecz brak relewantnego orzeczenia nie uzasadnia wymyślania ani dekoracyjnego cytowania go w piśmie.**
+
+### 8.5 Minimalny wynik operatora
+
+Po istotnej czynności zamiast obszernego raportu podawać w jednym krótkim widoku: `CASE → OBSZAR/ETAP → CO NOWE/ZWERYFIKOWANO → STATUS → BLOKER (jeśli jest) → NASTĘPNA CZYNNOŚĆ`. Dla wielowątkowego CASE dodać mapę sub-CASE i priorytetowej kolejki. Rozwinięte kontrole lub historia pozostają dostępne na żądanie.
+
+**Najlepiej uzasadnione rozwiązanie != najbardziej skomplikowane rozwiązanie.** Uproszczenie interfejsu i liczby powtarzanych czynności nie obniża rygoru dowodowego, prawnego, procesowego, prywatności ani FINISH.
 
 ## 9. Pytania do operatora lub użytkownika
 
@@ -591,7 +637,11 @@ CASE POWINIEN, gdy jest to praktyczne, zapisywać wersję standardu operacyjnego
 
 ### 13.1 Widoczny status po każdej istotnej czynności
 
-Po każdej istotnej czynności w rzeczywistej sprawie CASE należy wyświetlić identyfikator CASE, aktualny etap, wykonane działania i odniesienia do dowodów, wynik (`NOT_STARTED`, `IN_PROGRESS`, `PASS`, `FAIL`, `BLOCKED`), krytyczne blokery, następny etap i warunki jego rozpoczęcia. Gdy interfejs na to pozwala, należy udostępnić przyciski **Wstecz**, **Podgląd dalej** i **Wykonaj kontrolę etapu**. Jeżeli przyciski nie są dostępne, należy zapewnić odpowiednik tekstowy. Wynik bez rzeczywistej walidacji i źródła nigdy nie otrzymuje statusu `PASS`.
+Po każdej istotnej czynności w rzeczywistej sprawie CASE należy wyświetlić identyfikator CASE, aktywny obszar/etap, nowe lub sprawdzone ustalenia z odniesieniem do dowodów, wynik (`NOT_STARTED`, `IN_PROGRESS`, `PASS`, `FAIL`, `BLOCKED`), rzeczywiste blokery i następną czynność. Zakres widoku ma być proporcjonalny do złożoności (§ 8); nie trzeba publikować dziewięciu osobnych raportów. Wynik bez rzeczywistej walidacji i źródła nigdy nie otrzymuje statusu `PASS`.
+
+**Intelligent UI jest domyślnie obowiązkowe w każdej rzeczywistej sprawie CASE prowadzonej w obsługującym je interfejsie ChatGPT/GPT-6**, od przyjęcia dokumentu przez analizę i projekt pisma aż po kontrolę finalną i kontynuację. Należy używać rzeczywistych interaktywnych kontrolek, gdy przynoszą wartość: widok CASE/zagadnień/sub-CASE, statusów i blockerów, zakładki **ANALIZA / PISMO / FINALIZACJA I WYKONANIE**, a także działające **Wstecz**, **Podgląd dalej** i **Wykonaj kontrolę**. Wstecz/Podgląd służą do przeglądania i nie zmieniają autorytatywnego stanu. Kontrola musi uruchamiać rzeczywistą ocenę i nie przyznaje automatycznie PASS. Widok demonstracyjny należy jednoznacznie odróżnić od odczytu faktycznego stanu CASE.
+
+Gdy bieżący klient lub kanał technicznie nie obsługuje Intelligent UI, należy wyraźnie zgłosić ograniczenie i zapewnić równoważną, krótką nawigację tekstową; **nie wolno twierdzić, że Intelligent UI zostało użyte, jeśli go nie wyrenderowano**. Intelligent UI jest warstwą obsługi i prezentacji: samo przełączanie zakładek nie zapisuje do Canonical Case Ledger, nie zatwierdza dokumentów i nie wysyła pism.
 
 ### 13.2 Nawigacja po dziewięciu etapach z zachowaniem istniejących bramek
 
@@ -605,7 +655,7 @@ Po każdej istotnej czynności w rzeczywistej sprawie CASE należy wyświetlić 
 8. Wyraźna autoryzacja oraz wysłanie lub złożenie pisma (G8).
 9. Potwierdzenie, analiza odpowiedzi i zmian, odtworzenie przebiegu oraz zamknięcie (G8).
 
-Są to grupy nawigacyjne interfejsu, a nie zamienniki bramek kontrolnych. Dotychczasowy obowiązkowy cykl i kolejność bramek pozostają nadrzędne.
+Są to wewnętrzne grupy kontroli, a nie dziewięć obligatoryjnych osobnych ekranów, rozmów lub ponownych analiz. Domyślny Intelligent UI agreguje je w trzy obszary (§ 8.1); pełną mapę dziewięciu etapów można rozwinąć do przeglądu lub kontroli konkretnego etapu. Dotychczasowy obowiązkowy cykl i kolejność krytycznych bramek pozostają nadrzędne, a sprawdzone, nadal aktualne wyniki są wykorzystywane bez nieuzasadnionego resetu.
 
 ### 13.3 Nawigacja nie jest walidacją
 
