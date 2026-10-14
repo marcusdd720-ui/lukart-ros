@@ -1,0 +1,149 @@
+name: P0 Groq network isolation proof (PR secret-free)
+'on':
+  pull_request:
+    paths:
+      - '.github/workflows/night-shift-opencode-groq-p0.yml'
+      - 'scripts/groq_connect_proxy.py'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ros-opencode-groq-p0-${{ github.event_name }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  isolation-proof:
+    # This tests real Linux container restrictions without any API credential.
+    # It does NOT authorize networked Groq access or an independent review claim.
+    if: ${{ github.event_name == 'pull_request' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    steps:
+      - name: Read PR files without persisting Git credentials
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - name: Container filesystem, identity and egress-denial proof (secret-free)
+        shell: bash
+        run: |
+          set -euo pipefail
+          tmp="$(mktemp -d)"
+          trap 'rm -rf "$tmp"' EXIT
+          chmod 700 "$tmp"
+          printf 'PENDING\n' > "$tmp/result.txt"
+          chmod 666 "$tmp/result.txt"
+          # The runner-provided image is not a trusted OpenCode runtime identity.
+          # This step demonstrates kernel-enforced containment primitives only.
+          docker run --rm \
+            --platform linux/amd64 \
+            --network none \
+            --read-only \
+            --user 65534:65534 \
+            --cap-drop ALL \
+            --security-opt no-new-privileges \
+            --pids-limit 32 \
+            --memory 128m \
+            --cpus 1 \
+            --tmpfs /tmp:rw,noexec,nosuid,size=8m \
+            --mount "type=bind,src=$tmp/result.txt,dst=/result.txt" \
+            python:3.12.14-slim@sha256:2fe5997d249a808b8eeea52c58a1dbffbba28754dc11699ef5c029f2d818ce79 sh -eu -c '
+              test "$(id -u)" -eq 65534
+              if touch /root/forbidden 2>/dev/null; then exit 11; fi
+              if ls /var/run/docker.sock >/dev/null 2>&1; then exit 12; fi
+              if python -c "import socket; socket.create_connection((\"1.1.1.1\",443),1)" >/dev/null 2>&1; then exit 13; fi
+              printf "ISOLATION_SYNTHETIC_PASS\n" > /result.txt
+            '
+          test "$(cat "$tmp/result.txt")" = "ISOLATION_SYNTHETIC_PASS"
+          echo "ISOLATION_NO_SECRET_NETWORK_NONE_PASS=true"
+
+      - name: Verify internal-only worker and Groq CONNECT allowlist (no credentials)
+        shell: bash
+        run: |
+          set -euo pipefail
+          net="groq-test-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
+          proxy="groq-proxy-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
+          cleanup() {
+            docker rm -f "$proxy" >/dev/null 2>&1 || true
+            docker network rm "$net" >/dev/null 2>&1 || true
+          }
+          trap cleanup EXIT
+          docker network create --internal "$net"
+          docker run -d --name "$proxy" --network bridge \
+            --platform linux/amd64 --read-only --user 65534:65534 \
+            --cap-drop ALL --security-opt no-new-privileges \
+            --pids-limit 32 --memory 128m --cpus 1 \
+            --mount "type=bind,src=$GITHUB_WORKSPACE/scripts/groq_connect_proxy.py,dst=/proxy.py,readonly" \
+            python:3.12.14-slim@sha256:2fe5997d249a808b8eeea52c58a1dbffbba28754dc11699ef5c029f2d818ce79 \
+            python /proxy.py
+          docker network connect --alias groq-proxy "$net" "$proxy"
+          # Positive control: identical worker restrictions on a non-internal network.
+          # Without a working direct IPv4 route, egress isolation evidence is inconclusive.
+          docker run --rm --network bridge --platform linux/amd64 \
+            --read-only --user 65534:65534 --cap-drop ALL \
+            --security-opt no-new-privileges --pids-limit 32 \
+            --memory 128m --cpus 1 \
+            python:3.12.14-slim@sha256:2fe5997d249a808b8eeea52c58a1dbffbba28754dc11699ef5c029f2d818ce79 \
+            python -c '
+          import socket
+          for destination in (("1.1.1.1", 443), ("8.8.8.8", 443)):
+              try:
+                  socket.create_connection(destination, 3).close()
+                  print("GROQ_EGRESS_POSITIVE_CONTROL_PASS=true")
+                  break
+              except OSError:
+                  pass
+          else:
+              raise SystemExit("INCONCLUSIVE: no reachable IPv4 direct-egress positive control")
+          '
+          docker run --rm --network "$net" --platform linux/amd64 \
+            --read-only --user 65534:65534 --cap-drop ALL \
+            --security-opt no-new-privileges --pids-limit 32 \
+            --memory 128m --cpus 1 \
+            python:3.12.14-slim@sha256:2fe5997d249a808b8eeea52c58a1dbffbba28754dc11699ef5c029f2d818ce79 \
+            python -c '
+          import socket, ssl, time
+          for destination in (("1.1.1.1", 443), ("8.8.8.8", 443), ("2606:4700:4700::1111", 443)):
+              try:
+                  socket.create_connection(destination, 2).close()
+                  raise SystemExit("FAIL: direct egress allowed to " + repr(destination))
+              except OSError:
+                  pass
+          for attempt in range(20):
+              try:
+                  socket.create_connection(("groq-proxy", 8080), 1).close()
+                  break
+              except OSError:
+                  time.sleep(0.2)
+          else:
+              raise SystemExit("FAIL: proxy unavailable")
+          def connect(target, tls_probe=False):
+              with socket.create_connection(("groq-proxy", 8080), 4) as sock:
+                  sock.settimeout(8)
+                  sock.sendall(("CONNECT " + target + " HTTP/1.1\r\nHost: " + target + "\r\n\r\n").encode())
+                  header = bytearray()
+                  while b"\r\n\r\n" not in header:
+                      chunk = sock.recv(128)
+                      assert chunk, "proxy closed before CONNECT response"
+                      header.extend(chunk)
+                      assert len(header) <= 1024, "oversized CONNECT response"
+                  status = bytes(header).split(b"\r\n", 1)[0]
+                  if tls_probe:
+                      assert status == b"HTTP/1.1 200 Connection Established", "Groq CONNECT failed"
+                      with ssl.create_default_context().wrap_socket(sock, server_hostname="api.groq.com") as tls:
+                          tls.sendall(b"GET / HTTP/1.1\r\nHost: api.groq.com\r\nConnection: close\r\n\r\n")
+                          response = bytearray()
+                          while b"\r\n" not in response:
+                              chunk = tls.recv(128)
+                              assert chunk, "upstream closed before HTTP response"
+                              response.extend(chunk)
+                              assert len(response) <= 1024, "oversized upstream status"
+                          assert bytes(response).startswith(b"HTTP/1."), "CONNECT tunnel did not relay HTTPS response"
+                  return status
+          assert b"403" in connect("example.com:443"), "unapproved domain allowed"
+          assert b"403" in connect("api.groq.com:80"), "unapproved port allowed"
+          assert b"200" in connect("api.groq.com:443", tls_probe=True), "approved Groq endpoint unreachable"
+          print("GROQ_EGRESS_NO_SECRET_ALLOWLIST_PASS=true")
+          '
