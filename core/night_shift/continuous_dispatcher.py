@@ -11,6 +11,13 @@ from dataclasses import dataclass, replace
 from enum import StrEnum
 
 from .contracts import NightShiftContractError
+from .execution_exchange import (
+    DispatchDecision,
+    DispatchRequirement,
+    ExecutionRoute,
+    QuotaReservationLedger,
+    select_and_reserve_route,
+)
 
 
 class ExecutionState(StrEnum):
@@ -48,6 +55,11 @@ class DispatchTask:
     privacy_class: str = "SYNTHETIC"
     worktree: str | None = None
     write_task: bool = False
+    required_capability: str = "code"
+    quota_demand: tuple[tuple[str, int], ...] = ()
+    require_zero_cost: bool = True
+    autonomous_required: bool = True
+    independent_from_provider_id: str | None = None
 
     def __post_init__(self) -> None:
         if not self.task_id.strip():
@@ -58,6 +70,13 @@ class DispatchTask:
             raise NightShiftContractError("max_attempts must be positive")
         if self.attempts < 0:
             raise NightShiftContractError("attempts cannot be negative")
+        if not self.required_capability.strip():
+            raise NightShiftContractError("required_capability is required")
+        metrics = [metric for metric, _ in self.quota_demand]
+        if len(metrics) != len(set(metrics)):
+            raise NightShiftContractError("quota_demand metrics must be unique")
+        if any(not metric.strip() or amount < 1 for metric, amount in self.quota_demand):
+            raise NightShiftContractError("quota_demand entries must be positive")
 
 
 @dataclass(frozen=True, slots=True)
@@ -80,6 +99,12 @@ class ProviderCandidate:
     zero_cost_verified: bool
     score: int = 0
     external: bool = True
+
+
+@dataclass(frozen=True, slots=True)
+class RoutedDispatch:
+    task: DispatchTask
+    decision: DispatchDecision
 
 
 @dataclass(frozen=True, slots=True)
@@ -189,6 +214,47 @@ def select_next_task(
         if task.write_task and task.worktree and task.worktree in active_write_worktrees:
             continue
         return task
+    return None
+
+
+def select_next_routed_task(
+    tasks: tuple[DispatchTask, ...],
+    routes: tuple[ExecutionRoute, ...],
+    *,
+    now_epoch: int,
+    ledger: QuotaReservationLedger,
+    active_write_worktrees: frozenset[str] = frozenset(),
+    reservation_ttl_seconds: int = 300,
+) -> RoutedDispatch | None:
+    """Select the highest-priority task that has a safe executable LEX route.
+
+    A blocked head-of-line task does not stop lower-priority compatible work.
+    Quota is reserved before a dispatch decision is returned.
+    """
+
+    for task in executable_tasks(tasks, now_epoch=now_epoch):
+        if task.write_task and task.worktree and task.worktree in active_write_worktrees:
+            continue
+
+        requirement = DispatchRequirement(
+            task_id=task.task_id,
+            required_capability=task.required_capability,
+            privacy_class=task.privacy_class,
+            require_zero_cost=task.require_zero_cost,
+            autonomous_required=task.autonomous_required,
+            independent_from_provider_id=task.independent_from_provider_id,
+            quota_demand=task.quota_demand,
+        )
+        decision = select_and_reserve_route(
+            routes,
+            requirement,
+            now_epoch=now_epoch,
+            ledger=ledger,
+            reservation_ttl_seconds=reservation_ttl_seconds,
+        )
+        if decision is not None:
+            return RoutedDispatch(task=task, decision=decision)
+
     return None
 
 

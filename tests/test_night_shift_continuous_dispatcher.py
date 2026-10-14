@@ -17,9 +17,16 @@ from core.night_shift.continuous_dispatcher import (
     provider_benchmark_allowed,
     provider_unavailability_state,
     select_next_task,
+    select_next_routed_task,
     select_zero_cost_provider,
 )
 from core.night_shift.contracts import NightShiftContractError
+from core.night_shift.execution_exchange import (
+    ExecutionRoute,
+    QuotaReservationLedger,
+    QuotaWindow,
+    RouteStatus,
+)
 
 
 def test_ready_task_dispatches() -> None:
@@ -256,3 +263,172 @@ def test_provider_benchmark_requires_synthetic_data() -> None:
     assert provider_benchmark_allowed("SYNTHETIC")
     assert not provider_benchmark_allowed("CUSTOMER")
     assert not provider_benchmark_allowed("PRIVATE")
+
+def _lex_route(
+    route_id: str,
+    *,
+    provider_id: str,
+    now: int,
+    capability: str = "code",
+    privacy_classes: frozenset[str] = frozenset({"SYNTHETIC", "PUBLIC"}),
+    remaining_requests: int = 10,
+    remaining_tokens: int = 10_000,
+) -> ExecutionRoute:
+    return ExecutionRoute(
+        route_id=route_id,
+        provider_id=provider_id,
+        executor_id="codex",
+        substrate_id="cloud",
+        model_id="model",
+        status=RouteStatus.READY,
+        capabilities=frozenset({capability}),
+        privacy_classes=privacy_classes,
+        certified=True,
+        zero_cost=True,
+        external=True,
+        human_start_required=False,
+        health_observed_at_epoch=now,
+        health_max_age_seconds=60,
+        expected_start_delay_ms=0,
+        expected_runtime_ms=100,
+        expected_validation_ms=10,
+        quota_windows=(
+            QuotaWindow(
+                metric="requests",
+                limit=1000,
+                remaining=remaining_requests,
+                observed_at_epoch=now,
+                max_age_seconds=300,
+            ),
+            QuotaWindow(
+                metric="tokens",
+                limit=200_000,
+                remaining=remaining_tokens,
+                observed_at_epoch=now,
+                max_age_seconds=300,
+            ),
+        ),
+    )
+
+
+def test_routed_dispatch_reserves_quota_before_return(tmp_path) -> None:
+    now = 1000
+    task = DispatchTask(
+        "routed",
+        0,
+        required_capability="code",
+        quota_demand=(("requests", 1), ("tokens", 500)),
+    )
+    route = _lex_route("groq", provider_id="groq", now=now)
+    ledger = QuotaReservationLedger(tmp_path / "lex.db")
+
+    routed = select_next_routed_task(
+        (task,),
+        (route,),
+        now_epoch=now,
+        ledger=ledger,
+    )
+
+    assert routed is not None
+    assert routed.task.task_id == "routed"
+    assert routed.decision.route_id == "groq"
+    assert routed.decision.reservation_id is not None
+    assert ledger.active_reserved(route_id="groq", metric="requests", now_epoch=now) == 1
+    assert ledger.active_reserved(route_id="groq", metric="tokens", now_epoch=now) == 500
+
+
+def test_routed_dispatch_skips_head_of_line_when_route_incompatible(tmp_path) -> None:
+    now = 1000
+    tasks = (
+        DispatchTask("needs-vision", 0, required_capability="vision"),
+        DispatchTask("can-code", 1, required_capability="code"),
+    )
+    route = _lex_route("groq", provider_id="groq", now=now)
+    ledger = QuotaReservationLedger(tmp_path / "lex.db")
+
+    routed = select_next_routed_task(
+        tasks,
+        (route,),
+        now_epoch=now,
+        ledger=ledger,
+    )
+
+    assert routed is not None
+    assert routed.task.task_id == "can-code"
+
+
+def test_routed_dispatch_private_task_does_not_use_public_external_route(tmp_path) -> None:
+    now = 1000
+    task = DispatchTask("private", 0, privacy_class="PRIVATE")
+    route = _lex_route("groq", provider_id="groq", now=now)
+    ledger = QuotaReservationLedger(tmp_path / "lex.db")
+
+    assert (
+        select_next_routed_task(
+            (task,),
+            (route,),
+            now_epoch=now,
+            ledger=ledger,
+        )
+        is None
+    )
+
+
+def test_routed_dispatch_honours_verifier_provider_independence(tmp_path) -> None:
+    now = 1000
+    task = DispatchTask(
+        "verify",
+        0,
+        required_capability="code",
+        independent_from_provider_id="groq",
+    )
+    groq = _lex_route("groq", provider_id="groq", now=now)
+    ollama = _lex_route("ollama", provider_id="ollama", now=now)
+    ledger = QuotaReservationLedger(tmp_path / "lex.db")
+
+    routed = select_next_routed_task(
+        (task,),
+        (groq, ollama),
+        now_epoch=now,
+        ledger=ledger,
+    )
+
+    assert routed is not None
+    assert routed.decision.provider_id == "ollama"
+
+
+def test_routed_dispatch_quota_overbooking_moves_to_next_route(tmp_path) -> None:
+    now = 1000
+    task = DispatchTask(
+        "q",
+        0,
+        quota_demand=(("requests", 1), ("tokens", 1000)),
+    )
+    groq = _lex_route(
+        "groq",
+        provider_id="groq",
+        now=now,
+        remaining_requests=1,
+        remaining_tokens=1500,
+    )
+    ollama = _lex_route("ollama", provider_id="ollama", now=now)
+    ledger = QuotaReservationLedger(tmp_path / "lex.db")
+
+    first = select_next_routed_task(
+        (task,),
+        (groq,),
+        now_epoch=now,
+        ledger=ledger,
+    )
+    assert first is not None
+
+    second = select_next_routed_task(
+        (task,),
+        (groq, ollama),
+        now_epoch=now,
+        ledger=ledger,
+    )
+
+    assert second is not None
+    assert second.decision.provider_id == "ollama"
+
