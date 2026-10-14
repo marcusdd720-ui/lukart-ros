@@ -1,6 +1,6 @@
 # LUKART ROS — Private Case Operating Standard
 
-Version: **1.3.0**  
+Version: **1.4.0**  
 Status: **ACTIVE OPERATOR STANDARD**  
 Effective: **2026-10-05**  
 Scope: **all private real-world CASE work**
@@ -587,7 +587,37 @@ For a material improvement:
 
 A CASE SHOULD record the operating-standard version and repository commit used for significant runs/filings when practical.
 
-## 13. Default operator behavior
+## 13. Mandatory CASE Stage Gate interface
+
+### 13.1 Visible status after every material action
+For each real CASE action display CASE ID, current stage, actions and evidence references, result (`NOT_STARTED`, `IN_PROGRESS`, `PASS`, `FAIL`, `BLOCKED`), critical blockers, next stage and its entry conditions. When supported, provide **Wstecz**, **Podgląd dalej**, **Wykonaj kontrolę etapu** controls. Without UI controls provide equivalent text. A result without actual validation and source is never PASS.
+
+### 13.2 Nine-stage navigation over existing gates
+1. Inventory and Evidence Ceiling (G0–G2).
+2. Timeline, contradictions, deadlines, standing and procedural map (G3–G4).
+3. Current-law research (G5).
+4. Strategy, filing topology and Draft A (G6–G7 entry).
+5. Red Team and revisions (G7).
+6. Hardcore Preflight (G7).
+7. Render DOCX/PDF, G7.5 FINISH, then SEND READY only after exact-artifact FINISH_PASS.
+8. Explicit authorization and Send/File (G8).
+9. Receipt, Response Delta, Replay and Closure (G8).
+
+These are UI groupings, not replacement gates. Existing mandatory lifecycle and gate order remain authoritative.
+
+### 13.3 Navigation is not validation
+**Wstecz** and **Podgląd dalej** only change the displayed stage. They never set PASS, write case history, bypass a critical gate, approve or send a filing, or declare delivery. **Wykonaj kontrolę etapu** requests actual evaluation; it is not a PASS button. Show evidence, findings, blockers and next permissible transition. Durable case state changes require the authorized Canonical Case Ledger write path; UI-only state is not authoritative.
+
+Critical FAIL/BLOCKED prohibits SEND_READY. Rendering does not imply SEND_READY. Exact-artifact FINISH_PASS is mandatory; any later artifact modification invalidates it.
+
+### 13.4 Automatic continuation and audit trail
+On CONTINUE restore last authorized state and assess only changes. Reopen previously closed gates only for an explicit evidence-based reason. Automatically perform routine checks and drafting when authorized; ask only for genuine blockers or explicit authorization to act externally. Never auto-send as a side effect of a control.
+
+For every completed gate, record via the authorized mechanism: gate ID, evidence/artifact refs, actual checks, outcome, blockers, timestamp when available, and next transition. Never claim persistence without proof.
+
+`DRAFT != PREFLIGHTED != RENDERED != FINISH_PASS != SEND_READY != APPROVED != SENT/FILED != RECEIVED/DELIVERED != EFFECTIVE`.
+
+## 14. Default operator behavior
 
 Within the ChatGPT project for private CASE work, this standard is the default. The user should not need to paste a long prompt for every matter.
 
