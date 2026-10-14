@@ -82,6 +82,8 @@ Branch/commit/PR/fresh SHA/partial PASS/waiting CI/merge-ready != DONE. Jeśli i
 
 **SSOT:** Memory = trwałe zasady + pointer. `docs/WORKING_PRINCIPLES.md` = jedyny pełny living standard. GitHub = live SHA/PR/CI/roadmap/release. AGENTS/ADR/CI/testy i cienkie execution profiles tylko wskazują kanon lub egzekwują repo-specific constraints; nie duplikują go. Profile są non-authoritative; przy konflikcie wygrywa live GitHub i ten plik.
 
+Język: PL w PR/Issue, dokumentacji, raportach i komunikatach; EN w kodzie, API i dowodach.
+
 Aktualizacje są informacyjne, nie checkpointem. Po closure raportuj `STATUS`, `WYKONANO`, `FINAL STATE`, `WNIOSEK`, `NEXT`.
 
 Improvement Review: `evidence → weaknesses → alternatives → trade-offs → improvements`. Wdrażaj tylko materialne ulepszenia w scope; reszta → ordered follow-up bez scope creep. Po closure nowe zmiany mają nowe SHA/evidence.
