@@ -1,8 +1,8 @@
 # LUKART ROS — Standard operacyjny spraw prywatnych
 
-Wersja: **1.4.0**  
-Status: **AKTYWNY STANDARD OPERATORA**  
-Obowiązuje od: **2026-10-05**  
+Wersja: **1.5.0 (PROPOZYCJA / DRAFT PR)**  
+Status: **NIEOBOWIĄZUJĄCY PROJEKT — do zatwierdzenia i scalenia do main**  
+Planowane wejście w życie: **po zatwierdzonym scaleniu do main**  
 Zakres: **wszystkie rzeczywiste sprawy prywatne CASE**
 
 ## 1. Hierarchia źródeł nadrzędnych i rola dokumentu
@@ -528,15 +528,52 @@ Preferowany schemat dla spraw złożonych:
 
 Gdy jest to praktyczne, należy zachowywać skróty i wersje artefaktów wystarczające do odtworzenia przyczyn sporządzenia konkretnej wersji pisma.
 
-## 8. Skalowanie stopnia szczegółowości do złożoności sprawy
+## 8. Adaptacyjny przebieg CASE — minimum powtórzeń, pełne kontrole krytyczne
 
-Standard nie może być słabszy w prostych sprawach ani bez powodu nadmiernie biurokratyczny.
+### 8.1 Podstawowa reguła
 
-- Prosta sprawa: skrócony przebieg czynności przy zachowaniu tych samych niezmienników.
-- Istotna sprawa prawna lub finansowa: pełne kontrole.
-- Sprawa wysokiego ryzyka, wielostronna lub prowadzona przed wieloma organami: pełne kontrole, analiza kontradyktoryjna, jawna mapa zależności oraz silniejsze potwierdzenie pochodzenia dowodów i odtwarzalności.
+Dziewięć etapów (§ 13.2) jest mapą kontroli i nawigacji, a **nie** obowiązkiem wykonania dziewięciu odrębnych analiz, wyszukiwań, raportów lub rund pytań do operatora. G0–G8 i G7.5 pozostają obowiązującymi granicami bezpieczeństwa tam, gdzie mają zastosowanie; ich wynik może powstawać w jednym przebiegu lub zostać odziedziczony z wcześniej zweryfikowanego, wciąż aktualnego stanu CASE z jawnie zachowaną proweniencją. Brak rzeczywistej kontroli nigdy nie staje się PASS.
 
-**Najlepiej uzasadnione rozwiązanie != najbardziej skomplikowane rozwiązanie.**
+Interfejs operatora przedstawia domyślnie trzy obszary: **ANALIZA → PISMO → FINALIZACJA I WYKONANIE**. Pełna mapa dziewięciu etapów oraz statusy poszczególnych kontroli pozostają dostępne na żądanie. Nie należy tworzyć dodatkowych ekranów i raportów, gdy nie wpływają na decyzję lub bezpieczeństwo.
+
+Przed rozszerzeniem pracy należy rozpoznać złożoność na podstawie **ryzyka terminowego, liczby niezależnych postępowań/organów, zależności dowodowych, sprzeczności, rozliczeń i skutku potencjalnego błędu**, a nie wyłącznie liczby stron lub plików.
+
+### 8.2 Trzy tryby prowadzenia spraw
+
+- **FAST CASE (prosta)** — pojedynczy problem i zasadniczo jedna czynność procesowa. Jeden zwięzły przebieg: przyjęcie i weryfikacja nowych dowodów → kontrola terminu, właściwości, aktualnego prawa i adekwatnego orzecznictwa → projekt w języku procesowym → proporcjonalny Red Team/preflight → FINISH artefaktu i autoryzacja, gdy wymagana. Kontrole są rzeczywiste, lecz nie wymagają osobnych raportów.
+- **STANDARD CASE (średnia)** — kilka zagadnień, sporne dowody lub terminy, lecz zasadniczo jedno postępowanie. Utrzymywać mapę zagadnień i jedną kolejkę czynności, a ponawiać tylko te analizy, których przesłanki zmienił nowy materiał.
+- **COMPLEX CASE (wielowątkowa)** — więcej niż jedno autonomiczne postępowanie/organ lub powiązane egzekucje, rozliczenia, przedawnienie, sporne doręczenia, liczne dokumenty i współdzielone dowody. Utrzymywać jeden nadrzędny widok CASE i wyraźnie powiązane sub-CASE; oddzielać ich cele, sygnatury, terminy, środki prawne, adresatów i statusy. Nie tworzyć drugiej historii źródłowej ani kopii sprzecznej z Canonical Case Ledger.
+
+Tryb można podnieść lub obniżyć bez resetowania CASE. Krytyczny termin, nieustalona reprezentacja, wadliwa droga wniesienia lub brak obowiązkowego dowodu blokuje wyłącznie czynności od nich zależne, nie całą niezależną pracę.
+
+### 8.3 Struktura spraw wielowątkowych
+
+Dla COMPLEX CASE prowadzić jako projekcje z Canonical Case Ledger, a nie alternatywne źródła prawdy:
+
+1. **CASE MASTER** — wspólny cel, stan nadrzędny, mapa powiązań, priorytety i najbliższe nieodwracalne terminy; bez wielokrotnego kopiowania pełnych analiz sub-CASE.
+2. **Sub-CASE** — każde odrębne postępowanie/środek ochrony ma własne żądania, termin, stronę uprawnioną, organ, drogę wniesienia, status i plan pisma. Powiązania między sprawami są jawne i autoryzowane; materiał z jednej nie przechodzi automatycznie do drugiej.
+3. **Evidence Index** — pojedyncza rejestracja oryginału z identyfikatorem, źródłem, datą, skrótem/deduplikacją, zakresem i odnośnikami do wszystkich zagadnień, których dotyczy. Oryginały niezmienione; przeszukiwanie selektywne. Kopia, skan i wcześniejsze streszczenie nie stają się nowymi faktami przez samo powtórzenie.
+4. **Event/Deadline Ledger** — daty czynności, doręczeń i dowodów odbioru; osobne wyzwalacze i reguły prawne dla każdego terminu oraz ich statusy VERIFIED/PROVISIONAL/UNKNOWN.
+5. **Financial/Enforcement Ledger**, gdy dotyczy — każdą transakcję i czynność egzekucyjną powiązać z dowodem; rozdzielić wpłatę od jej zaksięgowania, a należność główną od odsetek i kosztów. Rozliczać według funduszu, okresu, tytułu, daty i rodzaju alokacji; stosować obliczenia deterministyczne z uzgodnieniem sald i kontrolą duplikatów. Nie wnioskować o podwójnej zapłacie ani przedawnieniu jedynie z podobieństwa kwot, tytułów lub dat.
+6. **Issue/Dependency Map** — dla każdego zagadnienia: dowody, sporne twierdzenia, norma, istotne orzecznictwo, brak, zależne decyzje i pisma. Wzajemne powiązanie jest relacją dowodową, nie automatycznym połączeniem postępowań.
+
+Dane rzeczywistych klientów, ich liczby, nazwiska, sygnatury i dokumenty pozostają lokalnie/prywatnie. Repozytorium publiczne przechowuje tylko ogólne reguły i dane syntetyczne.
+
+### 8.4 Obsługa nowego materiału bez resetu
+
+Domyślny mechanizm kontynuacji:
+
+`NEW DOCUMENT → SOURCE INTAKE → DEDUP/IDENTITY → FACT/CLAIM CLASSIFICATION → DELTA → DEPENDENCY IMPACT → DEADLINE/RISK PRIORITY → ONLY AFFECTED RECHECK → NEXT ACTION`.
+
+W pierwszej kolejności sprawdzić, czy nowe pismo uruchamia pilny termin albo zmienia status doręczenia. Następnie porównać je z istniejącym indeksem i ustaleniami. Nie czytać ponownie wszystkich historycznych materiałów, jeżeli nie występuje konkretna sprzeczność, brak pochodzenia, zmiana normy, brak integralności lub zależność wymagająca ponownej oceny. Nowy dowód może ponownie otworzyć zatwierdzoną kontrolę tylko gdy podważa jej przesłankę; pozostałe wyniki zachowują historię, ważność i proweniencję.
+
+Nie wykonywać ponownie tego samego researchu prawnego przy każdej czynności, jeśli aktualność normy, stan faktyczny i zakres zastosowania są nadal zweryfikowane. **Każde nowe istotne twierdzenie prawne i każdą potencjalnie zmienioną regułę trzeba jednak zweryfikować w źródłach aktualnych dla danej daty; przegląd adekwatnego orzecznictwa jest obowiązkowy, lecz brak relewantnego orzeczenia nie uzasadnia wymyślania ani dekoracyjnego cytowania go w piśmie.**
+
+### 8.5 Minimalny wynik operatora
+
+Po istotnej czynności zamiast obszernego raportu podawać w jednym krótkim widoku: `CASE → OBSZAR/ETAP → CO NOWE/ZWERYFIKOWANO → STATUS → BLOKER (jeśli jest) → NASTĘPNA CZYNNOŚĆ`. Dla wielowątkowego CASE dodać mapę sub-CASE i priorytetowej kolejki. Rozwinięte kontrole lub historia pozostają dostępne na żądanie.
+
+**Najlepiej uzasadnione rozwiązanie != najbardziej skomplikowane rozwiązanie.** Uproszczenie interfejsu i liczby powtarzanych czynności nie obniża rygoru dowodowego, prawnego, procesowego, prywatności ani FINISH.
 
 ## 9. Pytania do operatora lub użytkownika
 
@@ -591,7 +628,11 @@ CASE POWINIEN, gdy jest to praktyczne, zapisywać wersję standardu operacyjnego
 
 ### 13.1 Widoczny status po każdej istotnej czynności
 
-Po każdej istotnej czynności w rzeczywistej sprawie CASE należy wyświetlić identyfikator CASE, aktualny etap, wykonane działania i odniesienia do dowodów, wynik (`NOT_STARTED`, `IN_PROGRESS`, `PASS`, `FAIL`, `BLOCKED`), krytyczne blokery, następny etap i warunki jego rozpoczęcia. Gdy interfejs na to pozwala, należy udostępnić przyciski **Wstecz**, **Podgląd dalej** i **Wykonaj kontrolę etapu**. Jeżeli przyciski nie są dostępne, należy zapewnić odpowiednik tekstowy. Wynik bez rzeczywistej walidacji i źródła nigdy nie otrzymuje statusu `PASS`.
+Po każdej istotnej czynności w rzeczywistej sprawie CASE należy wyświetlić identyfikator CASE, aktywny obszar/etap, nowe lub sprawdzone ustalenia z odniesieniem do dowodów, wynik (`NOT_STARTED`, `IN_PROGRESS`, `PASS`, `FAIL`, `BLOCKED`), rzeczywiste blokery i następną czynność. Zakres widoku ma być proporcjonalny do złożoności (§ 8); nie trzeba publikować dziewięciu osobnych raportów. Wynik bez rzeczywistej walidacji i źródła nigdy nie otrzymuje statusu `PASS`.
+
+**Intelligent UI jest domyślnie obowiązkowe w każdej rzeczywistej sprawie CASE prowadzonej w obsługującym je interfejsie ChatGPT/GPT-6**, od przyjęcia dokumentu przez analizę i projekt pisma aż po kontrolę finalną i kontynuację. Należy używać rzeczywistych interaktywnych kontrolek, gdy przynoszą wartość: widok CASE/trybu/sub-CASE, statusów i blockerów, zakładki **ANALIZA / PISMO / FINALIZACJA I WYKONANIE**, a także działające **Wstecz**, **Podgląd dalej** i **Wykonaj kontrolę**. Wstecz/Podgląd służą do przeglądania i nie zmieniają autorytatywnego stanu. Kontrola musi uruchamiać rzeczywistą ocenę i nie przyznaje automatycznie PASS. Widok demonstracyjny należy jednoznacznie odróżnić od odczytu faktycznego stanu CASE.
+
+Gdy bieżący klient lub kanał technicznie nie obsługuje Intelligent UI, należy wyraźnie zgłosić ograniczenie i zapewnić równoważną, krótką nawigację tekstową; **nie wolno twierdzić, że Intelligent UI zostało użyte, jeśli go nie wyrenderowano**. Intelligent UI jest warstwą obsługi i prezentacji: samo przełączanie zakładek nie zapisuje do Canonical Case Ledger, nie zatwierdza dokumentów i nie wysyła pism.
 
 ### 13.2 Nawigacja po dziewięciu etapach z zachowaniem istniejących bramek
 
@@ -605,7 +646,7 @@ Po każdej istotnej czynności w rzeczywistej sprawie CASE należy wyświetlić 
 8. Wyraźna autoryzacja oraz wysłanie lub złożenie pisma (G8).
 9. Potwierdzenie, analiza odpowiedzi i zmian, odtworzenie przebiegu oraz zamknięcie (G8).
 
-Są to grupy nawigacyjne interfejsu, a nie zamienniki bramek kontrolnych. Dotychczasowy obowiązkowy cykl i kolejność bramek pozostają nadrzędne.
+Są to wewnętrzne grupy kontroli, a nie dziewięć obligatoryjnych osobnych ekranów, rozmów lub ponownych analiz. Domyślny Intelligent UI agreguje je w trzy obszary (§ 8.1); pełną mapę dziewięciu etapów można rozwinąć do przeglądu lub kontroli konkretnego etapu. Dotychczasowy obowiązkowy cykl i kolejność krytycznych bramek pozostają nadrzędne, a sprawdzone, nadal aktualne wyniki są wykorzystywane bez nieuzasadnionego resetu.
 
 ### 13.3 Nawigacja nie jest walidacją
 
