@@ -1,8 +1,8 @@
 # LUKART ROS — Standard operacyjny spraw prywatnych
 
-Wersja: **1.5.0 (PROPOZYCJA / DRAFT PR)**  
-Status: **NIEOBOWIĄZUJĄCY PROJEKT — do zatwierdzenia i scalenia do main**  
-Planowane wejście w życie: **po zatwierdzonym scaleniu do main**  
+Wersja: **1.5.0**  
+Status: **AKTYWNY STANDARD OPERATORA — po zatwierdzonym scaleniu do `main`**  
+Obowiązuje od: **2026-10-14, od chwili zatwierdzonego scalenia do `main`**  
 Zakres: **wszystkie rzeczywiste sprawy prywatne CASE**
 
 ## 1. Hierarchia źródeł nadrzędnych i rola dokumentu
