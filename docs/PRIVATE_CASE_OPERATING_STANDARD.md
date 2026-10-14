@@ -1,602 +1,636 @@
-# LUKART ROS — Private Case Operating Standard
+# LUKART ROS — Standard operacyjny spraw prywatnych
 
-Version: **1.3.0**  
-Status: **ACTIVE OPERATOR STANDARD**  
-Effective: **2026-10-05**  
-Scope: **all private real-world CASE work**
+Wersja: **1.4.0**  
+Status: **AKTYWNY STANDARD OPERATORA**  
+Obowiązuje od: **2026-10-05**  
+Zakres: **wszystkie rzeczywiste sprawy prywatne CASE**
 
-## 1. Authority and role
+## 1. Hierarchia źródeł nadrzędnych i rola dokumentu
 
-This document is the single living **operator standard for private CASE work**. It composes existing LUKART ROS authorities; it does not replace the canonical engineering standard and does not create a second case-history truth store.
+Niniejszy dokument jest jedynym aktualizowanym **standardem operacyjnym prowadzenia prywatnych spraw CASE**. Łączy obowiązujące zasady LUKART ROS; nie zastępuje kanonicznego standardu inżynieryjnego ani nie tworzy drugiego źródła prawdy o historii sprawy.
 
-Authority order:
+Kolejność pierwszeństwa:
 
-1. `docs/WORKING_PRINCIPLES.md` — sole canonical living engineering/trust standard;
-2. Canonical Case Ledger — sole authoritative writable SSOT for case history;
-3. `docs/CASE_INTAKE_RESPONSE_PROTOCOL_V1.md` — CIRP Product semantics;
-4. canonical architecture contracts under `canon/`, especially Case, Problem, Evidence, Decision/Strategy and Document/Renderer contracts;
-5. this file — mandatory operator orchestration for private real-case handling;
-6. non-authoritative mirrors/checklists/templates used only to make execution easier.
+1. `docs/WORKING_PRINCIPLES.md` — jedyny kanoniczny, aktualizowany standard inżynieryjny i zaufania;
+2. Canonical Case Ledger — jedyne autorytatywne, zapisywalne źródło prawdy (SSOT) o historii sprawy;
+3. `docs/CASE_INTAKE_RESPONSE_PROTOCOL_V1.md` — semantyka produktu CIRP;
+4. kanoniczne kontrakty architektoniczne w `canon/`, zwłaszcza kontrakty Case, Problem, Evidence, Decision/Strategy oraz Document/Renderer;
+5. niniejszy plik — obowiązkowe zasady organizacji i wykonywania czynności w rzeczywistych sprawach prywatnych;
+6. nieautorytatywne kopie, listy kontrolne i szablony służące wyłącznie ułatwieniu pracy.
 
-If this file conflicts with a higher authority, fail closed and resolve the conflict in the higher canonical source instead of creating another competing rule list.
+Jeżeli niniejszy dokument jest sprzeczny ze źródłem o wyższym pierwszeństwie, należy zastosować zasadę bezpiecznej odmowy działania (fail-closed) i rozstrzygnąć sprzeczność w nadrzędnym źródle kanonicznym, zamiast tworzyć konkurencyjną listę reguł.
 
-## 2. Privacy boundary
+## 2. Granice prywatności
 
-Real-case documents, names, signatures, addresses, phone numbers, case numbers, medical/financial records and other sensitive evidence are **local/private only**.
+Dokumenty rzeczywistych spraw, nazwiska, podpisy, adresy, numery telefonów, sygnatury, dokumentacja medyczna i finansowa oraz inne wrażliwe dowody mogą znajdować się **wyłącznie w środowisku lokalnym lub prywatnym**.
 
-Public GitHub, CI, branch names, commit messages, documentation and fixtures MUST contain only approved code, generic rules, synthetic examples or anonymized material.
+Publiczne repozytoria GitHub, systemy CI, nazwy gałęzi, komunikaty commitów, dokumentacja oraz dane testowe MUSZĄ zawierać wyłącznie zatwierdzony kod, ogólne reguły, przykłady syntetyczne lub materiały zanonimizowane.
 
-A private CASE is a cognitive and privacy boundary. Facts, documents and conclusions from another CASE MUST NOT enter the current CASE unless an explicit authorized cross-case reference/bridge exists.
+Prywatna sprawa CASE stanowi odrębną granicę poznawczą i prywatności. Faktów, dokumentów i wniosków z innej sprawy NIE WOLNO włączać do bieżącej sprawy bez wyraźnie autoryzowanego powiązania między sprawami.
 
-## 3. Entry modes
+## 3. Tryby rozpoczęcia pracy
 
-### 3.1 NEW CASE
+### 3.1 NEW CASE — nowa sprawa
 
-A new private matter begins in a new chat/workspace and receives a stable CASE identity. The operator does not need to repeat the full standard.
+Nowa sprawa prywatna rozpoczyna się w nowym czacie lub obszarze roboczym i otrzymuje stały identyfikator CASE. Operator nie musi ponownie przytaczać całego standardu.
 
-Minimal trigger:
+Minimalne polecenie:
 
-`LUKART ROS — NEW CASE: <name>. CIRP REAL CASE RUN. Documents attached.`
+`LUKART ROS — NEW CASE: <nazwa>. CIRP REAL CASE RUN. Dokumenty załączone.`
 
-Equivalent shorter wording is acceptable when intent is clear.
+Dopuszczalne jest równoważne, krótsze sformułowanie, jeżeli intencja jest jasna.
 
-### 3.2 CONTINUE CASE
+### 3.2 CONTINUE CASE — kontynuacja sprawy
 
-An existing matter is continued from its current state, not re-analysed from zero.
+Istniejącą sprawę kontynuuje się od jej aktualnego stanu, bez ponownej analizy od zera.
 
-Minimal trigger:
+Minimalne polecenie:
 
-`LUKART ROS — CASE <name> — CONTINUE.`
+`LUKART ROS — CASE <nazwa> — CONTINUE.`
 
-Before new conclusions, reconstruct the current CASE state from authorized evidence and prior case artifacts, then perform delta analysis for the new material/event.
+Przed sformułowaniem nowych wniosków należy odtworzyć aktualny stan CASE na podstawie autoryzowanych dowodów i wcześniejszych artefaktów sprawy, a następnie przeanalizować zmiany wynikające z nowego materiału lub zdarzenia.
 
-## 4. Mandatory lifecycle
+## 4. Obowiązkowy cykl prowadzenia sprawy
 
-Every private CASE follows this sequence unless a step is genuinely not applicable and that non-applicability is explicit:
+Każda prywatna sprawa CASE przebiega według poniższej kolejności, chyba że dany krok rzeczywiście nie ma zastosowania, co należy wyraźnie odnotować:
 
-`Scope → Decision Need → Inventory → Evidence Ceiling → Epistemic Model → Timeline → Contradictions → Deadlines → Standing/Authority → Procedural Map → Current-Law Research → Remedy/Strategy → Filing Topology → Draft A → Red Team → Draft B → Hardcore Preflight → Render → FINISH Gate → SEND READY → Human/Operator Approval where required → Send/File → Receipt → Response Delta → Replay → Next Action / Closure`
+`Zakres → Potrzeba decyzyjna → Inwentaryzacja → Granica dowodowa → Model epistemiczny → Chronologia → Sprzeczności → Terminy → Legitymacja/Umocowanie → Mapa proceduralna → Badanie aktualnego prawa → Środek ochrony/Strategia → Struktura czynności procesowych → Draft A → Red Team → Draft B → Hardcore Preflight → Renderowanie → Kontrola FINISH → SEND_READY → Zatwierdzenie przez człowieka/operatora, gdy wymagane → Wysłanie/Złożenie → Potwierdzenie → Analiza nowych odpowiedzi i zmian → Odtworzenie przebiegu → Następna czynność/Zamknięcie`.
 
-Document generation is downstream. A request such as “write a letter” does not authorize skipping upstream evidence/procedure gates.
+Tworzenie dokumentów następuje dopiero po czynnościach przygotowawczych. Polecenie „napisz pismo” nie upoważnia do pominięcia wcześniejszych kontroli dowodowych i proceduralnych.
 
-## 5. Gate model
+## 5. Model bramek kontrolnych
 
-### G0 — Scope / decision need
+### G0 — Zakres i potrzeba decyzyjna
 
-PASS requires:
-- bounded CASE scope;
-- explicit problem/decision need;
-- desired outcome and minimum protective outcome;
-- known stakeholder/represented interest;
-- privacy boundary.
+Status `PASS` wymaga:
+- określonego zakresu CASE;
+- wyraźnie zdefiniowanego problemu lub potrzeby podjęcia decyzji;
+- wskazania pożądanego rezultatu i minimalnego rezultatu ochronnego;
+- ustalenia znanych zainteresowanych podmiotów lub reprezentowanego interesu;
+- określenia granic prywatności.
 
-If decision need is materially ambiguous: `DECISION_REQUIRED` or `OPEN_QUESTION`.
+Jeżeli potrzeba decyzyjna pozostaje istotnie niejednoznaczna, należy zastosować `DECISION_REQUIRED` albo `OPEN_QUESTION`.
 
-### G1 — Evidence inventory
+### G1 — Inwentaryzacja dowodów
 
-Before conclusions, inventory all available material. Each evidence item SHOULD have:
-- stable `evidence_id` / `document_id`;
-- original filename or source identity;
-- source/provenance;
-- date acquired;
-- source date if known;
-- original/copy status;
-- integrity digest (SHA-256) where practical;
-- sensitivity/privacy class;
-- relevance;
-- facts/claims it supports;
-- contradictions or limitations.
+Przed wyciągnięciem wniosków należy zinwentaryzować wszystkie dostępne materiały. Każdy dowód POWINIEN posiadać:
+- stały identyfikator `evidence_id` / `document_id`;
+- oryginalną nazwę pliku lub oznaczenie źródła;
+- źródło i pochodzenie;
+- datę pozyskania;
+- datę źródłową, jeżeli jest znana;
+- informację, czy jest oryginałem czy kopią;
+- skrót integralności (SHA-256), gdy jest to praktyczne;
+- klasę wrażliwości/prywatności;
+- znaczenie dla sprawy;
+- fakty i twierdzenia, na poparcie których jest powoływany;
+- sprzeczności lub ograniczenia.
 
-Originals remain immutable. Redacted/cropped/annotated copies are separate derived artifacts.
+Oryginały pozostają niezmienione. Kopie z anonimizacją, kadrowaniem lub adnotacjami są osobnymi artefaktami pochodnymi.
 
-### G2 — Evidence ceiling / epistemic model
+### G2 — Granica dowodowa i model epistemiczny
 
-Before strategy or drafting, state what the current material can and cannot establish.
+Przed wyborem strategii lub sporządzeniem projektu należy wskazać, co dostępny materiał pozwala ustalić, a czego nie pozwala potwierdzić.
 
-Use explicit categories:
-- `FACT` — adequately supported by admitted evidence;
-- `CLAIM` — assertion by a party/source, not independently established;
-- `HYPOTHESIS` — testable explanatory proposition;
-- `INTERPRETATION` — analytical reading of facts/evidence;
-- `UNKNOWN` — required information absent;
-- `UNRESOLVED` — conflict or open issue remains;
-- `ABSTAIN` — safe conclusion cannot be produced.
-
-**No Evidence → No Fact.** A document proves that the document contains a statement; it does not automatically prove the underlying statement is true.
+Stosuje się jawne kategorie:
+- `FACT` — fakt odpowiednio potwierdzony dopuszczonymi dowodami;
+- `CLAIM` — twierdzenie strony lub źródła, które nie zostało niezależnie ustalone;
+- `HYPOTHESIS` — możliwe do sprawdzenia wyjaśnienie;
+- `INTERPRETATION` — analityczna interpretacja faktów i dowodów;
+- `UNKNOWN` — brak wymaganej informacji;
+- `UNRESOLVED` — nierozstrzygnięta sprzeczność lub otwarta kwestia;
+- `ABSTAIN` — brak możliwości sformułowania bezpiecznego wniosku.
+
+**Brak dowodu → brak ustalonego faktu.** Dokument dowodzi, że zawiera określone stwierdzenie, ale nie dowodzi automatycznie prawdziwości tego stwierdzenia.
 
-A direct user, client, party or witness statement is evidence that the statement was made, but it does **not** by itself convert the underlying proposition into `FACT`. Unless independently corroborated or otherwise adequately established under the applicable evidence model, classify the underlying proposition as `CLAIM`. Example: `FACT: the user stated X`; `CLAIM: X occurred/is true`. The same rule applies during `CONTINUE` delta analysis: new user-supplied information enters as a new claim/source statement unless the new material independently supports the underlying proposition.
-
-### G3 — Timeline / contradiction / deadline
-
-Build an evidence-bound chronology. Preserve uncertainty in dates.
-
-For every possible deadline distinguish:
-- event/document date;
-- receipt/service date;
-- evidence supporting receipt/service;
-- legal trigger;
-- rule/source identity;
-- computed deadline;
-- safe internal deadline;
-- status (`VERIFIED`, `PROVISIONAL`, `UNKNOWN_RULE`, `MISSING_INPUT`, `CONFLICTING_EVIDENCE`, etc.).
-
-Never convert model memory, an estimate or an unverified receipt date into a verified legal deadline.
-
-### G4 — Standing / authority / procedure
-
-Before filing determine:
-- who is the party/pokrzywdzony/applicant/creditor/debtor/etc.;
-- who may sign/act and on what authority;
-- competent authority;
-- review authority vs filing authority vs filing route;
-- current procedural posture;
-- admissibility/formal prerequisites;
-- whether multiple tracks are independent or coupled.
-
-Unknown standing/representation that affects validity is a hard preflight blocker.
-
-### G5 — Current law / authority research
-
-For material legal/procedural assertions:
-- use current/effective authoritative sources;
-- bind rule/source identity and effective date where material;
-- distinguish statute/regulation from case law, guidance and commentary;
-- verify quotations and holdings;
-- never state that an authority held more than it actually held;
-- record contrary or limiting authority when material.
-
-Model memory alone is not sufficient for a verified deadline, remedy or current legal rule.
-
-### G6 — Remedy / strategy / filing topology
-
-Problem first, document second.
-
-Identify materially different safe options only when they could change the decision. For each meaningful option consider:
-- legal/procedural availability;
-- decisive evidence and missing evidence;
-- deadline/timing risk;
-- burden/standard if known;
-- authority and route;
-- financial/execution risk;
-- privacy/reputational risk;
-- reversibility;
-- dependencies on other tracks.
-
-Use multi-track strategy when appropriate (e.g. criminal, civil, administrative, financial, evidentiary). One filing is an optimization, not a rule.
-
-Statuses include `RECOMMENDED`, `DECISION_REQUIRED`, `NEEDS_EVIDENCE`, `NO_SAFE_OPTION`, `ABSTAIN`.
-
-### G7 — Draft / Red Team / Hardcore Preflight
-
-Final professional documents are produced through a controlled integrity chain. No stage may silently drop or mutate material content from an approved earlier stage.
-
-**Continuous Document Integrity invariant — ZERO SILENT LOSS**
-
-From `Draft A` onward, every document-producing transformation MUST compare the candidate artifact against both:
-1. the current authoritative CASE state / approved filing plan; and
-2. the immediately preceding approved document stage.
-
-The comparison is semantic, not merely textual. Critical items include at least:
-- filer/sender identity and address;
-- all parties and their roles;
-- recipient/authority and filing address;
-- case/reference/sygnatura identifiers;
-- operative requests/petitum;
-- material facts/claims and their evidence links;
-- material legal grounds/citations;
-- dates/deadlines that affect the filing;
-- attachments/evidence list;
-- signature/representation/copy requirements;
-- privacy/minimization decisions.
-
-For each material removal, change or addition, the stage MUST classify the delta as `INTENTIONAL_APPROVED`, `DERIVED_FORMATTING_ONLY`, or `UNEXPLAINED_REGRESSION`. `UNEXPLAINED_REGRESSION` is a Critical FAIL. Critical-content loss budget is **zero**.
-
-A lightweight **Document Integrity Manifest** SHOULD be maintained as a deterministic, non-authoritative projection of the approved CASE/filing state. It records required fields/sections, their provenance, criticality and expected presence. It is a validation aid, never a new source of truth.
-
-**Pass A — Legal/Evidence Draft**
-- operative request;
-- factual propositions with evidence status;
-- legal grounds;
-- case law/authority;
-- evidence requests;
-- attachments;
-- route/signature requirements.
-
-**Red Team** challenges the draft from the perspective of the recipient/opponent:
-- unsupported factual assertion;
-- wrong or stale law;
-- overstatement of precedent;
-- missing standing/authority;
-- wrong recipient/route;
-- missing attachment/signature/copy;
-- premature legal conclusion;
-- contradiction hidden by wording;
-- avoidable disclosure or privacy leak;
-- remedy outside recipient competence;
-- unnecessary aggression that reduces credibility.
-
-**Hardcore Preflight** must check at least:
-- identity of filer/represented person;
-- complete filer/sender identity block required for the destination and filing type, including full name/entity name and current postal/registered address; required party identifiers and contact fields when legally or operationally required;
-- provenance and freshness of sender/recipient address and contact data against the latest authorized CASE source; stale, conflicting or unverified material values remain `UNKNOWN/UNRESOLVED`;
-- standing/authority;
-- recipient, complete recipient address and filing route;
-- deadline status;
-- explicit requests;
-- factual/evidence mapping;
-- legal/rule mapping;
-- required attachments;
-- signature/copies;
-- contradictions/open questions;
-- topology/consolidation safety;
-- privacy/minimization;
-- current date and contact details;
-- no critical `UNKNOWN/UNRESOLVED` hidden from the filing.
-
-G7 validates the approved content and filing inputs before rendering. Missing or mismatched required sender/recipient identity or address data is a **Critical FAIL** at this stage. Render-specific loss or corruption is tested separately by G7.5 `FINISH`.
-
-Critical FAIL → `NOT_READY`. Critical UNKNOWN → `ABSTAIN` / `REVIEW_REQUIRED`. Passing G7 permits rendering, **not** `SEND_READY`.
-
-### G7.5 — FINISH Gate — Final Artifact Integrity & Regression Gate
-
-`FINISH` is the last mandatory quality gate after rendering and before `SEND_READY`. It exists to catch defects introduced by drafting, editing, templating, conversion, rendering or last-minute cleanup even when all earlier stages passed.
-
-FINISH MUST re-read the final human-visible artifact as a fresh candidate and compare it with:
-- the approved `Draft B` / filing plan;
-- the Document Integrity Manifest where used;
-- the immediately preceding approved artifact/version;
-- the current CASE state for identity, authority, dates and filing route.
-
-FINISH checks at least:
-- **Identity parity:** filer/sender, address, parties, roles, representation;
-- **Recipient parity:** authority, department, address, channel;
-- **Reference parity:** sygnatura, case/reference numbers, dates;
-- **Request parity:** no request/petitum weakened, broadened, duplicated or lost;
-- **Factual parity:** no material fact/claim/evidence link silently removed or promoted beyond its evidence status;
-- **Legal parity:** no material legal basis/citation silently removed, stale-substituted or materially altered;
-- **Attachment parity:** every referenced attachment exists in the list and every required attachment remains present;
-- **Signature/copy parity:** signature area, signer capacity, copies/odpisy and formal execution requirements remain intact;
-- **Privacy parity:** no accidental disclosure introduced during rendering;
-- **Render parity:** no clipping, pagination loss, hidden text, broken glyphs, blank pages, orphan headings, missing footer/page number where required, or malformed first/last page;
-- **Cross-version regression:** no critical field present in an approved earlier stage disappears without an explicit approved reason;
-- **Final-date/contact freshness:** current date and material contact/address data remain the latest authorized values.
-
-Where technically feasible, FINISH SHOULD combine:
-1. machine assertions over extracted DOCX/PDF text and expected critical fields;
-2. semantic diff against the approved prior stage;
-3. visual inspection of the rendered first page, operative-request pages, attachment/signature area and any page where a diff occurred;
-4. artifact version/digest binding so the bytes validated by FINISH are the same bytes promoted to `SEND_READY`.
-
-Any modification after `FINISH_PASS` invalidates that PASS and requires a fresh FINISH run on the new bytes. `SEND_READY` is therefore a property of an exact validated artifact/version, not of a draft concept.
-
-Only `FINISH_PASS` with all critical controls PASS may promote the exact artifact to `SEND_READY`.
-
-### G8 — Execution / receipt / replay
-
-Artifact state is explicit:
+Bezpośrednie oświadczenie użytkownika, klienta, strony lub świadka jest dowodem złożenia takiego oświadczenia, lecz **samo w sobie nie przekształca jego treści w `FACT`**. Dopóki twierdzenie nie zostanie niezależnie potwierdzone lub odpowiednio wykazane w obowiązującym modelu dowodowym, należy zaklasyfikować je jako `CLAIM`. Przykład: `FACT: użytkownik oświadczył X`; `CLAIM: X rzeczywiście nastąpiło/jest prawdziwe`. Ta sama zasada obowiązuje przy analizie zmian w trybie `CONTINUE`: nowa informacja od użytkownika jest nowym twierdzeniem lub oświadczeniem źródłowym, chyba że nowy materiał niezależnie potwierdza jej treść.
+
+### G3 — Chronologia, sprzeczności i terminy
+
+Należy sporządzić chronologię powiązaną z dowodami i zachować niepewność co do dat.
+
+Dla każdego możliwego terminu trzeba rozróżnić:
+- datę zdarzenia lub dokumentu;
+- datę odbioru lub doręczenia;
+- dowód odbioru lub doręczenia;
+- zdarzenie uruchamiające bieg terminu;
+- tożsamość przepisu lub źródła reguły;
+- obliczony termin;
+- bezpieczny termin wewnętrzny;
+- status (`VERIFIED`, `PROVISIONAL`, `UNKNOWN_RULE`, `MISSING_INPUT`, `CONFLICTING_EVIDENCE` itd.).
+
+Nie wolno uznawać pamięci modelu, szacunku ani niezweryfikowanej daty odbioru za zweryfikowany termin prawny.
+
+### G4 — Legitymacja, umocowanie i procedura
+
+Przed złożeniem pisma należy ustalić:
+- kto jest stroną, pokrzywdzonym, wnioskodawcą, wierzycielem, dłużnikiem itd.;
+- kto może podpisać dokument lub działać w sprawie i na jakiej podstawie;
+- właściwy organ;
+- organ rozpoznający środek zaskarżenia, organ przyjmujący pismo oraz drogę jego wniesienia;
+- aktualny stan postępowania;
+- dopuszczalność i wymagania formalne;
+- czy równoległe tryby postępowania są niezależne, czy powiązane.
+
+Nieustalona legitymacja lub reprezentacja, jeżeli wpływa na ważność czynności, stanowi bezwzględną przeszkodę w pozytywnym zakończeniu kontroli przed wysłaniem lub złożeniem pisma.
+
+### G5 — Badanie aktualnego prawa i źródeł autorytatywnych
+
+W odniesieniu do istotnych twierdzeń prawnych lub proceduralnych należy:
+- korzystać z aktualnych, obowiązujących źródeł autorytatywnych;
+- powiązać regułę z konkretnym źródłem i datą obowiązywania, jeżeli ma to znaczenie;
+- odróżniać ustawę i rozporządzenie od orzecznictwa, wytycznych i komentarzy;
+- weryfikować cytaty i rzeczywistą treść rozstrzygnięć;
+- nie przypisywać organowi lub sądowi szerszego stanowiska niż rzeczywiście wyrażone;
+- odnotowywać istotne poglądy lub źródła przeciwne i ograniczające.
+
+Sama pamięć modelu nie wystarcza do zweryfikowania terminu, środka prawnego ani aktualnej normy prawnej.
+
+### G6 — Środek ochrony, strategia i struktura czynności procesowych
+
+Najpierw problem, następnie dokument.
+
+Należy wskazywać istotnie różne bezpieczne rozwiązania tylko wtedy, gdy mogą wpłynąć na decyzję. Dla każdego znaczącego wariantu trzeba rozważyć:
+- dopuszczalność prawną i proceduralną;
+- rozstrzygające dowody i braki dowodowe;
+- ryzyko terminowe;
+- ciężar i standard dowodu, jeżeli są znane;
+- właściwy organ i drogę działania;
+- ryzyko finansowe i egzekucyjne;
+- ryzyko naruszenia prywatności lub reputacji;
+- odwracalność działania;
+- zależności między postępowaniami.
+
+Gdy jest to uzasadnione, należy stosować strategię wielotorową (np. karną, cywilną, administracyjną, finansową i dowodową). Jedno pismo jest możliwym usprawnieniem, a nie zasadą.
+
+Statusy obejmują `RECOMMENDED`, `DECISION_REQUIRED`, `NEEDS_EVIDENCE`, `NO_SAFE_OPTION`, `ABSTAIN`.
+
+### G7 — Projekt, Red Team i rygorystyczna kontrola przed wysłaniem lub złożeniem pisma
+
+Końcowe dokumenty profesjonalne powstają w kontrolowanym łańcuchu integralności. Żaden etap nie może po cichu usuwać ani zmieniać istotnej treści zatwierdzonej na wcześniejszym etapie.
+
+**Niezmiennik ciągłej integralności dokumentu — ZERO SILENT LOSS**
+
+Od `Draft A` każda operacja tworząca lub przekształcająca dokument MUSI porównać artefakt wynikowy jednocześnie z:
+1. aktualnym autorytatywnym stanem CASE i zatwierdzonym planem pisma;
+2. bezpośrednio poprzednim zatwierdzonym etapem dokumentu.
+
+Porównanie ma charakter znaczeniowy, nie tylko tekstowy. Elementy krytyczne obejmują co najmniej:
+- tożsamość i adres składającego/nadawcy;
+- wszystkie strony i ich role;
+- adresata/organ i adres do wniesienia pisma;
+- identyfikatory sprawy, sygnatury i numery referencyjne;
+- żądania i petitum;
+- istotne fakty i twierdzenia wraz z powiązaniami dowodowymi;
+- istotne podstawy prawne i cytowania;
+- daty i terminy mające wpływ na pismo;
+- wykaz załączników i dowodów;
+- wymogi podpisu, reprezentacji i odpisów;
+- decyzje dotyczące prywatności i minimalizacji danych.
+
+Każde istotne usunięcie, zmianę lub dodanie należy zaklasyfikować jako `INTENTIONAL_APPROVED`, `DERIVED_FORMATTING_ONLY` albo `UNEXPLAINED_REGRESSION`. `UNEXPLAINED_REGRESSION` oznacza krytyczny `FAIL`. Dopuszczalna utrata treści krytycznej wynosi **zero**.
+
+POWINIEN być utrzymywany lekki **Manifest integralności dokumentu (Document Integrity Manifest)** jako deterministyczne, nieautorytatywne odwzorowanie zatwierdzonego stanu CASE i planu pisma. Manifest zapisuje wymagane pola i sekcje, ich pochodzenie, krytyczność i oczekiwaną obecność. Jest narzędziem walidacji, nigdy nowym źródłem prawdy.
+
+**Etap A — projekt prawny i dowodowy**
+- żądanie;
+- twierdzenia faktyczne ze statusem dowodowym;
+- podstawy prawne;
+- orzecznictwo i inne źródła autorytatywne;
+- wnioski dowodowe;
+- załączniki;
+- wymogi drogi wniesienia i podpisu.
+
+**Red Team** podważa projekt z perspektywy adresata lub przeciwnika:
+- niepoparte dowodami twierdzenia faktyczne;
+- błędne lub nieaktualne prawo;
+- nadinterpretacja orzecznictwa;
+- brak legitymacji lub umocowania;
+- błędny adresat lub droga wniesienia;
+- brak załącznika, podpisu lub odpisu;
+- przedwczesny wniosek prawny;
+- sprzeczność ukryta w sformułowaniu;
+- możliwe do uniknięcia ujawnienie danych lub naruszenie prywatności;
+- żądanie wykraczające poza kompetencję adresata;
+- niepotrzebnie agresywny język obniżający wiarygodność.
+
+**Hardcore Preflight — rygorystyczna kontrola przed wysłaniem lub złożeniem pisma** musi obejmować co najmniej:
+- tożsamość składającego lub osoby reprezentowanej;
+- kompletny blok identyfikacyjny składającego/nadawcy wymagany dla adresata i rodzaju pisma, w tym pełne imię i nazwisko lub nazwę podmiotu oraz aktualny adres pocztowy/siedziby; wymagane identyfikatory stron i dane kontaktowe, gdy są niezbędne prawnie lub operacyjnie;
+- pochodzenie i aktualność adresów oraz danych kontaktowych nadawcy i odbiorcy względem najnowszego autoryzowanego źródła CASE; dane istotne, nieaktualne, sprzeczne lub niezweryfikowane pozostają `UNKNOWN/UNRESOLVED`;
+- legitymację i umocowanie;
+- adresata, jego pełny adres i drogę wniesienia;
+- status terminów;
+- wyraźne żądania;
+- mapowanie twierdzeń na dowody;
+- mapowanie podstaw prawnych na reguły i źródła;
+- wymagane załączniki;
+- podpisy i odpisy;
+- sprzeczności i pytania otwarte;
+- bezpieczeństwo struktury i łączenia czynności;
+- prywatność i minimalizację danych;
+- aktualną datę i dane kontaktowe;
+- brak krytycznych `UNKNOWN/UNRESOLVED` ukrytych w piśmie.
+
+G7 weryfikuje zatwierdzoną treść i dane potrzebne do wniesienia pisma przed renderowaniem. Brak lub niezgodność wymaganych danych tożsamościowych albo adresowych nadawcy lub odbiorcy oznacza na tym etapie **krytyczny FAIL**. Utratę lub uszkodzenie treści podczas renderowania bada osobno G7.5 `FINISH`.
+
+Krytyczny `FAIL` → `NOT_READY`. Krytyczny `UNKNOWN` → `ABSTAIN` / `REVIEW_REQUIRED`. Zaliczenie G7 pozwala renderować dokument, ale **nie** nadaje statusu `SEND_READY`.
+
+### G7.5 — Kontrola FINISH — integralność końcowego artefaktu i regresji
+
+`FINISH` jest ostatnią obowiązkową kontrolą jakości po renderowaniu i przed `SEND_READY`. Ma wykrywać błędy wprowadzone podczas redagowania, edycji, stosowania szablonów, konwersji, renderowania lub końcowych poprawek, nawet jeżeli wcześniejsze etapy zostały zaliczone.
+
+FINISH MUSI ponownie odczytać końcowy artefakt widoczny dla człowieka jako nowego kandydata i porównać go z:
+- zatwierdzonym `Draft B` i planem pisma;
+- Manifestem integralności dokumentu, jeżeli jest stosowany;
+- bezpośrednio poprzednim zatwierdzonym artefaktem lub wersją;
+- aktualnym stanem CASE w zakresie tożsamości, umocowania, dat i drogi wniesienia.
+
+FINISH sprawdza co najmniej:
+- **Zgodność tożsamości:** składający/nadawca, adres, strony, role, reprezentacja;
+- **Zgodność adresata:** organ, wydział, adres, kanał;
+- **Zgodność oznaczeń:** sygnatura, numery sprawy i referencyjne, daty;
+- **Zgodność żądań:** żadne żądanie ani petitum nie zostało osłabione, rozszerzone, zdublowane lub utracone;
+- **Zgodność faktów:** żaden istotny fakt, twierdzenie ani związek z dowodem nie został po cichu usunięty ani awansowany ponad swój status dowodowy;
+- **Zgodność prawna:** żadna istotna podstawa prawna ani cytowanie nie zostały po cichu usunięte, zastąpione nieaktualnym źródłem lub istotnie zmienione;
+- **Zgodność załączników:** każdy przywołany załącznik występuje w wykazie, a wszystkie wymagane załączniki pozostają obecne;
+- **Zgodność podpisów i odpisów:** zachowano miejsce podpisu, uprawnienie podpisującego, odpisy i formalne wymagania wykonania;
+- **Zgodność prywatności:** renderowanie nie spowodowało przypadkowego ujawnienia danych;
+- **Zgodność renderowania:** brak obcięć, utraty treści przy podziale stron, ukrytego tekstu, błędnych znaków, pustych stron, osieroconych nagłówków, brakujących stopek lub numerów stron, gdy są wymagane, oraz uszkodzonej pierwszej lub ostatniej strony;
+- **Regresję między wersjami:** żadne krytyczne pole zatwierdzone wcześniej nie znika bez wyraźnego, zaakceptowanego powodu;
+- **Aktualność dat i danych kontaktowych:** data oraz istotne dane kontaktowe i adresowe odpowiadają najnowszym autoryzowanym wartościom.
+
+Gdy jest to technicznie wykonalne, FINISH POWINIEN łączyć:
+1. automatyczne sprawdzenia tekstu wyodrębnionego z DOCX/PDF oraz oczekiwanych pól krytycznych;
+2. semantyczne porównanie z wcześniej zatwierdzonym etapem;
+3. oględziny pierwszej strony, stron zawierających żądania, obszaru załączników i podpisu oraz każdej strony objętej zmianą;
+4. powiązanie wersji i skrótu artefaktu, aby bajty sprawdzone w FINISH były identyczne z bajtami przekazanymi do `SEND_READY`.
+
+Każda modyfikacja po `FINISH_PASS` unieważnia ten wynik i wymaga ponownej kontroli FINISH na zmienionych bajtach. `SEND_READY` jest zatem właściwością konkretnego, zweryfikowanego artefaktu lub wersji, a nie ogólnej koncepcji projektu.
+
+Wyłącznie `FINISH_PASS`, przy zaliczeniu wszystkich kontroli krytycznych, pozwala nadać dokładnie temu artefaktowi status `SEND_READY`.
+
+### G8 — Wykonanie, potwierdzenie i odtworzenie przebiegu
+
+Stan artefaktu jest jawny:
 
 `DRAFT_A → RED_TEAMED → DRAFT_B → PREFLIGHTED → RENDERED → FINISH_PASS → SEND_READY → APPROVED → SENT/FILED → RECEIVED/DELIVERED → RESPONDED → ASSESSED → CLOSED/ARCHIVED`
 
 `PREPARED != SENT != RECEIVED != EFFECTIVE`.
 
-For every external action record a receipt:
-- exact document/version/digest;
-- date/time;
-- sender;
-- recipient;
-- channel/route;
-- proof of submission;
-- proof of receipt/delivery where available;
-- response deadline/follow-up date;
-- response and resulting CASE delta.
-
-A response or material event starts a delta run; historical analyses are preserved, not silently rewritten.
-
-## 6. Document standard — SEND READY
-
-A final filing/letter must be a professional artifact, not a chat draft.
+Dla każdej czynności zewnętrznej należy zarejestrować potwierdzenie obejmujące:
+- dokładny dokument, wersję i skrót;
+- datę i godzinę;
+- nadawcę;
+- odbiorcę;
+- kanał lub drogę wniesienia;
+- dowód złożenia;
+- dowód odbioru lub doręczenia, jeżeli jest dostępny;
+- termin odpowiedzi lub datę kontroli;
+- odpowiedź i wynikającą z niej zmianę stanu CASE.
+
+Odpowiedź lub istotne zdarzenie uruchamia analizę zmian. Historyczne analizy zachowuje się, a nie przepisuje po cichu.
+
+## 6. Standard dokumentu — SEND_READY
+
+Końcowe pismo musi być profesjonalnym artefaktem, a nie projektem z czatu.
 
-Unless the destination imposes another format, the renderer SHOULD produce:
-- A4;
-- readable professional typeface;
-- stable paragraph hierarchy;
-- adequate left margin for physical filing/binder where relevant;
-- pagination;
-- correct sender block, including the complete current postal/registered address when appropriate for the filing;
-- correct recipient block, including the complete filing address;
-- current date;
-- case/reference/sygnatura where applicable;
-- signature block;
-- ordered attachments;
-- no internal CASE commentary, debug text, speculative labels or unused placeholders;
-- DOCX and/or PDF when requested/appropriate.
-
-Rendering never promotes an artifact directly to `SEND_READY`. The rendered DOCX/PDF MUST pass G7.5 `FINISH` on the exact bytes/version that will be delivered. The inspection must confirm that the approved identity/address blocks, parties, recipient, date, reference/sygnatura, operative request, material factual/legal content, signature area and attachment list are present, legible and not clipped, substituted or omitted. Any mismatch returns the artifact upstream to the earliest affected stage and invalidates any prior FINISH/SEND_READY status.
-
-Templates define presentation, not truth. The renderer MUST NOT invent facts, fix contradictions or change strategy. If rendering discovers a missing material input, return upstream to the appropriate gate.
-
-### 6.1 Legal drafting doctrine — procedural voice by default
-
-Unless the destination, jurisdiction or user instruction materially requires another style, professional CASE filings MUST use a **procedural, court-facing legal voice** rather than conversational, emotional or decorative prose.
+O ile adresat nie wymaga innego formatu, mechanizm renderujący POWINIEN zapewnić:
+- format A4;
+- czytelną, profesjonalną czcionkę;
+- spójną hierarchię akapitów;
+- odpowiedni lewy margines do fizycznego złożenia lub wpięcia dokumentu, gdy jest to istotne;
+- numerację stron;
+- poprawny blok nadawcy, w tym pełny aktualny adres pocztowy lub siedziby, gdy jest wymagany;
+- poprawny blok adresata, w tym pełny adres do wniesienia pisma;
+- aktualną datę;
+- sygnaturę lub numer sprawy, gdy ma zastosowanie;
+- miejsce podpisu;
+- uporządkowany wykaz załączników;
+- brak wewnętrznych komentarzy CASE, informacji diagnostycznych, etykiet spekulacyjnych i nieużywanych pól zastępczych;
+- DOCX lub PDF, albo oba formaty, gdy są wymagane lub właściwe.
+
+Samo renderowanie nigdy nie nadaje statusu `SEND_READY`. Wygenerowany DOCX/PDF MUSI przejść G7.5 `FINISH` dla dokładnie tych bajtów artefaktu, które mają zostać przekazane. Kontrola musi potwierdzić, że zatwierdzone bloki tożsamościowe i adresowe, strony, adresat, data, sygnatura, żądania, istotna treść faktyczna i prawna, obszar podpisu oraz wykaz załączników są obecne, czytelne i nie zostały obcięte, podmienione ani pominięte. Każda niezgodność cofa artefakt do najwcześniejszego etapu, którego dotyczy, i unieważnia wcześniejsze statusy FINISH/SEND_READY.
+
+Szablony określają wygląd, a nie prawdę. Mechanizm renderujący NIE MOŻE wymyślać faktów, samodzielnie rozstrzygać sprzeczności ani zmieniać strategii. Jeśli podczas renderowania ujawni się brak istotnej informacji, należy wrócić do odpowiedniej kontroli.
+
+### 6.1 Zasady redagowania pism prawnych — domyślnie język procesowy
+
+O ile adresat, jurysdykcja lub polecenie użytkownika nie wymagają istotnie innego stylu, profesjonalne pisma CASE MUSZĄ posługiwać się **językiem prawnym i procesowym skierowanym do organu**, a nie stylem potocznym, emocjonalnym czy ozdobnym.
 
-Default drafting characteristics:
-- professional legal Polish appropriate to the recipient and procedural posture;
-- firm, restrained and precise tone — **assertive, never needlessly aggressive**;
-- operative language first: the recipient should immediately understand what is requested, on what basis and what action is expected;
-- concise factual narrative limited to facts material to the requested procedural/legal consequence;
-- explicit party roles, authority, reference/sygnatura and procedural posture;
-- clear separation between established facts, party assertions, interpretation and unresolved matters;
-- no rhetoric, indignation, moralising, threats, sarcasm or unnecessary adjectives;
-- no internal CASE labels, debug language or epistemic tags in the final outward-facing document unless legally useful.
+Domyślne cechy pisma:
+- profesjonalny język prawniczy w języku polskim, dostosowany do adresata i etapu postępowania;
+- stanowczy, powściągliwy i precyzyjny ton — **asertywny, nigdy niepotrzebnie agresywny**;
+- żądanie na pierwszym planie: adresat ma od razu rozumieć, czego się żąda, na jakiej podstawie i jakiej czynności się oczekuje;
+- zwięzły opis stanu faktycznego ograniczony do okoliczności istotnych dla żądanego skutku;
+- jednoznaczne role stron, umocowanie, sygnatura i stan postępowania;
+- wyraźne oddzielenie ustalonych faktów, twierdzeń stron, interpretacji i kwestii nierozstrzygniętych;
+- brak retoryki, oburzenia, moralizowania, gróźb, sarkazmu i zbędnych przymiotników;
+- brak wewnętrznych etykiet CASE, języka diagnostycznego i znaczników epistemicznych w piśmie zewnętrznym, chyba że mają znaczenie prawne.
 
-### 6.2 Petitum-first / decision-useful structure
+### 6.2 Najpierw petitum — struktura przydatna decydentowi
 
-The document is optimized for the decision-maker, not for the drafter.
+Dokument ma służyć osobie podejmującej decyzję, a nie autorowi.
 
-Preferred order when legally appropriate:
-1. identity / parties / authority / reference;
-2. precise title matching the requested procedural act;
-3. numbered **petitum / operative requests**;
-4. shortest sufficient factual basis;
-5. legal basis and procedural consequence;
-6. evidence/attachments where needed;
-7. signature/execution block.
+Preferowana kolejność, jeżeli jest prawnie właściwa:
+1. tożsamość, strony, organ i oznaczenie sprawy;
+2. precyzyjny tytuł odpowiadający żądanej czynności procesowej;
+3. numerowane **petitum i żądania**;
+4. najkrótsza wystarczająca podstawa faktyczna;
+5. podstawa prawna i skutek proceduralny;
+6. dowody i załączniki, gdy są potrzebne;
+7. podpis i wymagane elementy formalne.
 
-Each request MUST be:
-- within the recipient's competence;
-- legally/procedurally available to the best verified understanding;
-- specific enough to execute or adjudicate;
-- consistent with the evidence ceiling and filing topology;
-- free from hidden alternative requests unless the strategy intentionally includes them.
+Każde żądanie MUSI:
+- mieścić się w kompetencji adresata;
+- być prawnie i proceduralnie dopuszczalne zgodnie z najlepiej zweryfikowanym stanem wiedzy;
+- być na tyle konkretne, aby można je było wykonać lub rozstrzygnąć;
+- odpowiadać granicy dowodowej i strukturze czynności procesowych;
+- nie zawierać ukrytych żądań alternatywnych, chyba że strategia świadomie je przewiduje.
 
-A long justification MUST NOT obscure the operative request.
+Obszerne uzasadnienie NIE MOŻE przesłaniać żądania.
 
-### 6.3 Authority economy — law must do work
+### 6.3 Oszczędność powoływania źródeł prawa — przepisy mają pełnić funkcję
 
-Legal authorities are used for function, not decoration.
+Źródła prawne służą argumentacji, a nie dekoracji.
 
-Prefer the smallest sufficient set of current, authoritative provisions and decisions that materially support:
-- admissibility / standing / competence;
-- the requested procedural act;
-- the substantive rule actually in dispute;
-- the relevant burden, deadline or consequence.
+Należy preferować najmniejszy wystarczający zbiór aktualnych i autorytatywnych przepisów oraz orzeczeń, które istotnie potwierdzają:
+- dopuszczalność, legitymację i kompetencję;
+- żądaną czynność proceduralną;
+- normę materialną rzeczywiście sporną w sprawie;
+- właściwy ciężar dowodu, termin lub skutek.
 
-Do not add provisions merely to make a filing look more legal. Citation volume is not quality.
+Nie należy dodawać przepisów wyłącznie po to, aby pismo wyglądało bardziej prawniczo. Liczba cytatów nie świadczy o jakości.
 
-For every cited provision or authority, the drafter SHOULD be able to answer:
-- **What proposition does this authority support?**
-- **Is that proposition material to the recipient's decision?**
-- **Is the authority current, controlling/authoritative at the claimed level, and accurately characterized?**
+Dla każdego powołanego przepisu lub źródła autor POWINIEN umieć odpowiedzieć:
+- **Jakie twierdzenie potwierdza to źródło?**
+- **Czy twierdzenie ma znaczenie dla decyzji adresata?**
+- **Czy źródło jest aktualne, wiążące lub autorytatywne na deklarowanym poziomie i prawidłowo opisane?**
 
-Case law is added only when it changes, clarifies or materially strengthens the argument. Holdings must be described narrowly and faithfully.
+Orzecznictwo dodaje się tylko wtedy, gdy zmienia, wyjaśnia lub istotnie wzmacnia argument. Tezy orzeczeń należy przedstawiać wąsko i wiernie.
 
-### 6.4 Evidence-calibrated language
+### 6.4 Język dostosowany do siły dowodów
 
-Wording strength MUST track evidentiary strength.
+Stanowczość sformułowania MUSI odpowiadać sile dowodów.
 
-Examples of calibrated forms:
-- strong evidence: “z dokumentu wynika…”, “Sąd ustalił…”, “akta wskazują…”;
-- party assertion: “powód wskazuje/twierdzi…”, “według oświadczenia…”;
-- inference: “okoliczność ta przemawia za…”, “może wskazywać…”;
-- unresolved matter: do not convert it into a categorical statement.
+Przykłady:
+- mocne dowody: „z dokumentu wynika…”, „Sąd ustalił…”, „akta wskazują…”;
+- twierdzenie strony: „powód wskazuje/twierdzi…”, „według oświadczenia…”;
+- wnioskowanie: „okoliczność ta przemawia za…”, „może wskazywać…”;
+- kwestia nierozstrzygnięta: nie należy przekształcać jej w stwierdzenie kategoryczne.
 
-Never use stronger procedural language merely for rhetorical effect when the evidence does not support it.
+Nie wolno używać silniejszych sformułowań procesowych wyłącznie dla efektu retorycznego, gdy nie uzasadniają tego dowody.
 
-### 6.5 Adversarial sentence test
+### 6.5 Kontradyktoryjny test każdego zdania
 
-Every material sentence in Draft B SHOULD survive four questions:
-1. **Evidence:** what evidence or verified source supports it?
-2. **Relevance:** why does the recipient need this sentence to decide the requested act?
-3. **Authority:** if legal, what rule/authority supports the proposition?
-4. **Remedy link:** how does it advance, protect or delimit the operative request?
+Każde istotne zdanie `Draft B` POWINNO przejść cztery pytania:
+1. **Dowód:** jaki dowód lub zweryfikowane źródło je potwierdza?
+2. **Istotność:** dlaczego adresat potrzebuje tego zdania do rozstrzygnięcia żądanej czynności?
+3. **Podstawa:** jeżeli zdanie ma charakter prawny, jaka norma lub źródło je potwierdza?
+4. **Związek z żądaniem:** jak zdanie wspiera, chroni lub ogranicza żądanie?
 
-If a sentence fails all four, delete it. If it partially fails, narrow or qualify it.
+Jeżeli zdanie nie przechodzi żadnego z czterech testów, należy je usunąć. Jeśli przechodzi je tylko częściowo, należy je zawęzić lub odpowiednio zastrzec.
 
-This is a drafting-quality gate, not a requirement to make every filing long. The best filing is the shortest filing that safely proves and requests what is necessary.
+Jest to kontrola jakości redakcji, a nie nakaz wydłużania pism. Najlepsze pismo to najkrótsze pismo, które bezpiecznie wykazuje i żąda tego, co niezbędne.
 
-### 6.6 Procedural firmness calibration
+### 6.6 Kalibracja stanowczości procesowej
 
-“Firm” means:
-- unambiguous requests;
-- precise identification of legal/procedural consequences;
-- explicit reservation of rights when strategically justified;
-- clear response/follow-up expectation when appropriate;
-- no dilution of a justified position through vague or apologetic wording.
+„Stanowczość” oznacza:
+- jednoznaczne żądania;
+- precyzyjne określenie skutków prawnych i proceduralnych;
+- wyraźne zastrzeżenie praw, gdy jest strategicznie uzasadnione;
+- jasne oczekiwanie odpowiedzi lub dalszej czynności, gdy jest właściwe;
+- brak osłabiania uzasadnionego stanowiska sformułowaniami niejasnymi lub przepraszającymi.
 
-“Firm” does **not** mean:
-- accusations unsupported by evidence;
-- threats outside the available remedy;
-- insulting or adversarial adjectives;
-- speculative allegations;
-- excessive quotation of law;
-- unnecessary escalation.
+„Stanowczość” **nie oznacza**:
+- oskarżeń bez dowodów;
+- gróźb wykraczających poza dostępne środki prawne;
+- obraźliwych lub konfrontacyjnych przymiotników;
+- spekulacyjnych zarzutów;
+- nadmiernego cytowania prawa;
+- zbędnej eskalacji.
 
-The target is **maximum credible force with minimum unnecessary friction**.
+Celem jest **maksymalna wiarygodna siła argumentacji przy minimalnych niepotrzebnych tarciach**.
 
-### 6.7 Document-stage preservation
+### 6.7 Zachowanie treści między etapami dokumentu
 
-Draft A may contain explanatory scaffolding that is later compressed, but Draft B and the final artifact MUST preserve every material element required by the approved filing plan.
+`Draft A` może zawierać pomocnicze wyjaśnienia, które później zostaną skrócone, lecz `Draft B` i artefakt końcowy MUSZĄ zachować każdy istotny element zatwierdzonego planu pisma.
 
-Compression is allowed only when meaning, party identity/role, request scope, evidence link and legal effect remain intact.
+Skracanie jest dopuszczalne tylko wtedy, gdy znaczenie, tożsamość i rola stron, zakres żądań, powiązania dowodowe oraz skutek prawny pozostają niezmienione.
 
-A field/section present in an earlier approved stage may be removed only if the delta is explicitly classified under the ZERO SILENT LOSS invariant. Material omission by simplification is an `UNEXPLAINED_REGRESSION`.
+Pole lub sekcję obecną na wcześniejszym zatwierdzonym etapie można usunąć wyłącznie po jawnym zaklasyfikowaniu zmiany zgodnie z zasadą ZERO SILENT LOSS. Istotne pominięcie wskutek uproszczenia to `UNEXPLAINED_REGRESSION`.
 
-### 6.8 Argument Architecture — issue-to-remedy chain
+### 6.8 Architektura argumentacji — od zagadnienia do żądania
 
-For material filings, the drafting process SHOULD maintain an internal argument map before or during Draft A:
+Dla istotnych pism proces redakcyjny POWINIEN utrzymywać wewnętrzną mapę argumentacji przed przygotowaniem `Draft A` lub podczas jego tworzenia:
 
-`Problem → Issue → Fact/Evidence → Rule/Authority → Application → Counterargument → Rebuttal → Request`
+`Problem → Zagadnienie → Fakt/Dowód → Norma/Źródło → Zastosowanie → Kontrargument → Odpowiedź → Żądanie`
 
-This structure is a control model, not a mandatory outward-facing section layout. The final filing may compress or reorder the presentation when that improves procedural readability, but the internal chain MUST remain traceable.
+Jest to model kontrolny, a nie obowiązkowy układ sekcji pisma zewnętrznego. Ostateczne pismo może skracać lub zmieniać kolejność prezentacji dla większej czytelności procesowej, lecz wewnętrzny łańcuch MUSI pozostać możliwy do prześledzenia.
 
-For each material issue:
-- identify the precise legal/procedural question;
-- bind only supported facts/claims to that issue;
-- identify the governing current rule and authority;
-- explain the application without overstating the evidence;
-- identify the strongest material counterargument when one reasonably exists;
-- answer it narrowly and accurately;
-- connect the conclusion to a concrete requested act/remedy.
+Dla każdego istotnego zagadnienia należy:
+- określić dokładne pytanie prawne lub proceduralne;
+- powiązać z nim wyłącznie potwierdzone fakty lub odpowiednio oznaczone twierdzenia;
+- wskazać aktualną normę i źródło;
+- wyjaśnić zastosowanie bez wyolbrzymiania znaczenia dowodów;
+- wskazać najsilniejszy istotny kontrargument, jeśli można racjonalnie oczekiwać jego podniesienia;
+- odpowiedzieć na niego wąsko i precyzyjnie;
+- powiązać wniosek z konkretną żądaną czynnością lub środkiem ochrony.
 
-A filing MUST NOT contain an argument that cannot be connected to a concrete issue or requested outcome.
+Pismo NIE MOŻE zawierać argumentu, którego nie da się powiązać z konkretnym zagadnieniem lub oczekiwanym rezultatem.
 
-### 6.9 Recipient Decision Model
+### 6.9 Model decyzji adresata
 
-Every filing MUST be designed around the decision-maker's next lawful action.
+Każde pismo MUSI być zaprojektowane pod kątem następnej zgodnej z prawem czynności decydenta.
 
-Before drafting, answer internally:
-- Who is the actual decision-maker or executing official?
-- What exact decision, order, action, correction, disclosure or response is requested?
-- What jurisdiction/competence does that recipient have?
-- What minimum facts and legal predicates must be clear for that recipient to act?
-- What must the recipient be able to find within 30–60 seconds?
+Przed redakcją należy wewnętrznie odpowiedzieć:
+- Kto faktycznie podejmuje decyzję lub wykonuje czynność?
+- Jakiej dokładnie decyzji, postanowienia, czynności, korekty, ujawnienia informacji lub odpowiedzi się żąda?
+- Jakie kompetencje ma adresat?
+- Jakie minimalne fakty i przesłanki prawne muszą być jasne, aby mógł działać?
+- Co adresat musi znaleźć w ciągu 30–60 sekund?
 
-If the recipient cannot quickly identify **who is asking, in what matter, for what exact act, on what minimum factual/legal basis, and what should happen next**, the document requires redesign.
+Jeżeli adresat nie może szybko ustalić, **kto występuje, w jakiej sprawie, o jaką dokładnie czynność wnosi, na jakiej minimalnej podstawie faktycznej i prawnej oraz co ma nastąpić dalej**, dokument wymaga przeprojektowania.
 
-### 6.10 Burden & Proof Map
+### 6.10 Mapa ciężaru i standardu dowodu
 
-For material disputed propositions, the drafting process SHOULD maintain an internal burden/proof map:
+Dla istotnych spornych twierdzeń proces redakcyjny POWINIEN utrzymywać wewnętrzną mapę ciężaru i standardu dowodu:
 
-`Proposition → Evidence status → Who must establish it → Applicable burden/standard if verified → Current evidence → Missing evidence → Consequence if unproven`
+`Twierdzenie → Status dowodowy → Kto musi je wykazać → Obowiązujący ciężar/standard, jeśli zweryfikowany → Aktualne dowody → Brakujące dowody → Skutek niewykazania`
 
-This map is especially important where the outcome depends on:
-- payment/non-payment;
-- service/receipt;
-- authority/representation;
-- employment/income;
-- causation/damage;
-- limitation/prescription;
-- administrative eligibility;
-- execution/accounting;
-- fraud, bad faith or other state-of-mind allegations.
+Mapa jest szczególnie ważna, gdy wynik zależy od:
+- zapłaty lub jej braku;
+- doręczenia lub odbioru;
+- umocowania lub reprezentacji;
+- zatrudnienia lub dochodów;
+- związku przyczynowego lub szkody;
+- przedawnienia;
+- spełnienia przesłanek administracyjnych;
+- egzekucji i księgowania;
+- oszustwa, złej wiary lub innych twierdzeń o stanie świadomości.
 
-The final filing MUST NOT silently convert a weakly supported proposition into a categorical fact merely because stronger wording sounds more persuasive.
+Pismo końcowe NIE MOŻE po cichu przekształcać słabo udokumentowanego twierdzenia w kategoryczny fakt tylko dlatego, że mocniejsze sformułowanie brzmi bardziej przekonująco.
 
-### 6.11 Authority hierarchy and source discipline
+### 6.11 Hierarchia źródeł prawa i dyscyplina źródłowa
 
-Authority selection follows this preference order, adjusted to the jurisdiction and issue:
+Dobór źródeł odbywa się według poniższej preferowanej kolejności, dostosowanej do jurysdykcji i zagadnienia:
 
-1. current binding constitutional/statutory/regulatory text;
-2. controlling or materially authoritative higher-court decisions;
-3. relevant appellate/first-instance case law where appropriate;
-4. official institutional guidance or published procedural information;
-5. respected commentary/doctrine as secondary support.
+1. aktualne, wiążące przepisy konstytucyjne, ustawowe i wykonawcze;
+2. wiążące lub istotnie autorytatywne orzeczenia sądów wyższych instancji;
+3. odpowiednie orzecznictwo sądów odwoławczych i pierwszej instancji;
+4. oficjalne wytyczne instytucji i opublikowane informacje proceduralne;
+5. uznane komentarze i doktryna jako wsparcie wtórne.
 
-Primary authority is preferred over secondary summaries for material propositions.
+Dla istotnych twierdzeń źródła pierwotne mają pierwszeństwo przed opracowaniami wtórnymi.
 
-A lower-authority source MUST NOT be presented as if it were binding. Commentary MUST NOT substitute for an available primary source on a material current-law question.
+Źródła niższego rzędu NIE WOLNO przedstawiać jako wiążącego. Komentarz NIE MOŻE zastępować dostępnego źródła pierwotnego przy istotnym zagadnieniu aktualnego prawa.
 
-### 6.12 Court / authority readability standard
+### 6.12 Standard czytelności dla sądu i organu
 
-A professional filing SHOULD allow a busy judge, referendary, clerk, enforcement officer, administrative officer or institutional decision-maker to identify within the first 30–60 seconds:
-- parties / filer and role;
-- recipient/authority;
-- case/reference;
-- procedural posture;
-- exact operative request;
-- the 2–4 decisive facts or predicates;
-- the core legal basis;
-- the evidence/attachments that matter;
-- the next action expected from the recipient.
+Profesjonalne pismo POWINNO umożliwić zajętemu sędziemu, referendarzowi, urzędnikowi sądowemu, komornikowi, urzędnikowi administracyjnemu lub innemu decydentowi ustalenie w ciągu pierwszych 30–60 sekund:
+- stron, składającego i jego roli;
+- adresata lub organu;
+- sygnatury lub numeru sprawy;
+- stanu postępowania;
+- dokładnego żądania;
+- 2–4 rozstrzygających faktów lub przesłanek;
+- głównej podstawy prawnej;
+- istotnych dowodów i załączników;
+- oczekiwanej następnej czynności adresata.
 
-Readability is substantive quality. Dense legal language, excessive quotations, repetition or ornamental formality that obscures the decision path is a defect.
+Czytelność jest elementem jakości merytorycznej. Nadmiernie skomplikowany język prawniczy, rozbudowane cytaty, powtórzenia lub ozdobna formalność utrudniające zrozumienie ścieżki decyzyjnej są wadą.
 
-**Legal precision != unnecessary complexity.**
+**Precyzja prawna != niepotrzebna złożoność.**
 
-### 6.13 Living strengthening rule
+### 6.13 Zasada ciągłego wzmacniania standardu
 
-This drafting doctrine is a living standard. It MUST be strengthened when real CASE evidence reveals a recurring or material failure mode.
+Niniejsze zasady redagowania są standardem aktualizowanym. MUSZĄ być wzmacniane, gdy dowody z rzeczywistych spraw CASE ujawniają powtarzający się lub istotny mechanizm błędu.
 
-Improvement loop:
-`Observed defect → root cause → smallest generalizable rule/control → update this living standard → validate on the affected workflow → preserve change history`.
+Cykl doskonalenia:
+`Zaobserwowany błąd → Przyczyna źródłowa → Najmniejsza reguła lub kontrola możliwa do uogólnienia → Aktualizacja niniejszego standardu → Walidacja w odpowiednim procesie → Zachowanie historii zmian`.
 
-Do not create competing whole-standard V2/V3 files for normal evolution.
+Nie należy tworzyć konkurencyjnych pełnych standardów V2/V3 dla zwykłej ewolucji zasad.
 
-New controls SHOULD be added only when they:
-- prevent a demonstrated or reasonably foreseeable material failure;
-- improve correctness, evidentiary discipline, procedural safety, integrity, readability or replay;
-- do not create disproportionate bureaucracy for simple matters.
+Nowe kontrole POWINNY być dodawane wyłącznie wtedy, gdy:
+- zapobiegają wykazanemu lub racjonalnie przewidywalnemu istotnemu błędowi;
+- zwiększają poprawność, dyscyplinę dowodową, bezpieczeństwo proceduralne, integralność, czytelność lub odtwarzalność;
+- nie powodują nieproporcjonalnej biurokracji w prostych sprawach.
 
-The standard MUST evolve by evidence, not by stylistic preference alone.
+Standard MUSI rozwijać się na podstawie dowodów, a nie wyłącznie preferencji stylistycznych.
 
-## 7. Evidence-to-assertion traceability
+## 7. Identyfikowalność powiązań między dowodem a twierdzeniem
 
-Material factual assertions in a professional document SHOULD be traceable to admitted evidence or explicitly marked as a party’s assertion.
+Istotne twierdzenia faktyczne w profesjonalnym dokumencie POWINNY być możliwe do powiązania z dopuszczonymi dowodami lub wyraźnie oznaczone jako twierdzenia strony.
 
-Preferred pattern for complex cases:
+Preferowany schemat dla spraw złożonych:
 
-`Evidence E-xxx → Fact/Claim F/C-xxx → Legal/Procedural issue P-xxx → Remedy/Strategy R/S-xxx → Filing request Q-xxx`
+`Dowód E-xxx → Fakt/Twierdzenie F/C-xxx → Zagadnienie prawne/proceduralne P-xxx → Środek ochrony/Strategia R/S-xxx → Żądanie pisma Q-xxx`
 
-Where practical, maintain hashes and artifact versions sufficient to reproduce why a particular filing version was generated.
+Gdy jest to praktyczne, należy zachowywać skróty i wersje artefaktów wystarczające do odtworzenia przyczyn sporządzenia konkretnej wersji pisma.
 
-## 8. Complexity scaling
+## 8. Skalowanie stopnia szczegółowości do złożoności sprawy
 
-The standard does not become weaker for simple cases or bureaucratically heavier for no reason.
+Standard nie może być słabszy w prostych sprawach ani bez powodu nadmiernie biurokratyczny.
 
-- Simple matter: compressed execution, same invariants.
-- Material legal/financial matter: full gates.
-- High-risk/multi-party/multi-forum matter: full gates + adversarial review + explicit dependency graph + stronger provenance/replay.
+- Prosta sprawa: skrócony przebieg czynności przy zachowaniu tych samych niezmienników.
+- Istotna sprawa prawna lub finansowa: pełne kontrole.
+- Sprawa wysokiego ryzyka, wielostronna lub prowadzona przed wieloma organami: pełne kontrole, analiza kontradyktoryjna, jawna mapa zależności oraz silniejsze potwierdzenie pochodzenia dowodów i odtwarzalności.
 
-Best-Justified Solution != Most Complex Solution.
+**Najlepiej uzasadnione rozwiązanie != najbardziej skomplikowane rozwiązanie.**
 
-## 9. Questions to the operator/user
+## 9. Pytania do operatora lub użytkownika
 
-Do not ask the user to restate information already present in the CASE or retrievable from authorized sources.
+Nie należy prosić użytkownika o ponowne podanie informacji już znajdujących się w CASE lub możliwych do pozyskania z autoryzowanych źródeł.
 
-Ask only for the smallest genuinely blocking input, such as:
-- identity/standing/representation;
-- missing source document;
-- receipt/service evidence;
-- required signature/authority;
-- missing transaction evidence;
-- a true decision between materially different safe strategies.
+Pytania należy ograniczyć do najmniejszej rzeczywiście blokującej informacji, takiej jak:
+- tożsamość, legitymacja lub reprezentacja;
+- brakujący dokument źródłowy;
+- dowód odbioru lub doręczenia;
+- wymagany podpis lub umocowanie;
+- brakujący dowód transakcji;
+- rzeczywista decyzja między istotnie różnymi bezpiecznymi strategiami.
 
-Non-blocking gaps remain explicit `UNKNOWN/UNRESOLVED` and work continues to the evidence ceiling.
+Braki nieblokujące pozostają jawnie oznaczone jako `UNKNOWN/UNRESOLVED`, a praca trwa do granicy dostępnych dowodów.
 
-## 10. Real-case validation honesty
+## 10. Rzetelność deklaracji o walidacji rzeczywistej sprawy
 
-Do not claim:
-- real-case validation without actual private-case evidence having been processed;
-- delivery without a receipt;
-- legal effect merely because a document was generated;
-- independent/human/security/professional review unless it actually occurred;
-- exact replay without complete bound identities/artifacts.
+Nie wolno deklarować:
+- walidacji rzeczywistej sprawy bez faktycznego przetworzenia prywatnych dowodów tej sprawy;
+- doręczenia bez potwierdzenia;
+- skutku prawnego tylko dlatego, że wygenerowano dokument;
+- niezależnej, ludzkiej, bezpieczeństwa lub profesjonalnej kontroli, jeśli nie została faktycznie wykonana;
+- dokładnego odtworzenia przebiegu bez kompletnych, powiązanych identyfikatorów i artefaktów.
 
-Synthetic CI validates engineering behavior, not the truth or legal correctness of a real matter.
+Syntetyczne testy CI sprawdzają działanie techniczne, a nie prawdziwość lub poprawność prawną rzeczywistej sprawy.
 
-## 11. Case closure / reopening
+## 11. Zamknięcie i ponowne otwarcie sprawy
 
-A CASE may close when:
-- active goals are resolved, withdrawn, transferred or accepted as unresolved;
-- required actions and follow-ups are completed;
-- remaining unknowns are explicitly non-blocking or moved to monitoring;
-- closure reason, authority and final state are recorded.
+CASE może zostać zamknięty, gdy:
+- aktywne cele zostały osiągnięte, cofnięte, przekazane lub zaakceptowane jako nierozstrzygnięte;
+- wymagane czynności i kontrole następcze zostały zakończone;
+- pozostałe niewiadome wyraźnie nie blokują zamknięcia albo zostały przekazane do monitorowania;
+- odnotowano powód zamknięcia, upoważnienie i stan końcowy.
 
-Closure freezes an auditable snapshot; it does not erase history. New material may reopen the CASE as a new state/run while preserving prior closure evidence.
+Zamknięcie utrwala możliwy do audytu obraz stanu; nie usuwa historii. Nowy istotny materiał może ponownie otworzyć CASE jako nowy stan lub przebieg z zachowaniem dowodów wcześniejszego zamknięcia.
 
-## 12. Versioning and amendment
+## 12. Wersjonowanie i zmiany
 
-This is a living operator standard. Do not create `V2`, `V3` files for normal improvements.
+Niniejszy dokument jest aktualizowanym standardem operatora. Nie należy tworzyć plików `V2`, `V3` dla zwykłych ulepszeń.
 
-For a material improvement:
-1. identify a concrete failure mode or quality gap;
-2. check whether an existing rule already covers it;
-3. refine the existing rule where possible;
-4. increment the semantic version in this file for material semantic change;
-5. update non-authoritative mirrors only when necessary;
-6. preserve history through Git commits/PRs rather than competing documents.
+Dla istotnego ulepszenia należy:
+1. wskazać konkretny mechanizm błędu lub lukę jakościową;
+2. sprawdzić, czy istniejąca reguła już ją obejmuje;
+3. w miarę możliwości doprecyzować istniejącą regułę;
+4. podnieść wersję semantyczną w tym pliku, jeżeli zmiana ma istotny charakter znaczeniowy;
+5. aktualizować nieautorytatywne kopie tylko wtedy, gdy to konieczne;
+6. zachować historię poprzez commity Git i PR, zamiast tworzyć konkurencyjne dokumenty.
 
-A CASE SHOULD record the operating-standard version and repository commit used for significant runs/filings when practical.
+CASE POWINIEN, gdy jest to praktyczne, zapisywać wersję standardu operacyjnego i commit repozytorium użyte przy istotnych przebiegach lub pismach.
 
-## 13. Default operator behavior
+## 13. Obowiązkowy interfejs Stage Gate dla CASE
 
-Within the ChatGPT project for private CASE work, this standard is the default. The user should not need to paste a long prompt for every matter.
+### 13.1 Widoczny status po każdej istotnej czynności
 
-For every NEW CASE or CONTINUE request:
-- read/obey this standard and its higher authorities;
-- keep CASE data isolated;
-- continue end-to-end to the current evidence/authority ceiling;
-- do not render final filings before G7 preflight;
-- never promote a rendered filing directly to `SEND_READY`; require exact-artifact `FINISH_PASS` first;
-- at every document-production stage enforce ZERO SILENT LOSS by comparing the candidate with the approved CASE/filing state and prior approved document stage;
-- do not stop at a repairable drafting/research problem;
-- report blockers precisely rather than manufacture certainty.
+Po każdej istotnej czynności w rzeczywistej sprawie CASE należy wyświetlić identyfikator CASE, aktualny etap, wykonane działania i odniesienia do dowodów, wynik (`NOT_STARTED`, `IN_PROGRESS`, `PASS`, `FAIL`, `BLOCKED`), krytyczne blokery, następny etap i warunki jego rozpoczęcia. Gdy interfejs na to pozwala, należy udostępnić przyciski **Wstecz**, **Podgląd dalej** i **Wykonaj kontrolę etapu**. Jeżeli przyciski nie są dostępne, należy zapewnić odpowiednik tekstowy. Wynik bez rzeczywistej walidacji i źródła nigdy nie otrzymuje statusu `PASS`.
+
+### 13.2 Nawigacja po dziewięciu etapach z zachowaniem istniejących bramek
+
+1. Inwentaryzacja i granica dowodowa (G0–G2).
+2. Chronologia, sprzeczności, terminy, legitymacja i mapa proceduralna (G3–G4).
+3. Badanie aktualnego prawa (G5).
+4. Strategia, struktura czynności procesowych i Draft A (G6–początek G7).
+5. Red Team i poprawki (G7).
+6. Hardcore Preflight — rygorystyczna kontrola przed wysłaniem lub złożeniem pisma (G7).
+7. Renderowanie DOCX/PDF, G7.5 FINISH, a następnie `SEND_READY` wyłącznie po kontroli `FINISH_PASS` konkretnego artefaktu.
+8. Wyraźna autoryzacja oraz wysłanie lub złożenie pisma (G8).
+9. Potwierdzenie, analiza odpowiedzi i zmian, odtworzenie przebiegu oraz zamknięcie (G8).
+
+Są to grupy nawigacyjne interfejsu, a nie zamienniki bramek kontrolnych. Dotychczasowy obowiązkowy cykl i kolejność bramek pozostają nadrzędne.
+
+### 13.3 Nawigacja nie jest walidacją
+
+**Wstecz** i **Podgląd dalej** zmieniają wyłącznie wyświetlany etap. Nigdy nie ustawiają `PASS`, nie zapisują historii sprawy, nie omijają krytycznej bramki, nie zatwierdzają ani nie wysyłają pisma i nie stwierdzają doręczenia. **Wykonaj kontrolę etapu** uruchamia żądanie rzeczywistej oceny; nie jest przyciskiem automatycznego `PASS`. Należy pokazać dowody, ustalenia, blokery i następną dopuszczalną zmianę etapu. Trwałe zmiany stanu CASE wymagają autoryzowanej ścieżki zapisu do Canonical Case Ledger; stan widoczny tylko w interfejsie nie jest autorytatywny.
+
+Krytyczny `FAIL/BLOCKED` uniemożliwia `SEND_READY`. Renderowanie nie oznacza `SEND_READY`. Wymagany jest `FINISH_PASS` dla konkretnego artefaktu; każda późniejsza zmiana artefaktu unieważnia ten wynik.
+
+### 13.4 Automatyczna kontynuacja i ścieżka audytowa
+
+W trybie `CONTINUE` należy odtworzyć ostatni autoryzowany stan i ocenić wyłącznie zmiany. Wcześniej zamknięte bramki można ponownie otworzyć tylko z wyraźnego powodu opartego na dowodach. Rutynowe kontrole i redagowanie należy wykonywać automatycznie, gdy istnieje upoważnienie; pytania ograniczać do rzeczywistych blokerów lub wyraźnej zgody na działanie zewnętrzne. Uruchomienie kontroli nigdy nie może automatycznie powodować wysłania pisma.
+
+Dla każdej ukończonej bramki należy zapisać autoryzowanym mechanizmem: identyfikator bramki, odniesienia do dowodów i artefaktów, faktycznie wykonane kontrole, wynik, blokery, znacznik czasu, jeśli jest dostępny, oraz następną zmianę etapu. Nie wolno deklarować trwałego zapisu bez dowodu.
+
+`DRAFT != PREFLIGHTED != RENDERED != FINISH_PASS != SEND_READY != APPROVED != SENT/FILED != RECEIVED/DELIVERED != EFFECTIVE`.
+
+## 14. Domyślny sposób działania operatora
+
+W projekcie ChatGPT dotyczącym prywatnych spraw CASE niniejszy standard obowiązuje domyślnie. Użytkownik nie powinien musieć wklejać długiego polecenia dla każdej sprawy.
+
+Dla każdego polecenia `NEW CASE` lub `CONTINUE` należy:
+- odczytać i stosować niniejszy standard oraz źródła nadrzędne;
+- izolować dane poszczególnych spraw CASE;
+- kontynuować działania od początku do końca w granicach dostępnych dowodów i upoważnień;
+- nie renderować pism końcowych przed kontrolą G7;
+- nigdy nie nadawać wyrenderowanemu pismu bezpośrednio statusu `SEND_READY`; najpierw wymagany jest `FINISH_PASS` dla dokładnego artefaktu;
+- na każdym etapie tworzenia dokumentu egzekwować ZERO SILENT LOSS przez porównanie kandydata z zatwierdzonym stanem CASE i planem pisma oraz wcześniejszym zatwierdzonym etapem dokumentu;
+- nie zatrzymywać pracy na problemie redakcyjnym lub badawczym, który można rozwiązać;
+- precyzyjnie raportować blokery, zamiast pozorować pewność.
