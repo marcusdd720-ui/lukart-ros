@@ -295,20 +295,20 @@ Odpowiedź lub istotne zdarzenie uruchamia analizę zmian. Historyczne analizy z
 
 Końcowe pismo musi być profesjonalnym artefaktem, a nie projektem z czatu.
 
-O ile adresat nie wymaga innego formatu, mechanizm renderujący POWINIEN zapewnić:
+O ile miejsce docelowe nie narzuca innego formatu, mechanizm renderujący POWINIEN zapewnić:
 - format A4;
 - czytelną, profesjonalną czcionkę;
 - spójną hierarchię akapitów;
 - odpowiedni lewy margines do fizycznego złożenia lub wpięcia dokumentu, gdy jest to istotne;
 - numerację stron;
-- poprawny blok nadawcy, w tym pełny aktualny adres pocztowy lub siedziby, gdy jest wymagany;
+- poprawny blok nadawcy, w tym pełny aktualny adres pocztowy lub siedziby, gdy jest to właściwe dla danego pisma;
 - poprawny blok adresata, w tym pełny adres do wniesienia pisma;
 - aktualną datę;
 - sygnaturę lub numer sprawy, gdy ma zastosowanie;
 - miejsce podpisu;
 - uporządkowany wykaz załączników;
 - brak wewnętrznych komentarzy CASE, informacji diagnostycznych, etykiet spekulacyjnych i nieużywanych pól zastępczych;
-- DOCX lub PDF, albo oba formaty, gdy są wymagane lub właściwe.
+- DOCX lub PDF, albo oba formaty, gdy są żądane lub właściwe.
 
 Samo renderowanie nigdy nie nadaje statusu `SEND_READY`. Wygenerowany DOCX/PDF MUSI przejść G7.5 `FINISH` dla dokładnie tych bajtów artefaktu, które mają zostać przekazane. Kontrola musi potwierdzić, że zatwierdzone bloki tożsamościowe i adresowe, strony, adresat, data, sygnatura, żądania, istotna treść faktyczna i prawna, obszar podpisu oraz wykaz załączników są obecne, czytelne i nie zostały obcięte, podmienione ani pominięte. Każda niezgodność cofa artefakt do najwcześniejszego etapu, którego dotyczy, i unieważnia wcześniejsze statusy FINISH/SEND_READY.
 
@@ -316,7 +316,7 @@ Szablony określają wygląd, a nie prawdę. Mechanizm renderujący NIE MOŻE wy
 
 ### 6.1 Zasady redagowania pism prawnych — domyślnie język procesowy
 
-O ile adresat, jurysdykcja lub polecenie użytkownika nie wymagają istotnie innego stylu, profesjonalne pisma CASE MUSZĄ posługiwać się **językiem prawnym i procesowym skierowanym do organu**, a nie stylem potocznym, emocjonalnym czy ozdobnym.
+O ile miejsce docelowe, jurysdykcja lub polecenie użytkownika nie wymagają istotnie innego stylu, profesjonalne pisma CASE MUSZĄ posługiwać się **językiem prawnym i procesowym skierowanym do organu**, a nie stylem potocznym, emocjonalnym czy ozdobnym.
 
 Domyślne cechy pisma:
 - profesjonalny język prawniczy w języku polskim, dostosowany do adresata i etapu postępowania;
