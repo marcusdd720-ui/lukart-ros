@@ -1936,3 +1936,691 @@ Target metric:
 human_signing_events / independently_verified_closed_milestones
 
 The system should minimize this ratio without weakening provenance, separation of duties or fail-closed governance.
+
+### Authority-tier refinement — 2026-10-05
+
+To prevent autonomous lanes from stalling on constant signatures, split signatures by authority:
+
+- `AUTOMATION_CHECKPOINT`: dedicated machine/automation signing identity may sign low-authority checkpoint commits/evidence; never sufficient for merge/release/promotion.
+- `HUMAN_CANDIDATE_FREEZE`: one human signing event for a coherent independently validated candidate where policy requires a personal signature.
+- `HUMAN_PROMOTION`: separate explicit promotion/release authority only where governance requires it.
+
+Agents must batch causally related fixes and avoid requesting a human signature per file/task. The automation key and human key must remain distinguishable in provenance and policy.
+
+
+## IDEA-074 — LUKART WORK → LUKART ROS Modular-Monorepo Consolidation
+
+Status: `OWNER STRATEGY / PLANNED AFTER GENERATOR P0 CLOSURE`
+Recorded: `2026-10-05`
+Priority: `P1 AFTER CURRENT P0`
+
+### Owner decision
+
+`lukart-work` is transitional. The long-term target is one sovereign LUKART platform repository, `lukart-ros`, with Generator Pism preserved as an explicitly bounded product inside that repository rather than as a separate peer platform.
+
+The target is a **modular monorepo, not a monolithic application**.
+
+Proposed product boundary:
+
+```text
+lukart-ros/
+├── core/
+├── agents/
+├── evidence/
+├── validation/
+├── reasoning/
+├── knowledge/
+├── factory/
+├── platform/
+│   └── ... LSAF/control-plane capabilities ...
+├── products/
+│   └── generator-pism/
+│       ├── src/
+│       ├── contracts/
+│       ├── schemas/
+│       ├── tests/
+│       ├── docs/
+│       └── AGENTS.md
+├── jurisdictions/
+│   ├── pl/
+│   ├── eu/
+│   └── co/
+└── docs/
+```
+
+### Architectural intent
+
+- `lukart-ros` becomes the long-horizon platform / control-plane / shared-core repository.
+- Generator Pism remains a separately bounded Product context under `products/generator-pism`.
+- Product code consumes stable public platform contracts/ports rather than provider-specific or internal implementation details.
+- LSAF/provider/model/executor implementations remain below stable contracts and remain replaceable.
+- A shared repository does not erase Product != Platform or Factory != Product boundaries.
+- Cross-product and platform boundaries must be enforceable by tests/CI rather than by convention alone.
+- Hierarchical `AGENTS.md` may specialize Product/subtree execution instructions while root invariants remain non-negotiable.
+
+### Migration rule
+
+Do **not** begin the consolidation while Generator Pism P0/product closure is still active. Repository migration, architecture migration and product closure must not be mixed into one uncontrolled change.
+
+Required order:
+
+1. close Generator Pism P0 to a real usable path;
+2. freeze the migration source and inventory;
+3. define ROS↔WORK integration/contracts;
+4. run migration pre-audit and dependency mapping;
+5. define dependency firewall / allowed import directions;
+6. perform history-preserving import into `products/generator-pism`;
+7. run dual/shadow validation and exact-SHA compatibility tests;
+8. perform controlled cutover;
+9. archive `lukart-work` as read-only provenance/history; do not delete it.
+
+### ROS–WORK Consolidation Program gates
+
+- `C0 — Inventory`: code, contracts, schemas, docs, tests, evidence, CI, history, unresolved gates.
+- `C1 — Contract Mapping`: classify what becomes shared platform contract, Product-local contract, jurisdiction package or legacy-only artifact.
+- `C2 — Dependency Firewall`: define and test allowed dependency directions; forbid Product imports from private platform internals.
+- `C3 — History-Preserving Import`: preserve source commit/PR/provenance mapping and migration manifest.
+- `C4 — Dual Validation`: old and new paths are compared on controlled fixtures; semantic and artifact equivalence/deviation is explicit.
+- `C5 — Cutover + Archive`: new Product path becomes active only after required exact-SHA CI/review; old repository is retained read-only.
+
+### Dependency direction
+
+Preferred rule:
+
+```text
+PRODUCT
+  ↓
+PUBLIC PLATFORM CONTRACTS / PORTS
+  ↓
+SHARED CORE / LSAF IMPLEMENTATIONS
+```
+
+Forbidden pattern:
+
+```text
+Product → private scheduler/provider/storage implementation internals
+```
+
+Candidate stable ports include:
+
+- `ExecutionPort`
+- `EvidencePort`
+- `CapabilityPort`
+- `MemoryPort`
+- `ValidationPort`
+- `LegalAuthorityPort`
+- `ArtifactPort`
+
+Exact names remain subject to C1 contract mapping and BUILD-vs-ADOPT/architecture review.
+
+### CI / repository model
+
+Use path-aware hierarchical validation:
+
+- Product-only changes run Generator-focused checks + shared contract/invariant checks.
+- Shared-core/platform changes run the affected Product compatibility suites.
+- Boundary tests fail when forbidden imports or authority leaks are introduced.
+- Nested `AGENTS.md` files may optimize executor instructions but must never redefine root governance semantics.
+
+### Backlog and governance after cutover
+
+After successful cutover, the strategic backlog should converge on `lukart-ros/docs/IDEAS_BACKLOG.md` as the primary portfolio backlog. Product-local roadmaps may remain local, but strategic ideas must carry explicit scope such as `platform`, `products/generator-pism`, or `jurisdiction/pl` rather than creating competing portfolio SSOTs.
+
+### Acceptance criteria
+
+- Generator Pism functionality is preserved or intentionally version-migrated with explicit evidence;
+- no Product authority semantics are lost during import;
+- historical WORK SHA/PR/CI provenance remains traceable after cutover;
+- `lukart-work` can be archived without losing required evidence/history;
+- Product boundaries are enforced by machine-verifiable dependency/contract tests;
+- provider/executor replacement does not require Generator Pism business-logic rewrites;
+- one repository does not become one undifferentiated dependency graph;
+- rollback/cutback path exists until C5 closure;
+- migration is not declared complete until post-cutover validation on exact `main` SHA passes.
+
+### Non-goals
+
+- do not delete `lukart-work`;
+- do not flatten Generator Pism into ROS internals;
+- do not rewrite historical Git provenance;
+- do not use consolidation to bypass current P0 gates;
+- do not treat monorepo location as evidence that Product/Platform boundaries are correct.
+
+## IDEA-075 — Meta Muse / Muse Spark as External Agent & Zero-Cost Research Candidate
+
+Status: `RESEARCH / BUILD-vs-ADOPT CANDIDATE`
+Recorded: `2026-10-05`
+Source signal: YouTube tutorial `dkNbsWNRySI` ("How to Create a Muse AI Account & Get 1 Billion Free Tokens")
+
+### Why it may matter
+
+Meta Muse is a personal agent that runs in a dedicated secure VM with browser/tool access, while Muse Spark is exposed separately through Meta's developer/model API. The agent and the developer model/API must be evaluated as distinct surfaces.
+
+Potential LUKART relevance:
+- independent non-OpenAI reviewer/executor candidate;
+- long-horizon agent/computer-use benchmark target;
+- external execution backend candidate behind LSAF adapters;
+- zero-cost/limited-free provider discovery candidate;
+- reference architecture for secure VM + sentinel/approval/audit patterns;
+- optional media/multimodal capability research.
+
+### Critical boundaries
+
+- A referral/YouTube claim of "1B free tokens" is not sufficient evidence for `VERIFIED_FREE`.
+- Official availability, geographic eligibility, terms, token expiry, API applicability and commercial-use limits must be verified live.
+- Muse personal-agent tokens must not be assumed to equal Meta Model API tokens/credits.
+- Region workarounds/VPN-based signup must not be treated as an approved LUKART production path unless terms explicitly permit it.
+- Muse must remain a replaceable executor/provider; it cannot become LUKART authority or SSOT.
+- Real client/legal data is prohibited until privacy, retention, data-use, jurisdiction and credential boundaries are independently reviewed.
+- Any integration must pass BUILD-vs-ADOPT, synthetic benchmark, cost gate and exact evidence capture.
+
+### Acceptance criteria for promotion
+
+1. verify official Meta product/API availability for Poland/EU or approved target jurisdiction;
+2. verify current pricing/free-tier/referral terms from official sources;
+3. distinguish Muse personal agent vs Muse Spark / Meta Model API vs Muse Code;
+4. run synthetic coding/agent/computer-use benchmarks against current primary builder/reviewer baselines;
+5. measure reliability, tool-use, latency, context, structured output and failure behavior;
+6. review privacy, retention, training opt-out, secrets/credential model and regional legal constraints;
+7. classify final disposition as `ADOPT_ADAPTER`, `REVIEWER_ONLY`, `RESEARCH_ONLY`, `WATCH`, or `REJECT`.
+
+No production integration is authorized by this entry.
+
+### Live verification — 2026-10-05
+
+Observed on the user's real Meta Model API account from Poland:
+- account creation and Model API dashboard access: PASS;
+- Muse Spark 1.3 Contributor surfaced in the dashboard: PASS;
+- Billing page displayed: "No payment method on file. Add one to make API requests.";
+- no promotional/free credit balance was visible on the Billing overview at this checkpoint;
+- no API request was made and no payment method was added.
+
+Current classification:
+- Meta Model API Poland access: `LIVE_VERIFIED`;
+- Muse Spark availability in dashboard: `LIVE_VERIFIED`;
+- 1B-token promotion for Model API: `NOT_VERIFIED`;
+- zero-cost API execution without payment method: `BLOCKED_BY_BILLING_SETUP`;
+- paid use: `BLOCKED_BY_POLICY`.
+
+Additional live UI observation:
+- Model API Chat surface rendered example prompts, but no successful inference was obtained without billing activation;
+- navigation subsequently reached the Meta Global AI Developer Hackathon notification page, which is unrelated to free model execution;
+- therefore Chat UI availability must not be treated as proof of free inference.
+
+
+Next research step: verify whether any official promotional-credit/referral path applies to Model API without requiring paid activation, and separately whether Chat/Image surfaces expose any free UI quota.
+
+
+
+### Live Muse admission experiment — 2026-10-05
+
+Observed on the user's real Meta/Muse account:
+- a fresh Incogniton browser session using Incogniton's free proxy progressed beyond the prior waitlist state into Muse onboarding/disclosure;
+- Meta Accounts Center subsequently showed a Muse login located in the United States, while the user's ordinary Windows Meta sessions remained in Poland;
+- the Muse flow reached age verification, offering credit-card verification or linking an existing Instagram/Facebook account;
+- the account's Meta Accounts Center now lists both Muse and Model API under managed Meta products;
+- Muse Code appears as a separate paid subscription product (USD 5/15/50 tiers observed) and must not be conflated with consumer Muse referral tokens;
+- no paid subscription or payment method was activated during this checkpoint;
+- referral/invite credit and any 1B-token grant remain NOT VERIFIED.
+
+Interpretation:
+- region/admission behavior changed when the Muse session was established through a US-located proxy exit;
+- this is evidence of geo-sensitive admission, not proof of an officially supported non-US onboarding path;
+- next safe validation step is completing age verification only with the user's real linked Meta/Facebook/Instagram identity, then checking whether consumer Muse exposes Invite/referral UI.
+
+### LUKART MEDIA / test-budget use case
+
+If an official/live check confirms that the promotional token pool is genuinely usable through Muse/Muse Spark or another authorized Meta endpoint at 0 PLN, treat it as an **ephemeral experimental compute budget**, not as durable infrastructure.
+
+Priority uses:
+- prompt/shot/storyboard generation for LUKART MEDIA;
+- creative brief expansion, negative prompts and variant generation;
+- caption/script/voiceover text work;
+- multimodal QA/reviewer tasks when supported;
+- synthetic benchmark generation;
+- program/agent testing against public or synthetic fixtures;
+- provider comparison and repeatability tests;
+- coding/support tasks that would otherwise consume scarce primary-builder allowance.
+
+Do not assume LLM/agent tokens can pay for image/video generation. Media endpoints may use a separate credit/quota system. Verify the exact billing unit and endpoint before any test.
+
+When the quota is temporary, optimize for high-information experiments:
+1. establish benchmark corpus;
+2. run representative tests, not bulk low-value generations;
+3. log token/credit consumption and output quality;
+4. preserve outputs/evidence for later comparison;
+5. stop before any paid fallback/top-up.
+
+## IDEA-076 — LSAF Sovereign Trust Kernel: Capability Admission + Runtime Truth Convergence
+
+**Status:** BACKLOG / ARCHITECTURE CANDIDATE  
+**Priority:** P1 AFTER CURRENT P0 CLOSURE  
+**Source:** 2026-10-05 six-video external technology review + official repo/docs verification  
+**Extends:** IDEA-027, IDEA-028, IDEA-029, IDEA-031, IDEA-052, IDEA-054  
+**Research report:** `docs/architecture/EXTERNAL_TECH_RADAR_2026-10-05.md`
+
+### Problem
+
+LUKART already has strong individual concepts for Execution Truth, evidence, capability certification, memory boundaries, blast-radius limits and semantic drift. The missing layer is one universally enforced runtime boundary that makes all of those contracts mandatory for every executor, skill, provider, memory write and side effect.
+
+The current UAOS soak failure is empirical evidence of the core failure class: control-plane intent can diverge from runtime reality and durable evidence.
+
+### Proposed convergence
+
+Create a provider-neutral **Sovereign Trust Kernel** enforcing:
+
+1. **Capability Admission / Capability Passport**
+   - exact upstream source + SHA/content hash;
+   - provenance/license/SBOM;
+   - permissions and secret requirements;
+   - static/security scan evidence (SkillSpector is a candidate scanner, not authority);
+   - benchmark/certification result;
+   - expiry/trust-decay state.
+
+2. **Durable Execution Ledger**
+   - transactional attempt/event ledger as execution truth;
+   - mutable JSON/Markdown/dashboard state becomes derived projection only;
+   - run/job/attempt IDs, PID/process fingerprint, heartbeats, evidence hashes and immutable terminal outcomes.
+
+3. **Lease + fencing token**
+   - stale/zombie worker cannot finalize an execution after ownership moves elsewhere.
+
+4. **First-class UNCERTAIN state**
+   - uncertain external side effect is never silently retried;
+   - read-back/reconciliation or human review resolves it.
+
+5. **Exact-action authorization**
+   - one-time, expiring, action-bound approval token;
+   - planner proposes but cannot mint authority;
+   - capability/passport/run/blast-radius bound into approval.
+
+6. **Evidence-Carrying Memory**
+   - durable claims require source/evidence, authority class, valid_time, transaction_time, contradiction/revalidation metadata;
+   - agents propose memory; canonical memory service validates it;
+   - Obsidian/Markdown is a projection/view, not canonical truth.
+
+7. **Semantic Documentation Firewall**
+   - one fact → one canonical home;
+   - seiso-style drift/lint checks in report-only mode first;
+   - derived docs are generated/referenced, not duplicated manually.
+
+8. **DecisionPort**
+   - deterministic rules first;
+   - Tev1/local model only as low-risk advisory adapter after LUKART holdout benchmark;
+   - strong/quorum review for high-risk decisions.
+
+9. **Anti-Entropy Reconciliation**
+   - desired state vs ledger vs process/heartbeat vs Git/worktree vs CI/artifacts vs external receipts;
+   - mismatch maps to STALE/ORPHANED/UNCERTAIN/QUARANTINED, never fabricated RUNNING/DONE.
+
+10. **Trust decay + vendor-extinction drills**
+    - upstream/model/dependency changes decay certification;
+    - periodic alternate-executor replay proves provider portability.
+
+### External candidates discovered
+
+- NVIDIA SkillSpector → immediate shadow pilot candidate for capability/skill supply-chain scanning.
+- CopilotKit OpenMuse / tahodev OpenMuse → source of durable-task, SQL-lease, exact-action approval, receipt and no-hidden-retry patterns.
+- seiso → shadow documentation-drift gate.
+- Claude Mods Brain → provenance/date/version/drift knowledge-pack pattern.
+- Hermes Agent OS → persistent execution ledger, UNKNOWN semantics, atomic storage and profile isolation.
+- Hermes Obsidian → human-readable projection/adapter only; not shared writable authority.
+- Tev1 → optional low-risk DecisionPort adapter after benchmark.
+- TileLang → WATCH for future local inference/kernel optimization.
+- QDuo/DroidDeck → no strategic implementation case now.
+
+### Acceptance criteria before implementation
+
+1. map every proposed kernel responsibility to existing LSAF ideas/epics and eliminate duplicates;
+2. define stable public contracts before selecting dependencies;
+3. prove a deterministic baseline implementation without external vendor lock-in;
+4. run SkillSpector/seiso/OpenMuse/Hermes/Tev1 through BUILD-vs-ADOPT separately;
+5. define migration from current UAOS task state without losing historical evidence;
+6. establish crash/restart/stale-worker/uncertain-side-effect adversarial tests;
+7. require exact-SHA CI + independent reviewer for every promoted component;
+8. preserve current priority: Generator Pism > UAOS execution truth/soak > BUILD-vs-ADOPT > LSAF foundation.
+
+### Non-goals
+
+- no wholesale adoption of Hermes/OpenMuse/Claude/Obsidian as LUKART control plane;
+- no second brain as SSOT;
+- no model confidence treated as authorization;
+- no automatic paid provider fallback;
+- no production merge authorized by this backlog entry.
+
+## IDEA-077 — Resource-Aware Autonomous Work Fabric / Lock-Recovery Plane
+
+**Status:** BACKLOG / ARCHITECTURE CANDIDATE  
+**Priority:** P1 AFTER CURRENT P0 CLOSURE  
+**Source:** 2026-10-05 owner requirement: prevent RAM pressure, unnecessary file blocking, stalled agents and end-to-end execution gaps  
+**Design:** `docs/architecture/RESOURCE_AWARE_AGENT_FABRIC.md`
+
+### Problem
+
+Local agents can consume too much RAM, hold path/file ownership after progress stops, block unrelated work, and leave queues stalled while no independent supervisor proves whether the owner is alive or the lock is still justified. "Always working" currently risks becoming "always spawning", which reduces throughput under memory pressure.
+
+### Proposal
+
+Introduce a resource-aware execution plane with:
+- typed ResourceEnvelope per task;
+- RAM/CPU/browser/provider quota tokens and admission control;
+- capability/resource-aware work stealing;
+- dedicated SUPERVISOR, DISPATCHER, BUILDER, REPAIR, VERIFIER, RESEARCH and INTEGRATOR roles;
+- isolated Git worktrees instead of long-lived shared file locks;
+- TTL leases + heartbeat + monotonic fencing tokens;
+- independent Lock Reaper;
+- progress-aware watchdog (heartbeat alone is insufficient);
+- bounded repair/restart budgets;
+- transactional attempt ledger as execution truth;
+- light-task routing to deterministic/local/live-verified zero-cost lanes;
+- heavy-task Work Packet routing to ChatGPT Work/remote executor, with HUMAN_START_WORK until a real automatable Work interface exists;
+- Provider Credential Broker so agents do not receive long-lived raw keys in prompt/context.
+
+### Hard invariants
+
+1. expired/dead ownership must not block forever;
+2. stale worker cannot finalize newer work;
+3. no local spawn may exceed the resource governor's safe envelope;
+4. head-of-line task that cannot fit resources cannot block compatible light work;
+5. agent heartbeat without meaningful progress is not WORKING;
+6. repair agents cannot weaken tests, expand product scope, merge or promote;
+7. paid fallback remains blocked;
+8. local RAM pressure must cause routing/degradation, not uncontrolled swap thrash.
+
+### Validation
+
+Adversarial soak must include:
+- low-RAM pressure;
+- killed builder;
+- stale lease/lock;
+- PID reuse;
+- malformed projection state;
+- provider outage/rate limit;
+- overlapping path claims;
+- uncertain external write;
+- restart-loop budget exhaustion.
+
+
+
+### Cloud-burst extension
+
+Heavy work must not be coupled to the owner's workstation RAM. Add a provider-neutral `CloudBurstPort` for ephemeral remote workers.
+
+Initial BUILD-vs-ADOPT candidates:
+- Kaggle T4 x2 (officially 2 × T4, 16 GB VRAM each; bounded notebook sessions);
+- Lightning AI free/starter GPU capacity;
+- Google Colab free as opportunistic/non-guaranteed overflow;
+- future Codespaces/remote CPU workers for non-GPU engineering.
+
+Rules:
+- live-verify quota/cost before dispatch;
+- checkpointable/restartable jobs only;
+- canonical ledger/evidence remains outside ephemeral worker;
+- content-addressed input/output bundles;
+- paid fallback blocked;
+- client/legal data prohibited until privacy/certification allows it;
+- provider loss returns task to queue instead of freezing the whole pipeline.
+
+
+
+### Model/compute placement extension
+
+Add a provider-neutral **Compute Placement Planner**. Route by measured fit rather than parameter-count marketing.
+
+Inputs:
+- resident model bytes;
+- active parameters;
+- KV/context memory;
+- memory bandwidth;
+- CPU/GPU/NPU availability;
+- expected TTFT/tokens-per-second;
+- concurrency;
+- privacy/risk class;
+- checkpointability;
+- provider quota/cost;
+- required capability certification.
+
+Outputs:
+`LOCAL / LOCAL_LIGHT / CLOUD_FREE / CLOUD_BURST / STRONG_REMOTE / WORK / DEFER`.
+
+Sparse MoE models (e.g. 125B total / ~6B active) prove why active compute and resident memory must be modeled separately.
+
+Add a **Hardware Acquisition Gate**: no hardware purchase recommendation until observed workload, privacy/offline need, benchmark quality, energy/thermal limits and amortized TCO beat the available remote/free lanes.
+
+
+
+### Sovereign Compute Mesh extension
+
+Reject static `4 clouds × 2 permanent agents × every project` topology. Use four independent compute domains plus logical per-project cells.
+
+Each active project gets:
+- one PRIMARY EXECUTOR role;
+- one independent VERIFIER/REPAIR/RESEARCH role;
+- its own queue/resource/privacy/evidence bindings.
+
+Physical workers are leased from shared pools and may move between projects.
+
+Initial candidate domains:
+- Ollama Cloud Free/starter model lane;
+- Kaggle T4x2 GPU burst;
+- Lightning AI free/starter CPU/GPU burst;
+- Colab Free overflow;
+with GitHub/Codespaces/Actions, ChatGPT Work and future providers as orthogonal lanes.
+
+Critical capability must have at least two certified routes before claiming resilient autonomy. Provider loss must degrade throughput, not destroy task/evidence continuity.
+
+No production integration is authorized by this entry.
+
+## IDEA-078 — Intent Provenance Firewall + Agentic Security Certification Fabric
+
+**Status:** BACKLOG / STRATEGIC SECURITY CANDIDATE  
+**Priority:** P1 AFTER EXECUTION-TRUTH MINIMAL KERNEL  
+**Recorded:** 2026-10-05  
+**Source:** six-video batch-02 research; Arcanum Prompt Injection Taxonomy; OWASP Secure Agent Playbook; PortSwigger Web LLM labs; prior SkillSpector research  
+**Extends:** IDEA-015, IDEA-028, IDEA-031, IDEA-052, IDEA-054, IDEA-076  
+**Research report:** `docs/architecture/EXTERNAL_TECH_RADAR_2026-10-05.md`
+
+### Problem
+
+Current LUKART principles correctly treat retrieved/public content as untrusted data, but that boundary is not yet universally machine-enforced across every context surface.
+
+Agentic systems are uniquely exposed because webpages, PDFs, emails, meeting transcripts, RAG chunks, memory, MCP/tool metadata, plugin manifests, code comments and inter-agent messages can contain instructions that a model may mistake for authority.
+
+Prompt filtering alone is insufficient because a successful semantic bypass can still cause an authorized tool to execute an unauthorized intent.
+
+### A. Intent Provenance Firewall (IPF)
+
+Every context item must carry a typed trust envelope:
+
+```
+content_id
+source_digest
+origin
+kind:
+  POLICY
+  OWNER_INTENT
+  SYSTEM_CONTRACT
+  EXTERNAL_DATA
+  TOOL_RESULT
+  MEMORY_PROPOSAL
+  MODEL_PROPOSAL
+authority_class
+valid_time
+retrieved_at
+allowed_effects
+taint_labels
+```
+
+Hard rule:
+
+Only `POLICY / OWNER_INTENT / SYSTEM_CONTRACT` may create or widen execution authority.
+
+`EXTERNAL_DATA / TOOL_RESULT / MEMORY_PROPOSAL / MODEL_PROPOSAL` can inform reasoning, but cannot independently authorize:
+- side-effecting tools;
+- credential access;
+- filesystem/network scope expansion;
+- memory promotion;
+- cross-case access;
+- merge/sign/release;
+- policy/config authority changes.
+
+### B. Intent Proof for every side effect
+
+A privileged action must bind:
+
+```
+trusted_intent_ref
+capability_passport_id
+run_id
+exact_action_hash
+exact_argument_hash
+blast_radius_budget
+credential_ref
+expiry
+one_time_use
+```
+
+If the action's causal justification can only be traced to untrusted retrieved content, deny it.
+
+### C. Taint-preserving context transformations
+
+Untrusted provenance must survive:
+- summarization;
+- translation;
+- chunking;
+- embedding/RAG;
+- agent handoff;
+- memory proposal;
+- code/comment extraction.
+
+A transformation may change representation, but it cannot silently upgrade authority.
+
+### D. Threat-Driven Corpus Compiler
+
+Version/pin upstream security inputs:
+- Arcanum Prompt Injection Taxonomy;
+- OWASP Secure Agent Playbook procedures;
+- selected PortSwigger/authorized lab patterns and metadata;
+- SkillSpector/static-scan classes;
+- internal LUKART incidents/regressions.
+
+Compile them into synthetic, non-destructive fixtures for every LUKART ingestion surface:
+- web;
+- documents/PDF/OCR;
+- email;
+- meeting transcript;
+- GitHub issue/PR/comment;
+- RAG;
+- memory;
+- MCP/tool description;
+- plugin manifest/README;
+- code comments;
+- inter-agent messages.
+
+Expected invariants:
+- no secret disclosure;
+- no unauthorized side effect;
+- no capability escalation;
+- no cross-case leakage;
+- no memory poisoning/promotion;
+- no cost-policy bypass;
+- no merge/sign/release bypass.
+
+### E. Agentic Security Certification Gate
+
+Certification packet should include:
+- exact application/runtime SHA;
+- policy/config digest;
+- model/provider identity;
+- tool/plugin/skill passports;
+- upstream taxonomy/playbook snapshot IDs;
+- attack-fixture set digest;
+- findings;
+- mitigations;
+- independent reviewer;
+- expiry/revalidation trigger.
+
+Security state:
+`UNASSESSED → SHADOW_TESTED → REMEDIATING → SECURITY_VALIDATED → DECAYED / REVOKED`.
+
+No model/provider/runtime inherits certification after a material version change without declared compatibility evidence.
+
+### Acceptance criteria
+
+1. trust labels are typed and machine-enforced, not prompt conventions;
+2. side effects require Intent Proof independent of model self-assertion;
+3. untrusted provenance survives transformations;
+4. at least one indirect-injection test traverses each active ingestion surface;
+5. tool authorization fails closed when intent provenance is missing/ambiguous;
+6. memory promotion cannot erase source trust;
+7. test corpus is versioned, attributable and replayable;
+8. security validation is exact-SHA/config-bound;
+9. security procedures remain defensive and authorized;
+10. no security scanner/playbook becomes LUKART authority by itself.
+
+### Non-goals
+
+- do not solve prompt injection only with another LLM classifier;
+- do not paste hostile payload libraries into production prompts;
+- do not execute destructive lab steps outside isolated authorized fixtures;
+- do not treat a clean scan as proof of safety;
+- do not weaken least privilege or human promotion gates.
+
+## IDEA-079 — LUKART Execution Exchange (LEX): Dynamic Provider / Agent / Cloud Capacity Broker
+
+**Status:** BACKLOG / PARTIALLY ACTIVATED CONTROL POLICY  
+**Priority:** P1 AFTER CURRENT EXECUTION-TRUTH P0  
+**Recorded:** 2026-10-05  
+**Extends:** IDEA-023, IDEA-027, IDEA-073, IDEA-076, IDEA-077  
+**Architecture:** `docs/architecture/LUKART_EXECUTION_EXCHANGE.md`  
+**Registry:** `docs/architecture/LEX_REGISTRY.yaml`
+
+### Problem
+
+The portfolio currently spans heterogeneous resources that are easy to conflate: inference providers, model routes, agent executors, cloud/CPU/GPU substrates, local RAM/WSL, GitHub Actions/Codespaces, ChatGPT Work and project queues. Static lists become stale and cannot safely answer which route should receive the next task.
+
+### Proposal
+
+Create one provider-neutral Execution Exchange with:
+- separate registries for compute substrates, inference providers, agent executors, model routes and project cells;
+- Live Capacity Ledger;
+- normalized multi-window quotas and reset calendar;
+- provider/account telemetry adapters;
+- quota reservations before dispatch;
+- circuit breakers;
+- Earliest Useful Completion (EUC) routing;
+- quota shadow price for scarce free capacity;
+- independent builder/verifier routing;
+- project-level quota budgets and emergency reserves;
+- exact dispatch receipts for replay/audit.
+
+### Novel scheduling rule
+
+"Free" capacity receives an internal scarcity price even when cash cost is 0 PLN. The scheduler preserves scarce high-quality quota for tasks where it changes expected outcome, while deterministic and cheap lanes consume routine work.
+
+### Hard invariants
+
+1. public-plan documentation never overrides exact account limits;
+2. stale quota can never authorize heavy dispatch;
+3. UNKNOWN != AVAILABLE;
+4. quota is reserved transactionally before worker dispatch;
+5. two tasks cannot spend the same logical remaining quota;
+6. reset time is first-class scheduling data;
+7. paid fallback is impossible outside policy;
+8. builder/verifier independence is measured by route diversity, not process count;
+9. every dispatch is explainable from a registry snapshot and evidence;
+10. provider/model deprecation automatically removes the route until revalidated.
+
+### Initial live state
+
+- Groq Free: `LIVE_VERIFIED_FREE`; prior real auth/inference/benchmark evidence; response headers expose remaining/reset telemetry.
+- Ollama Cloud Free: `LIVE_VERIFIED_FREE_BOUNDED`; real controlled inference and post-request zero-cost evidence.
+- Kaggle T4x2: blocked pending legitimate owner verification; no bypass.
+- Cloudflare Workers AI: official free candidate; live account certification pending.
+- GitHub Actions/Codespaces: public allowance known; exact account plan/remaining usage must be verified.
+- ChatGPT Work: heavy lane, but `HUMAN_START_REQUIRED` until supported autonomous launch exists.
+
+### Definition of Done
+
+LEX becomes IMPLEMENTED only when the runtime scheduler consumes the machine-readable registry, at least two adapters expose live quota/reset data, quota reservations prevent overbooking, provider failure triggers safe reroute, reset restores eligibility, and dispatch receipts prove why each route was chosen.
+

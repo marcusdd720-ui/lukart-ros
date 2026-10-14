@@ -1,0 +1,165 @@
+schema_version: 1
+registry_id: LUKART-LEX-2026-10-05
+status: PARTIAL_LIVE_EVIDENCE
+authority: planning_registry_until_runtime_enforced
+paid_fallback: BLOCKED
+
+refresh_policy:
+  local_resource_seconds: 15
+  provider_health_seconds: 60
+  account_quota_minutes_heavy: 15
+  account_quota_hours_light: 6
+  public_limits_hours: 24
+  model_catalog_hours: 24
+
+components:
+  compute_substrates:
+    - id: local-windows
+      status: LIVE_RESOURCE_TELEMETRY_STALE
+      class: LOCAL
+      notes: "Owner workstation; limited RAM; do not schedule heavy local models without live telemetry."
+    - id: wsl-ubuntu
+      status: VERIFY_ON_DISPATCH
+      class: LOCAL_RUNTIME
+      notes: "Runtime/substrate, not provider."
+    - id: github-actions
+      status: ACCOUNT_PLAN_VERIFY
+      class: REMOTE_CPU
+      public_limits:
+        github_free_minutes_month: 2000
+        github_pro_minutes_month: 3000
+      reset: MONTHLY_ACCOUNT_BILLING_CYCLE
+    - id: github-codespaces
+      status: ACCOUNT_PLAN_VERIFY
+      class: REMOTE_CPU
+      public_limits:
+        github_free_core_hours_month: 120
+        github_pro_core_hours_month: 180
+      reset: MONTHLY_ACCOUNT_BILLING_CYCLE
+    - id: kaggle-t4x2
+      status: BLOCKED_PENDING_OWNER_VERIFICATION
+      class: GPU_BURST
+      resources:
+        gpu_count: 2
+        gpu_model: NVIDIA_T4
+        vram_gb_each: 16
+      notes: "Do not bypass verification."
+    - id: colab-free
+      status: CANDIDATE_DYNAMIC_CAPACITY
+      class: GPU_OVERFLOW
+      reset: PROVIDER_DYNAMIC
+    - id: lightning-free
+      status: CANDIDATE_VERIFY_ACCOUNT
+      class: CPU_GPU_BURST
+
+  inference_providers:
+    - id: groq-free
+      status: LIVE_VERIFIED_FREE
+      credential_ref: GROQ_DPAPI
+      telemetry: RESPONSE_HEADERS_PLUS_ACCOUNT_LIMITS
+      models:
+        - id: openai/gpt-oss-120b
+          official_free_limits:
+            rpm: 30
+            rpd: 1000
+            tpm: 8000
+            tpd: 200000
+        - id: openai/gpt-oss-20b
+          official_free_limits:
+            rpm: 30
+            rpd: 1000
+            tpm: 8000
+            tpd: 200000
+        - id: qwen/qwen3.8-27b
+          status: LIVE_INFERENCE_PREVIOUSLY_VERIFIED
+      evidence:
+        auth: PASS
+        inference: PASS
+        structured_json: PASS
+        repeatability: "3/3 PASS"
+        coding_repair: PASS
+        legal_adversarial: PASS
+        gpt_oss_120b_hardened_benchmark: PASS
+      cost: ZERO_COST_FREE_TIER
+    - id: ollama-cloud-free
+      status: LIVE_VERIFIED_FREE_BOUNDED
+      credential_ref: OLLAMA_DPAPI
+      concurrency: 1
+      telemetry: ACCOUNT_USAGE_DASHBOARD
+      included_models:
+        - gemma4:31b
+        - gpt-oss:120b
+        - gpt-oss:20b
+        - nemotron-3-nano:30b
+        - nemotron-3-super
+        - nemotron-3-ultra
+      reset: MONTHLY_ACCOUNT_DEFINED
+      evidence:
+        auth: PASS
+        inference_gpt_oss_20b: PASS
+        purchased_balance_usd: 0
+        auto_reload: false
+      cost: ZERO_COST_INCLUDED_USAGE
+    - id: cloudflare-workers-ai-free
+      status: OFFICIAL_FREE_CANDIDATE
+      public_limits:
+        neurons_per_day: 10000
+      reset: "00:00 UTC DAILY"
+      notes: "Some models require paid plan; live account/model test required."
+    - id: openrouter-free
+      status: VERIFY_ON_DISPATCH
+      notes: "Only exact :free / price=0 routes; live price check required."
+    - id: apmix-free
+      status: VERIFY_ON_DISPATCH
+      notes: "Known test key/workspace context; current quota must be re-read."
+    - id: gemini-free
+      status: VERIFY_ON_DISPATCH
+    - id: free-provider-discovery
+      status: DISCOVERY_POOL
+
+  agent_executors:
+    - id: codex
+      status: VERIFY_ALLOWANCE_ON_DISPATCH
+      class: CODING_BUILDER
+      paid_api_fallback: false
+    - id: chatgpt-work
+      status: HUMAN_START_REQUIRED
+      class: HEAVY_REASONING
+      autonomous_dispatch: false
+    - id: hermes
+      status: RUNTIME_STATE_VERIFY
+      class: AGENT_EXECUTOR
+    - id: tencent-octop
+      status: PILOT_CANDIDATE
+      class: AGENT_ORCHESTRATOR
+    - id: claude-code
+      status: VERIFY_PROVIDER_ALLOWANCE
+      class: CODING_BUILDER
+    - id: opencode
+      status: VERIFY_PROVIDER_ALLOWANCE
+      class: CODING_BUILDER
+    - id: aider
+      status: AVAILABLE_IF_PROVIDER_ROUTE_VALID
+      class: CODING_BUILDER
+    - id: antigravity
+      status: VERIFY_LIVE_STATE
+      class: CODING_AGENT
+
+dispatch:
+  hard_filters:
+    - cost_policy
+    - privacy_class
+    - authority
+    - capability_certification
+    - context_fit
+    - compute_fit
+    - credential_state
+    - quota_freshness
+  ranking:
+    - earliest_useful_completion
+    - success_probability
+    - quality_score
+    - provider_independence
+    - quota_shadow_price
+  reserve_before_dispatch: true
+  unknown_is_available: false
