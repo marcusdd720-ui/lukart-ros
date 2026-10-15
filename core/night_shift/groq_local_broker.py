@@ -190,7 +190,9 @@ class GroqLocalBroker:
                                and broker.policy.task_marker in json.dumps(m.get("content", ""))
                                for m in messages):
                         return self.reply(403, "TASK_MARKER_MISSING")
-                    if "functions" in request or "function_call" in request:
+                    if any(field in request for field in (
+                        "functions", "function_call", "tools", "tool_choice"
+                    )):
                         return self.reply(403, "UNSUPPORTED_TOOL_TRANSPORT")
                     request["max_completion_tokens"] = broker.policy.max_completion_tokens
                     request["reasoning_effort"] = "low"

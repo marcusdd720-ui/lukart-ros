@@ -101,6 +101,8 @@ def test_receipt_persists_to_existing_hash_chain(
     assert event.event_id == "child-bridge:scope-fixture:scope-receipt"
     assert event.payload["modified_file_digests"] == {"fixed.py": "e" * 64}
     assert event.payload["plan_digest"] == outcome.plan_digest
+    assert event.payload["lease_id"] == "lease-fixture"
+    assert event.payload["fencing_token"] == 1
     assert event.payload["pid"] == outcome.process_pid
     assert event.payload["acceptance"] == "SCOPE_ONLY_NOT_CODE_REVIEW"
     assert "gsk_" not in repr(event)

@@ -119,6 +119,8 @@ def run_scoped_builder(
             "schema_version": "night-shift-builder-scope-receipt/v1",
             "task_id": receipt.task_id,
             "role": "BUILDER",
+            "lease_id": claimed.lease_id,
+            "fencing_token": claimed.fencing_token,
             "pid": receipt.process_pid,
             "plan_digest": receipt.plan_digest,
             "modified_file_digests": dict(sorted(receipt.modified_file_digests.items())),
