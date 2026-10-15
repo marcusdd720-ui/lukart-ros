@@ -149,25 +149,25 @@ def test_linux_bwrap_kernel_mount_isolation_if_available(tmp_path):
     with tempfile.TemporaryDirectory(prefix="ros-git-proof-", dir="/var/tmp") as outside:
         host_gitdir = Path(outside) / "worktrees" / "task"
         host_gitdir.mkdir(parents=True)
-        host_marker.write_text(f"gitdir: {host_gitdir}\\n")
+        host_marker.write_text(f"gitdir: {host_gitdir}\n")
         before = host_marker.read_bytes()
         secret = host_gitdir / "inaccessible"
         secret.write_text("original")
         argv = _required_isolated_bwrap_prefix(scope)
         _require_kernel_git_boundary(SimpleNamespace(arguments=argv + ("/usr/bin/python3",)), scope)
         script = (
-            "import sys\\n"
-            "from pathlib import Path\\n"
-            "marker=Path('/workspace/.git')\\n"
-            "assert marker.read_bytes()==b''\\n"
-            "assert not Path(sys.argv[1]).exists(), 'host gitdir is mounted'\\n"
-            "try:\\n"
-            "    marker.write_bytes(b'tamper')\\n"
-            "except OSError:\\n"
-            "    pass\\n"
-            "else:\\n"
-            "    raise AssertionError('metadata file writable')\\n"
-            "Path('/workspace/allowed.py').write_text('allowed')\\n"
+            "import sys\n"
+            "from pathlib import Path\n"
+            "marker=Path('/workspace/.git')\n"
+            "assert marker.read_bytes()==b''\n"
+            "assert not Path(sys.argv[1]).exists(), 'host gitdir is mounted'\n"
+            "try:\n"
+            "    marker.write_bytes(b'tamper')\n"
+            "except OSError:\n"
+            "    pass\n"
+            "else:\n"
+            "    raise AssertionError('metadata file writable')\n"
+            "Path('/workspace/allowed.py').write_text('allowed')\n"
         )
         result = subprocess.run(
             [bwrap, *argv, "/usr/bin/python3", "-c", script, str(host_gitdir)],
