@@ -129,4 +129,12 @@ def run_scoped_builder(
         created_at_epoch=int(time.time()),
     ):
         raise NightShiftContractError("builder receipt already recorded; reconcile first")
+    # Lease ownership can change during the journal transaction. A persisted
+    # receipt then needs reconciliation; never return success to a stale owner.
+    claimed = leases.require_current(
+        task_id=plan.task_id, lease_id=plan.lease_id,
+        fencing_token=plan.fencing_token, now_epoch=int(time.time()),
+    )
+    if claimed.worker_id != plan.worker_id:
+        raise NightShiftContractError("builder lease owner changed after receipt")
     return receipt

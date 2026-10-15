@@ -159,3 +159,30 @@ def test_rejected_scope_never_emits_scope_receipt(
     with pytest.raises(NightShiftContractError, match="unapproved file"):
         integration.run_scoped_builder(**params)
     assert not params["journal"].events(workflow_id="child-bridge:scope-fixture")
+
+
+def test_scope_receipt_lease_rotates_during_append_refuses_success(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    params = _rig(tmp_path, monkeypatch)
+    original = params["journal"].append_event
+
+    def rotate_after_write(**event: object) -> bool:
+        inserted = original(**event)
+        lease = params["leases"].require_current(
+            task_id="scope-fixture", lease_id="lease-fixture", fencing_token=1,
+            now_epoch=int(time.time()),
+        )
+        params["leases"].acquire(
+            task_id="scope-fixture", lease_id="new-owner", worker_id="worker-2",
+            now_epoch=lease.expires_at_epoch, ttl_seconds=120,
+        )
+        return inserted
+
+    monkeypatch.setattr(params["journal"], "append_event", rotate_after_write)
+    with pytest.raises(NightShiftContractError, match="stale lease"):
+        integration.run_scoped_builder(**params)
+    events = params["journal"].verify_chain(workflow_id="child-bridge:scope-fixture")
+    assert len(events) == 1
+    assert events[0].event_type == "BUILDER_SCOPE_RECEIPT"
+    # The journal records an ambiguous result requiring reconciliation; no PASS.
