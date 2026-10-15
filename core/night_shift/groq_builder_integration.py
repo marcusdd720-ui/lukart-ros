@@ -7,6 +7,8 @@ checker. This module does not register an executor or promote any adapter.
 from __future__ import annotations
 
 import hashlib
+import os
+import stat
 import time
 from collections.abc import Callable
 from dataclasses import dataclass
@@ -28,6 +30,78 @@ class BrokeredBuilderReceipt:
     modified_file_digests: dict[str, str]
     broker_attempts: int
     broker_response_bytes: int
+
+
+# Only the following known, pinned Bubblewrap topology may run an agent.
+# The worktree itself is writable, but the linked Git metadata locator is
+# overmounted with a read-only device and its external gitdir is never mounted.
+# No consumer-defined mount, bind, symlink creation or later option may undo it.
+_BWRAP_WORKSPACE = "/workspace"
+_BWRAP_PREFIX = (
+    "--unshare-all", "--unshare-net", "--unshare-pid", "--die-with-parent",
+    "--new-session", "--clearenv", "--cap-drop", "ALL",
+    "--ro-bind", "/usr", "/usr", "--ro-bind", "/bin", "/bin",
+    "--ro-bind", "/lib", "/lib", "--ro-bind", "/lib64", "/lib64",
+    "--dev", "/dev", "--proc", "/proc", "--tmpfs", "/tmp",
+)
+
+
+def _required_isolated_bwrap_prefix(scope: ApprovedBuilderScope) -> tuple[str, ...]:
+    """Produce the only accepted worker mount layout, not a free-form CLI."""
+    root = scope.worktree.resolve(strict=True)
+    marker = root / ".git"
+    # Linked Git worktree marker must be a regular file; bare/directory-based
+    # repos need a different operator-approved proof, never an implicit bypass.
+    if os.name != "posix" or os.uname().sysname != "Linux":
+        raise NightShiftContractError("Linux mount namespace required for builder")
+    try:
+        fd = os.open(marker, os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK | os.O_CLOEXEC)
+        try:
+            info = os.fstat(fd)
+            if (not stat.S_ISREG(info.st_mode) or info.st_nlink != 1
+                    or info.st_size > 512):
+                raise NightShiftContractError("linked Git worktree metadata marker required")
+            raw = os.read(fd, 513)
+        finally:
+            os.close(fd)
+        locator = raw.decode("utf-8")
+    except (OSError, UnicodeError) as exc:
+        raise NightShiftContractError("unreadable linked Git metadata marker") from exc
+    if len(raw) > 512 or not locator.startswith("gitdir: "):
+        raise NightShiftContractError("invalid linked Git metadata marker")
+    locator_path = Path(locator.removeprefix("gitdir: ").strip())
+    gitdir = (locator_path if locator_path.is_absolute()
+              else root / locator_path).resolve(strict=True)
+    if not gitdir.is_dir() or gitdir == root or gitdir.is_relative_to(root):
+        raise NightShiftContractError("Git metadata must reside outside worker mount")
+    # The bounded, read-only system mounts may never expose an operator
+    # repository or its common-dir metadata by another absolute path.
+    for exposed in (Path("/usr"), Path("/bin"), Path("/lib"), Path("/lib64")):
+        mounted = exposed.resolve()
+        if root.is_relative_to(mounted) or gitdir.is_relative_to(mounted):
+            raise NightShiftContractError("Git metadata aliases a read-only host mount")
+    return (
+        *_BWRAP_PREFIX,
+        "--bind", str(root), _BWRAP_WORKSPACE,
+        # The worktree's .git file is mounted as /dev/null, not its host file.
+        # Parent repository common-dir remains outside this namespace.
+        "--ro-bind", "/dev/null", _BWRAP_WORKSPACE + "/.git",
+        "--chdir", _BWRAP_WORKSPACE,
+        "--",
+    )
+
+
+def _require_kernel_git_boundary(plan: ChildLaunchPlan, scope: ApprovedBuilderScope) -> None:
+    """Reject all alternate mount grammars before reading the provider key."""
+    expected = _required_isolated_bwrap_prefix(scope)
+    args = plan.arguments
+    # A command must follow '--'. Any extra bwrap flag, even an innocuous
+    # looking bind later in the argv, is not accepted by the immutable profile.
+    if (len(args) <= len(expected) or args[:len(expected)] != expected
+            or not args[len(expected)].startswith("/")
+            or any("\x00" in str(arg) for arg in args)):
+        raise NightShiftContractError("unapproved Bubblewrap Git metadata mount layout")
+
 
 
 def run_scoped_builder(
@@ -73,6 +147,7 @@ def run_scoped_builder(
         raise NightShiftContractError("mandatory namespace controls missing")
     if not broker_socket.is_absolute():
         raise NightShiftContractError("broker socket must have exact absolute path")
+    _require_kernel_git_boundary(plan, scope)
     # Credential loaded after all no-secret admission checks. Never add to
     # subprocess argv/env or include it in a receipt, journal or exception.
     credential = read_groq_key(auth_file)

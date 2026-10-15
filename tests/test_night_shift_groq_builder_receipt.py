@@ -6,6 +6,7 @@ only the child process and the external Groq broker. No secret/network needed.
 from __future__ import annotations
 
 import hashlib
+import sys
 import time
 from pathlib import Path
 from types import SimpleNamespace
@@ -19,11 +20,16 @@ from core.night_shift.groq_local_broker import GroqBrokerPolicy
 from core.night_shift.journal import DurableEventJournal
 from core.night_shift.leases import LeaseStore
 
+pytestmark = pytest.mark.skipif(sys.platform != "linux", reason="Linux bwrap policy")
+
 
 def _rig(tmp_path: Path, monkeypatch: pytest.MonkeyPatch, *,
          lease_owner: str = "worker-1", expired: bool = False) -> dict:
     worktree = tmp_path / "isolated"
     worktree.mkdir()
+    gitdir = tmp_path / "private-host-gitdir"
+    gitdir.mkdir()
+    (worktree / ".git").write_text(f"gitdir: {gitdir}\n")
     journal_db = tmp_path / "existing-state.db"
     leases = LeaseStore(journal_db)
     journal = DurableEventJournal(journal_db)
@@ -33,7 +39,9 @@ def _rig(tmp_path: Path, monkeypatch: pytest.MonkeyPatch, *,
         now_epoch=started - 120 if expired else started,
         ttl_seconds=30 if expired else 120,
     )
-    argv = ("--unshare-net", "--unshare-pid", "--clearenv", "--cap-drop", "ALL")
+    argv = integration._required_isolated_bwrap_prefix(SimpleNamespace(worktree=worktree)) + (
+        "/usr/bin/python3", "-c", "print('synthetic')",
+    )
     plan = SimpleNamespace(
         role="BUILDER", task_id=lease.task_id, worker_id="worker-1",
         worktree=worktree, base_sha="a" * 40,
