@@ -423,3 +423,29 @@ def test_normal_exit_not_reaped_before_process_group_kill(rig, monkeypatch):
     evidence = bridge(rig).execute(rig[2])
     assert evidence.status == "EXITED_ZERO"
     assert observed
+
+
+def test_non_linux_host_refused_before_intent(rig, monkeypatch):
+    """Never journal an intent for a host that cannot execute pinned /proc FD."""
+    from core.night_shift import child_process_bridge as module
+
+    plan = rig[2]
+    monkeypatch.setattr(
+        module.os, "uname", lambda: type("Host", (), {"sysname": "Darwin"})()
+    )
+    with pytest.raises(NightShiftContractError, match="Linux /proc/self/fd"):
+        bridge(rig).execute(plan)
+    assert not rig[1].events(workflow_id=f"child-bridge:{plan.task_id}")
+
+
+def test_missing_proc_fd_refused_before_intent(rig, monkeypatch):
+    """POSIX capability alone is not sufficient without the Linux proc path."""
+    plan = rig[2]
+    original_is_dir = Path.is_dir
+    monkeypatch.setattr(
+        Path, "is_dir",
+        lambda path: False if path == Path("/proc/self/fd") else original_is_dir(path),
+    )
+    with pytest.raises(NightShiftContractError, match="Linux /proc/self/fd"):
+        bridge(rig).execute(plan)
+    assert not rig[1].events(workflow_id=f"child-bridge:{plan.task_id}")

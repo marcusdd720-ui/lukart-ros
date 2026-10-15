@@ -211,6 +211,10 @@ class ChildProcessBridge:
     def execute(self, plan: ChildLaunchPlan) -> ChildExitEvidence:
         if os.name != "posix":
             raise NightShiftContractError("WSL/Linux POSIX runner required")
+        # The pinned executable is spawned via /proc/self/fd on Linux only.
+        # Reject unsupported hosts before persisting an irreversible launch intent.
+        if os.uname().sysname != "Linux" or not Path("/proc/self/fd").is_dir():
+            raise NightShiftContractError("Linux /proc/self/fd execution required")
         if not all(hasattr(os, name) for name in (
             "waitid", "WNOWAIT", "WNOHANG", "WEXITED", "P_PID"
         )):
