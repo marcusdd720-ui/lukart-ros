@@ -366,3 +366,55 @@ def test_progress_reads_bounded_descriptor_not_untrusted_path(tmp_path, monkeypa
     os.mkfifo(fifo)
     with pytest.raises(NightShiftContractError, match="invalid progress evidence file"):
         ChildProcessBridge._progress(fifo)
+
+
+def test_pinned_executable_survives_path_swap_after_hash(rig, tmp_path, monkeypatch):
+    """A swapped filesystem name cannot change verified bytes to be executed."""
+    _, _, original_plan = rig
+    binary = tmp_path / "synthetic-python-copy"
+    payload = f'#!/bin/sh\nexec "{Path(sys.executable).resolve()}" "$@"\n'.encode()
+    binary.write_bytes(payload)
+    binary.chmod(0o700)
+    plan = replace(
+        original_plan,
+        executable=binary,
+        executable_sha256=hashlib.sha256(payload).hexdigest(),
+    )
+    original_popen = subprocess.Popen
+    entered = []
+
+    def swap_after_descriptor_validation(*argv, **kwargs):
+        assert kwargs.get("pass_fds"), "No pinned executable descriptor"
+        assert kwargs.get("executable", "").startswith("/proc/self/fd/")
+        entered.append(True)
+        binary.rename(tmp_path / "relocated-original")
+        binary.write_bytes(b"not-an-executable")
+        binary.chmod(0o700)
+        return original_popen(*argv, **kwargs)
+
+    monkeypatch.setattr(
+        "core.night_shift.child_process_bridge.subprocess.Popen",
+        swap_after_descriptor_validation,
+    )
+    evidence = bridge(rig).execute(plan)
+    assert entered
+    assert evidence.status == "EXITED_ZERO"
+    assert (plan.worktree / "result.txt").read_text() == "ran"
+
+
+def test_normal_exit_not_reaped_before_process_group_kill(rig, monkeypatch):
+    """Reserve process-group leader PID until SIGKILL targets that group."""
+    original_kill = ChildProcessBridge._kill_group
+    observed = []
+
+    def inspect_before_group_kill(child):
+        assert child.returncode is None, "leader was reaped before group cleanup"
+        observed.append(True)
+        return original_kill(child)
+
+    monkeypatch.setattr(
+        ChildProcessBridge, "_kill_group", staticmethod(inspect_before_group_kill)
+    )
+    evidence = bridge(rig).execute(rig[2])
+    assert evidence.status == "EXITED_ZERO"
+    assert observed
