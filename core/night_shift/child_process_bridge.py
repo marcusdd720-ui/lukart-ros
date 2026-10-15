@@ -391,7 +391,12 @@ class ChildProcessBridge:
             return evidence
         except BaseException:
             if child is not None:
-                self._kill_group(child)
+                try:
+                    self._kill_group(child)
+                except BaseException:
+                    # Even an incomplete child cleanup must not erase abort evidence.
+                    # Preserve the original exception for host reconciliation.
+                    pass
             try:
                 record("CHILD_ABORTED", {
                     "pid": child.pid if child is not None else None,

@@ -449,3 +449,30 @@ def test_missing_proc_fd_refused_before_intent(rig, monkeypatch):
     with pytest.raises(NightShiftContractError, match="Linux /proc/self/fd"):
         bridge(rig).execute(plan)
     assert not rig[1].events(workflow_id=f"child-bridge:{plan.task_id}")
+
+
+def test_failed_group_cleanup_still_journals_aborted(rig, monkeypatch):
+    """A process cleanup error must never mask the durable abort record."""
+    plan = replace(
+        rig[2],
+        arguments=("-c", "import time; time.sleep(2)"),
+        timeout_seconds=0.65,
+        no_progress_seconds=0.65,
+    )
+    real_kill = ChildProcessBridge._kill_group
+    attempted = []
+
+    def kill_then_fail(child):
+        real_kill(child)  # Terminate and reap actual synthetic process.
+        attempted.append(True)
+        raise OSError("synthetic cleanup failure")
+
+    monkeypatch.setattr(
+        ChildProcessBridge, "_kill_group", staticmethod(kill_then_fail)
+    )
+    with pytest.raises(NightShiftContractError, match="child execution timeout"):
+        bridge(rig).execute(plan)
+    assert attempted
+    events = rig[1].events(workflow_id=f"child-bridge:{plan.task_id}")
+    assert [event.event_type for event in events][-1] == "CHILD_ABORTED"
+    assert events[-1].payload["result"] == "RECONCILIATION_REQUIRED"
