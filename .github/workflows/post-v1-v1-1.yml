@@ -13,6 +13,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          # On this stacked PR, only validate the published candidate bytes,
+          # not GitHub's synthetic head/base merge commit.
+          ref: ${{ github.event.pull_request.number == 359 && github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
       - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7
         with:
           python-version: "3.11"
@@ -30,6 +35,22 @@ jobs:
         run: pytest -q
       - name: Post-v1 focused integration
         run: pytest -q tests/test_post_v1_certification.py
+      - name: PR359 Linux Bubblewrap Git metadata kernel proof (no secrets)
+        if: ${{ github.event_name == 'pull_request' && github.event.pull_request.number == 359 }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "${{ github.event.pull_request.head.sha }}"
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends bubblewrap
+          command -v bwrap
+          echo "BWRAP_VERSION=$(bwrap --version)"
+          echo "KERNEL_VERSION=$(uname -r)"
+          echo "EXACT_PR_HEAD=${{ github.event.pull_request.head.sha }}"
+          # This single focused test must execute an actual Linux mount namespace.
+          # Any unavailable namespace or denied sandbox is a FAIL, not a skipped PASS.
+          pytest -q tests/test_night_shift_git_metadata_isolation.py::test_linux_bwrap_kernel_mount_isolation_if_available -rs
+          echo "BWRAP_GIT_KERNEL_PROOF_PASS=true"
 
   release-certification:
     name: Release certification evidence

@@ -10,6 +10,7 @@ import os
 import shutil
 import subprocess
 import sys
+import tempfile
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -42,7 +43,10 @@ def test_valid_profile_has_single_writable_workspace_with_masked_git(tmp_path):
     _require_kernel_git_boundary(plan, scope)
     args = plan.arguments
     assert args.count("--bind") == 1
-    assert args.count("--ro-bind") == 5
+    assert args.count("--ro-bind") == 4
+    assert args.count("--ro-bind-try") == 1
+    optional = args[args.index("--ro-bind-try"):args.index("--ro-bind-try") + 3]
+    assert optional == ("--ro-bind-try", "/lib64", "/lib64")
     assert args.count("--unshare-all") == 1
     assert args.count("--cap-drop") == 1
     before_chdir = args[args.index("--chdir") - 3:args.index("--chdir")]
@@ -140,32 +144,39 @@ def test_linux_bwrap_kernel_mount_isolation_if_available(tmp_path):
         pytest.skip("bwrap unavailable; no host mount proof on this runner")
     scope, plan = prepared(tmp_path)
     host_marker = scope.worktree / ".git"
-    before = host_marker.read_bytes()
-    host_gitdir = tmp_path / "common-git-metadata" / "worktrees" / "task"
-    secret = host_gitdir / "inaccessible"
-    secret.write_text("original")
-    script = (
-        "from pathlib import Path\n"
-        "marker=Path('/workspace/.git')\n"
-        "assert marker.read_bytes()==b''\n"
-        "try:\n"
-        "    marker.write_bytes(b'tamper')\n"
-        "except OSError:\n"
-        "    pass\n"
-        "else:\n"
-        "    raise AssertionError('metadata file writable')\n"
-        "Path('/workspace/allowed.py').write_text('allowed')\n"
-    )
-    args = plan.arguments[:plan.arguments.index("--") + 1]
-    result = subprocess.run(
-        [bwrap, *args, "/usr/bin/python3", "-c", script],
-        check=False, capture_output=True, text=True, timeout=15,
-    )
-    assert result.returncode == 0, result.stderr
-    assert host_marker.read_bytes() == before
-    assert secret.read_text() == "original"
-    assert (scope.worktree / "allowed.py").read_text() == "allowed"
-
+    # /tmp is hidden by the worker tmpfs, so a secret located there proves
+    # nothing about external common Git metadata. Use a different host path.
+    with tempfile.TemporaryDirectory(prefix="ros-git-proof-", dir="/var/tmp") as outside:
+        host_gitdir = Path(outside) / "worktrees" / "task"
+        host_gitdir.mkdir(parents=True)
+        host_marker.write_text(f"gitdir: {host_gitdir}\\n")
+        before = host_marker.read_bytes()
+        secret = host_gitdir / "inaccessible"
+        secret.write_text("original")
+        argv = _required_isolated_bwrap_prefix(scope)
+        _require_kernel_git_boundary(SimpleNamespace(arguments=argv + ("/usr/bin/python3",)), scope)
+        script = (
+            "import sys\\n"
+            "from pathlib import Path\\n"
+            "marker=Path('/workspace/.git')\\n"
+            "assert marker.read_bytes()==b''\\n"
+            "assert not Path(sys.argv[1]).exists(), 'host gitdir is mounted'\\n"
+            "try:\\n"
+            "    marker.write_bytes(b'tamper')\\n"
+            "except OSError:\\n"
+            "    pass\\n"
+            "else:\\n"
+            "    raise AssertionError('metadata file writable')\\n"
+            "Path('/workspace/allowed.py').write_text('allowed')\\n"
+        )
+        result = subprocess.run(
+            [bwrap, *argv, "/usr/bin/python3", "-c", script, str(host_gitdir)],
+            check=False, capture_output=True, text=True, timeout=15,
+        )
+        assert result.returncode == 0, result.stderr
+        assert host_marker.read_bytes() == before
+        assert secret.read_text() == "original"
+        assert (scope.worktree / "allowed.py").read_text() == "allowed"
 
 
 def test_invalid_mount_rejected_before_credential_read(tmp_path, monkeypatch):
@@ -197,6 +208,36 @@ def test_invalid_mount_rejected_before_credential_read(tmp_path, monkeypatch):
             leases=None, journal=None, plan=plan, scope=scope,
             broker_policy=BrokerPolicy(), auth_file=tmp_path / "secret",
             broker_socket=tmp_path / "private.sock",
+            pinned_launch_arguments_sha256=hashlib.sha256(
+                "\0".join(plan.arguments).encode()
+            ).hexdigest(),
+            trusted_admission_checker=lambda _plan: True,
+        )
+
+def test_socket_inside_writable_workspace_rejected_without_secret(tmp_path, monkeypatch):
+    from core.night_shift import groq_builder_integration as integration
+
+    scope, plan = prepared(tmp_path)
+    scope.task_id = "task"
+    scope.base_sha = "a" * 40
+    plan.role = "BUILDER"
+    plan.task_id = "task"
+    plan.worktree = scope.worktree
+    plan.base_sha = scope.base_sha
+    plan.executable = Path("/usr/bin/bwrap")
+
+    class BrokerPolicy:
+        task_id = "task"
+
+    def forbidden_secret(_path):
+        raise AssertionError("credential must not load before mount admission")
+
+    monkeypatch.setattr(integration, "read_groq_key", forbidden_secret)
+    with pytest.raises(NightShiftContractError, match="outside writable worker mount"):
+        integration.run_scoped_builder(
+            leases=None, journal=None, plan=plan, scope=scope,
+            broker_policy=BrokerPolicy(), auth_file=tmp_path / "secret",
+            broker_socket=scope.worktree / "private.sock",
             pinned_launch_arguments_sha256=hashlib.sha256(
                 "\0".join(plan.arguments).encode()
             ).hexdigest(),

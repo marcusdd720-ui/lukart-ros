@@ -41,7 +41,7 @@ _BWRAP_PREFIX = (
     "--unshare-all", "--unshare-net", "--unshare-pid", "--die-with-parent",
     "--new-session", "--clearenv", "--cap-drop", "ALL",
     "--ro-bind", "/usr", "/usr", "--ro-bind", "/bin", "/bin",
-    "--ro-bind", "/lib", "/lib", "--ro-bind", "/lib64", "/lib64",
+    "--ro-bind", "/lib", "/lib", "--ro-bind-try", "/lib64", "/lib64",
     "--dev", "/dev", "--proc", "/proc", "--tmpfs", "/tmp",
 )
 
@@ -147,6 +147,16 @@ def run_scoped_builder(
         raise NightShiftContractError("mandatory namespace controls missing")
     if not broker_socket.is_absolute():
         raise NightShiftContractError("broker socket must have exact absolute path")
+    # A socket inside the writable worktree can be swapped by the worker.
+    # The broker is host-owned: only its separately controlled private parent
+    # may contain it, and no credential may load on an unsafe placement.
+    try:
+        worktree_root = scope.worktree.resolve(strict=True)
+        socket_parent = broker_socket.parent.resolve(strict=True)
+    except OSError as exc:
+        raise NightShiftContractError("broker socket parent cannot be verified") from exc
+    if socket_parent == worktree_root or socket_parent.is_relative_to(worktree_root):
+        raise NightShiftContractError("broker socket must be outside writable worker mount")
     _require_kernel_git_boundary(plan, scope)
     # Credential loaded after all no-secret admission checks. Never add to
     # subprocess argv/env or include it in a receipt, journal or exception.
