@@ -7,6 +7,7 @@ checker. This module does not register an executor or promote any adapter.
 from __future__ import annotations
 
 import hashlib
+import time
 from collections.abc import Callable
 from dataclasses import dataclass
 from pathlib import Path
@@ -93,8 +94,39 @@ def run_scoped_builder(
                 or evidence.response_bytes == 0):
             raise NightShiftContractError("builder provider budget/evidence incomplete")
         changed = verify_builder_changes(scope)
-    return BrokeredBuilderReceipt(
+    # A scoped file result is not code correctness, review, or authority.
+    # Close the lease-loss window between child exit and artifact inspection.
+    claimed = leases.require_current(
+        task_id=plan.task_id, lease_id=plan.lease_id,
+        fencing_token=plan.fencing_token, now_epoch=int(time.time()),
+    )
+    if claimed.worker_id != plan.worker_id:
+        raise NightShiftContractError("builder lease owner changed before receipt")
+
+    receipt = BrokeredBuilderReceipt(
         task_id=plan.task_id, process_pid=result.pid, plan_digest=result.plan_digest,
         modified_file_digests=changed, broker_attempts=evidence.attempts,
         broker_response_bytes=evidence.response_bytes,
     )
+    # Reuse the bridge's existing append-only hash-chained journal. A crash
+    # after this insert can be reconciled from the receipt without rerunning
+    # the builder; failed/duplicate persistence never returns success.
+    if not journal.append_event(
+        event_id=f"child-bridge:{plan.task_id}:scope-receipt",
+        workflow_id=f"child-bridge:{plan.task_id}",
+        event_type="BUILDER_SCOPE_RECEIPT",
+        payload={
+            "schema_version": "night-shift-builder-scope-receipt/v1",
+            "task_id": receipt.task_id,
+            "role": "BUILDER",
+            "pid": receipt.process_pid,
+            "plan_digest": receipt.plan_digest,
+            "modified_file_digests": dict(sorted(receipt.modified_file_digests.items())),
+            "broker_attempts": receipt.broker_attempts,
+            "broker_response_bytes": receipt.broker_response_bytes,
+            "acceptance": "SCOPE_ONLY_NOT_CODE_REVIEW",
+        },
+        created_at_epoch=int(time.time()),
+    ):
+        raise NightShiftContractError("builder receipt already recorded; reconcile first")
+    return receipt
