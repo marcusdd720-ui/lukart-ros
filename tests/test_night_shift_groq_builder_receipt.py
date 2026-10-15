@@ -57,7 +57,7 @@ def _rig(tmp_path: Path, monkeypatch: pytest.MonkeyPatch, *,
                 response_bytes=36,
             )
 
-        def __enter__(self) -> "SyntheticBroker":
+        def __enter__(self) -> SyntheticBroker:
             return self
 
         def __exit__(self, *_args: object) -> None:
@@ -76,7 +76,9 @@ def _rig(tmp_path: Path, monkeypatch: pytest.MonkeyPatch, *,
     monkeypatch.setattr(integration, "read_groq_key", lambda _path: "gsk_" + "Z" * 32)
     monkeypatch.setattr(integration, "GroqLocalBroker", SyntheticBroker)
     monkeypatch.setattr(integration, "ChildProcessBridge", SyntheticBridge)
-    monkeypatch.setattr(integration, "verify_builder_changes", lambda _scope: {"fixed.py": "e" * 64})
+    monkeypatch.setattr(
+        integration, "verify_builder_changes", lambda _scope: {"fixed.py": "e" * 64}
+    )
 
     return dict(
         leases=leases, journal=journal, plan=plan, scope=scope,
