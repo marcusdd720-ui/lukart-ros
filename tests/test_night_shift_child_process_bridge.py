@@ -384,6 +384,11 @@ def test_pinned_executable_survives_path_swap_after_hash(rig, tmp_path, monkeypa
     entered = []
 
     def swap_after_descriptor_validation(*argv, **kwargs):
+        # subprocess.run uses Popen for trusted Git preflight as well.
+        # Instrument only the worker launch, not Git housekeeping.
+        if argv[0][0] == "git":
+            return original_popen(*argv, **kwargs)
+        assert argv[0][0] == str(binary), "unexpected child executable"
         assert kwargs.get("pass_fds"), "No pinned executable descriptor"
         assert kwargs.get("executable", "").startswith("/proc/self/fd/")
         entered.append(True)
