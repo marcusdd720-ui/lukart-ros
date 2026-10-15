@@ -136,6 +136,89 @@ def test_fifo_git_marker_is_refused_without_blocking(tmp_path):
 
 
 
+_BWRAP_APPARMOR_DENIAL = "bwrap: loopback: Failed RTM_NEWADDR: Operation not permitted"
+
+
+def _execute_synthetic_bwrap_probe(command: list[str]) -> subprocess.CompletedProcess[str]:
+    """Attempt unprivileged proof first; separately scope elevated ephemeral CI proof.
+
+    Ubuntu GitHub-hosted runners can deny CAP_NET_ADMIN to unprivileged
+    bwrap before the worker starts. A privileged setup proof still exercises
+    the exact same mount/network namespace and cap-drop argv, but DOES NOT
+    establish that a production host admits unprivileged sandbox launches.
+    The elevated path is forbidden outside explicitly identified GitHub CI.
+    """
+    result = subprocess.run(
+        command, check=False, capture_output=True, text=True, timeout=15,
+    )
+    if result.returncode == 0:
+        return result
+    if (
+        result.stderr.strip() != _BWRAP_APPARMOR_DENIAL
+        or os.environ.get("GITHUB_ACTIONS") != "true"
+        or os.environ.get("RUNNER_ENVIRONMENT") != "github-hosted"
+    ):
+        return result
+    sudo = shutil.which("sudo")
+    if not sudo:
+        return result
+    # GitHub-hosted ephemeral, secret-free SYNTHETIC kernel probe ONLY.
+    # No fallback is wired into the production ChildProcessBridge or Builder.
+    elevated = subprocess.run(
+        [sudo, "-n", "--", *command], check=False,
+        capture_output=True, text=True, timeout=15,
+    )
+    print("BWRAP_ROOTLESS_HOST_ADMISSION=BLOCKED_BY_APPARMOR", flush=True)
+    print(
+        "BWRAP_EPHEMERAL_PRIVILEGED_KERNEL_PROOF="
+        + ("PASS" if elevated.returncode == 0 else "FAIL"),
+        flush=True,
+    )
+    return elevated
+
+
+def test_ephemeral_elevated_proof_requires_exact_host_denial(monkeypatch):
+    from subprocess import CompletedProcess
+
+    command = ["/usr/bin/bwrap", "--unshare-all", "--", "/bin/true"]
+    calls: list[list[str]] = []
+
+    def intercepted(argv, **_kwargs):
+        calls.append(argv)
+        if len(calls) == 1:
+            return CompletedProcess(argv, 1, "", _BWRAP_APPARMOR_DENIAL + "\n")
+        return CompletedProcess(argv, 0, "", "")
+
+    monkeypatch.setenv("GITHUB_ACTIONS", "true")
+    monkeypatch.setenv("RUNNER_ENVIRONMENT", "github-hosted")
+    monkeypatch.setattr(subprocess, "run", intercepted)
+    monkeypatch.setattr(shutil, "which", lambda exe: "/usr/bin/sudo" if exe == "sudo" else None)
+    assert _execute_synthetic_bwrap_probe(command).returncode == 0
+    assert calls == [command, ["/usr/bin/sudo", "-n", "--", *command]]
+
+
+@pytest.mark.parametrize("denial", [
+    "bwrap: not allowed",
+    _BWRAP_APPARMOR_DENIAL,
+])
+def test_non_ci_or_unrelated_error_cannot_elevate(monkeypatch, denial):
+    from subprocess import CompletedProcess
+
+    calls: list[list[str]] = []
+    command = ["/usr/bin/bwrap", "--unshare-all", "--", "/bin/true"]
+
+    def intercepted(argv, **_kwargs):
+        calls.append(argv)
+        return CompletedProcess(argv, 1, "", denial + "\n")
+
+    monkeypatch.setenv("GITHUB_ACTIONS", "false" if denial == _BWRAP_APPARMOR_DENIAL else "true")
+    monkeypatch.setenv("RUNNER_ENVIRONMENT", "github-hosted")
+    monkeypatch.setattr(subprocess, "run", intercepted)
+    monkeypatch.setattr(shutil, "which", lambda exe: "/usr/bin/sudo")
+    assert _execute_synthetic_bwrap_probe(command).returncode == 1
+    assert calls == [command]
+
+
 def test_linux_bwrap_kernel_mount_isolation_if_available(tmp_path):
     # This is actual mount-namespace evidence only on a host that has bwrap.
     # A skipped test is NOT host security admission.
@@ -160,6 +243,10 @@ def test_linux_bwrap_kernel_mount_isolation_if_available(tmp_path):
             "from pathlib import Path\n"
             "marker=Path('/workspace/.git')\n"
             "assert marker.read_bytes()==b''\n"
+            "status=Path('/proc/self/status').read_text()\n"
+            "eff=next(x.split(':', 1)[1].strip() for x in status.splitlines() "
+            "if x.startswith('CapEff:'))\n"
+            "assert int(eff, 16)==0, 'capabilities not dropped'\n"
             "assert not Path(sys.argv[1]).exists(), 'host gitdir is mounted'\n"
             "try:\n"
             "    marker.write_bytes(b'tamper')\n"
@@ -169,10 +256,8 @@ def test_linux_bwrap_kernel_mount_isolation_if_available(tmp_path):
             "    raise AssertionError('metadata file writable')\n"
             "Path('/workspace/allowed.py').write_text('allowed')\n"
         )
-        result = subprocess.run(
-            [bwrap, *argv, "/usr/bin/python3", "-c", script, str(host_gitdir)],
-            check=False, capture_output=True, text=True, timeout=15,
-        )
+        command = [bwrap, *argv, "/usr/bin/python3", "-c", script, str(host_gitdir)]
+        result = _execute_synthetic_bwrap_probe(command)
         assert result.returncode == 0, result.stderr
         assert host_marker.read_bytes() == before
         assert secret.read_text() == "original"
