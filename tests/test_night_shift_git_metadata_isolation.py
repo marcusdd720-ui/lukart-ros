@@ -219,23 +219,33 @@ def test_non_ci_or_unrelated_error_cannot_elevate(monkeypatch, denial):
     assert calls == [command]
 
 
-def test_linux_bwrap_kernel_mount_isolation_if_available(tmp_path):
+def test_linux_bwrap_kernel_mount_isolation_if_available():
     # This is actual mount-namespace evidence only on a host that has bwrap.
     # A skipped test is NOT host security admission.
     bwrap = shutil.which("bwrap")
     if not bwrap:
         pytest.skip("bwrap unavailable; no host mount proof on this runner")
-    scope, plan = prepared(tmp_path)
-    host_marker = scope.worktree / ".git"
-    # /tmp is hidden by the worker tmpfs, so a secret located there proves
-    # nothing about external common Git metadata. Use a different host path.
-    with tempfile.TemporaryDirectory(prefix="ros-git-proof-", dir="/var/tmp") as outside:
+    # sudo's Bubblewrap helper may run with capabilities dropped. Pytest's
+    # /tmp/pytest-of-runner parent is private (0700) and cannot be traversed.
+    # Use a separate synthetic workspace under /var/tmp; no live repo or keys.
+    with (
+        tempfile.TemporaryDirectory(prefix="ros-bwrap-worktree-", dir="/var/tmp") as workspace,
+        tempfile.TemporaryDirectory(prefix="ros-git-proof-", dir="/var/tmp") as outside,
+    ):
+        Path(workspace).chmod(0o755)  # Only allow traversal; no metadata is exposed.
+        scope, plan = prepared(Path(workspace))
+        host_marker = scope.worktree / ".git"
         host_gitdir = Path(outside) / "worktrees" / "task"
         host_gitdir.mkdir(parents=True)
         host_marker.write_text(f"gitdir: {host_gitdir}\n")
         before = host_marker.read_bytes()
         secret = host_gitdir / "inaccessible"
         secret.write_text("original")
+        # The child may have uid=0 but CapEff=0. Only this synthetic file is
+        # world-writable so the positive write control is independent of uid.
+        allowed = scope.worktree / "allowed.py"
+        allowed.write_text("before")
+        allowed.chmod(0o666)
         argv = _required_isolated_bwrap_prefix(scope)
         _require_kernel_git_boundary(SimpleNamespace(arguments=argv + ("/usr/bin/python3",)), scope)
         script = (
@@ -261,7 +271,7 @@ def test_linux_bwrap_kernel_mount_isolation_if_available(tmp_path):
         assert result.returncode == 0, result.stderr
         assert host_marker.read_bytes() == before
         assert secret.read_text() == "original"
-        assert (scope.worktree / "allowed.py").read_text() == "allowed"
+        assert allowed.read_text() == "allowed"
 
 
 def test_invalid_mount_rejected_before_credential_read(tmp_path, monkeypatch):
