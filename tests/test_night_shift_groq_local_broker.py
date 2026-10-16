@@ -262,7 +262,7 @@ def test_prior_success_cannot_mask_wrong_upstream_content_type(
     assert broker.evidence.upstream_incomplete
 
 
-@pytest.mark.parametrize("failure", ["exception", "empty"])
+@pytest.mark.parametrize("failure", ["exception", "empty", "truncated"])
 def test_later_incomplete_upstream_cannot_count_as_success(
     mock_groq, broker, monkeypatch, failure,
 ):
@@ -271,6 +271,9 @@ def test_later_incomplete_upstream_cannot_count_as_success(
     class IncompleteStream:
         status = 200
         headers = {"Content-Type": "text/event-stream"}
+
+        def __init__(self):
+            self.emitted = False
 
         def __enter__(self):
             return self
@@ -281,6 +284,9 @@ def test_later_incomplete_upstream_cannot_count_as_success(
         def read1(self, _size):
             if failure == "exception":
                 raise TimeoutError("synthetic provider stream interruption")
+            if failure == "truncated" and not self.emitted:
+                self.emitted = True
+                return b'data: {"choices": [{"delta": {"content": "partial"}}]}\n\n'
             return b""
 
     monkeypatch.setattr("urllib.request.OpenerDirector.open",
@@ -292,3 +298,39 @@ def test_later_incomplete_upstream_cannot_count_as_success(
     assert broker.evidence.upstream_statuses == [200, 200]
     assert broker.evidence.response_bytes > 0
     assert broker.evidence.upstream_incomplete
+
+
+@pytest.mark.parametrize("response_type,body,complete", [
+    ("text/event-stream", b'data: {"choices": []}\n\ndata: [DONE]\n\n', True),
+    ("application/json", b'{"choices": [{"message": {"content": "ok"}}]}', True),
+    ("application/json", b'{"choices": [{', False),
+    ("application/json", b'{"error": "provider failed"}', False),
+])
+def test_upstream_requires_complete_chat_response(
+    broker, monkeypatch, response_type, body, complete,
+):
+    class MockCompletion:
+        status = 200
+        headers = {"Content-Type": response_type}
+
+        def __init__(self):
+            # Deliberately split terminal SSE marker across reads.
+            half = max(1, len(body) - 5)
+            self.chunks = [body[:half], body[half:]]
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *_args):
+            return None
+
+        def read1(self, _size):
+            return self.chunks.pop(0) if self.chunks else b""
+
+    monkeypatch.setattr("urllib.request.OpenerDirector.open",
+                        lambda *_args, **_kwargs: MockCompletion())
+    status, _ = request(broker)
+    assert status == 200
+    assert broker.evidence.attempts == 1
+    assert broker.evidence.upstream_statuses == [200]
+    assert broker.evidence.upstream_incomplete is (not complete)

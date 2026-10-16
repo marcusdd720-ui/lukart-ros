@@ -232,6 +232,9 @@ class GroqLocalBroker:
                                 broker.evidence.upstream_incomplete = True
                             return self.reply(502, "PROVIDER_CONTENT_TYPE_DENIED")
                         # Never send a second HTTP status after starting a 200 response.
+                        is_sse = ctype.startswith("text/event-stream")
+                        sse_tail = b""
+                        json_body = bytearray()
                         headers_started = True
                         self.send_response(200)
                         self.send_header("Content-Type", ctype)
@@ -248,9 +251,27 @@ class GroqLocalBroker:
                                     broker.evidence.response_overflow = True
                                     return
                                 broker.evidence.response_bytes += len(chunk)
+                            if is_sse:
+                                sse_tail = (sse_tail + chunk)[-128:]
+                            else:
+                                json_body.extend(chunk)
                             self.wfile.write(chunk)
                             self.wfile.flush()
-                        if not got_bytes:
+                        complete = False
+                        if got_bytes and is_sse:
+                            # Groq terminates chat SSE with data: [DONE].
+                            tail = sse_tail.replace(b"\r\n", b"\n").rstrip(b"\n")
+                            complete = tail == b"data: [DONE]" or tail.endswith(b"\ndata: [DONE]")
+                        elif got_bytes:
+                            # A partial HTTP 200 JSON body is not a completion.
+                            try:
+                                decoded = json.loads(json_body)
+                            except (UnicodeError, ValueError):
+                                pass
+                            else:
+                                complete = (isinstance(decoded, dict)
+                                            and isinstance(decoded.get("choices"), list))
+                        if not complete:
                             with broker._lock:
                                 broker.evidence.upstream_incomplete = True
                 except (BrokenPipeError, ConnectionResetError):
