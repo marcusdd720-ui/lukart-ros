@@ -18,6 +18,7 @@ from pathlib import Path
 
 import pytest
 
+from core.night_shift import child_process_bridge as bridge_module
 from core.night_shift.child_process_bridge import ChildLaunchPlan
 from core.night_shift.groq_builder_integration import (
     _required_isolated_bwrap_prefix,
@@ -152,15 +153,48 @@ def test_hosted_real_scoped_builder_bridge_and_receipt(monkeypatch: pytest.Monke
             lambda _path: "gsk_" + "S" * 32,
         )
         monkeypatch.setattr("urllib.request.OpenerDirector.open", mock_outbound)
-        result = run_scoped_builder(
-            leases=leases, journal=journal, plan=plan, scope=scope,
-            broker_policy=policy, auth_file=root / "never-read",
-            broker_socket=broker_socket,
-            pinned_launch_arguments_sha256=hashlib.sha256(
-                "\0".join(argv).encode()
-            ).hexdigest(),
-            trusted_admission_checker=lambda _plan: True,  # synthetic fixture only
+        # Synthetic-only stderr capture: diagnose the real bwrap child exit.
+        # The production bridge keeps stderr redirected to /dev/null.
+        child_stderr = root / "synthetic-child.stderr"
+        original_popen = subprocess.Popen
+
+        def record_synthetic_child_stderr(*args, **kwargs):
+            executable_fd = kwargs.get("executable", "")
+            if isinstance(executable_fd, str) and executable_fd.startswith(
+                "/proc/self/fd/"
+            ):
+                assert kwargs["stderr"] == subprocess.DEVNULL
+                descriptor = os.open(
+                    child_stderr, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600
+                )
+                try:
+                    return original_popen(*args, **{**kwargs, "stderr": descriptor})
+                finally:
+                    os.close(descriptor)
+            return original_popen(*args, **kwargs)
+
+        monkeypatch.setattr(
+            bridge_module.subprocess, "Popen", record_synthetic_child_stderr
         )
+        try:
+            result = run_scoped_builder(
+                leases=leases, journal=journal, plan=plan, scope=scope,
+                broker_policy=policy, auth_file=root / "never-read",
+                broker_socket=broker_socket,
+                pinned_launch_arguments_sha256=hashlib.sha256(
+                    "\0".join(argv).encode()
+                ).hexdigest(),
+                trusted_admission_checker=lambda _plan: True,  # synthetic fixture only
+            )
+        except Exception as exc:
+            # Only this synthetic worker is inspected; never print real prompts/keys.
+            diagnostic = (
+                child_stderr.read_bytes()[:4096].decode("utf-8", "replace")
+                if child_stderr.exists() else "<no child stderr>"
+            )
+            raise AssertionError(
+                f"synthetic hosted builder failed: {exc}; stderr={diagnostic!r}"
+            ) from exc
         events = journal.verify_chain(workflow_id=f"child-bridge:{task_id}")
         kinds = [e.event_type for e in events]
         assert "CHILD_LAUNCH_INTENT" in kinds
