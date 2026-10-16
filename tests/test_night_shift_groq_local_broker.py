@@ -302,6 +302,11 @@ def test_later_incomplete_upstream_cannot_count_as_success(
 
 @pytest.mark.parametrize("response_type,body,complete", [
     ("text/event-stream", b'data: {"choices": []}\n\ndata: [DONE]\n\n', True),
+    ("text/event-stream", b"data: [DONE]", False),
+    ("text/event-stream", b"data: [DONE]\n", False),
+    ("text/event-stream", b'data: {"choices": []}\ndata: [DONE]\n\n', False),
+    ("text/event-stream", b'data: {"choices": []}\n\ndata: [DONE]\r\n\r\n', True),
+    ("text/event-stream", b"data: [DONE]\n\ntrailing", False),
     ("application/json", b'{"choices": [{"message": {"content": "ok"}}]}', True),
     ("application/json", b'{"choices": [{', False),
     ("application/json", b'{"error": "provider failed"}', False),

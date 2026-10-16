@@ -260,8 +260,12 @@ class GroqLocalBroker:
                         complete = False
                         if got_bytes and is_sse:
                             # Groq terminates chat SSE with data: [DONE].
-                            tail = sse_tail.replace(b"\r\n", b"\n").rstrip(b"\n")
-                            complete = tail == b"data: [DONE]" or tail.endswith(b"\ndata: [DONE]")
+                            tail = sse_tail.replace(b"\r\n", b"\n")
+                            # Require a complete, blank-line-delimited final SSE event.
+                            complete = (
+                                tail == b"data: [DONE]\n\n"
+                                or tail.endswith(b"\n\ndata: [DONE]\n\n")
+                            )
                         elif got_bytes:
                             # A partial HTTP 200 JSON body is not a completion.
                             try:
