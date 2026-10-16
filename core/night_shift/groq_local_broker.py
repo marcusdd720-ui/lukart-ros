@@ -231,7 +231,7 @@ class GroqLocalBroker:
                             with broker._lock:
                                 broker.evidence.upstream_incomplete = True
                             return self.reply(502, "PROVIDER_CONTENT_TYPE_DENIED")
-                        # A partially sent 200 response must never receive a second HTTP status line.
+                        # Never send a second HTTP status after starting a 200 response.
                         headers_started = True
                         self.send_response(200)
                         self.send_header("Content-Type", ctype)
