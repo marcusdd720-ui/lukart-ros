@@ -52,6 +52,18 @@ jobs:
           ROS_REQUIRE_BWRAP_PROOF=1 pytest -q tests/test_night_shift_git_metadata_isolation.py::test_linux_bwrap_kernel_mount_isolation_if_available -rs
           echo "BWRAP_GIT_KERNEL_PROOF_PASS=true"
 
+      - name: Night Shift hosted real Builder pilot (synthetic, no secrets)
+        if: ${{ github.event_name == 'pull_request' && startsWith(github.event.pull_request.head.ref, 'night-shift/groq-broker-') }}
+        shell: bash
+        timeout-minutes: 5
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "${{ github.event.pull_request.head.sha }}"
+          command -v bwrap
+          echo "ROS_BUILDER_PILOT_HEAD=${{ github.event.pull_request.head.sha }}"
+          ROS_REQUIRE_HOSTED_BUILDER_PILOT=1 pytest -q -s tests/test_night_shift_groq_builder_hosted_pilot.py::test_hosted_real_scoped_builder_bridge_and_receipt
+          echo "ROS_HOSTED_BUILDER_STAGE_PASS=true"
+
   release-certification:
     name: Release certification evidence
     if: github.event_name == 'workflow_dispatch'
