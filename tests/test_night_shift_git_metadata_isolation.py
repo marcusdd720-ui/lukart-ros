@@ -264,6 +264,9 @@ def test_linux_bwrap_kernel_mount_isolation_if_available():
         tempfile.TemporaryDirectory(prefix="ros-git-proof-", dir="/var/tmp") as outside,
     ):
         Path(workspace).chmod(0o755)  # Only allow traversal; no metadata is exposed.
+        # bwrap drops capabilities before binding this synthetic host socket.
+        # Only permit traversal of the ephemeral fixture directory, never real secrets.
+        Path(outside).chmod(0o755)
         scope, plan = prepared(Path(workspace))
         host_marker = scope.worktree / ".git"
         host_gitdir = Path(outside) / "worktrees" / "task"
