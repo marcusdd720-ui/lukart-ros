@@ -8,6 +8,7 @@ from __future__ import annotations
 import hashlib
 import os
 import shutil
+import socket
 import subprocess
 import sys
 import tempfile
@@ -81,6 +82,33 @@ def test_refuse_alt_mount_grammar(tmp_path, mutation):
     plan.arguments = mutation(ReplaceableTuple(argv))
     with pytest.raises(NightShiftContractError, match="Git metadata mount"):
         _require_kernel_git_boundary(plan, scope)
+
+
+def test_broker_transport_is_exact_single_socket_mount(tmp_path):
+    scope, plan = prepared(tmp_path)
+    broker = tmp_path / "broker.sock"
+    argv = _required_isolated_bwrap_prefix(scope, broker)
+    _require_kernel_git_boundary(SimpleNamespace(arguments=argv + ("/usr/bin/python3",)),
+                                 scope, broker)
+    assert ("--dir", "/run", "--ro-bind", str(broker),
+            "/run/lukart-groq.sock") == argv[argv.index("--dir"):argv.index("--dir") + 5]
+    assert argv.count("--bind") == 1
+    assert argv.count("--ro-bind") == 5
+    with pytest.raises(NightShiftContractError, match="mount layout"):
+        _require_kernel_git_boundary(plan, scope, broker)
+    mutated = list(argv)
+    mutated[mutated.index(str(broker))] = "/etc/shadow"
+    with pytest.raises(NightShiftContractError, match="mount layout"):
+        _require_kernel_git_boundary(
+            SimpleNamespace(arguments=tuple(mutated) + ("/usr/bin/python3",)),
+            scope, broker,
+        )
+
+
+def test_broker_mount_rejects_socket_in_worktree(tmp_path):
+    scope, _plan = prepared(tmp_path)
+    with pytest.raises(NightShiftContractError, match="private host path"):
+        _required_isolated_bwrap_prefix(scope, scope.worktree / "broker.sock")
 
 
 def test_missing_git_marker_is_rejected(tmp_path):
@@ -248,34 +276,67 @@ def test_linux_bwrap_kernel_mount_isolation_if_available():
         allowed = scope.worktree / "allowed.py"
         allowed.write_text("before")
         allowed.chmod(0o666)
-        argv = _required_isolated_bwrap_prefix(scope)
-        _require_kernel_git_boundary(SimpleNamespace(arguments=argv + ("/usr/bin/python3",)), scope)
-        script = (
-            "import sys\n"
-            "from pathlib import Path\n"
-            "from stat import S_ISCHR\n"
-            "marker=Path('/workspace/.git')\n"
-            "assert S_ISCHR(marker.stat().st_mode), 'Git marker not overmounted by device'\n"
-            "try:\n"
-            "    assert marker.read_bytes()==b'', 'masked char device returned data'\n"
-            "except PermissionError:\n"
-            "    pass  # The overmounted device itself can be read-protected.\n"
-            "status=Path('/proc/self/status').read_text()\n"
-            "eff=next(x.split(':', 1)[1].strip() for x in status.splitlines() "
-            "if x.startswith('CapEff:'))\n"
-            "assert int(eff, 16)==0, 'capabilities not dropped'\n"
-            "assert not Path(sys.argv[1]).exists(), 'host gitdir is mounted'\n"
-            "try:\n"
-            "    marker.write_bytes(b'tamper')\n"
-            "except OSError:\n"
-            "    pass\n"
-            "else:\n"
-            "    raise AssertionError('metadata file writable')\n"
-            "Path('/workspace/allowed.py').write_text('allowed')\n"
-        )
-        command = [bwrap, *argv, "/usr/bin/python3", "-c", script, str(host_gitdir)]
-        result = _execute_synthetic_bwrap_probe(command)
-        assert result.returncode == 0, result.stderr
+        broker_socket = Path(outside) / "broker.sock"
+        with socket.socket(socket.AF_UNIX, socket.SOCK_STREAM) as server:
+            server.bind(str(broker_socket))
+            server.listen(1)
+            server.settimeout(10)
+            # Synthetic CI elevated fallback has a different UID. There are
+            # NO credentials or real provider requests in this test socket.
+            broker_socket.chmod(0o666)
+            responses: list[bytes] = []
+
+            def synthetic_broker():
+                try:
+                    with server.accept()[0] as peer:
+                        peer.settimeout(5)
+                        responses.append(peer.recv(4))
+                        peer.sendall(b"OK")
+                except OSError:
+                    pass
+
+            runner = threading.Thread(target=synthetic_broker, daemon=True)
+            runner.start()
+            argv = _required_isolated_bwrap_prefix(scope, broker_socket)
+            _require_kernel_git_boundary(
+                SimpleNamespace(arguments=argv + ("/usr/bin/python3",)), scope,
+                broker_socket,
+            )
+            script = (
+                "import sys\n"
+                "import socket\n"
+                "from pathlib import Path\n"
+                "from stat import S_ISCHR\n"
+                "marker=Path('/workspace/.git')\n"
+                "assert S_ISCHR(marker.stat().st_mode), 'Git marker not overmounted by device'\n"
+                "try:\n"
+                "    assert marker.read_bytes()==b'', 'masked char device returned data'\n"
+                "except PermissionError:\n"
+                "    pass  # The overmounted device itself can be read-protected.\n"
+                "status=Path('/proc/self/status').read_text()\n"
+                "eff=next(x.split(':', 1)[1].strip() for x in status.splitlines() "
+                "if x.startswith('CapEff:'))\n"
+                "assert int(eff, 16)==0, 'capabilities not dropped'\n"
+                "assert not Path(sys.argv[1]).exists(), 'host gitdir is mounted'\n"
+                "try:\n"
+                "    marker.write_bytes(b'tamper')\n"
+                "except OSError:\n"
+                "    pass\n"
+                "else:\n"
+                "    raise AssertionError('metadata file writable')\n"
+                "with socket.socket(socket.AF_UNIX, socket.SOCK_STREAM) as client:\n"
+                "    client.settimeout(5)\n"
+                "    client.connect('/run/lukart-groq.sock')\n"
+                "    client.sendall(b'PING')\n"
+                "    assert client.recv(2)==b'OK', 'broker reply missing'\n"
+                "Path('/workspace/allowed.py').write_text('allowed')\n"
+            )
+            command = [bwrap, *argv, "/usr/bin/python3", "-c", script, str(host_gitdir)]
+
+            result = _execute_synthetic_bwrap_probe(command)
+            runner.join(timeout=10)
+            assert result.returncode == 0, result.stderr
+            assert responses == [b"PING"], "sandbox could not reach broker socket"
         assert host_marker.read_bytes() == before
         assert secret.read_text() == "original"
         assert allowed.read_text() == "allowed"

@@ -39,9 +39,9 @@ def _rig(tmp_path: Path, monkeypatch: pytest.MonkeyPatch, *,
         now_epoch=started - 120 if expired else started,
         ttl_seconds=30 if expired else 120,
     )
-    argv = integration._required_isolated_bwrap_prefix(SimpleNamespace(worktree=worktree)) + (
-        "/usr/bin/python3", "-c", "print('synthetic')",
-    )
+    argv = integration._required_isolated_bwrap_prefix(
+        SimpleNamespace(worktree=worktree), tmp_path / "private.sock",
+    ) + ("/usr/bin/python3", "-c", "print('synthetic')")
     plan = SimpleNamespace(
         role="BUILDER", task_id=lease.task_id, worker_id="worker-1",
         worktree=worktree, base_sha="a" * 40,

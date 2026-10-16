@@ -37,6 +37,9 @@ class BrokeredBuilderReceipt:
 # overmounted with a read-only device and its external gitdir is never mounted.
 # No consumer-defined mount, bind, symlink creation or later option may undo it.
 _BWRAP_WORKSPACE = "/workspace"
+# A single host-owned AF_UNIX broker capability is visible to the worker.
+# Neither the private socket parent nor any other host path is mounted.
+_BWRAP_BROKER_SOCKET = "/run/lukart-groq.sock"
 _BWRAP_PREFIX = (
     "--unshare-all", "--unshare-net", "--unshare-pid", "--die-with-parent",
     "--new-session", "--clearenv", "--cap-drop", "ALL",
@@ -46,8 +49,10 @@ _BWRAP_PREFIX = (
 )
 
 
-def _required_isolated_bwrap_prefix(scope: ApprovedBuilderScope) -> tuple[str, ...]:
-    """Produce the only accepted worker mount layout, not a free-form CLI."""
+def _required_isolated_bwrap_prefix(
+    scope: ApprovedBuilderScope, broker_socket: Path | None = None,
+) -> tuple[str, ...]:
+    """Construct the pinned mount layout; expose only the approved broker socket."""
     root = scope.worktree.resolve(strict=True)
     marker = root / ".git"
     # Linked Git worktree marker must be a regular file; bare/directory-based
@@ -80,20 +85,39 @@ def _required_isolated_bwrap_prefix(scope: ApprovedBuilderScope) -> tuple[str, .
         mounted = exposed.resolve()
         if root.is_relative_to(mounted) or gitdir.is_relative_to(mounted):
             raise NightShiftContractError("Git metadata aliases a read-only host mount")
+    socket_mount: tuple[str, ...] = ()
+    if broker_socket is not None:
+        if not broker_socket.is_absolute() or broker_socket.name in {"", ".", ".."}:
+            raise NightShiftContractError("broker socket must be absolute")
+        try:
+            parent = broker_socket.parent.resolve(strict=True)
+        except OSError as exc:
+            raise NightShiftContractError("broker socket parent unavailable") from exc
+        if (broker_socket != parent / broker_socket.name or parent == root
+                or parent.is_relative_to(root) or parent == gitdir
+                or parent.is_relative_to(gitdir)):
+            raise NightShiftContractError("broker socket must have a canonical private host path")
+        # The broker creates this socket only after secret-free admission; a
+        # required --ro-bind fails closed if the expected socket is absent.
+        socket_mount = ("--dir", "/run", "--ro-bind", str(broker_socket),
+                        _BWRAP_BROKER_SOCKET)
     return (
         *_BWRAP_PREFIX,
         "--bind", str(root), _BWRAP_WORKSPACE,
         # The worktree's .git file is mounted as /dev/null, not its host file.
         # Parent repository common-dir remains outside this namespace.
         "--ro-bind", "/dev/null", _BWRAP_WORKSPACE + "/.git",
+        *socket_mount,
         "--chdir", _BWRAP_WORKSPACE,
         "--",
     )
 
 
-def _require_kernel_git_boundary(plan: ChildLaunchPlan, scope: ApprovedBuilderScope) -> None:
+def _require_kernel_git_boundary(
+    plan: ChildLaunchPlan, scope: ApprovedBuilderScope, broker_socket: Path | None = None,
+) -> None:
     """Reject all alternate mount grammars before reading the provider key."""
-    expected = _required_isolated_bwrap_prefix(scope)
+    expected = _required_isolated_bwrap_prefix(scope, broker_socket)
     args = plan.arguments
     # A command must follow '--'. Any extra bwrap flag, even an innocuous
     # looking bind later in the argv, is not accepted by the immutable profile.
@@ -157,7 +181,7 @@ def run_scoped_builder(
         raise NightShiftContractError("broker socket parent cannot be verified") from exc
     if socket_parent == worktree_root or socket_parent.is_relative_to(worktree_root):
         raise NightShiftContractError("broker socket must be outside writable worker mount")
-    _require_kernel_git_boundary(plan, scope)
+    _require_kernel_git_boundary(plan, scope, broker_socket)
     # Credential loaded after all no-secret admission checks. Never add to
     # subprocess argv/env or include it in a receipt, journal or exception.
     credential = read_groq_key(auth_file)
