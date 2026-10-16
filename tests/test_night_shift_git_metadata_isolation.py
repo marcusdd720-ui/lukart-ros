@@ -224,6 +224,8 @@ def test_linux_bwrap_kernel_mount_isolation_if_available():
     # A skipped test is NOT host security admission.
     bwrap = shutil.which("bwrap")
     if not bwrap:
+        if os.environ.get("ROS_REQUIRE_BWRAP_PROOF") == "1":
+            pytest.fail("required Linux bwrap kernel proof unavailable", pytrace=False)
         pytest.skip("bwrap unavailable; no host mount proof on this runner")
     # sudo's Bubblewrap helper may run with capabilities dropped. Pytest's
     # /tmp/pytest-of-runner parent is private (0700) and cannot be traversed.
@@ -277,6 +279,21 @@ def test_linux_bwrap_kernel_mount_isolation_if_available():
         assert host_marker.read_bytes() == before
         assert secret.read_text() == "original"
         assert allowed.read_text() == "allowed"
+
+
+def test_missing_bwrap_fails_required_kernel_proof(monkeypatch):
+    # A required CI proof must not be reported as success after a pytest skip.
+    monkeypatch.setenv("ROS_REQUIRE_BWRAP_PROOF", "1")
+    monkeypatch.setattr(shutil, "which", lambda _program: None)
+    with pytest.raises(pytest.fail.Exception, match="required Linux bwrap kernel proof"):
+        test_linux_bwrap_kernel_mount_isolation_if_available()
+
+
+def test_missing_bwrap_skips_only_optional_local_probe(monkeypatch):
+    monkeypatch.delenv("ROS_REQUIRE_BWRAP_PROOF", raising=False)
+    monkeypatch.setattr(shutil, "which", lambda _program: None)
+    with pytest.raises(pytest.skip.Exception, match="bwrap unavailable"):
+        test_linux_bwrap_kernel_mount_isolation_if_available()
 
 
 def test_invalid_mount_rejected_before_credential_read(tmp_path, monkeypatch):

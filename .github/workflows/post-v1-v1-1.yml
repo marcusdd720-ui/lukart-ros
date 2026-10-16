@@ -49,7 +49,7 @@ jobs:
           echo "EXACT_PR_HEAD=${{ github.event.pull_request.head.sha }}"
           # This single focused test must execute an actual Linux mount namespace.
           # Any unavailable namespace or denied sandbox is a FAIL, not a skipped PASS.
-          pytest -q tests/test_night_shift_git_metadata_isolation.py::test_linux_bwrap_kernel_mount_isolation_if_available -rs
+          ROS_REQUIRE_BWRAP_PROOF=1 pytest -q tests/test_night_shift_git_metadata_isolation.py::test_linux_bwrap_kernel_mount_isolation_if_available -rs
           echo "BWRAP_GIT_KERNEL_PROOF_PASS=true"
 
   release-certification:
