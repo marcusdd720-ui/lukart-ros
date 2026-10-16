@@ -211,6 +211,14 @@ class ChildProcessBridge:
     def execute(self, plan: ChildLaunchPlan) -> ChildExitEvidence:
         if os.name != "posix":
             raise NightShiftContractError("WSL/Linux POSIX runner required")
+        # The pinned executable is spawned via /proc/self/fd on Linux only.
+        # Reject unsupported hosts before persisting an irreversible launch intent.
+        if os.uname().sysname != "Linux" or not Path("/proc/self/fd").is_dir():
+            raise NightShiftContractError("Linux /proc/self/fd execution required")
+        if not all(hasattr(os, name) for name in (
+            "waitid", "WNOWAIT", "WNOHANG", "WEXITED", "P_PID"
+        )):
+            raise NightShiftContractError("Linux waitid WNOWAIT support required")
         if self.admission_checker is None or self.admission_checker(plan) is not True:
             raise NightShiftContractError("trusted execution admission required")
         if plan.role == "REVIEWER" and (
@@ -289,9 +297,23 @@ class ChildProcessBridge:
                 created_at_epoch=int(time.time()),
             )
 
+        pinned_fd: int | None = None
         try:
+            # Pin the inode through the launch. Hash the very descriptor
+            # executed by the child, not a path that can be replaced later.
+            pinned_fd = os.open(executable, os.O_RDONLY | os.O_NOFOLLOW | os.O_CLOEXEC)
+            if not stat.S_ISREG(os.fstat(pinned_fd).st_mode):
+                raise NightShiftContractError("non-regular child executable")
+            pinned_hash = hashlib.sha256()
+            with os.fdopen(os.dup(pinned_fd), "rb") as pinned_reader:
+                for block in iter(lambda: pinned_reader.read(128 * 1024), b""):
+                    pinned_hash.update(block)
+            if pinned_hash.hexdigest() != plan.executable_sha256:
+                raise NightShiftContractError("executable identity changed before spawn")
             child = subprocess.Popen(
                 [str(executable), *plan.arguments],
+                executable=f"/proc/self/fd/{pinned_fd}",
+                pass_fds=(pinned_fd,),
                 cwd=worktree,
                 env={"PATH": os.defpath, "LANG": "C.UTF-8"},
                 stdin=subprocess.DEVNULL,
@@ -305,7 +327,18 @@ class ChildProcessBridge:
                 "plan_digest": plan.digest(),
                 "binary_sha256": plan.executable_sha256,
             })
-            while child.poll() is None:
+            # poll() would reap the session leader and permit PID/PGID reuse
+            # before _kill_group(). waitid(WNOWAIT) leaves the leader waitable
+            # until descendants are killed and child.wait() reaps the leader.
+            while True:
+                try:
+                    observed_exit = os.waitid(
+                        os.P_PID, child.pid, os.WEXITED | os.WNOHANG | os.WNOWAIT
+                    )
+                except (OSError, ChildProcessError) as exc:
+                    raise NightShiftContractError("child exit observation failed") from exc
+                if observed_exit is not None:
+                    break
                 time.sleep(min(plan.heartbeat_seconds, 0.25))
                 elapsed = time.monotonic() - started_at
                 if elapsed >= plan.timeout_seconds:
@@ -358,7 +391,12 @@ class ChildProcessBridge:
             return evidence
         except BaseException:
             if child is not None:
-                self._kill_group(child)
+                try:
+                    self._kill_group(child)
+                except BaseException:
+                    # Even an incomplete child cleanup must not erase abort evidence.
+                    # Preserve the original exception for host reconciliation.
+                    pass
             try:
                 record("CHILD_ABORTED", {
                     "pid": child.pid if child is not None else None,
@@ -368,3 +406,6 @@ class ChildProcessBridge:
             except Exception:
                 pass
             raise
+        finally:
+            if pinned_fd is not None:
+                os.close(pinned_fd)
