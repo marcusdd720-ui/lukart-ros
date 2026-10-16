@@ -27,6 +27,50 @@ jobs:
           python -m pip install "uv==0.12.10"
           uv sync --frozen --extra dev
           echo "$PWD/.venv/bin" >> "$GITHUB_PATH"
+      - name: Require GitHub Verified identity for all Groq PR commits
+        if: ${{ github.event_name == 'pull_request' && startsWith(github.event.pull_request.head.ref, 'night-shift/groq-broker-') }}
+        shell: bash
+        env:
+          ROS_EXPECTED_SHA: ${{ github.event.pull_request.head.sha }}
+          ROS_PR_NUMBER: ${{ github.event.pull_request.number }}
+          ROS_REPOSITORY: ${{ github.repository }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          python - <<'PY'
+          import json
+          import os
+          import urllib.request
+
+          repo = os.environ["ROS_REPOSITORY"]
+          number = int(os.environ["ROS_PR_NUMBER"])
+          sha = os.environ["ROS_EXPECTED_SHA"]
+          token = os.environ["GH_TOKEN"]
+          url = f"https://api.github.com/repos/{repo}/pulls/{number}/commits?per_page=100"
+          request = urllib.request.Request(url, headers={
+              "Authorization": f"Bearer {token}",
+              "Accept": "application/vnd.github+json",
+              "X-GitHub-Api-Version": "2022-11-28",
+          })
+          with urllib.request.urlopen(request, timeout=20) as response:
+              commits = json.load(response)
+          if (not isinstance(commits, list) or not commits or len(commits) >= 100
+                  or commits[-1].get("sha") != sha):
+              raise SystemExit("GITHUB_SIGNED_PR_FAIL: incomplete exact-head commit list")
+          email = "265352475+marcusdd720-ui@users.noreply.github.com"
+          for commit in commits:
+              meta = commit.get("commit") or {}
+              signature = meta.get("verification") or {}
+              author = (meta.get("author") or {}).get("email")
+              committer = (meta.get("committer") or {}).get("email")
+              if (signature.get("verified") is not True
+                      or signature.get("reason") != "valid"
+                      or author != email or committer != email):
+                  raise SystemExit(
+                      "GITHUB_SIGNED_PR_FAIL: unverified commit or account identity: "
+                      + str(commit.get("sha", "UNKNOWN"))
+                  )
+          print(f"GITHUB_VERIFIED_ALL_PR_COMMITS={len(commits)}; EXACT_HEAD={sha}")
+          PY
       - name: Lint
         run: ruff check .
       - name: Types
@@ -52,15 +96,40 @@ jobs:
           ROS_REQUIRE_BWRAP_PROOF=1 pytest -q tests/test_night_shift_git_metadata_isolation.py::test_linux_bwrap_kernel_mount_isolation_if_available -rs
           echo "BWRAP_GIT_KERNEL_PROOF_PASS=true"
 
-      - name: Night Shift hosted real Builder pilot (synthetic, no secrets)
-        if: ${{ github.event_name == 'pull_request' && startsWith(github.event.pull_request.head.ref, 'night-shift/groq-broker-') }}
+  night-shift-hosted-builder-pilot:
+    name: Night Shift rootless Builder pilot (Ubuntu 22.04)
+    if: ${{ github.event_name == 'pull_request' && startsWith(github.event.pull_request.head.ref, 'night-shift/groq-broker-') }}
+    # Ubuntu 24.04 hosted runner denied rootless bwrap network setup.
+    # Preserve the exact sandbox policy; verify a separate supported Linux host.
+    runs-on: ubuntu-22.04
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          persist-credentials: false
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7
+        with:
+          python-version: "3.11"
+          cache: pip
+      - name: Install frozen environment
+        run: |
+          python -m pip install "uv==0.12.10"
+          uv sync --frozen --extra dev
+          echo "$PWD/.venv/bin" >> "$GITHUB_PATH"
+      - name: Real rootless Bubblewrap / Unix broker / receipt (synthetic only)
         shell: bash
         timeout-minutes: 5
         run: |
           set -euo pipefail
           test "$(git rev-parse HEAD)" = "${{ github.event.pull_request.head.sha }}"
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends bubblewrap
           command -v bwrap
           echo "ROS_BUILDER_PILOT_HEAD=${{ github.event.pull_request.head.sha }}"
+          echo "ROS_BUILDER_PILOT_KERNEL=$(uname -r)"
+          echo "ROS_BUILDER_PILOT_BWRAP=$(bwrap --version)"
           ROS_REQUIRE_HOSTED_BUILDER_PILOT=1 pytest -q -s tests/test_night_shift_groq_builder_hosted_pilot.py::test_hosted_real_scoped_builder_bridge_and_receipt
           echo "ROS_HOSTED_BUILDER_STAGE_PASS=true"
 
