@@ -236,3 +236,59 @@ def test_post_budget_atomic_concurrency(mock_groq, broker):
     assert statuses.count(200) == 2
     assert statuses.count(429) == 6
     assert len(mock_groq) == 2
+
+
+def test_prior_success_cannot_mask_wrong_upstream_content_type(
+    mock_groq, broker, monkeypatch,
+):
+    assert request(broker)[0] == 200
+
+    class WrongType:
+        status = 200
+        headers = {"Content-Type": "application/octet-stream"}
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *_args):
+            return None
+
+    monkeypatch.setattr("urllib.request.OpenerDirector.open",
+                        lambda *_args, **_kwargs: WrongType())
+    assert request(broker)[0] == 502
+    assert broker.evidence.attempts == 2
+    assert broker.evidence.upstream_statuses == [200, 200]
+    assert broker.evidence.response_bytes > 0
+    assert broker.evidence.upstream_incomplete
+
+
+@pytest.mark.parametrize("failure", ["exception", "empty"])
+def test_later_incomplete_upstream_cannot_count_as_success(
+    mock_groq, broker, monkeypatch, failure,
+):
+    assert request(broker)[0] == 200
+
+    class IncompleteStream:
+        status = 200
+        headers = {"Content-Type": "text/event-stream"}
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *_args):
+            return None
+
+        def read1(self, _size):
+            if failure == "exception":
+                raise TimeoutError("synthetic provider stream interruption")
+            return b""
+
+    monkeypatch.setattr("urllib.request.OpenerDirector.open",
+                        lambda *_args, **_kwargs: IncompleteStream())
+    status, payload = request(broker)
+    assert status == 200
+    assert b"HTTP/1.0 502" not in payload
+    assert broker.evidence.attempts == 2
+    assert broker.evidence.upstream_statuses == [200, 200]
+    assert broker.evidence.response_bytes > 0
+    assert broker.evidence.upstream_incomplete

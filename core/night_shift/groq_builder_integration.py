@@ -197,6 +197,7 @@ def run_scoped_builder(
             raise NightShiftContractError("builder child did not exit successfully")
         evidence = broker.evidence
         if (evidence.denied or evidence.client_disconnected or evidence.response_overflow
+                or evidence.upstream_incomplete
                 or not 1 <= evidence.attempts <= broker_policy.max_requests
                 or len(evidence.upstream_statuses) != evidence.attempts
                 or any(status != 200 for status in evidence.upstream_statuses)

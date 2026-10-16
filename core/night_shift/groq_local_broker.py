@@ -90,6 +90,7 @@ class BrokerEvidence:
     response_bytes: int = 0
     response_overflow: bool = False
     client_disconnected: bool = False
+    upstream_incomplete: bool = False
 
 
 class _NoRedirect(urllib.request.HTTPRedirectHandler):
@@ -178,6 +179,7 @@ class GroqLocalBroker:
                         broker.evidence.attempts += 1
                 if exhausted:
                     return self.reply(429, "REQUEST_BUDGET_EXHAUSTED")
+                headers_started = False
                 try:
                     request = json.loads(self.rfile.read(size))
                     if not isinstance(request, dict) or request.get("model") != GROQ_MODEL:
@@ -226,12 +228,18 @@ class GroqLocalBroker:
                             ctype.startswith("text/event-stream")
                             or ctype.startswith("application/json")
                         ):
+                            with broker._lock:
+                                broker.evidence.upstream_incomplete = True
                             return self.reply(502, "PROVIDER_CONTENT_TYPE_DENIED")
+                        # A partially sent 200 response must never receive a second HTTP status line.
+                        headers_started = True
                         self.send_response(200)
                         self.send_header("Content-Type", ctype)
                         self.send_header("Connection", "close")
                         self.end_headers()
+                        got_bytes = False
                         while chunk := response.read1(4096):
+                            got_bytes = True
                             with broker._lock:
                                 if (
                                     broker.evidence.response_bytes + len(chunk)
@@ -242,11 +250,18 @@ class GroqLocalBroker:
                                 broker.evidence.response_bytes += len(chunk)
                             self.wfile.write(chunk)
                             self.wfile.flush()
+                        if not got_bytes:
+                            with broker._lock:
+                                broker.evidence.upstream_incomplete = True
                 except (BrokenPipeError, ConnectionResetError):
                     with broker._lock:
                         broker.evidence.client_disconnected = True
+                        broker.evidence.upstream_incomplete = True
                 except (OSError, ValueError, urllib.error.URLError, TimeoutError):
-                    self.reply(502, "PROVIDER_CONNECTIVITY_ERROR")
+                    with broker._lock:
+                        broker.evidence.upstream_incomplete = True
+                    if not headers_started:
+                        self.reply(502, "PROVIDER_CONNECTIVITY_ERROR")
 
         self._server = _UnixServer(str(self.socket_path), Handler)
         os.chmod(self.socket_path, 0o600)

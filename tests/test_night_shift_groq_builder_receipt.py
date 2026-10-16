@@ -62,7 +62,7 @@ def _rig(tmp_path: Path, monkeypatch: pytest.MonkeyPatch, *,
             self.evidence = SimpleNamespace(
                 attempts=1, denied=0, client_disconnected=False,
                 response_overflow=False, upstream_statuses=[200],
-                response_bytes=36,
+                response_bytes=36, upstream_incomplete=False,
             )
 
         def __enter__(self) -> SyntheticBroker:
@@ -196,3 +196,21 @@ def test_scope_receipt_lease_rotates_during_append_refuses_success(
     assert len(events) == 1
     assert events[0].event_type == "BUILDER_SCOPE_RECEIPT"
     # The journal records an ambiguous result requiring reconciliation; no PASS.
+
+
+def test_incomplete_upstream_never_produces_scope_receipt(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    params = _rig(tmp_path, monkeypatch)
+    MockBroker = integration.GroqLocalBroker
+
+    class IncompleteBroker(MockBroker):
+        def __enter__(self):
+            super().__enter__()
+            self.evidence.upstream_incomplete = True
+            return self
+
+    monkeypatch.setattr(integration, "GroqLocalBroker", IncompleteBroker)
+    with pytest.raises(NightShiftContractError, match="evidence incomplete"):
+        integration.run_scoped_builder(**params)
+    assert not params["journal"].events(workflow_id="child-bridge:scope-fixture")
