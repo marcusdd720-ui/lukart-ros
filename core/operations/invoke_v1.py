@@ -31,12 +31,22 @@ def invoke_handler(
         payload = require_map(section["input"], "request.input")
         outcome = handler(payload, context)
         return finalize_outcome(request, outcome, expired=bool(context.expired))
-    except OperationContractError as exc:
+    except OperationContractError:
+        # Host callbacks and handler logic are untrusted: never echo raw
+        # exception text (it may carry private source or credential material)
+        # into the execution envelope. Keep the structured error code only.
         result = build_result(
             request,
             status=OperationStatus.FAILURE,
-            summary="handler outcome rejected",
-            errors=(error("HANDLER_CONTRACT_ERROR", "contract", False, str(exc)[:512]),),
+            summary="handler contract error; detail suppressed",
+            errors=(
+                error(
+                    "HANDLER_CONTRACT_ERROR",
+                    "contract",
+                    False,
+                    "handler contract error; detail suppressed",
+                ),
+            ),
         )
     except Exception:
         result = build_result(
