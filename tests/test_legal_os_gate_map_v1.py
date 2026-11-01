@@ -13,7 +13,7 @@ def test_canonical_gate_set_and_work_prerequisites():
         "G0", "G1", "G2", "G3", "G4", "G5", "G6", "G7", "G7.5", "G8"
     )
     work = {f"HG-{i:02d}" for i in range(1, 10)}
-    observed = set()
+    observed: set[str] = set()
     for gate in all_ros_gates():
         requirements = map_ros_gate(gate)
         assert requirements.ros_gate == gate

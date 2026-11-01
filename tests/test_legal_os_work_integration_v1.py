@@ -7,6 +7,8 @@ No real case data, no credentials, no production activation.
 from __future__ import annotations
 
 import re
+from collections.abc import Mapping
+from typing import cast
 
 import pytest
 
@@ -115,7 +117,7 @@ def test_host_callback_errors_cannot_export_private_details(origin, exception_ty
 
 
 def test_native_mapping_contract_error_cannot_export_private_details():
-    class FailingSnapshot:
+    class FailingSnapshot(Mapping[str, object]):
         def __iter__(self):
             raise OperationContractError(SECRET)
 
@@ -139,7 +141,7 @@ def test_gate_map_identity_and_non_admission():
     assert re.fullmatch(r"[0-9a-f]{40}", ROS_SOURCE_SHA)
     assert re.fullmatch(r"[0-9a-f]{40}", WORK_CANDIDATE_SHA)
     work = {f"HG-{i:02d}" for i in range(1, 10)}
-    observed = set()
+    observed: set[str] = set()
     for gate in all_ros_gates():
         requirements = map_ros_gate(gate)
         assert requirements.ros_gate == gate
@@ -162,7 +164,7 @@ def test_unknown_gate_is_rejected():
     with pytest.raises(ValueError, match="LEGAL_OS_UNKNOWN_ROS_GATE"):
         map_ros_gate("G9")
     with pytest.raises(ValueError, match="LEGAL_OS_UNKNOWN_ROS_GATE"):
-        map_ros_gate(None)
+        map_ros_gate(cast(str, None))
 
 
 def test_adapter_evidence_reference_matches_digest_binding():
