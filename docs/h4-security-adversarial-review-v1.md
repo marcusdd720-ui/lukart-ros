@@ -4,7 +4,7 @@ Status: RECENZJA ZAKOŃCZONA — brak merge, brak wydania, brak zmian w delcie H
 
 ## Wykonawca i zakres
 - Profil: `lukart-validation`; karta kanban: `t_8419609e` (board `lukart-legal-os`); run ID: 2
-- Linkowane Issue: https://github.com/marcusdd720-ui/lukart-ros/issues/374 (zapis wykonania: komentarz issue #6536670711)
+- Linkowane Issue: https://github.com/marcusdd720-ui/lukart-ros/issues/374 (zapis wykonania: komentarz pod issue #374)
 - Zakres autoryzowany: wyłącznie kod i dane syntetyczne; odczyty, diagnoza, syntetyczne próby adversarialne, zapis dowodów. Brak merge/direct-main, release/deployment, zmian credentiali/security, nowej architektury ani trust boundary. H0 pozostaje osobnym koordynatorem.
 
 ## Recenzowane zamrożone delty H1–H3 (exact SHA, odczyt z live GitHub)
@@ -13,7 +13,7 @@ Status: RECENZJA ZAKOŃCZONA — brak merge, brak wydania, brak zmian w delcie H
 |---|---|---|---|---|---|---|
 | lukart-work | #79 | 09921b8e… | 52979a5d… | zweryfikowany (G) | UNSTABLE: `validation`/`assurance` CANCELLED; brak terminalnego SUCCESS | Draft; `stage_10_closed=false`; CI wymaga odrębnego odbioru |
 | lukart-ros | #348 | 7900bea7… | f316159b… | NIEPODPISANY | wszystkie required SUCCESS | gałąź BEHIND main; read-only shadow, fail-closed |
-| lukart-ros | #349 | 7900bea7… | aa51cc36… | NIEPODPISANY | `PR fast gates` FAILURE (run 37808955869) | wymagany repair loop, fresh SHA, ponowna recenzja H4 |
+| lukart-ros | #349 | 7900bea7… | aa51cc36… | NIEPODPISANY | `PR fast gates` FAILURE (pierwotny przebieg CI PR #349) | wymagany repair loop, fresh SHA, ponowna recenzja H4 |
 | lukart-ros | #350 | 7900bea7… | dfe9723a… | NIEPODPISANY | wszystkie required SUCCESS | gałąź BEHIND main; PR deklaruje signing gates HUMAN_REQUIRED |
 | lukart-ros | #351 | 7900bea7… | a8424e01… | zweryfikowany (G) | wszystkie required SUCCESS | gałąź BEHIND main; nie-draft |
 
@@ -53,9 +53,9 @@ Ponowna weryfikacja zamrożonych delt na exact SHAs (lokalne środowisko Windows
   4. lukart-ros a8424e0 — tests/test_night_shift_child_process_bridge.py: **25/25 SKIPPED** na Windowsie (`os.name != posix`); PASS na WSL/Ubuntu niepodlegające weryfikacji na tym hoście → **NOT VERIFIED** jako PASS lokalnie.
   5. lukart-work 52979a5d — test_generator_next + test_operator_rejection_transport + test_workflow_candidate_ownership: **36 PASS**, 38 subtests PASS.
   6. lukart-work 52979a5d — test_stage05: nie da się zebrać (brak psycopg, izolowana PostgreSQL niedostępna na hoście) → **NOT VERIFIED** (ograniczenie środowiska, nie defekt).
-- Gates na #349: `ruff check` FAILURE lokalnie na exact SHA (1 błąd, łatwy do naprawy) — reprodukuje `PR fast gates` FAILURE (run 37808955869). mypy: 6 błędy platformowe (`resource`, tylko Unix) na main i deltach; 1 dodatkowy w teście #349.
+- Gates na #349: `ruff check` FAILURE lokalnie na exact SHA (1 błąd, łatwy do naprawy) — reprodukuje `PR fast gates` FAILURE (pierwotny przebieg CI PR #349). mypy: 6 błędy platformowe (`resource`, tylko Unix) na main i deltach; 1 dodatkowy w teście #349.
 - Stan CI z GitHub status checks: #79 mergeStateStatus=UNSTABLE, check w stanie DRAFT — brak terminalnego SUCCESS (zgodne z zapisem).
-- Syntetyka adversarialna (malformed input, replay/duplikaty, wyścagi procesów dziecka, częściowa awaria z czasem i czyszczeniem grupy procesów): zgodna z zapisem na issue #374 (komentarz #6536670711); odpowiadające testy jednostkowe przechodzą na exact SHAs.
+- Syntetyka adversarialna (malformed input, replay/duplikaty, wyścagi procesów dziecka, częściowa awaria z czasem i czyszczeniem grupy procesów): zgodna z zapisem na issue #374 (komentarz pod issue #374); odpowiadające testy jednostkowe przechodzą na exact SHAs.
 
 Uwagi do zapisu: liczba testów #348 (14 obserwowane vs 16 zapisane — wszystkie PASS); #351 PASS wyłącznie na Linux/WSL, na Windowsie pomijane.
 
