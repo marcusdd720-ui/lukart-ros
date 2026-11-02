@@ -19,7 +19,6 @@ from core.ros_work_adapter_v1 import (
     _map_work_response,
 )
 
-
 # ---------------------------------------------------------------------------
 # Fixtures
 # ---------------------------------------------------------------------------
@@ -121,6 +120,7 @@ def _base_envelope(operation_id: str = "ros.work.generator.assess.v1") -> dict[s
 # Envelope validation
 # ---------------------------------------------------------------------------
 
+
 class TestValidateEnvelope:
     def test_missing_section_raises(self) -> None:
         adapter = _adapter(Path("/tmp"))
@@ -144,6 +144,7 @@ class TestValidateEnvelope:
 # Operation allowlist
 # ---------------------------------------------------------------------------
 
+
 class TestOperationAllowlist:
     def test_unknown_operation_raises(self) -> None:
         adapter = _adapter(Path("/tmp"))
@@ -162,6 +163,7 @@ class TestOperationAllowlist:
 # ---------------------------------------------------------------------------
 # Authority and scope
 # ---------------------------------------------------------------------------
+
 
 class TestAuthorityAndScope:
     def test_missing_authority_raises(self) -> None:
@@ -190,6 +192,7 @@ class TestAuthorityAndScope:
 # ---------------------------------------------------------------------------
 # Mapping
 # ---------------------------------------------------------------------------
+
 
 class TestMapRequest:
     def test_assess_maps_to_query_core(self) -> None:
@@ -228,6 +231,7 @@ class TestMapRequest:
 # ---------------------------------------------------------------------------
 # Dispatch (mocked HTTP)
 # ---------------------------------------------------------------------------
+
 
 class TestDispatch:
     def test_success_maps_to_ros_success(self) -> None:
@@ -282,6 +286,7 @@ class TestDispatch:
 # End-to-end execute (mocked)
 # ---------------------------------------------------------------------------
 
+
 class TestExecute:
     def test_full_flow_assess(self) -> None:
         adapter = _adapter(Path("/tmp"))
@@ -318,6 +323,7 @@ class TestExecute:
 # Helper: work response mapping
 # ---------------------------------------------------------------------------
 
+
 class TestMapWorkResponse:
     def test_applied_success(self) -> None:
         resp = {"state": "APPLIED", "command_id": "c", "refs": [], "event_ids": []}
@@ -343,7 +349,13 @@ class TestMapWorkResponse:
         assert result.status == "failure"
 
     def test_query_result_type_is_mapped_to_success(self) -> None:
-        resp = {"result_type": "CASE_HEAD", "tenant_id": "t", "case_id": "c", "case_sequence": 1, "heads": []}
+        resp = {
+            "result_type": "CASE_HEAD",
+            "tenant_id": "t",
+            "case_id": "c",
+            "case_sequence": 1,
+            "heads": [],
+        }
         result = _map_work_response(resp, "digest-1")
         assert result.status == "success"
         assert result.summary == "native WORK query CASE_HEAD"
