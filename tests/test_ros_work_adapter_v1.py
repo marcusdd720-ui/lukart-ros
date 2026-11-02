@@ -7,6 +7,7 @@ import urllib.error
 import urllib.request
 from http.client import HTTPMessage
 from pathlib import Path
+from typing import Any
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -65,7 +66,7 @@ def _adapter(tmp_path: Path) -> RosWorkAdapterV1:
     return adapter
 
 
-def _base_envelope(operation_id: str = "ros.work.generator.assess.v1") -> dict[str, object]:
+def _base_envelope(operation_id: str = "ros.work.generator.assess.v1") -> dict[str, Any]:
     return {
         "request": {
             "schema_id": "lukart.operation-contract.v1",
@@ -219,7 +220,9 @@ class TestMapRequest:
         adapter = _adapter(Path("/tmp"))
         mapped = adapter.map_request(_base_envelope())
         assert mapped.idempotency_key == "idempotency-1"
-        assert mapped.payload["meta"]["idempotency_key"] == "idempotency-1"
+        meta = mapped.payload["meta"]
+        assert isinstance(meta, dict)
+        assert meta["idempotency_key"] == "idempotency-1"
 
     def test_request_digest_is_deterministic(self) -> None:
         adapter = _adapter(Path("/tmp"))
