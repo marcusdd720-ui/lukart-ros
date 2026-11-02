@@ -3,18 +3,19 @@
 This module is not a new authority for ROS tasks. Call `enqueue_task` only
 AFTER the existing ROS task's authoritative transaction has committed.
 """
+
 from __future__ import annotations
 
 import argparse
 import hashlib
 import os
-from pathlib import Path
 import re
 import sqlite3
 import subprocess
 import sys
 import time
 import uuid
+from pathlib import Path
 
 EVENT_TYPE = "lukart.ros.task.created"
 BOARD = "lukart-hermes-os"
@@ -61,7 +62,9 @@ def connect(db_path: Path | None = None) -> sqlite3.Connection:
                     last_error TEXT,
                     UNIQUE (event_type, ref_hash)
                 )""")
-                cx.execute("CREATE INDEX IF NOT EXISTS idx_due ON events(status,next_at,lease_until)")
+                cx.execute(
+                    "CREATE INDEX IF NOT EXISTS idx_due ON events(status,next_at,lease_until)"
+                )
                 cx.execute(f"PRAGMA user_version={SCHEMA_VERSION}")
                 cx.commit()
             except BaseException:
@@ -133,7 +136,8 @@ def claim_due(cx: sqlite3.Connection, *, now: int | None = None):
             """SELECT * FROM events WHERE
                  (status='pending' AND next_at <= ?)
               OR (status='leased' AND lease_until <= ?)
-                ORDER BY created_at, event_id LIMIT 1""", (ts, ts)
+                ORDER BY created_at, event_id LIMIT 1""",
+            (ts, ts),
         ).fetchone()
         result = None
         if row is not None:
@@ -151,28 +155,42 @@ def claim_due(cx: sqlite3.Connection, *, now: int | None = None):
         raise
 
 
-def finish(cx, event_id: str, token: str, *, ok: bool, error_code: str = "", now: int | None = None):
+def finish(
+    cx, event_id: str, token: str, *, ok: bool, error_code: str = "", now: int | None = None
+):
     cx.execute("BEGIN IMMEDIATE")
     try:
         ts = int(time.time()) if now is None else now
-        row = cx.execute("SELECT attempts FROM events WHERE event_id=? AND lease_token=? AND status='leased'", (event_id, token)).fetchone()
+        row = cx.execute(
+            "SELECT attempts FROM events WHERE event_id=? AND lease_token=? AND status='leased'",
+            (event_id, token),
+        ).fetchone()
         if row is None:
             cx.commit()
             return False  # Lost lease or stale worker; fail closed.
         if ok:
-            cx.execute("""UPDATE events SET status='delivered',delivered_at=?,
+            cx.execute(
+                """UPDATE events SET status='delivered',delivered_at=?,
                lease_token=NULL, lease_until=NULL, last_error=NULL
-               WHERE event_id=? AND lease_token=?""", (ts, event_id, token))
+               WHERE event_id=? AND lease_token=?""",
+                (ts, event_id, token),
+            )
         else:
             attempts = row["attempts"]
             final = attempts >= MAX_ATTEMPTS
             delay = min(3600, 10 * (2 ** min(attempts, 8)))
             # Store only bounded constant error codes, not subprocess stdout/stderr.
-            reason = error_code if error_code in {"CLI_UNAVAILABLE","CLI_FAILURE","CLI_TIMEOUT","DB_ERROR"} else "CLI_FAILURE"
-            cx.execute("""UPDATE events SET status=?,next_at=?,
+            reason = (
+                error_code
+                if error_code in {"CLI_UNAVAILABLE", "CLI_FAILURE", "CLI_TIMEOUT", "DB_ERROR"}
+                else "CLI_FAILURE"
+            )
+            cx.execute(
+                """UPDATE events SET status=?,next_at=?,
                lease_token=NULL,lease_until=NULL,last_error=?
                WHERE event_id=? AND lease_token=?""",
-               ("failed" if final else "pending", ts + delay, reason, event_id, token))
+                ("failed" if final else "pending", ts + delay, reason, event_id, token),
+            )
         cx.commit()
         return True
     except BaseException:
@@ -185,15 +203,39 @@ def create_kanban_card(event_id: str, hermes_cli: str) -> tuple[bool, str]:
         return False, "CLI_UNAVAILABLE"
     # Project-safe, generic notice. No real case content or identifiers.
     label = event_id[:14]
-    cmd = [hermes_cli, "kanban", "--board", BOARD, "create", f"ROS task notification [{label}]",
-           "--assignee", ASSIGNEE, "--workspace", "scratch", "--initial-status", "blocked",
-           "--idempotency-key", f"lukart-ros-outbox-{event_id[:32]}",
-           "--max-runtime", "5m", "--max-retries", "1",
-           "--body", "Local ROS task notification (opaque reference only). Human review required. "
-                     "No case data. Do not execute LEGAL OS or Generator Pism. No paid APIs."]
+    cmd = [
+        hermes_cli,
+        "kanban",
+        "--board",
+        BOARD,
+        "create",
+        f"ROS task notification [{label}]",
+        "--assignee",
+        ASSIGNEE,
+        "--workspace",
+        "scratch",
+        "--initial-status",
+        "blocked",
+        "--idempotency-key",
+        f"lukart-ros-outbox-{event_id[:32]}",
+        "--max-runtime",
+        "5m",
+        "--max-retries",
+        "1",
+        "--body",
+        "Local ROS task notification (opaque reference only). Human review required. "
+        "No case data. Do not execute LEGAL OS or Generator Pism. No paid APIs.",
+    ]
     try:
-        result = subprocess.run(cmd, capture_output=True, text=True,
-                                encoding="utf-8", errors="replace", timeout=20, check=False)
+        result = subprocess.run(
+            cmd,
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            errors="replace",
+            timeout=20,
+            check=False,
+        )
     except (OSError, ValueError):
         return False, "CLI_UNAVAILABLE"
     except subprocess.TimeoutExpired:
@@ -205,17 +247,21 @@ def drain(*, hermes_cli: str, db_path: Path | None = None, limit: int = 5) -> di
     summary = {"delivered": 0, "retried": 0, "pending": 0, "failed": 0}
     cx = connect(db_path)
     try:
-            for _ in range(max(0, min(limit, 5))):
-                claimed = claim_due(cx)
-                if claimed is None:
-                    break
-                row, token = claimed
-                ok, code = create_kanban_card(row["event_id"], hermes_cli)
-                # Claim loss can occur after a slow CLI operation; key provides best-effort dedupe.
-                if finish(cx, row["event_id"], token, ok=ok, error_code=code):
-                    summary["delivered" if ok else "retried"] += 1
-            summary["pending"] = cx.execute("SELECT COUNT(*) FROM events WHERE status IN ('pending','leased')").fetchone()[0]
-            summary["failed"] = cx.execute("SELECT COUNT(*) FROM events WHERE status='failed'").fetchone()[0]
+        for _ in range(max(0, min(limit, 5))):
+            claimed = claim_due(cx)
+            if claimed is None:
+                break
+            row, token = claimed
+            ok, code = create_kanban_card(row["event_id"], hermes_cli)
+            # Claim loss can occur after a slow CLI operation; key provides best-effort dedupe.
+            if finish(cx, row["event_id"], token, ok=ok, error_code=code):
+                summary["delivered" if ok else "retried"] += 1
+        summary["pending"] = cx.execute(
+            "SELECT COUNT(*) FROM events WHERE status IN ('pending','leased')"
+        ).fetchone()[0]
+        summary["failed"] = cx.execute(
+            "SELECT COUNT(*) FROM events WHERE status='failed'"
+        ).fetchone()[0]
     finally:
         cx.close()
     return summary
@@ -225,17 +271,20 @@ def requeue_failed(*, db_path: Path | None = None) -> int:
     """Operator-controlled recovery after diagnosing a permanent failure."""
     cx = connect(db_path)
     try:
-            cx.execute("BEGIN IMMEDIATE")
-            try:
-                now = int(time.time())
-                cur = cx.execute("""UPDATE events SET status='pending', attempts=0, next_at=?,
+        cx.execute("BEGIN IMMEDIATE")
+        try:
+            now = int(time.time())
+            cur = cx.execute(
+                """UPDATE events SET status='pending', attempts=0, next_at=?,
                                   lease_token=NULL, lease_until=NULL, last_error=NULL
-                                  WHERE status='failed'""", (now,))
-                cx.commit()
-                return cur.rowcount
-            except BaseException:
-                cx.rollback()
-                raise
+                                  WHERE status='failed'""",
+                (now,),
+            )
+            cx.commit()
+            return cur.rowcount
+        except BaseException:
+            cx.rollback()
+            raise
     finally:
         cx.close()
 
@@ -243,20 +292,28 @@ def requeue_failed(*, db_path: Path | None = None) -> int:
 def status(*, db_path: Path | None = None) -> dict:
     cx = connect(db_path)
     try:
-            items = cx.execute("SELECT status,COUNT(*) AS n FROM events GROUP BY status").fetchall()
+        items = cx.execute("SELECT status,COUNT(*) AS n FROM events GROUP BY status").fetchall()
     finally:
         cx.close()
-    return {k:v for k,v in ((r["status"],r["n"]) for r in items)}
+    return {k: v for k, v in ((r["status"], r["n"]) for r in items)}
 
 
 def main(argv=None) -> int:
     parser = argparse.ArgumentParser(description="LUKART ROS durable local Kanban outbox")
     group = parser.add_mutually_exclusive_group(required=True)
-    group.add_argument("--enqueue", metavar="OPAQUE_TASK_ID", help="queue metadata only; call after ROS commit")
-    group.add_argument("--drain", action="store_true", help="deliver <=5 queued events to blocked Kanban cards")
+    group.add_argument(
+        "--enqueue", metavar="OPAQUE_TASK_ID", help="queue metadata only; call after ROS commit"
+    )
+    group.add_argument(
+        "--drain", action="store_true", help="deliver <=5 queued events to blocked Kanban cards"
+    )
     group.add_argument("--status", action="store_true", help="show only counts, no identifiers")
-    group.add_argument("--requeue-failed", action="store_true", help="manual recovery after fixing the cause")
-    parser.add_argument("--hermes-cli", help="absolute path to hermes executable, required for --drain")
+    group.add_argument(
+        "--requeue-failed", action="store_true", help="manual recovery after fixing the cause"
+    )
+    parser.add_argument(
+        "--hermes-cli", help="absolute path to hermes executable, required for --drain"
+    )
     args = parser.parse_args(argv)
     try:
         if args.enqueue:
@@ -266,13 +323,14 @@ def main(argv=None) -> int:
         elif args.drain:
             if not args.hermes_cli:
                 parser.error("--drain requires --hermes-cli")
-            print(" ".join(f"{k}={v}" for k,v in drain(hermes_cli=args.hermes_cli).items()))
+            print(" ".join(f"{k}={v}" for k, v in drain(hermes_cli=args.hermes_cli).items()))
         else:
-            print(" ".join(f"{k}={v}" for k,v in status().items()) or "EMPTY")
+            print(" ".join(f"{k}={v}" for k, v in status().items()) or "EMPTY")
         return 0
     except (sqlite3.Error, RuntimeError, ValueError, OSError) as exc:
         print("ERROR - Outbox action failed: " + type(exc).__name__, file=sys.stderr)
         return 1
+
 
 if __name__ == "__main__":
     raise SystemExit(main())
