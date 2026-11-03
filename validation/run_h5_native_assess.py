@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+import importlib
 import json
 import os
 import subprocess
@@ -19,7 +20,8 @@ def main():
     parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args()
     cfg = json.loads(args.private_connection.read_text(encoding="utf-8-sig"))
-    from psycopg.conninfo import conninfo_to_dict, make_conninfo
+    conninfo = importlib.import_module("psycopg.conninfo")
+    conninfo_to_dict, make_conninfo = conninfo.conninfo_to_dict, conninfo.make_conninfo
 
     for name, key in (("LUKART_TEST_DSN", "runtime_dsn"), ("LUKART_TEST_ADMIN_DSN", "admin_dsn")):
         values = conninfo_to_dict(cfg[key])
@@ -30,9 +32,10 @@ def main():
         os.environ[name] = make_conninfo(cfg[key], port="65432", connect_timeout="5")
     ros_root = Path(__file__).resolve().parents[1]
     sys.path[:0] = [str(args.work_root), str(ros_root)]
-    from lukart_work.operator import GeneratorPismOperator
-    from lukart_work.operator_host import create_server
-    from tests.test_finalization import FinalizationTests
+    # WORK and PostgreSQL packages belong to the separately supplied integration checkout.
+    GeneratorPismOperator = importlib.import_module("lukart_work.operator").GeneratorPismOperator
+    create_server = importlib.import_module("lukart_work.operator_host").create_server
+    FinalizationTests = importlib.import_module("tests.test_finalization").FinalizationTests
 
     from core.ros_work_adapter_v1 import (
         AdapterConfig,
@@ -125,6 +128,7 @@ def main():
         thread.join(timeout=5)
         assert not thread.is_alive()
 
+    checks: list[str] = []
     receipt = {
         "scope": "NATIVE_HTTP_ASSESS_ONLY",
         "synthetic_only": True,
@@ -137,7 +141,7 @@ def main():
         ).strip(),
         "database_port": 65432,
         "legal_approvals_created": False,
-        "checks": [],
+        "checks": checks,
     }
     server = thread = None
     try:
@@ -149,7 +153,7 @@ def main():
             raise AssertionError(
                 "native assess failed: " + first.summary + " " + json.dumps(first.errors)
             )
-        receipt["checks"].append("native_adapter_to_operator_http_to_postgresql")
+        checks.append("native_adapter_to_operator_http_to_postgresql")
         stop(server, thread)
         server = thread = None
         # Recreate real HTTP server over the durable same CASE repository; no mock transport.
@@ -157,7 +161,7 @@ def main():
         replay = adapter.execute(request)
         assert replay.status == "success"
         assert fixture.repo.get_heads(fixture.tenant, fixture.case_id)[0] == baseline
-        receipt["checks"].append("transport_restart_replay_preserves_case_sequence")
+        checks.append("transport_restart_replay_preserves_case_sequence")
         blocked = envelope("ros.work.generator.execute.v1")
         blocked["request"]["input"] = {"work_operation": "CreateCase"}
         try:
@@ -165,7 +169,7 @@ def main():
             raise AssertionError("unadmitted execute was dispatched")
         except RosWorkAdapterError as error:
             assert "not admitted" in str(error)
-        receipt["checks"].append("execute_gate_denied_without_case_mutation")
+        checks.append("execute_gate_denied_without_case_mutation")
         assert fixture.repo.get_heads(fixture.tenant, fixture.case_id)[0] == baseline
         receipt["boundary_result"] = "PASS"
         receipt["remaining"] = (

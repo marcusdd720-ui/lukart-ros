@@ -1,6 +1,7 @@
 """Cross-repository schema regression: adapter query must parse as native WORK."""
 
 import argparse
+import importlib
 import json
 import sys
 from pathlib import Path
@@ -12,7 +13,7 @@ def main():
     p.add_argument("--work-root", type=Path, required=True)
     args = p.parse_args()
     sys.path[:0] = [str(args.work_root), str(Path(__file__).resolve().parents[1])]
-    from lukart_work.core.requests import CoreQuery
+    CoreQuery = importlib.import_module("lukart_work.core.requests").CoreQuery
 
     from core.ros_work_adapter_v1 import AdapterConfig, AuthorityResolution, RosWorkAdapterV1
 
