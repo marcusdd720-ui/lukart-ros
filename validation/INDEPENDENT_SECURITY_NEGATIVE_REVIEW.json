@@ -1,0 +1,36 @@
+{
+  "role": "independent_validation_agent",
+  "scope": "bounded new security gates only; no fullE2E or H5 admission",
+  "files_sha256": {
+    "scripts\\integrations\\ros_outbox_ack.py": "adf81b75f74a2d1c96bd3738309c747843b5c1fcca2d35338454e600250e4db6",
+    "validation\\native_hermes_canary_worker.py": "00c50cfc0fe29adc6a9b076d707aa3220a67565c0c80ad0016841eb9637eb773"
+  },
+  "checks": [
+    {
+      "name": "actual native completed-run binding shape",
+      "result": "PASS"
+    },
+    {
+      "name": "reject forged run id",
+      "result": "PASS"
+    },
+    {
+      "name": "reject unfinished run",
+      "result": "PASS"
+    },
+    {
+      "name": "reject duplicate run id",
+      "result": "PASS"
+    },
+    {
+      "name": "reject cross-source metadata",
+      "result": "PASS"
+    },
+    {
+      "name": "optimized worker refused before imports and task execution",
+      "result": "PASS",
+      "exit_code": 1
+    }
+  ],
+  "native_db_writes": false
+}
