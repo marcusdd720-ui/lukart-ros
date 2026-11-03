@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import sys
+import tempfile
 from pathlib import Path
 
 import pytest
@@ -115,6 +116,20 @@ def test_h4_allows_explicit_read_root_but_denies_write_outside_workspace(
             {"path": str(outside), "text": "tamper"},
         )
     assert outside.read_text(encoding="utf-8") == "approved-read"
+
+
+def test_h4_parent_cleans_temporary_workspace_after_worker_exit(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(tempfile, "tempdir", str(tmp_path))
+    result = _run(
+        ProcessIsolationExecutor(_policy("filesystem_write")),
+        "filesystem_write",
+        {"path": "generated.txt", "text": "bounded"},
+    )
+    assert result.output == {"written": "bounded", "exists": True}
+    assert list(tmp_path.glob("lukart-worker-*")) == []
 
 
 def test_h4_allows_workspace_local_write() -> None:
