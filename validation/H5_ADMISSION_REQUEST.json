@@ -1,0 +1,40 @@
+{
+  "kind": "REVIEW_INPUT_NOT_APPROVAL",
+  "task_id": "t_7d061ea8",
+  "scope": "SYNTHETIC_ISOLATED_INTEGRATION_ONLY",
+  "ros_base_sha": "e8e6092b36da52bcda4bd1ce8d2faa89f9828307",
+  "work_observed_sha": "7a924f37696cdf74666c08f924f1941edb4fc030",
+  "requested_operations": [
+    "ros.work.generator.execute.v1",
+    "ros.work.generator.read-package.v1"
+  ],
+  "currently_admitted": [
+    "ros.work.generator.assess.v1"
+  ],
+  "requested_admission": false,
+  "missing_evidence": [
+    {
+      "gate": "PB02_PB03_INDEPENDENT_ACCEPTANCE",
+      "required": "Independent exact candidate-SHA review and required terminal CI; profile/package manifest and contract digest bound to exact candidate",
+      "supplied": false
+    },
+    {
+      "gate": "SUPPORTED_TYPE_ADMISSION",
+      "required": "Admitted type schema/profile/fixture and independent HUMAN legal/domain decision where canonical contract requires it",
+      "supplied": false
+    },
+    {
+      "gate": "SCOPED_NATIVE_WORK_AUTHORITY",
+      "required": "Trusted host resolution of authority_ref to native scoped HUMAN capability; ROS authority cannot supply this truth",
+      "supplied": false
+    },
+    {
+      "gate": "FULL_PIPELINE_RECOVERY",
+      "required": "Actual native full ROS CASE→WORK→DOCX/PDF→FINISH crash/restart/recovery after preceding admission; read-only transport restart is insufficient",
+      "supplied": false
+    }
+  ],
+  "safe_evidence_file": "H5_NATIVE_BOUNDARY_EVIDENCE.md",
+  "verdict": "BLOCKED_AT_EXECUTE_AND_PACKAGE_ADMISSION",
+  "does_not_grant_identity_or_permissions": true
+}
