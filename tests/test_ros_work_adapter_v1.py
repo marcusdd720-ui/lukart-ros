@@ -220,9 +220,22 @@ class TestMapRequest:
         adapter = _adapter(Path("/tmp"))
         mapped = adapter.map_request(_base_envelope())
         assert mapped.idempotency_key == "idempotency-1"
-        meta = mapped.payload["meta"]
+        assert mapped.payload == {
+            "contract": "urn:lukart:work:CoreQuery:1.0.0",
+            "operation": "GetCaseHead", "tenant_id": "tenant-1", "case_id": "case-1",
+        }
+        command = _base_envelope("ros.work.generator.execute.v1")
+        command["request"]["input"] = {"work_operation": "CreateCase"}
+        meta = adapter.map_request(command).payload["meta"]
         assert isinstance(meta, dict)
         assert meta["idempotency_key"] == "idempotency-1"
+
+    def test_assess_cannot_override_native_scope(self) -> None:
+        adapter = _adapter(Path("/tmp"))
+        envelope = _base_envelope()
+        envelope["request"]["input"] = {"tenant_id": "foreign-tenant"}
+        with pytest.raises(RosWorkAdapterError, match="no caller WORK payload"):
+            adapter.map_request(envelope)
 
     def test_request_digest_is_deterministic(self) -> None:
         adapter = _adapter(Path("/tmp"))

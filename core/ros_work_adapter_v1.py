@@ -344,6 +344,18 @@ class RosWorkAdapterV1:
             "correlation_id": request_digest,
         })
         payload.setdefault("rationale", f"ROS adapter dispatch: {operation_id}")
+        if operation_id == "ros.work.generator.assess.v1":
+            # Native CoreQuery is not a command envelope: scope is top-level,
+            # and command meta/rationale are forbidden by the WORK schema.
+            if request["input"]:
+                raise RosWorkAdapterError("assess.v1 accepts no caller WORK payload")
+            payload = {
+                "contract": work_contract,
+                "operation": work_operation,
+                "tenant_id": resolution.tenant_id,
+                "case_id": resolution.case_id,
+            }
+
 
         return RosWorkRequest(
             operation_id=operation_id,
