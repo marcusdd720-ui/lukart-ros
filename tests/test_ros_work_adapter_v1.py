@@ -308,7 +308,8 @@ class TestDispatch:
             handlers = mock_build_opener.call_args.args
             assert any(isinstance(item, _NoRedirectHandler) for item in handlers)
             assert any(
-                isinstance(item, urllib.request.ProxyHandler) and item.proxies == {}
+                isinstance(item, urllib.request.ProxyHandler)
+                and getattr(item, "proxies", None) == {}
                 for item in handlers
             )
         assert result.status == "success"
