@@ -145,12 +145,12 @@ def test_leased_delivery_crash_replays_same_event_without_stale_ack(tmp_path):
     reconcile(journal=args["journal"], authority=args["authority"], outbox_path=path)
     cx = connect(path)
     try:
-        row, old = claim_due(cx, now=10000000000)
-        row_again, current = claim_due(cx, now=10000000091)
+        row, old = claim_due(cx, now=10_000_000_000)
+        row_again, current = claim_due(cx, now=10_000_000_091)
         assert row["event_id"] == row_again["event_id"]
         assert old != current
-        assert not finish(cx, row["event_id"], old, ok=True, now=10000000092)
-        assert finish(cx, row["event_id"], current, ok=True, now=10000000092)
+        assert not finish(cx, row["event_id"], old, ok=True, now=10_000_000_092)
+        assert finish(cx, row["event_id"], current, ok=True, now=10_000_000_092)
     finally:
         cx.close()
 

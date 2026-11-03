@@ -69,7 +69,6 @@ def main():
         ).strip()
         assert remote.rstrip("/").removesuffix(".git") in {
             "https://github.com/marcusdd720-ui/lukart-ros",
-            "git@github.com:marcusdd720-ui/lukart-ros",
         }, "repository identity differs"
         assert head == manifest["source_sha"] == accepted.payload["state"]["head_sha"], (
             "candidate changed"
