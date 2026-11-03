@@ -1,0 +1,16 @@
+{
+  "scope": "NATIVE_HTTP_ASSESS_ONLY",
+  "synthetic_only": true,
+  "full_h5": "BLOCKED",
+  "work_sha": "7a924f37696cdf74666c08f924f1941edb4fc030",
+  "ros_sha": "e8e6092b36da52bcda4bd1ce8d2faa89f9828307",
+  "database_port": 65432,
+  "legal_approvals_created": false,
+  "checks": [
+    "native_adapter_to_operator_http_to_postgresql",
+    "transport_restart_replay_preserves_case_sequence",
+    "execute_gate_denied_without_case_mutation"
+  ],
+  "boundary_result": "PASS",
+  "remaining": "Independent PB02/PB03/type admission before positive execute/package conformance; full pipeline crash recovery not tested"
+}
