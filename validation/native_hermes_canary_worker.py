@@ -6,6 +6,7 @@ if not __debug__:
     raise RuntimeError("Optimized execution is forbidden for this guarded worker")
 
 import hashlib
+import importlib
 import json
 import subprocess
 import sys
@@ -14,14 +15,15 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 sys.path.insert(1, str(Path.home() / "AppData/Local/hermes/hermes-agent"))
-import hermes_bootstrap  # noqa: F401,E402
-from hermes_cli import kanban_db as kb  # noqa: E402
-from hermes_cli import kanban_db_connect as kbc  # noqa: E402
+# Hermes is supplied by its existing external installation, never vendored here.
+importlib.import_module("hermes_bootstrap")
+kb = importlib.import_module("hermes_cli.kanban_db")
+kbc = importlib.import_module("hermes_cli.kanban_db_connect")
 
 from core.night_shift.authority import AuthorityBudgetStore  # noqa: E402
 from core.night_shift.journal import DurableEventJournal  # noqa: E402
 from scripts.integrations.ros_outbox import event_key  # noqa: E402
-from scripts.integrations.ros_outbox_reconcile import accepted_task_ids  # noqa: E402
+from scripts.integrations.ros_outbox_reconcile import accepted_task_ids, object_map  # noqa: E402
 
 BOARD = "lukart-outbox-e2e-20261103"
 
@@ -36,11 +38,15 @@ def main():
     authority = AuthorityBudgetStore(directory / "authority.sqlite3")
     assert source_id in accepted_task_ids(journal, authority=authority)
     accepted = journal.verify_chain(workflow_id="accepted-task:" + source_id)[0]
+    accepted_payload = object_map(accepted.payload)
+    task_payload = object_map(accepted_payload["task"])
+    state_payload = object_map(accepted_payload["state"])
+    envelope_payload = object_map(accepted_payload["envelope"])
     assert manifest["task_id"] == source_id
     assert manifest["source_event_hash"] == accepted.event_hash
-    assert manifest["task_capsule_digest"] == accepted.payload["task_digest"]
+    assert manifest["task_capsule_digest"] == accepted_payload["task_digest"]
     expected = manifest["expected_sha256"]
-    assert accepted.payload["task"]["objective"].endswith("expected=" + expected)
+    assert task_payload["objective"].endswith("expected=" + expected)
     canary = directory / "canary.txt"
     assert hashlib.sha256(canary.read_bytes()).hexdigest() == expected
     assert source_key == "lukart-ros-outbox-" + event_key(source_id)[:32]
@@ -70,17 +76,12 @@ def main():
         assert remote.rstrip("/").removesuffix(".git") in {
             "https://github.com/marcusdd720-ui/lukart-ros",
         }, "repository identity differs"
-        assert head == manifest["source_sha"] == accepted.payload["state"]["head_sha"], (
-            "candidate changed"
-        )
-        assert branch == accepted.payload["state"]["branch"], "branch changed"
-        assert accepted.payload["state"]["repository"] == "marcusdd720-ui/lukart-ros"
+        assert head == manifest["source_sha"] == state_payload["head_sha"], "candidate changed"
+        assert branch == state_payload["branch"], "branch changed"
+        assert state_payload["repository"] == "marcusdd720-ui/lukart-ros"
         assert manifest["fixture_scope"] == "EXTERNAL_SYNTHETIC_INPUT_NO_REPO_WRITES"
-        assert accepted.payload["task"]["allowed_paths"] == ["external-fixture/canary.txt"]
-        assert (
-            "external-fixture:" + str(canary.resolve())
-            in accepted.payload["state"]["evidence_refs"]
-        )
+        assert task_payload["allowed_paths"] == ["external-fixture/canary.txt"]
+        assert "external-fixture:" + str(canary.resolve()) in state_payload["evidence_refs"]
         dirty = subprocess.check_output(
             ["git", "status", "--porcelain", "--untracked-files=normal"],
             cwd=repository,
@@ -88,9 +89,9 @@ def main():
         ).strip()
         assert not dirty, "candidate checkout is dirty"
         now = int(time.time())
-        assert now < accepted.payload["state"]["expires_at_epoch"], "stale execution state"
-        assert now < accepted.payload["envelope"]["expires_at_epoch"], "expired authority"
-        assert accepted.payload["task"]["risk_class"] == "R0"
+        assert now < state_payload["expires_at_epoch"], "stale execution state"
+        assert now < envelope_payload["expires_at_epoch"], "expired authority"
+        assert task_payload["risk_class"] == "R0"
         if task.status in {"blocked", "todo"}:
             ok, reason = kb.promote_task(
                 conn,
