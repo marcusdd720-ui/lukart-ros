@@ -305,7 +305,12 @@ class TestDispatch:
             mock_opener.open.return_value.__enter__.return_value = mock_resp
             result = adapter.dispatch(mapped)
             mock_build_opener.assert_called_once()
-            assert isinstance(mock_build_opener.call_args.args[0], _NoRedirectHandler)
+            handlers = mock_build_opener.call_args.args
+            assert any(isinstance(item, _NoRedirectHandler) for item in handlers)
+            assert any(
+                isinstance(item, urllib.request.ProxyHandler) and item.proxies == {}
+                for item in handlers
+            )
         assert result.status == "success"
         assert result.summary == "native WORK query CASE_HEAD"
         assert result.work_command_id is None

@@ -15,7 +15,7 @@ Invariants:
 - ROS authority_ref is NEVER forwarded as WORK authorization truth.
 - The authority map resolves a native WORK bearer token; it does not grant
   WORK capabilities or independently authorize an operation.
-- Trusted WORK URLs are exact loopback origins; HTTP redirects are rejected.
+- Trusted WORK URLs are exact loopback origins; ambient proxies and HTTP redirects are disabled.
 - ROS expected_head is an orchestration precondition only.
 - WORK expected_case_sequence/CAS remains authoritative.
 - CASE_HEAD responses must match the exact resolved tenant and case.
@@ -433,7 +433,10 @@ class RosWorkAdapterV1:
         )
         try:
             timeout_s = int(mapped.payload.get("timeout_ms", 30000)) / 1000
-            opener = urllib.request.build_opener(_NoRedirectHandler())
+            opener = urllib.request.build_opener(
+                urllib.request.ProxyHandler({}),
+                _NoRedirectHandler(),
+            )
             with opener.open(req, timeout=timeout_s) as response:
                 raw = response.read()
                 work_response = json.loads(raw.decode("utf-8"))
