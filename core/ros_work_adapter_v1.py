@@ -5,15 +5,20 @@ Does NOT import lukart_work at runtime; dispatches over a neutral HTTP boundary
 (local operator_host) and returns a neutral ROS result envelope.
 
 Gates:
-- ros.work.generator.execute.v1 is blocked by default unless the trusted host
-  explicitly admits the operation through its own HUMAN/authorization flow.
-- ros.work.generator.read-package.v1 remains blocked until HG-09 and PB03
-  checkpoint review are satisfied.
+- Only read-only GetCaseHead assessment is enabled in this pilot.
+- Native execute and final-package reads remain blocked until WORK-native,
+  independently verified scoped capabilities are admitted; a local authority
+  map cannot activate either operation.
+- Final-package reads additionally require HUMAN actor and PB03 acceptance.
 
 Invariants:
 - ROS authority_ref is NEVER forwarded as WORK authorization truth.
+- The authority map resolves a native WORK bearer token; it does not grant
+  WORK capabilities or independently authorize an operation.
+- Trusted WORK URLs are exact loopback origins; HTTP redirects are rejected.
 - ROS expected_head is an orchestration precondition only.
 - WORK expected_case_sequence/CAS remains authoritative.
+- CASE_HEAD responses must match the exact resolved tenant and case.
 - Different request digest with the same idempotency key blocks.
 - Unknown operation, scope mismatch, or missing authority resolution blocks.
 """
@@ -27,6 +32,7 @@ from collections.abc import Mapping
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, cast
+from urllib.parse import urlsplit
 
 from core.night_shift.contracts import NightShiftContractError
 from core.operations.contract_v1 import (
@@ -69,6 +75,13 @@ OPERATION_MAP = {
 }
 
 MAX_WORK_REQUEST_BYTES = 1024 * 1024
+
+
+class _NoRedirectHandler(urllib.request.HTTPRedirectHandler):
+    """Never forward a bearer token through an HTTP redirect."""
+
+    def redirect_request(self, req, fp, code, msg, headers, newurl):
+        return None
 
 
 # ---------------------------------------------------------------------------
@@ -140,8 +153,24 @@ class AdapterConfig:
     )
 
     def __post_init__(self) -> None:
-        if not self.trusted_host_url.startswith("http://127.0.0.1"):
-            raise RosWorkAdapterError("trusted host must be local 127.0.0.1")
+        try:
+            parsed = urlsplit(self.trusted_host_url)
+            port = parsed.port
+        except (TypeError, ValueError) as exc:
+            raise RosWorkAdapterError("trusted host URL is invalid") from exc
+        if (
+            parsed.scheme != "http"
+            or parsed.hostname != "127.0.0.1"
+            or port is None
+            or not 1 <= port <= 65535
+            or parsed.username is not None
+            or parsed.password is not None
+            or parsed.path
+            or parsed.query
+            or parsed.fragment
+            or parsed.netloc != f"127.0.0.1:{port}"
+        ):
+            raise RosWorkAdapterError("trusted host must be an exact local 127.0.0.1 origin")
 
 
 # ---------------------------------------------------------------------------
@@ -176,9 +205,17 @@ def _digest_work_result(result: Mapping[str, Any]) -> str:
 def _map_work_response(
     work_response: Mapping[str, Any],
     request_digest: str,
+    *,
+    expected_operation_id: str,
+    expected_tenant_id: str,
+    expected_case_id: str,
 ) -> RosWorkResult:
-    """Derive a neutral ROS result envelope from a native WORK response."""
-    if isinstance(work_response, dict) and work_response.get("state") == "APPLIED":
+    """Map only the response contract admitted for this exact operation and scope."""
+    if (
+        isinstance(work_response, dict)
+        and work_response.get("state") == "APPLIED"
+        and expected_operation_id == "ros.work.generator.execute.v1"
+    ):
         status = "success"
         summary = "native WORK command applied"
         refs = work_response.get("refs", ())
@@ -215,10 +252,9 @@ def _map_work_response(
     if (
         isinstance(work_response, dict)
         and work_response.get("result_type") == "CASE_HEAD"
-        and isinstance(work_response.get("tenant_id"), str)
-        and bool(work_response["tenant_id"])
-        and isinstance(work_response.get("case_id"), str)
-        and bool(work_response["case_id"])
+        and expected_operation_id == "ros.work.generator.assess.v1"
+        and work_response.get("tenant_id") == expected_tenant_id
+        and work_response.get("case_id") == expected_case_id
         and type(work_response.get("case_sequence")) is int
         and work_response["case_sequence"] >= 0
     ):
@@ -297,6 +333,13 @@ class RosWorkAdapterV1:
 
         if not work_operation:
             raise RosWorkAdapterError("execute.v1 requires input.work_operation")
+
+        # Only read-only case-head assessment is enabled in this pilot. A local
+        # authority map cannot activate native execute or final-package reads.
+        if operation_id != "ros.work.generator.assess.v1":
+            raise RosWorkAdapterError(
+                "operation disabled until native WORK capability is independently admitted"
+            )
 
         authority_ref = str(preconditions["authority_ref"])
         resolution = self._authority_map.get(authority_ref)
@@ -390,7 +433,8 @@ class RosWorkAdapterV1:
         )
         try:
             timeout_s = int(mapped.payload.get("timeout_ms", 30000)) / 1000
-            with urllib.request.urlopen(req, timeout=timeout_s) as response:
+            opener = urllib.request.build_opener(_NoRedirectHandler())
+            with opener.open(req, timeout=timeout_s) as response:
                 raw = response.read()
                 work_response = json.loads(raw.decode("utf-8"))
         except urllib.error.HTTPError as exc:
@@ -400,7 +444,13 @@ class RosWorkAdapterV1:
         except json.JSONDecodeError as exc:
             raise RosWorkAdapterError(f"WORK response not JSON: {exc}") from exc
 
-        return _map_work_response(work_response, mapped.request_digest)
+        return _map_work_response(
+            work_response,
+            mapped.request_digest,
+            expected_operation_id=mapped.operation_id,
+            expected_tenant_id=mapped.tenant_id,
+            expected_case_id=mapped.case_id,
+        )
 
     def execute(self, envelope: Mapping[str, object]) -> RosWorkResult:
         """Validate, map, dispatch, and derive a neutral ROS result."""

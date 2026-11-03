@@ -18,6 +18,7 @@ from core.ros_work_adapter_v1 import (
     RosWorkAdapterError,
     RosWorkAdapterV1,
     _map_work_response,
+    _NoRedirectHandler,
 )
 
 # ---------------------------------------------------------------------------
@@ -117,6 +118,41 @@ def _base_envelope(operation_id: str = "ros.work.generator.assess.v1") -> dict[s
     }
 
 
+class TestAdapterConfig:
+    @pytest.mark.parametrize(
+        "url",
+        (
+            "http://127.0.0.1.attacker:8765",
+            "http://127.0.0.1:8765.evil",
+            "http://user@127.0.0.1:8765",
+            "http://user:pass@127.0.0.1:8765",
+            "http://127.0.0.1:8765/path",
+            "http://127.0.0.1:8765?next=https://attacker.invalid",
+            "http://127.0.0.1:8765#fragment",
+            "https://127.0.0.1:8765",
+            "http://localhost:8765",
+            "http://127.0.0.2:8765",
+            "http://127.0.0.1",
+            "http://127.0.0.1:99999",
+        ),
+    )
+    def test_rejects_non_exact_or_malformed_trusted_host(self, url: str) -> None:
+        with pytest.raises(RosWorkAdapterError, match="trusted host"):
+            AdapterConfig(trusted_host_url=url)
+
+    def test_accepts_exact_loopback_origin_with_ephemeral_port(self) -> None:
+        AdapterConfig(trusted_host_url="http://127.0.0.1:54321")
+
+    def test_redirect_handler_never_follows_redirects(self) -> None:
+        handler = _NoRedirectHandler()
+        assert (
+            handler.redirect_request(
+                None, None, 302, "Found", {}, "http://attacker.invalid"
+            )
+            is None
+        )
+
+
 # ---------------------------------------------------------------------------
 # Envelope validation
 # ---------------------------------------------------------------------------
@@ -207,14 +243,18 @@ class TestMapRequest:
         assert mapped.token == "work-token-abc"
         assert mapped.admitted is True
 
-    def test_execute_maps_to_execute_core(self) -> None:
+    def test_execute_is_blocked_even_when_local_authority_map_admits_it(self) -> None:
         adapter = _adapter(Path("/tmp"))
         envelope = _base_envelope("ros.work.generator.execute.v1")
         envelope["request"]["input"]["work_operation"] = "CreateCase"
-        mapped = adapter.map_request(envelope)
-        assert mapped.work_route == "execute_core"
-        assert mapped.work_operation == "CreateCase"
-        assert mapped.expected_case_sequence == 0
+        with pytest.raises(RosWorkAdapterError, match="native WORK capability"):
+            adapter.map_request(envelope)
+
+    def test_read_package_is_blocked_even_when_local_authority_map_admits_it(self) -> None:
+        adapter = _adapter(Path("/tmp"))
+        envelope = _base_envelope("ros.work.generator.read-package.v1")
+        with pytest.raises(RosWorkAdapterError, match="native WORK capability"):
+            adapter.map_request(envelope)
 
     def test_idempotency_key_propagates(self) -> None:
         adapter = _adapter(Path("/tmp"))
@@ -224,11 +264,8 @@ class TestMapRequest:
             "contract": "urn:lukart:work:CoreQuery:1.0.0",
             "operation": "GetCaseHead", "tenant_id": "tenant-1", "case_id": "case-1",
         }
-        command = _base_envelope("ros.work.generator.execute.v1")
-        command["request"]["input"] = {"work_operation": "CreateCase"}
-        meta = adapter.map_request(command).payload["meta"]
-        assert isinstance(meta, dict)
-        assert meta["idempotency_key"] == "idempotency-1"
+        assert mapped.case_id == "case-1"
+        assert mapped.tenant_id == "tenant-1"
 
     def test_assess_cannot_override_native_scope(self) -> None:
         adapter = _adapter(Path("/tmp"))
@@ -254,29 +291,87 @@ class TestDispatch:
         adapter = _adapter(Path("/tmp"))
         mapped = adapter.map_request(_base_envelope())
         work_response = {
-            "command_id": "cmd-1",
-            "state": "APPLIED",
+            "result_type": "CASE_HEAD",
+            "tenant_id": "tenant-1",
+            "case_id": "case-1",
             "case_sequence": 1,
-            "refs": [{"kind": "Case", "id": "case-1"}],
-            "event_ids": ["event-1"],
+            "heads": [],
         }
-        with patch("core.ros_work_adapter_v1.urllib.request.urlopen") as mock_urlopen:
+        with patch("core.ros_work_adapter_v1.urllib.request.build_opener") as mock_build_opener:
+            mock_opener = MagicMock()
+            mock_build_opener.return_value = mock_opener
             mock_resp = MagicMock()
             mock_resp.read.return_value = json.dumps(work_response).encode("utf-8")
-            mock_urlopen.return_value.__enter__.return_value = mock_resp
+            mock_opener.open.return_value.__enter__.return_value = mock_resp
             result = adapter.dispatch(mapped)
+            mock_build_opener.assert_called_once()
+            assert isinstance(mock_build_opener.call_args.args[0], _NoRedirectHandler)
         assert result.status == "success"
-        assert result.work_command_id == "cmd-1"
-        assert result.work_event_ids == ("event-1",)
+        assert result.summary == "native WORK query CASE_HEAD"
+        assert result.work_command_id is None
+        assert result.work_event_ids == ()
+
+    def test_case_head_wrong_tenant_or_case_fails_closed(self) -> None:
+        base = {
+            "result_type": "CASE_HEAD",
+            "tenant_id": "tenant-1",
+            "case_id": "case-1",
+            "case_sequence": 1,
+            "heads": [],
+        }
+        for response in (
+            dict(base, tenant_id="tenant-foreign"),
+            dict(base, case_id="case-foreign"),
+            dict(base, tenant_id=None),
+            dict(base, case_id=None),
+        ):
+            result = _map_work_response(
+                response, "digest-1",
+                expected_operation_id="ros.work.generator.assess.v1",
+                expected_tenant_id="tenant-1",
+                expected_case_id="case-1",
+            )
+            assert result.status == "failure"
+
+    def test_assess_rejects_command_applied_response(self) -> None:
+        result = _map_work_response(
+            {"state": "APPLIED", "command_id": "unexpected"},
+            "digest-1",
+            expected_operation_id="ros.work.generator.assess.v1",
+            expected_tenant_id="tenant-1",
+            expected_case_id="case-1",
+        )
+        assert result.status == "failure"
+
+    def test_foreign_case_head_response_fails_closed(self) -> None:
+        adapter = _adapter(Path("/tmp"))
+        mapped = adapter.map_request(_base_envelope())
+        work_response = {
+            "result_type": "CASE_HEAD",
+            "tenant_id": "tenant-foreign",
+            "case_id": "case-1",
+            "case_sequence": 1,
+            "heads": [],
+        }
+        with patch("core.ros_work_adapter_v1.urllib.request.build_opener") as mock_build_opener:
+            mock_opener = MagicMock()
+            mock_build_opener.return_value = mock_opener
+            mock_resp = MagicMock()
+            mock_resp.read.return_value = json.dumps(work_response).encode("utf-8")
+            mock_opener.open.return_value.__enter__.return_value = mock_resp
+            result = adapter.dispatch(mapped)
+        assert result.status == "failure"
 
     def test_gate_denied_maps_to_blocked(self) -> None:
         adapter = _adapter(Path("/tmp"))
         mapped = adapter.map_request(_base_envelope())
         work_response = {"code": "GATE_DENIED", "message": "not admitted"}
-        with patch("core.ros_work_adapter_v1.urllib.request.urlopen") as mock_urlopen:
+        with patch("core.ros_work_adapter_v1.urllib.request.build_opener") as mock_build_opener:
+            mock_opener = MagicMock()
+            mock_build_opener.return_value = mock_opener
             mock_resp = MagicMock()
             mock_resp.read.return_value = json.dumps(work_response).encode("utf-8")
-            mock_urlopen.return_value.__enter__.return_value = mock_resp
+            mock_opener.open.return_value.__enter__.return_value = mock_resp
             result = adapter.dispatch(mapped)
         assert result.status == "blocked"
         assert result.errors[0]["code"] == "GATE_DENIED"
@@ -284,16 +379,16 @@ class TestDispatch:
     def test_http_error_raises(self) -> None:
         adapter = _adapter(Path("/tmp"))
         mapped = adapter.map_request(_base_envelope())
-        with patch(
-            "core.ros_work_adapter_v1.urllib.request.urlopen",
-            side_effect=urllib.error.HTTPError(
+        with patch("core.ros_work_adapter_v1.urllib.request.build_opener") as mock_build_opener:
+            mock_opener = MagicMock()
+            mock_build_opener.return_value = mock_opener
+            mock_opener.open.side_effect = urllib.error.HTTPError(
                 "http://127.0.0.1:8765/api/query_core",
                 403,
                 "Forbidden",
                 HTTPMessage(),
                 None,
-            ),
-        ):
+            )
             with pytest.raises(RosWorkAdapterError, match="WORK HTTP error"):
                 adapter.dispatch(mapped)
 
@@ -308,28 +403,32 @@ class TestExecute:
         adapter = _adapter(Path("/tmp"))
         envelope = _base_envelope()
         work_response = {
-            "command_id": "cmd-1",
-            "state": "APPLIED",
+            "result_type": "CASE_HEAD",
+            "tenant_id": "tenant-1",
+            "case_id": "case-1",
             "case_sequence": 1,
-            "refs": [{"kind": "Case", "id": "case-1"}],
-            "event_ids": ["event-1"],
+            "heads": [],
         }
-        with patch("core.ros_work_adapter_v1.urllib.request.urlopen") as mock_urlopen:
+        with patch("core.ros_work_adapter_v1.urllib.request.build_opener") as mock_build_opener:
+            mock_opener = MagicMock()
+            mock_build_opener.return_value = mock_opener
             mock_resp = MagicMock()
             mock_resp.read.return_value = json.dumps(work_response).encode("utf-8")
-            mock_urlopen.return_value.__enter__.return_value = mock_resp
+            mock_opener.open.return_value.__enter__.return_value = mock_resp
             result = adapter.execute(envelope)
         assert result.status == "success"
-        assert result.work_command_id == "cmd-1"
+        assert result.summary == "native WORK query CASE_HEAD"
 
     def test_full_flow_blocked_by_work(self) -> None:
         adapter = _adapter(Path("/tmp"))
         envelope = _base_envelope()
         work_response = {"code": "FORBIDDEN", "message": "HUMAN gate not satisfied"}
-        with patch("core.ros_work_adapter_v1.urllib.request.urlopen") as mock_urlopen:
+        with patch("core.ros_work_adapter_v1.urllib.request.build_opener") as mock_build_opener:
+            mock_opener = MagicMock()
+            mock_build_opener.return_value = mock_opener
             mock_resp = MagicMock()
             mock_resp.read.return_value = json.dumps(work_response).encode("utf-8")
-            mock_urlopen.return_value.__enter__.return_value = mock_resp
+            mock_opener.open.return_value.__enter__.return_value = mock_resp
             result = adapter.execute(envelope)
         assert result.status == "blocked"
         assert result.errors[0]["code"] == "FORBIDDEN"
@@ -343,25 +442,45 @@ class TestExecute:
 class TestMapWorkResponse:
     def test_applied_success(self) -> None:
         resp = {"state": "APPLIED", "command_id": "c", "refs": [], "event_ids": []}
-        result = _map_work_response(resp, "digest-1")
+        result = _map_work_response(
+            resp, "digest-1",
+            expected_operation_id="ros.work.generator.execute.v1",
+            expected_tenant_id="t", expected_case_id="c",
+        )
         assert result.status == "success"
         assert result.work_command_id == "c"
 
     def test_gate_denied(self) -> None:
         resp = {"code": "GATE_DENIED"}
-        result = _map_work_response(resp, "digest-1")
+        result = _map_work_response(
+            resp, "digest-1",
+            expected_operation_id="ros.work.generator.assess.v1",
+            expected_tenant_id="t", expected_case_id="c",
+        )
         assert result.status == "blocked"
 
     def test_unexpected_shape(self) -> None:
-        result = _map_work_response({"foo": "bar"}, "digest-1")
+        result = _map_work_response(
+            {"foo": "bar"}, "digest-1",
+            expected_operation_id="ros.work.generator.assess.v1",
+            expected_tenant_id="t", expected_case_id="c",
+        )
         assert result.status == "failure"
 
     def test_unknown_query_result_type_must_fail_closed(self) -> None:
-        result = _map_work_response({"result_type": "UNRECOGNIZED"}, "digest-1")
+        result = _map_work_response(
+            {"result_type": "UNRECOGNIZED"}, "digest-1",
+            expected_operation_id="ros.work.generator.assess.v1",
+            expected_tenant_id="t", expected_case_id="c",
+        )
         assert result.status == "failure"
 
     def test_partial_case_head_must_fail_closed(self) -> None:
-        result = _map_work_response({"result_type": "CASE_HEAD"}, "digest-1")
+        result = _map_work_response(
+            {"result_type": "CASE_HEAD"}, "digest-1",
+            expected_operation_id="ros.work.generator.assess.v1",
+            expected_tenant_id="t", expected_case_id="c",
+        )
         assert result.status == "failure"
 
     def test_query_result_type_is_mapped_to_success(self) -> None:
@@ -372,7 +491,11 @@ class TestMapWorkResponse:
             "case_sequence": 1,
             "heads": [],
         }
-        result = _map_work_response(resp, "digest-1")
+        result = _map_work_response(
+            resp, "digest-1",
+            expected_operation_id="ros.work.generator.assess.v1",
+            expected_tenant_id="t", expected_case_id="c",
+        )
         assert result.status == "success"
         assert result.summary == "native WORK query CASE_HEAD"
         assert result.work_command_id is None
