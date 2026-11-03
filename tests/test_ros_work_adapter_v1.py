@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 import urllib.error
 import urllib.request
+from dataclasses import replace
 from http.client import HTTPMessage
 from pathlib import Path
 from typing import Any
@@ -25,6 +26,12 @@ from core.ros_work_adapter_v1 import (
 # Fixtures
 # ---------------------------------------------------------------------------
 
+_TENANT_ID = "00000000-0000-4000-8000-000000000001"
+_CASE_ID = "00000000-0000-4000-8000-000000000002"
+_FOREIGN_TENANT_ID = "00000000-0000-4000-8000-000000000003"
+_FOREIGN_CASE_ID = "00000000-0000-4000-8000-000000000004"
+
+
 _AUTHORITY_MAP = {
     "trusted-host-1": AuthorityResolution(
         authority_ref="trusted-host-1",
@@ -34,8 +41,8 @@ _AUTHORITY_MAP = {
             "ros.work.generator.execute.v1",
             "ros.work.generator.read-package.v1",
         ),
-        tenant_id="tenant-1",
-        case_id="case-1",
+        tenant_id=_TENANT_ID,
+        case_id=_CASE_ID,
     ),
 }
 
@@ -50,8 +57,8 @@ def _adapter(tmp_path: Path) -> RosWorkAdapterV1:
                     "admitted_operations": list(
                         _AUTHORITY_MAP["trusted-host-1"].admitted_operations
                     ),
-                    "tenant_id": "tenant-1",
-                    "case_id": "case-1",
+                    "tenant_id": _TENANT_ID,
+                    "case_id": _CASE_ID,
                 }
             }
         ),
@@ -80,7 +87,7 @@ def _base_envelope(operation_id: str = "ros.work.generator.assess.v1") -> dict[s
             "repository": "lukart-ros",
             "branch": "main",
             "worktree": "wt",
-            "case_id": "case-1",
+            "case_id": _CASE_ID,
             "runtime": "python3.14",
         },
         "preconditions": {
@@ -91,7 +98,7 @@ def _base_envelope(operation_id: str = "ros.work.generator.assess.v1") -> dict[s
         "constraints": {
             "timeout_ms": 30000,
             "allowed_side_effects": [],
-            "privacy_scope": "case-1",
+            "privacy_scope": _CASE_ID,
             "evidence_required": [],
         },
         "idempotency": {
@@ -111,7 +118,7 @@ def _base_envelope(operation_id: str = "ros.work.generator.assess.v1") -> dict[s
         "evidence": {"items": []},
         "errors": {"items": []},
         "privacy": {
-            "scope": "case-1",
+            "scope": _CASE_ID,
             "data_classification": "SYNTHETIC",
             "cross_scope_allowed": False,
         },
@@ -214,7 +221,7 @@ class TestAuthorityAndScope:
         adapter = _adapter(Path("/tmp"))
         # Authority map expects case-1, but envelope says case-2.
         envelope = _base_envelope()
-        envelope["context"]["case_id"] = "case-2"
+        envelope["context"]["case_id"] = _FOREIGN_CASE_ID
         with pytest.raises(RosWorkAdapterError, match="tenant/case scope mismatch"):
             adapter.map_request(envelope)
 
@@ -238,8 +245,8 @@ class TestMapRequest:
         assert mapped.work_route == "query_core"
         assert mapped.work_contract == "urn:lukart:work:CoreQuery:1.0.0"
         assert mapped.work_operation == "GetCaseHead"
-        assert mapped.tenant_id == "tenant-1"
-        assert mapped.case_id == "case-1"
+        assert mapped.tenant_id == _TENANT_ID
+        assert mapped.case_id == _CASE_ID
         assert mapped.token == "work-token-abc"
         assert mapped.admitted is True
 
@@ -262,10 +269,10 @@ class TestMapRequest:
         assert mapped.idempotency_key == "idempotency-1"
         assert mapped.payload == {
             "contract": "urn:lukart:work:CoreQuery:1.0.0",
-            "operation": "GetCaseHead", "tenant_id": "tenant-1", "case_id": "case-1",
+            "operation": "GetCaseHead", "tenant_id": _TENANT_ID, "case_id": _CASE_ID,
         }
-        assert mapped.case_id == "case-1"
-        assert mapped.tenant_id == "tenant-1"
+        assert mapped.case_id == _CASE_ID
+        assert mapped.tenant_id == _TENANT_ID
 
     def test_assess_cannot_override_native_scope(self) -> None:
         adapter = _adapter(Path("/tmp"))
@@ -292,8 +299,8 @@ class TestDispatch:
         mapped = adapter.map_request(_base_envelope())
         work_response = {
             "result_type": "CASE_HEAD",
-            "tenant_id": "tenant-1",
-            "case_id": "case-1",
+            "tenant_id": _TENANT_ID,
+            "case_id": _CASE_ID,
             "case_sequence": 1,
             "heads": [],
         }
@@ -317,25 +324,89 @@ class TestDispatch:
         assert result.work_command_id is None
         assert result.work_event_ids == ()
 
+    @pytest.mark.parametrize(
+        "changes",
+        (
+            {
+                "operation_id": "ros.work.generator.execute.v1",
+                "work_route": "execute_core",
+                "work_contract": "urn:lukart:work:CoreRequest:1.0.0",
+                "work_operation": "CreateCase",
+                "payload": {
+                    "contract": "urn:lukart:work:CoreRequest:1.0.0",
+                    "operation": "CreateCase",
+                    "tenant_id": _TENANT_ID,
+                    "case_id": _CASE_ID,
+                },
+            },
+            {
+                "operation_id": "ros.work.generator.read-package.v1",
+                "work_route": "query_finalization",
+                "work_contract": "urn:lukart:work:FinalizationQuery:1.0.0",
+                "work_operation": "ReadFinalArtifact",
+                "payload": {
+                    "contract": "urn:lukart:work:FinalizationQuery:1.0.0",
+                    "operation": "ReadFinalArtifact",
+                    "tenant_id": _TENANT_ID,
+                    "case_id": _CASE_ID,
+                },
+            },
+            {"work_route": "execute_core"},
+            {"work_contract": "urn:lukart:work:CoreRequest:1.0.0"},
+            {"work_operation": "CreateCase"},
+            {"admitted": False},
+            {"token": "untrusted-token"},
+            {
+                "tenant_id": _FOREIGN_TENANT_ID,
+                "payload": {
+                    "contract": "urn:lukart:work:CoreQuery:1.0.0",
+                    "operation": "GetCaseHead",
+                    "tenant_id": _FOREIGN_TENANT_ID,
+                    "case_id": _CASE_ID,
+                },
+            },
+            {
+                "payload": {
+                    "contract": "urn:lukart:work:CoreQuery:1.0.0",
+                    "operation": "GetCaseHead",
+                    "tenant_id": _TENANT_ID,
+                    "case_id": _CASE_ID,
+                    "timeout_ms": 1,
+                },
+            },
+            {"request_digest": ""},
+        ),
+    )
+    def test_dispatch_revalidates_public_request_before_http(
+        self, tmp_path: Path, changes: dict[str, Any]
+    ) -> None:
+        adapter = _adapter(tmp_path)
+        mapped = adapter.map_request(_base_envelope())
+        forged = replace(mapped, **changes)
+        with patch("core.ros_work_adapter_v1.urllib.request.build_opener") as mock_build_opener:
+            with pytest.raises(RosWorkAdapterError):
+                adapter.dispatch(forged)
+            mock_build_opener.assert_not_called()
+
     def test_case_head_wrong_tenant_or_case_fails_closed(self) -> None:
         base = {
             "result_type": "CASE_HEAD",
-            "tenant_id": "tenant-1",
-            "case_id": "case-1",
+            "tenant_id": _TENANT_ID,
+            "case_id": _CASE_ID,
             "case_sequence": 1,
             "heads": [],
         }
         for response in (
-            dict(base, tenant_id="tenant-foreign"),
-            dict(base, case_id="case-foreign"),
+            dict(base, tenant_id=_FOREIGN_TENANT_ID),
+            dict(base, case_id=_FOREIGN_CASE_ID),
             dict(base, tenant_id=None),
             dict(base, case_id=None),
         ):
             result = _map_work_response(
                 response, "digest-1",
                 expected_operation_id="ros.work.generator.assess.v1",
-                expected_tenant_id="tenant-1",
-                expected_case_id="case-1",
+                expected_tenant_id=_TENANT_ID,
+                expected_case_id=_CASE_ID,
             )
             assert result.status == "failure"
 
@@ -344,8 +415,8 @@ class TestDispatch:
             {"state": "APPLIED", "command_id": "unexpected"},
             "digest-1",
             expected_operation_id="ros.work.generator.assess.v1",
-            expected_tenant_id="tenant-1",
-            expected_case_id="case-1",
+            expected_tenant_id=_TENANT_ID,
+            expected_case_id=_CASE_ID,
         )
         assert result.status == "failure"
 
@@ -354,8 +425,8 @@ class TestDispatch:
         mapped = adapter.map_request(_base_envelope())
         work_response = {
             "result_type": "CASE_HEAD",
-            "tenant_id": "tenant-foreign",
-            "case_id": "case-1",
+            "tenant_id": _FOREIGN_TENANT_ID,
+            "case_id": _CASE_ID,
             "case_sequence": 1,
             "heads": [],
         }
@@ -410,8 +481,8 @@ class TestExecute:
         envelope = _base_envelope()
         work_response = {
             "result_type": "CASE_HEAD",
-            "tenant_id": "tenant-1",
-            "case_id": "case-1",
+            "tenant_id": _TENANT_ID,
+            "case_id": _CASE_ID,
             "case_sequence": 1,
             "heads": [],
         }
@@ -446,22 +517,21 @@ class TestExecute:
 
 
 class TestMapWorkResponse:
-    def test_applied_success(self) -> None:
+    def test_execute_applied_response_is_not_admitted(self) -> None:
         resp = {"state": "APPLIED", "command_id": "c", "refs": [], "event_ids": []}
         result = _map_work_response(
             resp, "digest-1",
             expected_operation_id="ros.work.generator.execute.v1",
-            expected_tenant_id="t", expected_case_id="c",
+            expected_tenant_id=_TENANT_ID, expected_case_id=_CASE_ID,
         )
-        assert result.status == "success"
-        assert result.work_command_id == "c"
+        assert result.status == "failure"
 
     def test_gate_denied(self) -> None:
         resp = {"code": "GATE_DENIED"}
         result = _map_work_response(
             resp, "digest-1",
             expected_operation_id="ros.work.generator.assess.v1",
-            expected_tenant_id="t", expected_case_id="c",
+            expected_tenant_id=_TENANT_ID, expected_case_id=_CASE_ID,
         )
         assert result.status == "blocked"
 
@@ -469,7 +539,7 @@ class TestMapWorkResponse:
         result = _map_work_response(
             {"foo": "bar"}, "digest-1",
             expected_operation_id="ros.work.generator.assess.v1",
-            expected_tenant_id="t", expected_case_id="c",
+            expected_tenant_id=_TENANT_ID, expected_case_id=_CASE_ID,
         )
         assert result.status == "failure"
 
@@ -477,32 +547,120 @@ class TestMapWorkResponse:
         result = _map_work_response(
             {"result_type": "UNRECOGNIZED"}, "digest-1",
             expected_operation_id="ros.work.generator.assess.v1",
-            expected_tenant_id="t", expected_case_id="c",
+            expected_tenant_id=_TENANT_ID, expected_case_id=_CASE_ID,
         )
         assert result.status == "failure"
 
     def test_partial_case_head_must_fail_closed(self) -> None:
         result = _map_work_response(
-            {"result_type": "CASE_HEAD"}, "digest-1",
+            {
+                "result_type": "CASE_HEAD",
+                "tenant_id": _TENANT_ID,
+                "case_id": _CASE_ID,
+                "case_sequence": 1,
+            },
+            "digest-1",
             expected_operation_id="ros.work.generator.assess.v1",
-            expected_tenant_id="t", expected_case_id="c",
+            expected_tenant_id=_TENANT_ID,
+            expected_case_id=_CASE_ID,
         )
         assert result.status == "failure"
+
+    def test_case_head_rejects_schema_invalid_response(self) -> None:
+        valid = {
+            "result_type": "CASE_HEAD",
+            "tenant_id": _TENANT_ID,
+            "case_id": _CASE_ID,
+            "case_sequence": 1,
+            "heads": [],
+        }
+        invalid_responses = (
+            dict(valid, case_sequence=0),
+            dict(valid, heads=None),
+            dict(
+                valid,
+                heads=[{"kind": "Unknown", "id": _CASE_ID, "revision": 1}],
+            ),
+            dict(
+                valid,
+                heads=[{"kind": "Case", "id": "not-a-uuid", "revision": 1}],
+            ),
+            dict(
+                valid,
+                heads=[{"kind": "Case", "id": _CASE_ID, "revision": 0}],
+            ),
+            dict(
+                valid,
+                heads=[{"kind": "Case", "id": _CASE_ID, "revision": 1, "extra": True}],
+            ),
+            dict(valid, extra="unexpected"),
+        )
+        for response in invalid_responses:
+            result = _map_work_response(
+                response,
+                "digest-1",
+                expected_operation_id="ros.work.generator.assess.v1",
+                expected_tenant_id=_TENANT_ID,
+                expected_case_id=_CASE_ID,
+            )
+            assert result.status == "failure"
 
     def test_query_result_type_is_mapped_to_success(self) -> None:
         resp = {
             "result_type": "CASE_HEAD",
-            "tenant_id": "t",
-            "case_id": "c",
+            "tenant_id": _TENANT_ID,
+            "case_id": _CASE_ID,
             "case_sequence": 1,
             "heads": [],
         }
         result = _map_work_response(
             resp, "digest-1",
             expected_operation_id="ros.work.generator.assess.v1",
-            expected_tenant_id="t", expected_case_id="c",
+            expected_tenant_id=_TENANT_ID, expected_case_id=_CASE_ID,
         )
         assert result.status == "success"
         assert result.summary == "native WORK query CASE_HEAD"
         assert result.work_command_id is None
         assert result.work_event_ids == ()
+
+def test_dispatch_uses_bounded_timeout_from_ros_constraints():
+    adapter = _adapter(Path("/tmp"))
+    envelope = _base_envelope()
+    envelope["constraints"]["timeout_ms"] = 1250
+    mapped = adapter.map_request(envelope)
+    work_response = {
+        "result_type": "CASE_HEAD",
+        "tenant_id": _TENANT_ID,
+        "case_id": _CASE_ID,
+        "case_sequence": 1,
+        "heads": [],
+    }
+    with patch("core.ros_work_adapter_v1.urllib.request.build_opener") as mock_build_opener:
+        mock_opener = MagicMock()
+        mock_build_opener.return_value = mock_opener
+        mock_resp = MagicMock()
+        mock_resp.read.return_value = json.dumps(work_response).encode("utf-8")
+        mock_opener.open.return_value.__enter__.return_value = mock_resp
+        result = adapter.dispatch(mapped)
+        assert mapped.timeout_ms == 1250
+        assert mock_opener.open.call_args.kwargs["timeout"] == 1.25
+    assert result.status == "success"
+
+@pytest.mark.parametrize("timeout_ms", (0, 300001, True, 1.5, "1250", None))
+def test_map_request_rejects_invalid_timeout(timeout_ms):
+    adapter = _adapter(Path("/tmp"))
+    envelope = _base_envelope()
+    envelope["constraints"]["timeout_ms"] = timeout_ms
+    with pytest.raises(RosWorkAdapterError, match="constraints.timeout_ms"):
+        adapter.map_request(envelope)
+
+
+@pytest.mark.parametrize("timeout_ms", (0, 300001, True, 1.5))
+def test_dispatch_rejects_forged_timeout_before_http(timeout_ms):
+    adapter = _adapter(Path("/tmp"))
+    mapped = adapter.map_request(_base_envelope())
+    forged = replace(mapped, timeout_ms=timeout_ms)
+    with patch("core.ros_work_adapter_v1.urllib.request.build_opener") as mock_build_opener:
+        with pytest.raises(RosWorkAdapterError, match="mapped request is incomplete"):
+            adapter.dispatch(forged)
+        mock_build_opener.assert_not_called()

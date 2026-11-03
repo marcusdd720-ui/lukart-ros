@@ -22,6 +22,7 @@ import time
 from collections.abc import Callable, Mapping
 from dataclasses import dataclass
 from pathlib import Path
+from typing import Any, cast
 
 from core.p3.contracts import content_digest
 
@@ -138,15 +139,20 @@ def _apply_posix_limits(memory_bytes: int, cpu_seconds: int) -> tuple[bool, bool
     except ImportError:
         return False, False
 
+    resource_api = cast(Any, resource)
     memory_enforced = False
     cpu_enforced = False
     try:
-        resource.setrlimit(resource.RLIMIT_AS, (memory_bytes, memory_bytes))
+        resource_api.setrlimit(
+            resource_api.RLIMIT_AS, (memory_bytes, memory_bytes)
+        )
         memory_enforced = True
     except (OSError, ValueError):
         memory_enforced = False
     try:
-        resource.setrlimit(resource.RLIMIT_CPU, (cpu_seconds, cpu_seconds))
+        resource_api.setrlimit(
+            resource_api.RLIMIT_CPU, (cpu_seconds, cpu_seconds)
+        )
         cpu_enforced = True
     except (OSError, ValueError):
         cpu_enforced = False
@@ -296,60 +302,68 @@ def _worker_entry(
     )
 
     memory_limit, cpu_limit = _apply_posix_limits(policy.memory_bytes, policy.cpu_seconds)
-
+    result: dict[str, object]
     try:
         with tempfile.TemporaryDirectory(prefix="lukart-worker-") as workspace_text:
-            workspace = Path(workspace_text).resolve(strict=False)
-            os.chdir(workspace)
-            sys.dont_write_bytecode = True
-            read_roots = tuple(
-                dict.fromkeys(
-                    (
-                        *_default_read_roots(),
-                        *(Path(item).resolve(strict=False) for item in policy.allowed_read_roots),
+            try:
+                workspace = Path(workspace_text).resolve(strict=False)
+                os.chdir(workspace)
+                sys.dont_write_bytecode = True
+                read_roots = tuple(
+                    dict.fromkeys(
+                        (
+                            *_default_read_roots(),
+                            *(
+                                Path(item).resolve(strict=False)
+                                for item in policy.allowed_read_roots
+                            ),
+                        )
                     )
                 )
-            )
-            sys.addaudithook(
-                _capability_audit_hook(
-                    workspace=workspace,
-                    read_roots=read_roots,
-                    network_allowed=policy.network_allowed,
-                    process_spawn_allowed=policy.process_spawn_allowed,
-                    native_ffi_allowed=policy.native_ffi_allowed,
-                    workspace_write_only=policy.workspace_write_only,
+                sys.addaudithook(
+                    _capability_audit_hook(
+                        workspace=workspace,
+                        read_roots=read_roots,
+                        network_allowed=policy.network_allowed,
+                        process_spawn_allowed=policy.process_spawn_allowed,
+                        native_ffi_allowed=policy.native_ffi_allowed,
+                        workspace_write_only=policy.workspace_write_only,
+                    )
                 )
-            )
-            if not policy.network_allowed:
-                _deny_network()
+                if not policy.network_allowed:
+                    _deny_network()
 
-            module = importlib.import_module(task.module)
-            function = getattr(module, task.function, None)
-            if not callable(function):
-                raise IsolatedExecutionError("worker entrypoint is not callable")
-            raw = function(dict(task.payload))
-            if not isinstance(raw, Mapping):
-                raise IsolatedExecutionError("worker output must be a mapping")
-            output = dict(raw)
-            content_digest(output)
-            result_queue.put(
-                {
+                module = importlib.import_module(task.module)
+                function = getattr(module, task.function, None)
+                if not callable(function):
+                    raise IsolatedExecutionError("worker entrypoint is not callable")
+                raw = function(dict(task.payload))
+                if not isinstance(raw, Mapping):
+                    raise IsolatedExecutionError("worker output must be a mapping")
+                output = dict(raw)
+                content_digest(output)
+                result = {
                     "ok": True,
                     "output": output,
                     "memory_limit": memory_limit,
                     "cpu_limit": cpu_limit,
                 }
-            )
+            finally:
+                # Windows cannot remove a process current working directory.
+                # Return to the trusted repository root before TemporaryDirectory cleanup.
+                os.chdir(_ROOT)
     except BaseException as exc:  # child boundary must return a bounded error, not a traceback
-        result_queue.put(
-            {
-                "ok": False,
-                "error_type": type(exc).__name__,
-                "error": str(exc)[:500],
-                "memory_limit": memory_limit,
-                "cpu_limit": cpu_limit,
-            }
-        )
+        result = {
+            "ok": False,
+            "error_type": type(exc).__name__,
+            "error": str(exc)[:500],
+            "memory_limit": memory_limit,
+            "cpu_limit": cpu_limit,
+        }
+
+    # Publish exactly one result, after workspace cleanup. A failure during cleanup
+    # must not cause a second put into the bounded queue and deadlock the parent.
+    result_queue.put(result)
 
 
 class ProcessIsolationExecutor:

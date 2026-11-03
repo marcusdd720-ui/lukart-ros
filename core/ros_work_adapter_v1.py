@@ -33,6 +33,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, cast
 from urllib.parse import urlsplit
+from uuid import UUID
 
 from core.night_shift.contracts import NightShiftContractError
 from core.operations.contract_v1 import (
@@ -75,6 +76,57 @@ OPERATION_MAP = {
 }
 
 MAX_WORK_REQUEST_BYTES = 1024 * 1024
+MAX_WORK_TIMEOUT_MS = 300_000
+
+# Pinned to WORK@7a924f37696cdf74666c08f924f1941edb4fc030:
+# schemas/CaseHeadResult.schema.json (blob aa97dd4ef4865948fe7c393c224b0bacdca421a2).
+_CASE_HEAD_REF_KINDS = frozenset(
+    {
+        "Case",
+        "Party",
+        "Institution",
+        "Proceeding",
+        "Filing",
+        "Fact",
+        "Evidence",
+        "Issue",
+        "LegalSource",
+        "LegalRule",
+        "Claim",
+        "Defence",
+        "Argument",
+        "CounterArgument",
+        "Request",
+        "Deadline",
+        "Risk",
+        "Citation",
+        "DocumentPlan",
+        "Section",
+        "Draft",
+        "ValidationFinding",
+        "Decision",
+    }
+)
+
+
+def _is_uuid(value: object) -> bool:
+    if not isinstance(value, str):
+        return False
+    try:
+        return str(UUID(value)) == value.lower()
+    except ValueError:
+        return False
+
+
+def _is_case_head_ref(value: object) -> bool:
+    return (
+        type(value) is dict
+        and set(value) == {"kind", "id", "revision"}
+        and value.get("kind") in _CASE_HEAD_REF_KINDS
+        and _is_uuid(value.get("id"))
+        and type(value.get("revision")) is int
+        and value["revision"] >= 1
+    )
 
 
 class _NoRedirectHandler(urllib.request.HTTPRedirectHandler):
@@ -111,6 +163,7 @@ class RosWorkRequest:
     idempotency_key: str
     request_digest: str
     expected_case_sequence: int
+    timeout_ms: int
     payload: Mapping[str, Any]
     admitted: bool
 
@@ -211,25 +264,6 @@ def _map_work_response(
     expected_case_id: str,
 ) -> RosWorkResult:
     """Map only the response contract admitted for this exact operation and scope."""
-    if (
-        isinstance(work_response, dict)
-        and work_response.get("state") == "APPLIED"
-        and expected_operation_id == "ros.work.generator.execute.v1"
-    ):
-        status = "success"
-        summary = "native WORK command applied"
-        refs = work_response.get("refs", ())
-        artifacts = tuple(str(ref) for ref in refs) if refs else ()
-        event_ids = tuple(str(eid) for eid in work_response.get("event_ids", ()))
-        return RosWorkResult(
-            status=status,
-            summary=summary,
-            artifacts=artifacts,
-            evidence=(),
-            errors=(),
-            work_command_id=str(work_response.get("command_id", "")),
-            work_event_ids=event_ids,
-        )
     if isinstance(work_response, dict) and work_response.get("code"):
         code = str(work_response["code"])
         status = "blocked" if code in ("GATE_DENIED", "FORBIDDEN", "SCHEMA_INVALID") else "failure"
@@ -250,13 +284,19 @@ def _map_work_response(
     # An arbitrary result_type (or a partial CASE_HEAD result) must not
     # become a success verdict across this security-sensitive boundary.
     if (
-        isinstance(work_response, dict)
+        type(work_response) is dict
+        and set(work_response)
+        == {"result_type", "tenant_id", "case_id", "case_sequence", "heads"}
         and work_response.get("result_type") == "CASE_HEAD"
         and expected_operation_id == "ros.work.generator.assess.v1"
+        and _is_uuid(expected_tenant_id)
+        and _is_uuid(expected_case_id)
         and work_response.get("tenant_id") == expected_tenant_id
         and work_response.get("case_id") == expected_case_id
         and type(work_response.get("case_sequence")) is int
-        and work_response["case_sequence"] >= 0
+        and work_response["case_sequence"] >= 1
+        and type(work_response.get("heads")) is list
+        and all(_is_case_head_ref(head) for head in work_response["heads"])
     ):
         result_type = "CASE_HEAD"
         return RosWorkResult(
@@ -351,9 +391,11 @@ class RosWorkAdapterV1:
                 f"authority_ref not admitted for operation: {authority_ref} -> {operation_id}"
             )
 
-        # Scope must map exactly.
+        # Scope must map exactly and satisfy the native WORK UUID contract.
         ros_case_id = str(context["case_id"])
-        if resolution.case_id != ros_case_id or not resolution.tenant_id:
+        if not _is_uuid(resolution.tenant_id) or not _is_uuid(resolution.case_id):
+            raise RosWorkAdapterError("authority resolution has invalid native WORK UUID scope")
+        if resolution.case_id != ros_case_id:
             raise RosWorkAdapterError("tenant/case scope mismatch")
 
         # Idempotency + digest binding.
@@ -369,6 +411,10 @@ class RosWorkAdapterV1:
                 "idempotency": dict(idempotency),
             }
         )
+
+        timeout_ms = constraints.get("timeout_ms")
+        if type(timeout_ms) is not int or not 1 <= timeout_ms <= MAX_WORK_TIMEOUT_MS:
+            raise RosWorkAdapterError("constraints.timeout_ms must be 1..300000")
 
         # WORK expected_case_sequence is authoritative for domain writes.
         # For read-only assess we default to 0; for mutations the caller must
@@ -411,12 +457,71 @@ class RosWorkAdapterV1:
             idempotency_key=idempotency_key,
             request_digest=request_digest,
             expected_case_sequence=expected_case_sequence,
+            timeout_ms=timeout_ms,
             payload=payload,
             admitted=True,
         )
 
+    def _validate_dispatch_request(self, mapped: RosWorkRequest) -> None:
+        """Revalidate public request objects at the native HTTP boundary."""
+        if not isinstance(mapped, RosWorkRequest):
+            raise RosWorkAdapterError("mapped request has an invalid type")
+        if mapped.admitted is not True:
+            raise RosWorkAdapterError("mapped request is not admitted")
+        if (
+            mapped.operation_id != "ros.work.generator.assess.v1"
+            or mapped.work_route != "query_core"
+            or mapped.work_contract != "urn:lukart:work:CoreQuery:1.0.0"
+            or mapped.work_operation != "GetCaseHead"
+        ):
+            raise RosWorkAdapterError(
+                "operation disabled until native WORK capability is independently admitted"
+            )
+        if (
+            not all(
+                isinstance(value, str) and value
+                for value in (
+                    mapped.tenant_id,
+                    mapped.case_id,
+                    mapped.token,
+                    mapped.idempotency_key,
+                    mapped.request_digest,
+                )
+            )
+            or not _is_uuid(mapped.tenant_id)
+            or not _is_uuid(mapped.case_id)
+            or type(mapped.expected_case_sequence) is not int
+            or mapped.expected_case_sequence < 0
+            or type(mapped.timeout_ms) is not int
+            or not 1 <= mapped.timeout_ms <= MAX_WORK_TIMEOUT_MS
+        ):
+            raise RosWorkAdapterError("mapped request is incomplete")
+        expected_payload = {
+            "contract": "urn:lukart:work:CoreQuery:1.0.0",
+            "operation": "GetCaseHead",
+            "tenant_id": mapped.tenant_id,
+            "case_id": mapped.case_id,
+        }
+        if type(mapped.payload) is not dict or mapped.payload != expected_payload:
+            raise RosWorkAdapterError(
+                "mapped request does not match the admitted native CoreQuery"
+            )
+
+        self._load_authorities()
+        if not any(
+            resolution.token == mapped.token
+            and resolution.tenant_id == mapped.tenant_id
+            and resolution.case_id == mapped.case_id
+            and "ros.work.generator.assess.v1" in resolution.admitted_operations
+            for resolution in self._authority_map.values()
+        ):
+            raise RosWorkAdapterError(
+                "mapped request is not backed by an admitted authority resolution"
+            )
+
     def dispatch(self, mapped: RosWorkRequest) -> RosWorkResult:
-        """Send the mapped request to the trusted WORK host."""
+        """Send only the admitted native CoreQuery request to the trusted WORK host."""
+        self._validate_dispatch_request(mapped)
         url = f"{self.config.trusted_host_url}/api/{mapped.work_route}"
         body = json.dumps(mapped.payload, allow_nan=False).encode("utf-8")
         if len(body) > MAX_WORK_REQUEST_BYTES:
@@ -432,7 +537,7 @@ class RosWorkAdapterV1:
             method="POST",
         )
         try:
-            timeout_s = int(mapped.payload.get("timeout_ms", 30000)) / 1000
+            timeout_s = mapped.timeout_ms / 1000.0
             opener = urllib.request.build_opener(
                 urllib.request.ProxyHandler({}),
                 _NoRedirectHandler(),

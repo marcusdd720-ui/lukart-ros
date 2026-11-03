@@ -33,7 +33,7 @@ def main():
         "context": {"case_id": case},
         "preconditions": {"authority_ref": "query-only"},
         "idempotency": {"key": "synthetic-query-key"},
-        "constraints": {},
+        "constraints": {"timeout_ms": 5000},
     }
     mapped = adapter.map_request(value)
     parsed = CoreQuery.model_validate_json(json.dumps(mapped.payload))

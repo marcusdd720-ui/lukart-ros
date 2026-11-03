@@ -1,0 +1,80 @@
+{
+  "evidence_version": "ros-work-integration-local-regression/1.0.0",
+  "observed_at": "2026-11-03T23:07:10.8837409+01:00",
+  "repository": "marcusdd720-ui/lukart-ros",
+  "branch": "h2/ros-work-native-corequery-verified-20261103",
+  "tested_commit": "fc4c27b043cf9af4de4c420e3d6b37f9d0e1cc60",
+  "pull_request": {
+    "number": 381,
+    "state": "open",
+    "draft": true,
+    "head_at_test": "fc4c27b043cf9af4de4c420e3d6b37f9d0e1cc60"
+  },
+  "work_candidate": {
+    "repository": "marcusdd720-ui/lukart-work",
+    "pull_request": 84,
+    "head": "1d54731",
+    "state": "open",
+    "draft": true
+  },
+  "full_repository_regression": {
+    "command": "python -B -m pytest -q --junitxml=evidence/ros-work-integration-20261103/full-pytest.xml",
+    "exit_code": 0,
+    "runtime_seconds": 2288.97,
+    "tests": 2416,
+    "passed": 2401,
+    "skipped": 15,
+    "failed": 0,
+    "errors": 0,
+    "skip_reason": "Windows host cannot create symlinks because Developer Mode or SeCreateSymbolicLinkPrivilege is unavailable; all 15 skips are symlink-capability probes."
+  },
+  "post_run_changes": {
+    "scope": "formatting-only Ruff corrections; no runtime behavior changed",
+    "files": [
+      "core/enterprise/isolation.py",
+      "tests/test_hardcore_h4.py"
+    ],
+    "exact_candidate_ci_required": true
+  },
+  "focused_validation_after_post_run_changes": {
+    "ruff_changed_files": "PASS",
+    "mypy_core_enterprise_isolation_and_ros_work_adapter": "PASS",
+    "native_work_corequery_schema": "PASS",
+    "python_compile_changed_files": "PASS",
+    "uv_lock_check": "PASS",
+    "git_diff_check": "PASS"
+  },
+  "adapter_scope": {
+    "implemented_operation": "ros.work.generator.assess.v1",
+    "native_route": "query_core",
+    "native_operation": "GetCaseHead",
+    "mode": "read-only",
+    "execute_enabled": false,
+    "package_read_enabled": false,
+    "native_human_authority_admitted": false
+  },
+  "production_gates": {
+    "supported_document_types": 0,
+    "pb02_pb03_independent_acceptance": "NOT_VERIFIED",
+    "authenticated_human_e2e": "NOT_VERIFIED",
+    "full_h5_case_to_docx_pdf_finish": "BLOCKED",
+    "independent_review": "NOT_VERIFIED",
+    "certification": "NOT_VERIFIED",
+    "production_release": "NOT_AUTHORIZED"
+  },
+  "sha256": {
+    "core/enterprise/_worker_fixture.py": "444ff3d8ad8c8722ad0b80d89a5b662c3b368b81097a01aadead3096798cea81",
+    "core/enterprise/isolation.py": "13b60bc12dbeab5d58c05fac982420230631679d5ad67281b59e975c7fd7e583",
+    "core/ros_work_adapter_v1.py": "ab4356bac324f5aff90d559b4787b6234e3a28bdac60a079384bdbc83d9d80da",
+    "pyproject.toml": "0644d6970f23d4dcc3a9c3032f85892274ddad732e1a6950841042621fccee9f",
+    "tests/test_architecture_hardening.py": "12f7cab71f0303335c4c582876dc767fefa5f4d4729aab60f25bb8abfb3eaeb9",
+    "tests/test_durable_escrow_v1.py": "44fbc2abfa20a5445f46319afa9654005f9441a69bb026e8b8991bf9f9f3a2ba",
+    "tests/test_hardcore_h4.py": "7e384b19aa745e99ac6a72eb0c90d89d56f7081ff1b8f24cf35ab4555247a496",
+    "tests/test_independent_review_readiness_v1.py": "1d75953d930b17680edae0136bcd02e21ae00cf1b6dc428170a5be48729dafd4",
+    "tests/test_ros_work_adapter_v1.py": "bb13029ecc9a63f7c0676527af5bfc83d124d027391676cfb041a89bbef74ec9",
+    "uv.lock": "e7ad1abbb677240ea2eedf76ab52bb7a20a85ab22ec47ece71ad87bac9e08ec1",
+    "validation/check_native_query_schema.py": "2a2e22a3f0f1c2ad088cc817c169c7c0fde94b7e5f8e6dada7983e709151e79f",
+    "full-pytest.log": "7b4d4f553188f370d79614cc3f9dd158b90060dfc5abf2b2e70830031cc510ba",
+    "full-pytest.xml": "3865f1b13f970f80a9f2da369c20065b6dbc34a840dadc901a95fc873c7c93a9"
+  }
+}

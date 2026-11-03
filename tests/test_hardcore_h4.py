@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import sys
 from pathlib import Path
 
 import pytest
@@ -20,7 +21,9 @@ def _policy(
     allowed_read_roots: tuple[str, ...] = (),
 ) -> IsolationPolicy:
     return IsolationPolicy(
-        timeout_seconds=3.0,
+        # Windows spawn startup is materially slower; these tests exercise
+        # capability enforcement, not a three-second startup SLA.
+        timeout_seconds=10.0 if sys.platform == "win32" else 3.0,
         memory_bytes=512 * 1024 * 1024,
         cpu_seconds=2,
         network_allowed=False,
