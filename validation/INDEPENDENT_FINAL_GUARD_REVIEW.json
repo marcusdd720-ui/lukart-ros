@@ -1,0 +1,36 @@
+{
+  "role": "independent_validation_agent",
+  "scope": "only final changed security gate fields; no fullE2E or H5 admission",
+  "files_sha256": {
+    "scripts\\integrations\\ros_outbox_ack.py": "832720a67d6e3af62f84d0d0b05b763849a83658aa89d2bcca3a0d08ae37e66a",
+    "validation\\native_hermes_canary_worker.py": "2cb4595c47999abda3dacc57fd2af3d6a91538b9790765839525b7127432a7ca",
+    "scripts\\integrations\\ros_outbox_synthetic.py": "46e1f938666408f071ecc49ce27bbb085a12128059d5fc808fbf69c996a1e0eb"
+  },
+  "checks": [
+    {
+      "name": "reject completed metadata mismatch board",
+      "result": "PASS"
+    },
+    {
+      "name": "reject completed metadata mismatch bytes",
+      "result": "PASS"
+    },
+    {
+      "name": "reject completed metadata mismatch paid_api_calls",
+      "result": "PASS"
+    },
+    {
+      "name": "reject completed metadata mismatch worker_kind",
+      "result": "PASS"
+    },
+    {
+      "name": "reject bool run ID",
+      "result": "PASS"
+    },
+    {
+      "name": "tracked dirty-source guard before task promotion/claim",
+      "result": "PASS"
+    }
+  ],
+  "native_db_writes": false
+}

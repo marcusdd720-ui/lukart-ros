@@ -198,7 +198,7 @@ def finish(
         raise
 
 
-def create_kanban_card(event_id: str, hermes_cli: str) -> tuple[bool, str]:
+def create_kanban_card(event_id: str, hermes_cli: str, *, board: str = BOARD) -> tuple[bool, str]:
     if not hermes_cli or not Path(hermes_cli).is_file():
         return False, "CLI_UNAVAILABLE"
     # Project-safe, generic notice. No real case content or identifiers.
@@ -207,7 +207,7 @@ def create_kanban_card(event_id: str, hermes_cli: str) -> tuple[bool, str]:
         hermes_cli,
         "kanban",
         "--board",
-        BOARD,
+        board,
         "create",
         f"ROS task notification [{label}]",
         "--assignee",
@@ -243,7 +243,9 @@ def create_kanban_card(event_id: str, hermes_cli: str) -> tuple[bool, str]:
     return (True, "") if result.returncode == 0 else (False, "CLI_FAILURE")
 
 
-def drain(*, hermes_cli: str, db_path: Path | None = None, limit: int = 5) -> dict:
+def drain(
+    *, hermes_cli: str, db_path: Path | None = None, limit: int = 5, board: str = BOARD
+) -> dict:
     summary = {"delivered": 0, "retried": 0, "pending": 0, "failed": 0}
     cx = connect(db_path)
     try:
@@ -252,7 +254,7 @@ def drain(*, hermes_cli: str, db_path: Path | None = None, limit: int = 5) -> di
             if claimed is None:
                 break
             row, token = claimed
-            ok, code = create_kanban_card(row["event_id"], hermes_cli)
+            ok, code = create_kanban_card(row["event_id"], hermes_cli, board=board)
             # Claim loss can occur after a slow CLI operation; key provides best-effort dedupe.
             if finish(cx, row["event_id"], token, ok=ok, error_code=code):
                 summary["delivered" if ok else "retried"] += 1
