@@ -2,8 +2,22 @@
   "kind": "REVIEW_INPUT_NOT_APPROVAL",
   "task_id": "t_7d061ea8",
   "scope": "SYNTHETIC_ISOLATED_INTEGRATION_ONLY",
-  "ros_base_sha": "e8e6092b36da52bcda4bd1ce8d2faa89f9828307",
-  "work_observed_sha": "7a924f37696cdf74666c08f924f1941edb4fc030",
+  "ros_base_sha": "3d73da2c85748f3f10771247e0e47d1f2a2fa4c5",
+  "ros_candidate_sha_source": "IRR-01/manifest.json.source_commit_sha",
+  "work_observed_sha": "fb8850431d34c0a204d8e1c425914442af151325",
+  "current_candidate_status": {
+    "native_http_assess_only": "NOT_RUN",
+    "positive_execute_package": "NOT_ADMITTED",
+    "full_h5": "BLOCKED"
+  },
+  "historical_evidence": {
+    "scope": "NATIVE_HTTP_ASSESS_ONLY",
+    "ros_sha": "e8e6092b36da52bcda4bd1ce8d2faa89f9828307",
+    "work_sha": "7a924f37696cdf74666c08f924f1941edb4fc030",
+    "boundary_result": "PASS",
+    "evidence_status": "HISTORICAL_ONLY_NOT_REUSABLE_FOR_CURRENT_CANDIDATE",
+    "reusable_for_current_candidate": false
+  },
   "requested_operations": [
     "ros.work.generator.execute.v1",
     "ros.work.generator.read-package.v1"
@@ -14,13 +28,18 @@
   "requested_admission": false,
   "missing_evidence": [
     {
+      "gate": "CURRENT_CANDIDATE_NATIVE_HTTP_ASSESS",
+      "required": "Fresh NATIVE_HTTP_ASSESS_ONLY receipt from native HTTP to WORK operator_host to isolated PostgreSQL, bound to the ROS source SHA in this package's IRR manifest and the exact WORK SHA; synthetic-only; receipt and artifact hashes verified",
+      "supplied": false
+    },
+    {
       "gate": "PB02_PB03_INDEPENDENT_ACCEPTANCE",
-      "required": "Independent exact candidate-SHA review and required terminal CI; profile/package manifest and contract digest bound to exact candidate",
+      "required": "Independent human exact-candidate-SHA review, terminal CI, package manifest and contract digest bound to the exact candidate",
       "supplied": false
     },
     {
       "gate": "SUPPORTED_TYPE_ADMISSION",
-      "required": "Admitted type schema/profile/fixture and independent HUMAN legal/domain decision where canonical contract requires it",
+      "required": "Admitted type schema/profile/fixture and independent HUMAN legal/domain decision where the canonical contract requires it",
       "supplied": false
     },
     {
@@ -30,11 +49,11 @@
     },
     {
       "gate": "FULL_PIPELINE_RECOVERY",
-      "required": "Actual native full ROS CASE→WORK→DOCX/PDF→FINISH crash/restart/recovery after preceding admission; read-only transport restart is insufficient",
+      "required": "Actual native full ROS CASE to WORK to DOCX/PDF to HUMAN to FINAL to FINISH crash/restart/recovery after preceding admission; read-only transport restart is insufficient",
       "supplied": false
     }
   ],
   "safe_evidence_file": "H5_NATIVE_BOUNDARY_EVIDENCE.md",
-  "verdict": "BLOCKED_AT_EXECUTE_AND_PACKAGE_ADMISSION",
+  "verdict": "NOT_VERIFIED_CURRENT_CANDIDATE_BLOCKED_AT_EXECUTE_AND_PACKAGE_ADMISSION",
   "does_not_grant_identity_or_permissions": true
 }

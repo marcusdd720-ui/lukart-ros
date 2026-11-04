@@ -7,5 +7,15 @@
   "execute_package_gates": "UNCHANGED",
   "full_h5": "BLOCKED",
   "human_authority_or_type_admission_granted": false,
-  "canonical_gate_source": "lukart-work-pr83-evidence-20261102/docs/ROS_WORK_CAPABILITY_GAP_V1.md"
+  "canonical_gate_source": "lukart-work-pr83-evidence-20261102/docs/ROS_WORK_CAPABILITY_GAP_V1.md",
+  "evidence_status": "HISTORICAL_ONLY_NOT_CURRENT_CANDIDATE",
+  "reviewer_kind": "AUTOMATED_INTERNAL_VALIDATION_AGENT",
+  "reviewer_is_human": false,
+  "reviewed_ros_sha": "e8e6092b36da52bcda4bd1ce8d2faa89f9828307",
+  "reviewed_work_sha": "7a924f37696cdf74666c08f924f1941edb4fc030",
+  "current_candidate_ros_sha_source": "IRR-01/manifest.json.source_commit_sha",
+  "current_candidate_work_sha": "fb8850431d34c0a204d8e1c425914442af151325",
+  "current_candidate_review_status": "NOT_REVIEWED",
+  "reusable_for_current_candidate": false,
+  "human_independent_acceptance": false
 }
