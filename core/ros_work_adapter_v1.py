@@ -193,7 +193,10 @@ class _DeadlineHTTPResponse(http.client.HTTPResponse):
 class _DeadlineHTTPConnection(http.client.HTTPConnection):
     def __init__(self, host, *, deadline: float, **kwargs):
         super().__init__(host, **kwargs)
-        self.response_class = cast(type[http.client.HTTPResponse], partial(_DeadlineHTTPResponse, deadline=deadline))
+        self.response_class = cast(
+            type[http.client.HTTPResponse],
+            partial(_DeadlineHTTPResponse, deadline=deadline),
+        )
 
 
 class _DeadlineHTTPHandler(urllib.request.HTTPHandler):
