@@ -22,6 +22,7 @@ jobs:
         with:
           ref: ${{ github.event.pull_request.head.sha || github.sha }}
           fetch-depth: 0
+          persist-credentials: false
 
       - name: Set up Python
         uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7
@@ -59,23 +60,47 @@ jobs:
             --commit "${CANDIDATE_SHA}" \
             --output-dir dist/independent-review
 
+      - name: Verify exact-SHA package bytes and sidecar
+        shell: bash
+        run: |
+          set -euo pipefail
+          package="$(find dist/independent-review -maxdepth 1 -type f -name 'IRR-01-v1-*.zip' -print -quit)"
+          test -n "${package}"
+          python scripts/independent_review_readiness.py verify --package "${package}"
+          package_dir="$(dirname "${package}")"
+          package_name="$(basename "${package}")"
+          (
+            cd "${package_dir}"
+            sha256sum --check "${package_name}.sha256"
+          )
+
       - name: Create verified pending handoff
         shell: bash
         run: |
           package="$(find dist/independent-review -maxdepth 1 -type f -name 'IRR-01-v1-*.zip' -print -quit)"
+          set -euo pipefail
           test -n "${package}"
+          export PACKAGE_PATH="${package}"
           python scripts/independent_review_handoff.py create-handoff \
             --package "${package}" \
             --output dist/independent-review/IRH-01-handoff.json
           python - <<'PY'
+          import hashlib
           import json
+          import os
           from pathlib import Path
 
+          package_path = Path(os.environ["PACKAGE_PATH"])
           handoff = json.loads(
               Path("dist/independent-review/IRH-01-handoff.json").read_text(
                   encoding="utf-8"
               )
           )
+          assert handoff["irr_source_commit_sha"] == os.environ["CANDIDATE_SHA"]
+          assert handoff["irr_package_name"] == package_path.name
+          assert handoff["irr_package_sha256"] == hashlib.sha256(
+              package_path.read_bytes()
+          ).hexdigest()
           assert handoff["external_review_status"] == "AWAITING_EXTERNAL_REVIEW"
           assert handoff["independent_review_status"] == "NOT_INDEPENDENTLY_REVIEWED"
           assert handoff["authority"] == (
@@ -90,3 +115,15 @@ jobs:
           echo "IRH01_AUTOMATION_CAN_CREATE_REVIEW=false"
           echo "IRH01_AUTOMATION_CAN_CREATE_REVIEWER_PROVENANCE=false"
           echo "IRH01_AUTOMATION_CAN_CERTIFY=false"
+
+      - name: Upload exact-SHA review handoff artifact
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # repository-approved upload-artifact v4 pin
+        with:
+          name: IRH-01-review-handoff-${{ env.CANDIDATE_SHA }}
+          path: |
+            dist/independent-review/IRR-01-v1-*.zip
+            dist/independent-review/IRR-01-v1-*.zip.sha256
+            dist/independent-review/IRH-01-handoff.json
+          if-no-files-found: error
+          retention-days: 30
+          compression-level: 0
