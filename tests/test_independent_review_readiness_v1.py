@@ -173,7 +173,15 @@ def test_abbreviated_commit_sha_is_rejected(tmp_path: Path) -> None:
 def test_selected_symlink_is_rejected_fail_closed(tmp_path: Path) -> None:
     root, _ = _repo(tmp_path)
     (root / "core" / "target.txt").write_text("target\n", encoding="utf-8")
-    (root / "core" / "link.txt").symlink_to("target.txt")
+    try:
+        (root / "core" / "link.txt").symlink_to("target.txt")
+    except OSError as exc:
+        if getattr(exc, "winerror", None) == 1314:
+            pytest.skip(
+                "Windows symlink creation requires Developer Mode or "
+                "SeCreateSymbolicLinkPrivilege"
+            )
+        raise
     _git(root, "add", "core/target.txt", "core/link.txt")
     _git(root, "commit", "-m", "add symlink")
     commit = _git(root, "rev-parse", "HEAD")

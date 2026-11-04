@@ -1,0 +1,34 @@
+{
+  "scope": "NATIVE_HTTP_ASSESS_ONLY",
+  "synthetic_only": true,
+  "full_h5": "BLOCKED",
+  "work_sha": "7a924f37696cdf74666c08f924f1941edb4fc030",
+  "ros_sha": "e8e6092b36da52bcda4bd1ce8d2faa89f9828307",
+  "database_port": 65432,
+  "legal_approvals_created": false,
+  "checks": [
+    "native_adapter_to_operator_http_to_postgresql",
+    "transport_restart_replay_preserves_case_sequence",
+    "execute_gate_denied_without_case_mutation"
+  ],
+  "boundary_result": "NOT_RUN_CURRENT_CANDIDATE",
+  "remaining": "Current candidate has no fresh native HTTP-to-WORK-to-PostgreSQL assess-only receipt. Independent PB02/PB03 acceptance, supported-type admission and native HUMAN authority remain open. Full pipeline crash/restart/recovery is not tested.",
+  "evidence_status": "HISTORICAL_ONLY_NOT_CURRENT_CANDIDATE",
+  "historical_run_date": "2026-11-03",
+  "historical_ros_sha": "e8e6092b36da52bcda4bd1ce8d2faa89f9828307",
+  "historical_work_sha": "7a924f37696cdf74666c08f924f1941edb4fc030",
+  "historical_boundary_result": "PASS",
+  "historical_checks": [
+    "native_adapter_to_operator_http_to_postgresql",
+    "transport_restart_replay_preserves_case_sequence",
+    "execute_gate_denied_without_case_mutation"
+  ],
+  "current_candidate": {
+    "ros_sha_source": "IRR-01/manifest.json.source_commit_sha",
+    "work_sha": "fb8850431d34c0a204d8e1c425914442af151325",
+    "native_http_assess_only": "NOT_RUN",
+    "positive_execute_package": "NOT_ADMITTED",
+    "full_h5": "BLOCKED"
+  },
+  "reusable_for_current_candidate": false
+}

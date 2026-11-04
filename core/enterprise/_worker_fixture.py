@@ -61,7 +61,9 @@ def process_spawn_probe(_payload: Mapping[str, object]) -> dict[str, object]:
 
 
 def native_ffi_probe(_payload: Mapping[str, object]) -> dict[str, object]:
-    import ctypes
+    import sys
 
-    ctypes.CDLL(None)
+    # Exercise the exact CPython audit event emitted by ctypes.dlopen without
+    # relying on a platform-specific dynamic loader or installed native library.
+    sys.audit("ctypes.dlopen", "lukart-native-ffi-policy-probe")
     return {"ffi": "available"}

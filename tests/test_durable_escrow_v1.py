@@ -323,6 +323,11 @@ def test_target_restore_passes_after_source_location_is_destroyed(tmp_path: Path
         _plan,
         _receipt,
     ) = _replicated_fixture(tmp_path)
+    # Published escrow blobs are read-only; Windows requires clearing the
+    # read-only attribute before simulating physical source-location loss.
+    for stored_path in source_backend.root.rglob("*"):
+        if stored_path.is_file():
+            stored_path.chmod(0o600)
     shutil.rmtree(source_backend.root)
 
     report = verify_location_restore_v1(

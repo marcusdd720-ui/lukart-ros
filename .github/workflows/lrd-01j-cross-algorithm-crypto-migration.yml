@@ -20,7 +20,7 @@ jobs:
     env:
       CANDIDATE_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
       NIST_ACVP_SHA: 975de31eb83d87039ec88934fdc47d8c312b892d
-      UV_LOCK_BLOB_SHA: 9c018011129dc660a1451289de3befb1f92d7280
+      UV_LOCK_BLOB_SHA: df8de412f297c859f1cfd55a60353940f42eb31c
       PIP_DISABLE_PIP_VERSION_CHECK: "1"
     steps:
       - name: Checkout exact candidate SHA

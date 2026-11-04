@@ -22,6 +22,7 @@ import time
 from collections.abc import Callable, Mapping
 from dataclasses import dataclass
 from pathlib import Path
+from typing import Any, cast
 
 from core.p3.contracts import content_digest
 
@@ -138,15 +139,20 @@ def _apply_posix_limits(memory_bytes: int, cpu_seconds: int) -> tuple[bool, bool
     except ImportError:
         return False, False
 
+    resource_api = cast(Any, resource)
     memory_enforced = False
     cpu_enforced = False
     try:
-        resource.setrlimit(resource.RLIMIT_AS, (memory_bytes, memory_bytes))
+        resource_api.setrlimit(
+            resource_api.RLIMIT_AS, (memory_bytes, memory_bytes)
+        )
         memory_enforced = True
     except (OSError, ValueError):
         memory_enforced = False
     try:
-        resource.setrlimit(resource.RLIMIT_CPU, (cpu_seconds, cpu_seconds))
+        resource_api.setrlimit(
+            resource_api.RLIMIT_CPU, (cpu_seconds, cpu_seconds)
+        )
         cpu_enforced = True
     except (OSError, ValueError):
         cpu_enforced = False
@@ -281,6 +287,7 @@ def _worker_entry(
     result_queue: multiprocessing.Queue[dict[str, object]],
     task: IsolatedTask,
     policy: IsolationPolicy,
+    workspace_text: str,
 ) -> None:
     allowed = set(policy.allowed_environment_keys)
     for key in tuple(os.environ):
@@ -296,60 +303,61 @@ def _worker_entry(
     )
 
     memory_limit, cpu_limit = _apply_posix_limits(policy.memory_bytes, policy.cpu_seconds)
-
+    result: dict[str, object]
     try:
-        with tempfile.TemporaryDirectory(prefix="lukart-worker-") as workspace_text:
-            workspace = Path(workspace_text).resolve(strict=False)
-            os.chdir(workspace)
-            sys.dont_write_bytecode = True
-            read_roots = tuple(
-                dict.fromkeys(
-                    (
-                        *_default_read_roots(),
-                        *(Path(item).resolve(strict=False) for item in policy.allowed_read_roots),
-                    )
+        workspace = Path(workspace_text).resolve(strict=False)
+        os.chdir(workspace)
+        sys.dont_write_bytecode = True
+        read_roots = tuple(
+            dict.fromkeys(
+                (
+                    *_default_read_roots(),
+                    *(
+                        Path(item).resolve(strict=False)
+                        for item in policy.allowed_read_roots
+                    ),
                 )
             )
-            sys.addaudithook(
-                _capability_audit_hook(
-                    workspace=workspace,
-                    read_roots=read_roots,
-                    network_allowed=policy.network_allowed,
-                    process_spawn_allowed=policy.process_spawn_allowed,
-                    native_ffi_allowed=policy.native_ffi_allowed,
-                    workspace_write_only=policy.workspace_write_only,
-                )
-            )
-            if not policy.network_allowed:
-                _deny_network()
-
-            module = importlib.import_module(task.module)
-            function = getattr(module, task.function, None)
-            if not callable(function):
-                raise IsolatedExecutionError("worker entrypoint is not callable")
-            raw = function(dict(task.payload))
-            if not isinstance(raw, Mapping):
-                raise IsolatedExecutionError("worker output must be a mapping")
-            output = dict(raw)
-            content_digest(output)
-            result_queue.put(
-                {
-                    "ok": True,
-                    "output": output,
-                    "memory_limit": memory_limit,
-                    "cpu_limit": cpu_limit,
-                }
-            )
-    except BaseException as exc:  # child boundary must return a bounded error, not a traceback
-        result_queue.put(
-            {
-                "ok": False,
-                "error_type": type(exc).__name__,
-                "error": str(exc)[:500],
-                "memory_limit": memory_limit,
-                "cpu_limit": cpu_limit,
-            }
         )
+        sys.addaudithook(
+            _capability_audit_hook(
+                workspace=workspace,
+                read_roots=read_roots,
+                network_allowed=policy.network_allowed,
+                process_spawn_allowed=policy.process_spawn_allowed,
+                native_ffi_allowed=policy.native_ffi_allowed,
+                workspace_write_only=policy.workspace_write_only,
+            )
+        )
+        if not policy.network_allowed:
+            _deny_network()
+
+        module = importlib.import_module(task.module)
+        function = getattr(module, task.function, None)
+        if not callable(function):
+            raise IsolatedExecutionError("worker entrypoint is not callable")
+        raw = function(dict(task.payload))
+        if not isinstance(raw, Mapping):
+            raise IsolatedExecutionError("worker output must be a mapping")
+        output = dict(raw)
+        content_digest(output)
+        result = {
+            "ok": True,
+            "output": output,
+            "memory_limit": memory_limit,
+            "cpu_limit": cpu_limit,
+        }
+    except BaseException as exc:  # child boundary must return a bounded error, not a traceback
+        result = {
+            "ok": False,
+            "error_type": type(exc).__name__,
+            "error": str(exc)[:500],
+            "memory_limit": memory_limit,
+            "cpu_limit": cpu_limit,
+        }
+
+    # The parent owns and removes the temporary workspace after this process exits.
+    result_queue.put(result)
 
 
 class ProcessIsolationExecutor:
@@ -360,19 +368,22 @@ class ProcessIsolationExecutor:
         if task.entrypoint not in self.policy.allowed_entrypoints:
             raise IsolatedExecutionError("worker entrypoint is not allow-listed")
         task_digest = task.digest()
+        workspace = tempfile.TemporaryDirectory(prefix="lukart-worker-")
         context = multiprocessing.get_context("spawn")
         result_queue: multiprocessing.Queue[dict[str, object]] = context.Queue(maxsize=1)
         process = context.Process(
             target=_worker_entry,
-            args=(result_queue, task, self.policy),
+            args=(result_queue, task, self.policy, workspace.name),
             daemon=True,
         )
         started = time.monotonic()
-        process.start()
-        deadline = time.monotonic() + self.policy.timeout_seconds
         message: dict[str, object] | None = None
+        process_started = False
 
         try:
+            process.start()
+            process_started = True
+            deadline = time.monotonic() + self.policy.timeout_seconds
             while message is None:
                 remaining = deadline - time.monotonic()
                 if remaining <= 0:
@@ -414,8 +425,18 @@ class ProcessIsolationExecutor:
 
             elapsed = time.monotonic() - started
         finally:
+            if process_started and process.is_alive():
+                process.terminate()
+                process.join(1.0)
+                if process.is_alive() and hasattr(process, "kill"):
+                    process.kill()
+                    process.join(1.0)
             result_queue.close()
+            result_queue.join_thread()
+            workspace.cleanup()
 
+        if message is None:
+            raise IsolatedExecutionError("worker exited without a result")
         if message.get("ok") is not True:
             error_type = str(message.get("error_type", "WorkerError"))
             error = str(message.get("error", "worker failed"))

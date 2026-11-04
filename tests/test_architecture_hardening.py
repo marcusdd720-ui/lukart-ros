@@ -19,7 +19,15 @@ def test_symlink_import_is_rejected(tmp_path: Path) -> None:
     source.mkdir()
     target = tmp_path / "outside.txt"
     target.write_text("private", encoding="utf-8")
-    (source / "linked.txt").symlink_to(target)
+    try:
+        (source / "linked.txt").symlink_to(target)
+    except OSError as exc:
+        if getattr(exc, "winerror", None) == 1314:
+            pytest.skip(
+                "Windows symlink creation requires Developer Mode or "
+                "SeCreateSymbolicLinkPrivilege"
+            )
+        raise
 
     with pytest.raises(ValueError, match="Symlink"):
         manager.import_directory("CASE-0001", str(source))
