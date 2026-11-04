@@ -13,6 +13,18 @@ from threading import Thread
 from uuid import uuid4
 
 
+def _validate_isolated_dsn_values(values: dict[str, str]) -> None:
+    """Reject libpq overrides that could route an allegedly local test DSN remotely."""
+    if (
+        values.get("host") != "127.0.0.1"
+        or values.get("hostaddr") not in (None, "127.0.0.1")
+        or "service" in values
+        or "servicefile" in values
+        or not values.get("dbname", "").startswith("lukart_stage02_test_")
+    ):
+        raise ValueError("ISOLATED_TEST_DATABASE_REQUIRED")
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--work-root", type=Path, required=True)
@@ -25,10 +37,7 @@ def main():
 
     for name, key in (("LUKART_TEST_DSN", "runtime_dsn"), ("LUKART_TEST_ADMIN_DSN", "admin_dsn")):
         values = conninfo_to_dict(cfg[key])
-        if values.get("host") != "127.0.0.1" or not values.get("dbname", "").startswith(
-            "lukart_stage02_test_"
-        ):
-            raise ValueError("ISOLATED_TEST_DATABASE_REQUIRED")
+        _validate_isolated_dsn_values(values)
         os.environ[name] = make_conninfo(cfg[key], port="65432", connect_timeout="5")
     ros_root = Path(__file__).resolve().parents[1]
     sys.path[:0] = [str(args.work_root), str(ros_root)]
@@ -168,7 +177,7 @@ def main():
             adapter.execute(blocked)
             raise AssertionError("unadmitted execute was dispatched")
         except RosWorkAdapterError as error:
-            assert "not admitted" in str(error)
+            assert "independently admitted" in str(error)
         checks.append("execute_gate_denied_without_case_mutation")
         assert fixture.repo.get_heads(fixture.tenant, fixture.case_id)[0] == baseline
         receipt["boundary_result"] = "PASS"

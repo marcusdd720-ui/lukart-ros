@@ -34,6 +34,16 @@ class IdempotencyLedger:
                 if remaining <= 0:
                     return "timeout", None
                 self._condition.wait(remaining)
+            if record["state"] == "aborted":
+                # Exactly one waiter may claim the retry after an aborted attempt.
+                if self._records.get(key) is record:
+                    self._records[key] = {
+                        "digest": digest,
+                        "state": "running",
+                        "result": None,
+                    }
+                    return "execute", None
+                return self.reserve(key, digest, deadline)
             stored = record["result"]
             if not isinstance(stored, Mapping):
                 raise OperationContractError("idempotency record is corrupt")
@@ -47,3 +57,12 @@ class IdempotencyLedger:
             record["state"] = "done"
             record["result"] = copy.deepcopy(dict(execution))
             self._condition.notify_all()
+
+    def abort(self, key: str) -> None:
+        """Release a failed in-flight reservation so a safe retry can claim it."""
+        with self._condition:
+            record = self._records.get(key)
+            if record is not None and record["state"] == "running":
+                record["state"] = "aborted"
+                record["result"] = None
+                self._condition.notify_all()

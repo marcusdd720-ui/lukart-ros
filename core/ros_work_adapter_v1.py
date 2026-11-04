@@ -25,11 +25,16 @@ Invariants:
 
 from __future__ import annotations
 
+import http.client
+import io
 import json
+import socket
+import time
 import urllib.error
 import urllib.request
 from collections.abc import Mapping
 from dataclasses import dataclass, field
+from functools import partial
 from pathlib import Path
 from typing import Any, cast
 from urllib.parse import urlsplit
@@ -41,6 +46,7 @@ from core.operations.contract_v1 import (
     content_digest,
     validate_operation_envelope,
 )
+from core.operations.ledger_v1 import IdempotencyLedger
 
 # ---------------------------------------------------------------------------
 # Constants
@@ -76,6 +82,11 @@ OPERATION_MAP = {
 }
 
 MAX_WORK_REQUEST_BYTES = 1024 * 1024
+# The pinned CaseHeadResult schema has no maxItems bound for heads. This is an
+# explicit adapter transport ceiling, not a schema-derived maximum; oversized
+# schema-valid results fail closed until the upstream contract is bounded.
+MAX_WORK_RESPONSE_BYTES = 4 * 1024 * 1024
+WORK_RESPONSE_READ_CHUNK_BYTES = 64 * 1024
 MAX_WORK_TIMEOUT_MS = 300_000
 
 # Pinned to WORK@7a924f37696cdf74666c08f924f1941edb4fc030:
@@ -109,13 +120,17 @@ _CASE_HEAD_REF_KINDS = frozenset(
 )
 
 
-def _is_uuid(value: object) -> bool:
+def _canonical_uuid(value: object) -> str | None:
     if not isinstance(value, str):
-        return False
+        return None
     try:
-        return str(UUID(value)) == value.lower()
-    except ValueError:
-        return False
+        return str(UUID(value))
+    except (ValueError, AttributeError):
+        return None
+
+
+def _is_uuid(value: object) -> bool:
+    return _canonical_uuid(value) is not None
 
 
 def _is_case_head_ref(value: object) -> bool:
@@ -134,6 +149,149 @@ class _NoRedirectHandler(urllib.request.HTTPRedirectHandler):
 
     def redirect_request(self, req, fp, code, msg, headers, newurl):
         return None
+
+
+class _DeadlineRaw(io.RawIOBase):
+    """Raw socket reader that re-arms the remaining absolute deadline per recv."""
+
+    def __init__(self, raw, sock: socket.socket, deadline: float) -> None:
+        super().__init__()
+        self._raw = raw
+        self._sock = sock
+        self._deadline = deadline
+
+    def readable(self) -> bool:
+        return True
+
+    def readinto(self, buffer) -> int | None:
+        remaining = self._deadline - time.monotonic()
+        if remaining <= 0:
+            raise TimeoutError("WORK response deadline exceeded")
+        self._sock.settimeout(remaining)
+        return self._raw.readinto(buffer)
+
+    def close(self) -> None:
+        try:
+            self._raw.close()
+        finally:
+            super().close()
+
+
+class _DeadlineHTTPResponse(http.client.HTTPResponse):
+    """HTTP response whose headers, chunk framing, body and trailers share a deadline."""
+
+    def __init__(self, sock, debuglevel=0, method=None, url=None, *, deadline: float):
+        super().__init__(sock, debuglevel, method, url)
+        # HTTPResponse has not read status/headers yet, so its buffer is empty.
+        # Detach the raw socket file and put a deadline-aware RawIOBase below
+        # a fresh BufferedReader. Every recv, including readline() for chunk
+        # sizes and trailers, now re-arms the same absolute deadline.
+        raw = self.fp.detach()
+        self.fp = io.BufferedReader(_DeadlineRaw(raw, sock, deadline))
+
+
+class _DeadlineHTTPConnection(http.client.HTTPConnection):
+    def __init__(self, host, *, deadline: float, **kwargs):
+        super().__init__(host, **kwargs)
+        self.response_class = cast(type[http.client.HTTPResponse], partial(_DeadlineHTTPResponse, deadline=deadline))
+
+
+class _DeadlineHTTPHandler(urllib.request.HTTPHandler):
+    def __init__(self, deadline: float):
+        super().__init__()
+        self._deadline = deadline
+
+    def http_open(self, req):
+        remaining = self._deadline - time.monotonic()
+        if remaining <= 0:
+            raise TimeoutError("WORK response deadline exceeded")
+        req.timeout = min(req.timeout, remaining)
+        return self.do_open(
+            lambda host, **kwargs: _DeadlineHTTPConnection(
+                host, deadline=self._deadline, **kwargs
+            ),
+            req,
+        )
+
+
+def _read_bounded_response(response) -> bytes:
+    headers = getattr(response, "headers", None)
+    content_length = headers.get("Content-Length") if headers is not None else None
+    if content_length is not None:
+        try:
+            declared_length = int(content_length)
+        except (TypeError, ValueError) as exc:
+            raise RosWorkAdapterError("WORK response Content-Length is invalid") from exc
+        if declared_length < 0 or declared_length > MAX_WORK_RESPONSE_BYTES:
+            raise RosWorkAdapterError("WORK response exceeds size limit")
+
+    chunks: list[bytes] = []
+    total = 0
+    while True:
+        remaining = MAX_WORK_RESPONSE_BYTES + 1 - total
+        if remaining <= 0:
+            raise RosWorkAdapterError("WORK response exceeds size limit")
+        chunk = response.read1(min(WORK_RESPONSE_READ_CHUNK_BYTES, remaining))
+        if not chunk:
+            break
+        if not isinstance(chunk, bytes):
+            raise RosWorkAdapterError("WORK response stream returned non-bytes")
+        total += len(chunk)
+        if total > MAX_WORK_RESPONSE_BYTES:
+            raise RosWorkAdapterError("WORK response exceeds size limit")
+        chunks.append(chunk)
+    return b"".join(chunks)
+
+
+def _ros_result_record(result: RosWorkResult) -> dict[str, object]:
+    return {
+        "status": result.status,
+        "summary": result.summary,
+        "artifacts": list(result.artifacts),
+        "evidence": [dict(item) for item in result.evidence],
+        "errors": [dict(item) for item in result.errors],
+        "work_command_id": result.work_command_id,
+        "work_event_ids": list(result.work_event_ids),
+    }
+
+
+def _ros_result_from_record(record: Mapping[str, object]) -> RosWorkResult:
+    expected = {
+        "status", "summary", "artifacts", "evidence", "errors",
+        "work_command_id", "work_event_ids",
+    }
+    if set(record) != expected:
+        raise RosWorkAdapterError("idempotency result record has an invalid shape")
+    status = record["status"]
+    summary = record["summary"]
+    artifacts = record["artifacts"]
+    evidence = record["evidence"]
+    errors = record["errors"]
+    command_id = record["work_command_id"]
+    event_ids = record["work_event_ids"]
+    if (
+        not isinstance(status, str)
+        or not isinstance(summary, str)
+        or not isinstance(artifacts, list)
+        or not all(isinstance(item, str) for item in artifacts)
+        or not isinstance(evidence, list)
+        or not all(isinstance(item, Mapping) for item in evidence)
+        or not isinstance(errors, list)
+        or not all(isinstance(item, Mapping) for item in errors)
+        or (command_id is not None and not isinstance(command_id, str))
+        or not isinstance(event_ids, list)
+        or not all(isinstance(item, str) for item in event_ids)
+    ):
+        raise RosWorkAdapterError("idempotency result record is corrupt")
+    return RosWorkResult(
+        status=status,
+        summary=summary,
+        artifacts=tuple(artifacts),
+        evidence=tuple(dict(item) for item in evidence),
+        errors=tuple(dict(item) for item in errors),
+        work_command_id=command_id,
+        work_event_ids=tuple(event_ids),
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -291,8 +449,10 @@ def _map_work_response(
         and expected_operation_id == "ros.work.generator.assess.v1"
         and _is_uuid(expected_tenant_id)
         and _is_uuid(expected_case_id)
-        and work_response.get("tenant_id") == expected_tenant_id
-        and work_response.get("case_id") == expected_case_id
+        and _canonical_uuid(work_response.get("tenant_id"))
+        == _canonical_uuid(expected_tenant_id)
+        and _canonical_uuid(work_response.get("case_id"))
+        == _canonical_uuid(expected_case_id)
         and type(work_response.get("case_sequence")) is int
         and work_response["case_sequence"] >= 1
         and type(work_response.get("heads")) is list
@@ -329,13 +489,26 @@ def _map_work_response(
 class RosWorkAdapterV1:
     """Fail-closed ROS -> WORK adapter boundary."""
 
-    def __init__(self, config: AdapterConfig) -> None:
+    def __init__(
+        self,
+        config: AdapterConfig,
+        *,
+        idempotency_ledger: IdempotencyLedger | None = None,
+    ) -> None:
         self.config = config
         self._authority_map: dict[str, AuthorityResolution] = {}
+        # Process-local deduplication for this read-only adapter. Durable
+        # operation receipts remain the responsibility of the ROS operation
+        # runner; this cache is not a cross-process replay store.
+        self._idempotency_ledger = idempotency_ledger or IdempotencyLedger()
 
     def _load_authorities(self) -> None:
-        if not self._authority_map:
-            self._authority_map = _load_authority_map(self.config)
+        if self.config.authority_map_path is not None:
+            try:
+                # A file-backed revocation must take effect on the next call.
+                self._authority_map = _load_authority_map(self.config)
+            except (OSError, ValueError, KeyError, TypeError) as exc:
+                raise RosWorkAdapterError("authority map could not be loaded") from exc
 
     def validate_envelope(self, envelope: Mapping[str, object]) -> None:
         """Validate ROS operation envelope against the canonical contract."""
@@ -391,20 +564,29 @@ class RosWorkAdapterV1:
                 f"authority_ref not admitted for operation: {authority_ref} -> {operation_id}"
             )
 
-        # Scope must map exactly and satisfy the native WORK UUID contract.
-        ros_case_id = str(context["case_id"])
-        if not _is_uuid(resolution.tenant_id) or not _is_uuid(resolution.case_id):
+        # Canonical UUIDs prevent uppercase/lowercase spellings from making
+        # an otherwise identical native scope fail response verification.
+        ros_case_id = _canonical_uuid(context["case_id"])
+        tenant_id = _canonical_uuid(resolution.tenant_id)
+        case_id = _canonical_uuid(resolution.case_id)
+        if tenant_id is None or case_id is None or ros_case_id is None:
             raise RosWorkAdapterError("authority resolution has invalid native WORK UUID scope")
-        if resolution.case_id != ros_case_id:
+        if case_id != ros_case_id:
             raise RosWorkAdapterError("tenant/case scope mismatch")
 
-        # Idempotency + digest binding.
+        # The full ROS context (including branch) is digest-bound. Branch is
+        # deliberately not copied into CoreQuery payload: the pinned WORK
+        # schema rejects fields outside its exact scope/operation contract.
         idempotency_key = str(idempotency["key"])
         request_digest = content_digest(
             {
                 "operation_id": operation_id,
                 "operation": operation,
                 "context": dict(context),
+                "resolved_work_scope": {
+                    "tenant_id": tenant_id,
+                    "case_id": case_id,
+                },
                 "preconditions": dict(preconditions),
                 "input": dict(request["input"]),
                 "constraints": dict(constraints),
@@ -441,8 +623,8 @@ class RosWorkAdapterV1:
             payload = {
                 "contract": work_contract,
                 "operation": work_operation,
-                "tenant_id": resolution.tenant_id,
-                "case_id": resolution.case_id,
+                "tenant_id": tenant_id,
+                "case_id": case_id,
             }
 
 
@@ -451,8 +633,8 @@ class RosWorkAdapterV1:
             work_route=work_route,
             work_contract=work_contract,
             work_operation=work_operation,
-            tenant_id=resolution.tenant_id,
-            case_id=resolution.case_id,
+            tenant_id=tenant_id,
+            case_id=case_id,
             token=resolution.token,
             idempotency_key=idempotency_key,
             request_digest=request_digest,
@@ -488,8 +670,8 @@ class RosWorkAdapterV1:
                     mapped.request_digest,
                 )
             )
-            or not _is_uuid(mapped.tenant_id)
-            or not _is_uuid(mapped.case_id)
+            or _canonical_uuid(mapped.tenant_id) != mapped.tenant_id
+            or _canonical_uuid(mapped.case_id) != mapped.case_id
             or type(mapped.expected_case_sequence) is not int
             or mapped.expected_case_sequence < 0
             or type(mapped.timeout_ms) is not int
@@ -510,8 +692,8 @@ class RosWorkAdapterV1:
         self._load_authorities()
         if not any(
             resolution.token == mapped.token
-            and resolution.tenant_id == mapped.tenant_id
-            and resolution.case_id == mapped.case_id
+            and _canonical_uuid(resolution.tenant_id) == mapped.tenant_id
+            and _canonical_uuid(resolution.case_id) == mapped.case_id
             and "ros.work.generator.assess.v1" in resolution.admitted_operations
             for resolution in self._authority_map.values()
         ):
@@ -519,7 +701,7 @@ class RosWorkAdapterV1:
                 "mapped request is not backed by an admitted authority resolution"
             )
 
-    def dispatch(self, mapped: RosWorkRequest) -> RosWorkResult:
+    def dispatch(self, mapped: RosWorkRequest, *, deadline: float | None = None) -> RosWorkResult:
         """Send only the admitted native CoreQuery request to the trusted WORK host."""
         self._validate_dispatch_request(mapped)
         url = f"{self.config.trusted_host_url}/api/{mapped.work_route}"
@@ -536,21 +718,36 @@ class RosWorkAdapterV1:
             },
             method="POST",
         )
+        timeout_s = mapped.timeout_ms / 1000.0
+        if deadline is None:
+            deadline = time.monotonic() + timeout_s
+        remaining = deadline - time.monotonic()
+        if remaining <= 0:
+            raise RosWorkAdapterError("WORK response deadline exceeded")
         try:
-            timeout_s = mapped.timeout_ms / 1000.0
             opener = urllib.request.build_opener(
                 urllib.request.ProxyHandler({}),
                 _NoRedirectHandler(),
+                _DeadlineHTTPHandler(deadline),
             )
-            with opener.open(req, timeout=timeout_s) as response:
-                raw = response.read()
+            with opener.open(req, timeout=remaining) as response:
+                raw = _read_bounded_response(response)
                 work_response = json.loads(raw.decode("utf-8"))
+        except TimeoutError as exc:
+            raise RosWorkAdapterError("WORK response deadline exceeded") from exc
         except urllib.error.HTTPError as exc:
             raise RosWorkAdapterError(f"WORK HTTP error: {exc.code} {exc.reason}") from exc
         except urllib.error.URLError as exc:
+            if isinstance(exc.reason, (socket.timeout, TimeoutError)):
+                raise RosWorkAdapterError("WORK response deadline exceeded") from exc
             raise RosWorkAdapterError(f"WORK unreachable: {exc.reason}") from exc
-        except json.JSONDecodeError as exc:
-            raise RosWorkAdapterError(f"WORK response not JSON: {exc}") from exc
+        except (json.JSONDecodeError, UnicodeDecodeError) as exc:
+            raise RosWorkAdapterError(f"WORK response is not valid UTF-8 JSON: {exc}") from exc
+        except http.client.HTTPException as exc:
+            raise RosWorkAdapterError("WORK response framing is invalid") from exc
+
+        if type(work_response) is not dict:
+            raise RosWorkAdapterError("WORK response must be a JSON object")
 
         return _map_work_response(
             work_response,
@@ -561,8 +758,31 @@ class RosWorkAdapterV1:
         )
 
     def execute(self, envelope: Mapping[str, object]) -> RosWorkResult:
-        """Validate, map, dispatch, and derive a neutral ROS result."""
+        """Validate, enforce process-local exact idempotency, dispatch and map."""
         self.validate_envelope(envelope)
         mapped = self.map_request(envelope)
-        work_result = self.dispatch(mapped)
-        return work_result
+        deadline = time.monotonic() + mapped.timeout_ms / 1000.0
+        state, stored = self._idempotency_ledger.reserve(
+            mapped.idempotency_key, mapped.request_digest, deadline
+        )
+        if state == "conflict":
+            raise RosWorkAdapterError(
+                "idempotency key was reused with a different request digest"
+            )
+        if state == "timeout":
+            raise RosWorkAdapterError("idempotency replay wait exceeded the operation deadline")
+        if state == "replay":
+            if stored is None:
+                raise RosWorkAdapterError("idempotency replay record is missing")
+            return _ros_result_from_record(stored)
+        if state != "execute":
+            raise RosWorkAdapterError("idempotency ledger returned an unknown state")
+        try:
+            work_result = self.dispatch(mapped, deadline=deadline)
+            self._idempotency_ledger.complete(
+                mapped.idempotency_key, _ros_result_record(work_result)
+            )
+            return work_result
+        except Exception:
+            self._idempotency_ledger.abort(mapped.idempotency_key)
+            raise

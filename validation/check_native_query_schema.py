@@ -40,13 +40,15 @@ def main():
     assert str(parsed.tenant_id) == tenant and str(parsed.case_id) == case
     assert parsed.operation == "GetCaseHead"
     assert mapped.idempotency_key == "synthetic-query-key"
+    assert len(mapped.request_digest) == 64
     assert "meta" not in mapped.payload
     print(
         json.dumps(
             {
                 "native_query_schema": "PASS",
                 "scope_exact": True,
-                "idempotency_binding_preserved": True,
+                "idempotency_key_retained": True,
+                "request_digest_present": True,
             }
         )
     )
